@@ -43,6 +43,12 @@
           "cameraPermission": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer vos cartes."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "44164e21-47fe-412d-9cd0-38064a2df799"
+      }
+    },
+    "owner": "guigousse"
   }
 }
