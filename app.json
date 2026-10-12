@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Tierly",
+    "slug": "tierly",
+    "scheme": "tierly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0F1115",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1115"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.guigousse.tierly",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.guigousse.tierly",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1115",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Tierly a besoin d'accéder à vos photos pour illustrer vos cartes.",
+          "cameraPermission": "Tierly a besoin d'accéder à l'appareil photo pour illustrer vos cartes."
+        }
+      ]
+    ]
+  }
+}
