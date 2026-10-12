@@ -9,6 +9,9 @@ import { useHydrated } from '../store/useTierStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Keep the home screen under screens opened from a link (e.g. an imported tier list).
+export const unstable_settings = { initialRouteName: 'index' };
+
 const theme = {
   ...DarkTheme,
   colors: {
@@ -50,6 +53,7 @@ export default function RootLayout() {
             <Stack.Screen name="lists" options={{ title: 'Mes tier lists' }} />
             <Stack.Screen name="templates" options={{ title: 'Modèles' }} />
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
+            <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
             <Stack.Screen name="editor/[id]" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
         </ThemeProvider>

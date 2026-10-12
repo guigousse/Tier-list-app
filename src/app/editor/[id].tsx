@@ -15,6 +15,7 @@ import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
+import { sendList } from '../../lib/share';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -58,6 +59,7 @@ function Editor({ list }: { list: TierList }) {
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [cardSheet, setCardSheet] = useState<{ cardId: string | null } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(list.title);
   const [exporting, setExporting] = useState(false);
@@ -132,7 +134,7 @@ function Editor({ list }: { list: TierList }) {
             {list.title}
           </Text>
         </Pressable>
-        <IconButton icon="share-outline" label="Partager en image" onPress={exportImage} />
+        <IconButton icon="share-outline" label="Partager" onPress={() => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
 
@@ -187,6 +189,7 @@ function Editor({ list }: { list: TierList }) {
         actions={[
           { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
           { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+          { label: 'Envoyer la tier list', icon: 'paper-plane-outline', onPress: () => sendList(list) },
           { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
           {
             label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
@@ -203,6 +206,16 @@ function Editor({ list }: { list: TierList }) {
           },
           { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
           { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+        ]}
+      />
+
+      <ActionSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Partager"
+        actions={[
+          { label: 'Envoyer la tier list (modifiable)', icon: 'paper-plane-outline', onPress: () => sendList(list) },
+          { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         ]}
       />
 

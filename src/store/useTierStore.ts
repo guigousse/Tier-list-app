@@ -7,6 +7,7 @@ import { CARD_COLORS, type CardSize } from '../constants/theme';
 import { TIER_PRESETS, DEFAULT_PRESET_KEY, tierColorAt } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
+import type { SharedList } from '../lib/share';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 
 export type Settings = {
@@ -27,6 +28,8 @@ type State = {
   settings: Settings;
 
   createList: (input: NewListInput) => string;
+  /** Adds a tier list received from someone else and returns its id. */
+  importList: (shared: SharedList) => string;
   deleteList: (id: string) => void;
   duplicateList: (id: string) => string | undefined;
   renameList: (id: string, title: string) => void;
@@ -111,6 +114,23 @@ export const useTierStore = create<State>()(
             updatedAt: now,
             openedAt: now,
           };
+          set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
+          return list.id;
+        },
+
+        importList: (shared) => {
+          const now = Date.now();
+          const tiers = shared.tiers.map((t) => ({ id: newId(), label: t.label, color: t.color }));
+          const cards: Record<string, Card> = {};
+          const placement: Record<string, string[]> = Object.fromEntries(tiers.map((t) => [t.id, []]));
+          const pool: string[] = [];
+          for (const c of shared.cards) {
+            const id = newId();
+            cards[id] = { id, label: c.label, color: c.color };
+            if (c.tier >= 0) placement[tiers[c.tier].id].push(id);
+            else pool.push(id);
+          }
+          const list: TierList = { id: newId(), title: shared.title, tiers, cards, placement, pool, favorite: false, createdAt: now, updatedAt: now, openedAt: now };
           set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
           return list.id;
         },

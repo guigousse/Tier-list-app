@@ -8,6 +8,7 @@ import { ActionSheet, Button, Chip, Field, Sheet } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
 import { useResponsive } from '../lib/layout';
+import { sendList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
 type Sort = 'updated' | 'opened' | 'name' | 'favorites';
@@ -59,6 +60,7 @@ export default function Lists() {
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
             <Field value={query} onChangeText={setQuery} placeholder="Rechercher…" clearButtonMode="while-editing" autoCorrect={false} />
+            <Button label="Importer une tier list reçue" icon="download-outline" variant="secondary" onPress={() => router.push('/import')} />
             <View style={styles.chips}>
               {SORTS.map((s) => (
                 <Chip key={s.key} label={s.label} selected={sort === s.key} onPress={() => setSort(s.key)} />
@@ -98,6 +100,7 @@ export default function Lists() {
                     setRenaming(menuFor);
                   },
                 },
+                { label: 'Envoyer', icon: 'paper-plane-outline', onPress: () => sendList(menuFor) },
                 { label: 'Dupliquer', icon: 'copy-outline', onPress: () => duplicateList(menuFor.id) },
                 { label: 'Supprimer', icon: 'trash-outline', destructive: true, onPress: () => confirmDelete(menuFor) },
               ]
