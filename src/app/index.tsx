@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrandBanner } from '../components/Brand';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
@@ -33,13 +34,9 @@ export default function Home() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: spacing.lg, gap: spacing.xl }}
     >
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.brand}>Tiercraft</Text>
-          <Text style={styles.tagline}>Classez tout, de S à D.</Text>
-        </View>
-        <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
-      </View>
+      <BrandBanner
+        right={<IconButton icon="settings-outline" label="Réglages" color="#FFFFFF" onPress={() => router.push('/settings')} style={styles.settings} />}
+      />
 
       <Pressable
         accessibilityRole="button"
@@ -100,9 +97,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { color: colors.text, fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
-  tagline: { color: colors.textMuted, fontSize: 15 },
+  settings: { alignSelf: 'flex-start', backgroundColor: 'rgba(15,17,21,0.35)', borderRadius: 999 },
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
