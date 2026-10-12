@@ -35,7 +35,7 @@ export default function Home() {
     >
       <View style={styles.header}>
         <View>
-          <Text style={styles.brand}>Tierly</Text>
+          <Text style={styles.brand}>Tiercraft</Text>
           <Text style={styles.tagline}>Classez tout, de S à D.</Text>
         </View>
         <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />

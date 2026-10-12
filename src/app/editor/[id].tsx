@@ -144,7 +144,7 @@ function Editor({ list }: { list: TierList }) {
             {list.tiers.map((tier) => (
               <TierRow key={tier.id} tier={tier} cards={cardsOf(list.placement[tier.id])} onPressTier={openTier} onPressCard={openCard} />
             ))}
-            <Text style={styles.watermark}>Tierly</Text>
+            <Text style={styles.watermark}>Tiercraft</Text>
           </View>
           <View style={styles.below}>
             <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />

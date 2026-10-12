@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Tierly",
-    "slug": "tierly",
-    "scheme": "tierly",
+    "name": "Tiercraft",
+    "slug": "tiercraft",
+    "scheme": "tiercraft",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -39,8 +39,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Tierly a besoin d'accéder à vos photos pour illustrer vos cartes.",
-          "cameraPermission": "Tierly a besoin d'accéder à l'appareil photo pour illustrer vos cartes."
+          "photosPermission": "Tiercraft a besoin d'accéder à vos photos pour illustrer vos cartes.",
+          "cameraPermission": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer vos cartes."
         }
       ]
     ]

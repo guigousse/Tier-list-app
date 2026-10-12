@@ -260,7 +260,7 @@ export const useTierStore = create<State>()(
       };
     },
     {
-      name: 'tierly-store',
+      name: 'tiercraft-store',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ lists: state.lists, settings: state.settings }),
