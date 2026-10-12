@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.guigousse.tierly",
+      "bundleIdentifier": "com.guigousse.tiercraft",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.guigousse.tierly",
+      "package": "com.guigousse.tiercraft",
       "adaptiveIcon": {
         "backgroundColor": "#0F1115",
         "foregroundImage": "./assets/android-icon-foreground.png",
