@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip, Field, IconButton } from '../components/ui';
 import { TEMPLATES, TIER_PRESETS, tierColorAt } from '../constants/presets';
 import { colors, readableTextColor, spacing } from '../constants/theme';
+import { useResponsive } from '../lib/layout';
 import { defaultTierLabels, useTierStore } from '../store/useTierStore';
 
 const MAX_TIERS = 12;
@@ -19,6 +20,7 @@ function nextLabel(labels: string[]): string {
 
 export default function NewList() {
   const insets = useSafeAreaInsets();
+  const { column, gutter } = useResponsive();
   const { template: templateKey } = useLocalSearchParams<{ template?: string }>();
   const template = TEMPLATES.find((t) => t.key === templateKey);
   const defaultPresetKey = useTierStore((s) => s.settings.defaultPresetKey);
@@ -61,7 +63,7 @@ export default function NewList() {
     <View style={{ flex: 1 }}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xl }}
+        contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: spacing.xl }]}
       >
         {template ? (
           <View style={styles.templateBanner}>
@@ -106,8 +108,10 @@ export default function NewList() {
           <Text style={styles.hint}>Les couleurs et les noms restent modifiables à tout moment dans l’éditeur.</Text>
         </View>
       </ScrollView>
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Button label="Créer la tier list" icon="checkmark" onPress={create} />
+      <View style={[styles.footer, { paddingHorizontal: gutter, paddingBottom: insets.bottom + spacing.md }]}>
+        <View style={column}>
+          <Button label="Créer la tier list" icon="checkmark" onPress={create} />
+        </View>
       </View>
     </View>
   );
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
   tierBadge: { width: 52, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
   tierBadgeText: { fontWeight: '800', fontSize: 16 },
   hint: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
-  footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+  footer: { paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   templateBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, padding: spacing.md, borderRadius: 14 },
   templateText: { color: colors.text, flex: 1, fontSize: 15 },
 });

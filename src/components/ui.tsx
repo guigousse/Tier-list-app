@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
+import { SHEET_MAX_WIDTH } from '../lib/layout';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -214,6 +215,9 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg,
     maxHeight: '88%',
+    width: '100%',
+    maxWidth: SHEET_MAX_WIDTH,
+    alignSelf: 'center',
   },
   sheetHandle: {
     alignSelf: 'center',

@@ -13,7 +13,8 @@ import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
-import { CARD_SIZES, colors, spacing } from '../../constants/theme';
+import { colors, spacing } from '../../constants/theme';
+import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -24,6 +25,7 @@ export default function EditorScreen() {
   const list = useTierStore((s) => (id ? s.lists[id] : undefined));
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
+  const { cardSize } = useResponsive();
 
   useEffect(() => {
     if (id) useTierStore.getState().markOpened(id);
@@ -41,7 +43,7 @@ export default function EditorScreen() {
   }
 
   return (
-    <DragProvider cardSize={CARD_SIZES[settings.cardSize]} showLabels={settings.showCardLabels} haptics={settings.haptics} onMove={onMove}>
+    <DragProvider cardSize={cardSize(settings.cardSize)} showLabels={settings.showCardLabels} haptics={settings.haptics} onMove={onMove}>
       <Editor list={list} />
     </DragProvider>
   );

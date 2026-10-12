@@ -7,6 +7,7 @@ import { ListRow } from '../components/ListRow';
 import { ActionSheet, Button, Chip, Field, Sheet } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
+import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 
 type Sort = 'updated' | 'opened' | 'name' | 'favorites';
@@ -20,6 +21,7 @@ const SORTS: { key: Sort; label: string }[] = [
 
 export default function Lists() {
   const insets = useSafeAreaInsets();
+  const { column, gutter } = useResponsive();
   const lists = useTierStore((s) => s.lists);
   const { deleteList, duplicateList, renameList, toggleFavorite } = useTierStore.getState();
   const [query, setQuery] = useState('');
@@ -53,7 +55,7 @@ export default function Lists() {
         data={data}
         keyExtractor={(l) => l.id}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
+        contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
             <Field value={query} onChangeText={setQuery} placeholder="Rechercher…" clearButtonMode="while-editing" autoCorrect={false} />

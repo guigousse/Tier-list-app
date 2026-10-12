@@ -4,11 +4,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TEMPLATES } from '../constants/presets';
 import { colors, radius, spacing } from '../constants/theme';
+import { CONTENT_MAX_WIDTH, useResponsive } from '../lib/layout';
 
 export default function Templates() {
   const insets = useSafeAreaInsets();
+  const { column, gutter, width, isTablet } = useResponsive();
+  const columns = isTablet ? 3 : 2;
+  const inner = Math.min(width, CONTENT_MAX_WIDTH) - gutter * 2;
+  const cardWidth = Math.floor((inner - spacing.md * (columns - 1)) / columns);
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: insets.bottom + spacing.xl }}>
+    <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.lg, paddingBottom: insets.bottom + spacing.xl }]}>
       <Text style={styles.intro}>Choisissez un thème : les cartes sont déjà créées, il ne reste plus qu’à les classer.</Text>
       <View style={styles.grid}>
         {TEMPLATES.map((t) => (
@@ -16,10 +21,12 @@ export default function Templates() {
             key={t.key}
             accessibilityRole="button"
             onPress={() => router.push({ pathname: '/new', params: { template: t.key } })}
-            style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && { opacity: 0.8 }]}
           >
             <Text style={styles.emoji}>{t.emoji}</Text>
-            <Text style={styles.title}>{t.title}</Text>
+            <Text numberOfLines={2} style={styles.title}>
+              {t.title}
+            </Text>
             <Text style={styles.meta}>{t.items.length} cartes</Text>
             <Text numberOfLines={1} style={styles.sample}>
               {t.items.slice(0, 5).map((i) => i.split(' ')[0]).join(' ')}
@@ -35,8 +42,6 @@ const styles = StyleSheet.create({
   intro: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   card: {
-    width: '47.5%',
-    flexGrow: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
