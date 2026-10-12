@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BrandBanner } from '../components/Brand';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
@@ -34,9 +33,18 @@ export default function Home() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: spacing.lg, gap: spacing.xl }}
     >
-      <BrandBanner
-        right={<IconButton icon="settings-outline" label="Réglages" color="#FFFFFF" onPress={() => router.push('/settings')} style={styles.settings} />}
-      />
+      <View style={styles.header}>
+        <View style={{ gap: spacing.xs }}>
+          <Text style={styles.brand}>Tiercraft</Text>
+          <View style={styles.brandStrip}>
+            {TIER_COLORS.slice(0, 5).map((c) => (
+              <View key={c} style={[styles.brandStripSegment, { backgroundColor: c }]} />
+            ))}
+          </View>
+          <Text style={styles.tagline}>Classez tout, de S à D.</Text>
+        </View>
+        <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
+      </View>
 
       <Pressable
         accessibilityRole="button"
@@ -97,7 +105,11 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  settings: { alignSelf: 'flex-start', backgroundColor: 'rgba(15,17,21,0.35)', borderRadius: 999 },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  brand: { color: colors.text, fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
+  brandStrip: { flexDirection: 'row', gap: 3, width: 80 },
+  brandStripSegment: { flex: 1, height: 4, borderRadius: 2 },
+  tagline: { color: colors.textMuted, fontSize: 15 },
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
