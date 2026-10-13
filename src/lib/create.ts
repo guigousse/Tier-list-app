@@ -27,7 +27,10 @@ export function createAndOpen(template?: Template): void {
 export function openPopular(template: Template): void {
   const store = useTierStore.getState();
   const voteKey = popularVoteKey(template);
-  const existing = Object.values(store.lists).find((l) => l.popular?.voteKey === voteKey);
+  const lists = Object.values(store.lists);
+  // A past daily tier list played on its day: open that copy.
+  const existing =
+    (template.day ? lists.find((l) => l.daily?.day === template.day) : undefined) ?? lists.find((l) => l.popular?.voteKey === voteKey);
   const id = existing?.id ?? store.createPopularList(template);
   router.push({ pathname: '/editor/[id]', params: { id } });
   countView(template.key);

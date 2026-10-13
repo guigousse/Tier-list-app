@@ -18,6 +18,8 @@ export type Template = {
   appStoreIds?: (number | undefined)[];
   /** Per item: tier index the card starts in (-1 or missing: to rank). */
   ranks?: number[];
+  /** For a past daily tier list: its day (YYYY-MM-DD). */
+  day?: string;
 };
 
 /** Ready-to-rank card sets, shown in the "Modèles" screen. */

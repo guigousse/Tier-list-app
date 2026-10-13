@@ -4,12 +4,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
-import { fetchDaily, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import { fetchDaily, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
 
 /** Content published online (Supabase), cached so it shows offline too. */
 type CatalogState = {
   templates: RemoteTemplate[];
   daily: DailyList | null;
+  /** Daily tier lists of the previous days: they join the popular tier lists. */
+  pastDailies: DailyList[];
   /** Unique views and favourites of the popular tier lists. */
   stats: TemplateStats;
   /** Applies a change made on this device right away, before the next refresh. */
@@ -23,6 +25,7 @@ export const useCatalog = create<CatalogState>()(
     (set) => ({
       templates: [],
       daily: null,
+      pastDailies: [],
       stats: {},
       bumpStat: (key, field, delta) =>
         set((state) => {
@@ -30,11 +33,17 @@ export const useCatalog = create<CatalogState>()(
           return { stats: { ...state.stats, [key]: { ...current, [field]: Math.max(0, current[field] + delta) } } };
         }),
       refresh: async () => {
-        const [templates, daily, stats] = await Promise.allSettled([fetchTemplates(), fetchDaily(), fetchTemplateStats()]);
+        const [templates, daily, stats, pastDailies] = await Promise.allSettled([
+          fetchTemplates(),
+          fetchDaily(),
+          fetchTemplateStats(),
+          fetchPastDailies(),
+        ]);
         set((state) => ({
           templates: templates.status === 'fulfilled' ? templates.value : state.templates,
           daily: daily.status === 'fulfilled' ? daily.value : state.daily,
           stats: stats.status === 'fulfilled' ? stats.value : state.stats,
+          pastDailies: pastDailies.status === 'fulfilled' ? pastDailies.value : state.pastDailies,
         }));
       },
     }),
@@ -42,7 +51,7 @@ export const useCatalog = create<CatalogState>()(
       name: 'tiercraft-catalog',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ templates: state.templates, daily: state.daily, stats: state.stats }),
+      partialize: (state) => ({ templates: state.templates, daily: state.daily, stats: state.stats, pastDailies: state.pastDailies }),
     },
   ),
 );
@@ -62,12 +71,25 @@ export function popularity(stats: TemplateStats, key: string): number {
   return s ? s.views + s.favorites * 3 : 0;
 }
 
-/** Popular tier lists, most popular first (built-in order breaks ties). */
+/** Popular tier list made from a past daily tier list. */
+export function dailyTemplate(daily: DailyList): Template {
+  return { key: `daily-${daily.day}`, title: daily.title, emoji: daily.emoji, items: daily.items, day: daily.day };
+}
+
+/**
+ * Popular tier lists: the templates and the past daily tier lists (not the one
+ * of the day), most popular first; ties keep templates first, then newest days.
+ */
 export function usePopularTemplates(): Template[] {
-  const templates = useAllTemplates();
+  const all = useAllTemplates();
   const stats = useCatalog((s) => s.stats);
-  return useMemo(
-    () => templates.map((t, i) => ({ t, i })).sort((a, b) => popularity(stats, b.t.key) - popularity(stats, a.t.key) || a.i - b.i).map(({ t }) => t),
-    [templates, stats],
-  );
+  const daily = useCatalog((s) => s.daily);
+  const pastDailies = useCatalog((s) => s.pastDailies);
+  return useMemo(() => {
+    const templates = [...all, ...pastDailies.filter((d) => d.day !== daily?.day).map(dailyTemplate)];
+    return templates
+      .map((t, i) => ({ t, i }))
+      .sort((a, b) => popularity(stats, b.t.key) - popularity(stats, a.t.key) || a.i - b.i)
+      .map(({ t }) => t);
+  }, [all, pastDailies, daily, stats]);
 }

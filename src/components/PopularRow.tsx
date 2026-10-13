@@ -9,6 +9,11 @@ import type { TierList } from '../store/types';
 import { Clickable } from './Clickable';
 
 const HEART = '#FF5C7A';
+
+/** « 13 oct. » for "2026-10-13". */
+function dayLabel(day: string): string {
+  return new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
 const SUCCESS = '#2EAD6B';
 
 type Props = {
@@ -22,9 +27,10 @@ type Props = {
 
 /** A popular tier list on one line: emoji, title, progress, favourites and unique views. */
 export function PopularRow({ template, list, views, favorites, favorite }: Props) {
-  const validated = Boolean(list?.popular?.validatedAt);
+  const validated = Boolean(list?.popular?.validatedAt ?? list?.daily?.validatedAt);
   const ranked = list ? Object.keys(list.cards).length - list.pool.length : 0;
-  const status = validated ? 'Validée' : list ? `En cours · ${ranked}/${template.items.length}` : `${template.items.length} cartes`;
+  const progress = validated ? 'Validée' : list ? `En cours · ${ranked}/${template.items.length}` : `${template.items.length} cartes`;
+  const status = template.day ? `${progress} · du ${dayLabel(template.day)}` : progress;
 
   return (
     <Clickable

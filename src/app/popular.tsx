@@ -3,12 +3,12 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PopularList, usePopularCopies } from '../components/PopularList';
+import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
 import { Chip } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { usePopularTemplates } from '../store/useCatalog';
-import { popularVoteKey, useTierStore } from '../store/useTierStore';
+import { useTierStore } from '../store/useTierStore';
 
 type Filter = 'all' | 'favorites' | 'todo' | 'started' | 'validated';
 type Sort = 'popular' | 'title';
@@ -40,16 +40,16 @@ export default function Popular() {
     const result = templates.filter((t) => {
       // Search the title and the cards.
       if (q && !fold([t.title, ...t.items].join(' ')).includes(q)) return false;
-      const copy = copies.get(popularVoteKey(t));
+      const copy = copies(t);
       switch (filter) {
         case 'favorites':
           return favorites.includes(t.key);
         case 'todo':
           return !copy;
         case 'started':
-          return Boolean(copy && !copy.popular?.validatedAt);
+          return Boolean(copy && !isValidated(copy));
         case 'validated':
-          return Boolean(copy?.popular?.validatedAt);
+          return isValidated(copy);
         default:
           return true;
       }

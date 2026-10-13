@@ -109,3 +109,9 @@ export async function fetchDaily(day = today()): Promise<DailyList | null> {
   if (!r) return null;
   return { day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items };
 }
+
+/** Daily tier lists of the days before `before` (YYYY-MM-DD), newest first. */
+export async function fetchPastDailies(before = today()): Promise<DailyList[]> {
+  const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items&day=lt.${before}&order=day.desc&limit=366`);
+  return rows.map((r) => ({ day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items }));
+}
