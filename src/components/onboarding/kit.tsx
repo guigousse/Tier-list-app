@@ -3,8 +3,6 @@ import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
-  Extrapolation,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -37,10 +35,13 @@ export function useLoop(active: boolean, duration: number): SharedValue<number> 
 }
 
 /** Progress (0 → 1, eased) of the step running from `from` to `to` ms of a loop of `duration` ms. */
-export function step(t: number, duration: number, from: number, to: number, ease = true): number {
+export function step(t: number, duration: number, from: number, to: number, ease: boolean = true): number {
   'worklet';
-  const p = interpolate(t * duration, [from, to], [0, 1], Extrapolation.CLAMP);
-  return ease ? Easing.inOut(Easing.cubic)(p) : p;
+  // Plain arithmetic only: this runs on the UI thread, on every frame.
+  const ms = t * duration;
+  const p = ms <= from ? 0 : ms >= to ? 1 : (ms - from) / (to - from);
+  if (!ease) return p;
+  return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
 }
 
 /** Rounded panel holding a scene. */

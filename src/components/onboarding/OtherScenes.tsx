@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { interpolate, interpolateColor, useAnimatedStyle, useDerivedValue, type SharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
 import { CARD_COLORS, colors, TIER_COLORS } from '../../constants/theme';
 import { Finger, fingerOffset, MiniCard, Stage, step, useLoop, type SceneProps } from './kit';
@@ -26,7 +26,7 @@ function Rows({ top, rowH, labelW, children }: { top: number; rowH: number; labe
 function pop(t: number, duration: number, from: number, to: number): number {
   'worklet';
   const p = step(t, duration, from, to, false);
-  return interpolate(p, [0, 0.7, 1], [0, 1.15, 1]);
+  return p < 0.7 ? (p / 0.7) * 1.15 : 1.15 - ((p - 0.7) / 0.3) * 0.15;
 }
 
 const CREATE_CARDS = ['🍕', '🍣', '🍔', '🌮', '🍩'];
@@ -125,16 +125,18 @@ export function TiersScene({ width: W, height: H, active }: Props) {
 }
 
 function TierLabel({ mix, i, rowH }: { mix: SharedValue<number>; i: number; rowH: number }) {
-  const bg = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(mix.value, [0, 1], [TIER_COLORS[i], CUSTOM_COLORS[i]]) }));
+  // Custom colour fading in over the classic one.
+  const bg = useAnimatedStyle(() => ({ opacity: mix.value }));
   const classic = useAnimatedStyle(() => ({ opacity: 1 - mix.value, transform: [{ translateY: -mix.value * 10 }] }));
   const custom = useAnimatedStyle(() => ({ opacity: mix.value, transform: [{ translateY: (1 - mix.value) * 10 }] }));
   return (
-    <Animated.View style={[styles.label, bg]}>
+    <View style={[styles.label, { backgroundColor: TIER_COLORS[i] }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: CUSTOM_COLORS[i] }, bg]} />
       <Animated.Text style={[styles.labelText, styles.absCenter, { fontSize: rowH * 0.4 }, classic]}>{'SABCD'[i]}</Animated.Text>
       <Animated.Text numberOfLines={1} style={[styles.customText, styles.absCenter, custom]}>
         {CUSTOM_LABELS[i]}
       </Animated.Text>
-    </Animated.View>
+    </View>
   );
 }
 

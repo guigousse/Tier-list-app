@@ -120,13 +120,10 @@ export function RankingScene({ width: W, active }: SceneProps) {
     const lift = step(t.value, DURATION, 1100, 1250) - step(t.value, DURATION, 2500, 2700);
     return {
       opacity: 1 - step(t.value, DURATION, 7300, 7600) + step(t.value, DURATION, 7750, 8000),
-      zIndex: 5,
-      shadowOpacity: lift * 0.5,
       transform: [
         { translateX: from.x + (to.x - from.x) * drag },
         { translateY: from.y + (to.y - from.y) * drag },
         { scale: 1 + lift * 0.12 },
-        { rotate: `${lift * -4}deg` },
       ],
     };
   });
@@ -145,7 +142,7 @@ export function RankingScene({ width: W, active }: SceneProps) {
     const hide = step(t.value, DURATION, 7300, 7600);
     return { opacity: show - hide, transform: [{ translateY: (1 - show) * 80 }] };
   });
-  const barsStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: 0.02 + 0.98 * step(t.value, DURATION, 4400, 5300) }] }));
+  const barsStyle = useAnimatedStyle(() => ({ width: `${2 + 98 * step(t.value, DURATION, 4400, 5300)}%` }));
 
   const image = (name: string) => (icons[name] ? <Image source={{ uri: icons[name] }} style={StyleSheet.absoluteFill} /> : undefined);
 
@@ -195,11 +192,13 @@ export function RankingScene({ width: W, active }: SceneProps) {
           <Text style={styles.voteName}>{BROC.emoji} Broc</Text>
           <Text style={styles.voteHint}>72 % le mettent en S</Text>
         </View>
-        <Animated.View style={[styles.bar, barsStyle]}>
-          {BROC_VOTES.map((v, i) => (
-            <View key={i} style={{ flex: v, backgroundColor: TIER_COLORS[i] }} />
-          ))}
-        </Animated.View>
+        <View style={styles.barTrack}>
+          <Animated.View style={[styles.bar, barsStyle]}>
+            {BROC_VOTES.map((v, i) => (
+              <View key={i} style={{ flex: v, backgroundColor: TIER_COLORS[i] }} />
+            ))}
+          </Animated.View>
+        </View>
       </Animated.View>
 
       <Finger pressed={pressed} style={fingerStyle} size={FINGER} />
@@ -209,7 +208,7 @@ export function RankingScene({ width: W, active }: SceneProps) {
 
 const styles = StyleSheet.create({
   abs: { position: 'absolute', left: 0, top: 0 },
-  lifted: { shadowColor: '#000', shadowRadius: 10, shadowOffset: { width: 0, height: 6 } },
+  lifted: { zIndex: 5, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } },
   header: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 10 },
   headerTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
   row: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', backgroundColor: colors.surface },
@@ -250,5 +249,6 @@ const styles = StyleSheet.create({
   voteRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   voteName: { color: colors.text, fontSize: 14, fontWeight: '700' },
   voteHint: { color: colors.textMuted, fontSize: 12 },
-  bar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', transformOrigin: 'left' },
+  barTrack: { height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: colors.surface },
+  bar: { flexDirection: 'row', height: 12 },
 });
