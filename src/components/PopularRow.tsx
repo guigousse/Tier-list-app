@@ -20,13 +20,14 @@ type Props = {
   template: Template;
   /** The player's copy of this list, if they opened it. */
   list?: TierList;
-  views: number;
+  /** Players who completed (validated) this ranking. */
+  completions: number;
   favorites: number;
   favorite: boolean;
 };
 
-/** A popular tier list on one line: emoji, title, progress, favourites and unique views. */
-export function PopularRow({ template, list, views, favorites, favorite }: Props) {
+/** A popular tier list on one line: emoji, title, progress, favourites and completed rankings. */
+export function PopularRow({ template, list, completions, favorites, favorite }: Props) {
   const validated = Boolean(list?.popular?.validatedAt ?? list?.daily?.validatedAt);
   const ranked = list ? Object.keys(list.cards).length - list.pool.length : 0;
   const progress = validated ? 'Validée' : list ? `En cours · ${ranked}/${template.items.length}` : `${template.items.length} cartes`;
@@ -35,7 +36,7 @@ export function PopularRow({ template, list, views, favorites, favorite }: Props
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={`${template.title}, ${status}, ${favorites} favoris, ${views} vues`}
+      accessibilityLabel={`${template.title}, ${status}, ${favorites} favoris, ${completions} classements complétés`}
       onPress={() => openPopular(template)}
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
     >
@@ -64,8 +65,8 @@ export function PopularRow({ template, list, views, favorites, favorite }: Props
         <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={18} color={favorite ? HEART : colors.textMuted} />
       </Clickable>
       <View style={styles.stat} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={styles.count}>{formatCount(views)}</Text>
-        <Ionicons name="eye-outline" size={18} color={colors.textMuted} />
+        <Text style={styles.count}>{formatCount(completions)}</Text>
+        <Ionicons name="checkmark-done" size={18} color={colors.textMuted} />
       </View>
     </Clickable>
   );

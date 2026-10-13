@@ -19,6 +19,7 @@ import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
 import { syncDailyVotes } from '../../lib/daily';
+import { useCatalog } from '../../store/useCatalog';
 import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
@@ -154,8 +155,11 @@ function Editor({ list }: { list: TierList }) {
         {
           text: 'Valider',
           onPress: () => {
+            const first = !list.popular?.validatedAt;
             const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
             if (!ok) return;
+            // Count this player's first completed ranking right away (stats refresh later).
+            if (list.popular && first) useCatalog.getState().bumpStat(list.popular.key, 'completions', 1);
             syncDailyVotes();
             showResults();
           },

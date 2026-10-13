@@ -84,7 +84,7 @@ export default function Home() {
       <View style={styles.tiles}>
         <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
         <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
-        <Tile icon="sparkles-outline" title="Modèle de liste" onPress={() => router.push('/templates')} />
+        <Tile icon="people-outline" title="Social" onPress={() => router.push('/social')} />
       </View>
 
       <View style={{ gap: spacing.md }}>

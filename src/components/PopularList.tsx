@@ -39,7 +39,7 @@ export function PopularList({ templates }: { templates: Template[] }) {
           key={t.key}
           template={t}
           list={copies(t)}
-          views={stats[t.key]?.views ?? 0}
+          completions={stats[t.key]?.completions ?? 0}
           favorites={stats[t.key]?.favorites ?? 0}
           favorite={favorites.includes(t.key)}
         />

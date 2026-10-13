@@ -19,7 +19,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       signal: controller.signal,
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...init?.headers },
     });
-    if (!res.ok) throw new Error(`Supabase ${res.status}`);
+    if (!res.ok) {
+      // Database errors carry their message, e.g. "player not found".
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.message ?? `Supabase ${res.status}`);
+    }
     // Functions returning nothing answer with an empty body.
     const text = await res.text();
     return (text ? JSON.parse(text) : undefined) as T;
@@ -55,22 +59,19 @@ export function fetchListResults(listKey: string): Promise<DailyResults> {
   return rpc<DailyResults>('get_list_results', { list_key: listKey });
 }
 
-/** Counts this device's view of a popular tier list (once per device). */
-export function recordTemplateView(templateKey: string, deviceId: string): Promise<void> {
-  return rpc<void>('record_template_view', { template_key: templateKey, device_id: deviceId });
-}
-
 /** Adds or removes this device's favourite on a popular tier list. */
 export function setTemplateFavorite(templateKey: string, deviceId: string, favorite: boolean): Promise<void> {
   return rpc<void>('set_template_favorite', { template_key: templateKey, device_id: deviceId, favorite });
 }
 
-export type TemplateStats = Record<string, { views: number; favorites: number }>;
+export type TemplateStats = Record<string, { completions: number; favorites: number }>;
 
-/** Unique views and favourites of the popular tier lists, by template key. */
+/** Completed rankings and favourites of the popular tier lists, by template key. */
 export async function fetchTemplateStats(): Promise<TemplateStats> {
-  const rows = await rpc<{ template_key: string; views: number; favorites: number }[]>('get_template_stats', {});
-  return Object.fromEntries((rows ?? []).map((r) => [r.template_key, { views: Number(r.views), favorites: Number(r.favorites) }]));
+  const rows = await rpc<{ template_key: string; completions: number; favorites: number }[]>('get_template_stats_v2', {});
+  return Object.fromEntries(
+    (rows ?? []).map((r) => [r.template_key, { completions: Number(r.completions), favorites: Number(r.favorites) }]),
+  );
 }
 
 export type DailyResults = {
@@ -114,4 +115,41 @@ export async function fetchDaily(day = today()): Promise<DailyList | null> {
 export async function fetchPastDailies(before = today()): Promise<DailyList[]> {
   const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items&day=lt.${before}&order=day.desc&limit=366`);
   return rows.map((r) => ({ day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items }));
+}
+
+/** Public part of a player profile. `completed`: tier lists they ranked (popular and daily). */
+export type PublicProfile = { id: string; pseudo: string; tag: number; avatar: string; completed: number };
+
+export function createProfile(deviceId: string, secret: string, pseudo: string, avatar: string): Promise<PublicProfile> {
+  return rpc<PublicProfile>('create_profile', { device_id: deviceId, secret, pseudo, avatar });
+}
+
+export function updateProfile(secret: string, pseudo: string, avatar: string): Promise<PublicProfile> {
+  return rpc<PublicProfile>('update_profile', { secret, pseudo, avatar });
+}
+
+export type Friends = { me: PublicProfile; friends: PublicProfile[]; incoming: PublicProfile[]; outgoing: PublicProfile[] };
+
+export function fetchFriends(secret: string): Promise<Friends> {
+  return rpc<Friends>('get_friends', { secret });
+}
+
+/** Asks "pseudo#tag" for friendship: pending, accepted (they had asked too) or already_friends. */
+export function sendFriendRequest(secret: string, pseudo: string, tag: number): Promise<'pending' | 'accepted' | 'already_friends'> {
+  return rpc('send_friend_request', { secret, pseudo, tag });
+}
+
+export function respondFriendRequest(secret: string, other: string, accept: boolean): Promise<void> {
+  return rpc<void>('respond_friend_request', { secret, other, accept });
+}
+
+export function removeFriend(secret: string, other: string): Promise<void> {
+  return rpc<void>('remove_friend', { secret, other });
+}
+
+/** A friend's validated ranking: key is a popular list key or "daily:YYYY-MM-DD". */
+export type FriendVote = { key: string; ranks: number[]; at: string };
+
+export function fetchFriendLists(secret: string, friend: string): Promise<{ profile: PublicProfile; votes: FriendVote[] }> {
+  return rpc('get_friend_lists', { secret, friend });
 }

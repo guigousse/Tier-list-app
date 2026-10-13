@@ -11,6 +11,9 @@ import type { DailyList } from '../lib/api';
 import type { SharedList } from '../lib/share';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 
+/** The player's social profile. `secret` proves it is theirs to the server; never shown. */
+export type Profile = { id: string; secret: string; pseudo: string; tag: number; avatar: string };
+
 export type Settings = {
   haptics: boolean;
   /** Click sound on buttons. */
@@ -44,8 +47,8 @@ type State = {
   deviceId: string;
   /** Keys of the popular tier lists this device marked as favourite. */
   favoriteTemplates: string[];
-  /** Keys of the popular tier lists whose view was already counted online. */
-  viewedTemplates: string[];
+  /** This player's social profile, once created. */
+  profile: Profile | null;
 
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
@@ -80,7 +83,7 @@ type State = {
   validatePopular: (listId: string) => boolean;
   markVoteSent: (listId: string) => void;
   toggleTemplateFavorite: (key: string) => boolean;
-  markTemplateViewed: (key: string) => void;
+  setProfile: (profile: Profile | null) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -127,7 +130,7 @@ type Persisted = {
   settings?: Partial<Settings> & { defaultPresetKey?: string };
   deviceId?: string;
   favoriteTemplates?: string[];
-  viewedTemplates?: string[];
+  profile?: Profile | null;
 };
 
 /** Upgrades data saved by an older version of the app (see `version` below). */
@@ -162,7 +165,7 @@ export const useTierStore = create<State>()(
         settings: DEFAULT_SETTINGS,
         deviceId: newId(),
         favoriteTemplates: [],
-        viewedTemplates: [],
+        profile: null,
 
         createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
           const now = Date.now();
@@ -445,8 +448,7 @@ export const useTierStore = create<State>()(
           return favorite;
         },
 
-        markTemplateViewed: (key) =>
-          set((state) => (state.viewedTemplates.includes(key) ? state : { viewedTemplates: [...state.viewedTemplates, key] })),
+        setProfile: (profile) => set({ profile }),
 
         clearAll: () => {
           Object.values(get().lists).forEach((l) =>
@@ -467,7 +469,7 @@ export const useTierStore = create<State>()(
         settings: state.settings,
         deviceId: state.deviceId,
         favoriteTemplates: state.favoriteTemplates,
-        viewedTemplates: state.viewedTemplates,
+        profile: state.profile,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
@@ -476,7 +478,7 @@ export const useTierStore = create<State>()(
           lists: p.lists ?? current.lists,
           deviceId: p.deviceId ?? current.deviceId,
           favoriteTemplates: p.favoriteTemplates ?? current.favoriteTemplates,
-          viewedTemplates: p.viewedTemplates ?? current.viewedTemplates,
+          profile: p.profile ?? current.profile,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
       },

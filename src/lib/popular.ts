@@ -1,20 +1,6 @@
 import { useCatalog } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
-import { recordTemplateView, setTemplateFavorite } from './api';
-
-/** Counts this device's view of a popular tier list online, once. */
-export function countView(key: string): void {
-  const store = useTierStore.getState();
-  if (store.viewedTemplates.includes(key)) return;
-  recordTemplateView(key, store.deviceId)
-    .then(() => {
-      // Another call may have counted it meanwhile.
-      if (useTierStore.getState().viewedTemplates.includes(key)) return;
-      useTierStore.getState().markTemplateViewed(key);
-      useCatalog.getState().bumpStat(key, 'views', 1);
-    })
-    .catch(() => {});
-}
+import { setTemplateFavorite } from './api';
 
 /** Adds or removes a popular tier list from the favourites, here and online. */
 export function toggleFavorite(key: string): void {

@@ -12,10 +12,10 @@ type CatalogState = {
   daily: DailyList | null;
   /** Daily tier lists of the previous days: they join the popular tier lists. */
   pastDailies: DailyList[];
-  /** Unique views and favourites of the popular tier lists. */
+  /** Completed rankings and favourites of the popular tier lists. */
   stats: TemplateStats;
   /** Applies a change made on this device right away, before the next refresh. */
-  bumpStat: (key: string, field: 'views' | 'favorites', delta: number) => void;
+  bumpStat: (key: string, field: 'completions' | 'favorites', delta: number) => void;
   /** Fetches the latest templates and daily tier list; keeps the cache on failure. */
   refresh: () => Promise<void>;
 };
@@ -29,7 +29,8 @@ export const useCatalog = create<CatalogState>()(
       stats: {},
       bumpStat: (key, field, delta) =>
         set((state) => {
-          const current = state.stats[key] ?? { views: 0, favorites: 0 };
+          const saved = state.stats[key];
+          const current = { completions: saved?.completions ?? 0, favorites: saved?.favorites ?? 0 };
           return { stats: { ...state.stats, [key]: { ...current, [field]: Math.max(0, current[field] + delta) } } };
         }),
       refresh: async () => {
@@ -49,7 +50,9 @@ export const useCatalog = create<CatalogState>()(
     }),
     {
       name: 'tiercraft-catalog',
-      version: 1,
+      // v2: stats count completed rankings instead of views.
+      version: 2,
+      migrate: (persisted) => ({ ...(persisted as object), stats: {} }),
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ templates: state.templates, daily: state.daily, stats: state.stats, pastDailies: state.pastDailies }),
     },
@@ -65,10 +68,10 @@ export function useAllTemplates(): Template[] {
   }, [remote]);
 }
 
-/** Popularity score of a popular tier list: a favourite weighs more than a view. */
+/** Popularity score of a popular tier list: a favourite weighs more than a completed ranking. */
 export function popularity(stats: TemplateStats, key: string): number {
   const s = stats[key];
-  return s ? s.views + s.favorites * 3 : 0;
+  return s ? (s.completions ?? 0) + s.favorites * 3 : 0;
 }
 
 /** Popular tier list made from a past daily tier list. */
