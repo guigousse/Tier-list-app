@@ -21,18 +21,22 @@ TIERS = [(255, 127, 127), (255, 191, 127), (255, 223, 127), (255, 255, 127), (19
 LETTERS = "SABCD"
 # (left edge, right edge) of each bar as a fraction of the mark width: S shortest, D longest.
 BARS = [(0.0, 0.42), (0.0, 0.56), (0.0, 0.70), (0.0, 0.84), (0.0, 0.98)]
-# Emoji sitting at the end of a bar (tier index → emoji).
-BAR_EMOJI = {0: "\U0001F451", 4: "\U0001F4A9"}
+# Sticker drawn at the end of a bar (tier index → image in scripts/icon-parts, rendered
+# from the .svg next to it).
+PARTS = Path(__file__).resolve().parent / "icon-parts"
+BAR_STICKERS = {0: "crown.png", 4: "poop.png"}
 FONT = "/usr/share/fonts/opentype/inter/Inter-Black.otf"
-EMOJI_FONT = "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"
 
 
-def emoji(char: str, px: int) -> Image.Image:
-    """Colour emoji rendered at `px` pixels (Noto Color Emoji only has a 109 px bitmap)."""
-    font = ImageFont.truetype(EMOJI_FONT, 109)
-    img = Image.new("RGBA", (160, 160), (0, 0, 0, 0))
-    ImageDraw.Draw(img).text((80, 80), char, font=font, embedded_color=True, anchor="mm")
-    return img.crop(img.getbbox()).resize((px, px), Image.LANCZOS)
+def sticker(name: str, px: int) -> Image.Image:
+    """The sticker fitted (aspect kept) in a `px` square, centred."""
+    img = Image.open(PARTS / name).convert("RGBA")
+    img = img.crop(img.getbbox())
+    scale = px / max(img.size)
+    img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
+    out = Image.new("RGBA", (px, px), (0, 0, 0, 0))
+    out.alpha_composite(img, ((px - img.width) // 2, (px - img.height) // 2))
+    return out
 
 
 def background(size: int) -> Image.Image:
@@ -94,12 +98,11 @@ def mark(size: int, box: float, mono: bool = False, shadow: bool = True) -> Imag
             d.text((cx, cy), letter, font=font, fill=(26, 20, 40, 255), anchor="mm")
 
     if not mono:
-        for i, char in BAR_EMOJI.items():
+        for i, name in BAR_STICKERS.items():
             a, b, c, e = rect(i)
-            px = round(bar_h * 1.05)
-            em = emoji(char, px)
-            # Centred on the end of the bar, slightly overflowing it like a sticker.
-            img.alpha_composite(em, (round(c - px * 0.62), round((b + e) / 2 - px / 2)))
+            px = round(bar_h * 1.5)
+            # Centred on the end of the bar, overflowing it like a sticker.
+            img.alpha_composite(sticker(name, px), (round(c - px * 0.6), round((b + e) / 2 - px * 0.55)))
     return img.resize((size, size), Image.LANCZOS)
 
 

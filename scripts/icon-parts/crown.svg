@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 532 532">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF08A"/><stop offset=".55" stop-color="#FFC531"/><stop offset="1" stop-color="#F29100"/></linearGradient>
+    <linearGradient id="band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD23F"/><stop offset="1" stop-color="#E07B00"/></linearGradient>
+    <radialGradient id="ruby" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#FF9AA8"/><stop offset=".5" stop-color="#FF2E55"/><stop offset="1" stop-color="#A30028"/></radialGradient>
+    <radialGradient id="saph" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#9FE7FF"/><stop offset=".5" stop-color="#2FA8FF"/><stop offset="1" stop-color="#0B4FB3"/></radialGradient>
+  </defs>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- sticker border -->
+    <path d="M72 380 L52 150 L160 240 L256 96 L352 240 L460 150 L440 380 Z" fill="#fff" stroke="#fff" stroke-width="64"/>
+    <rect x="72" y="360" width="368" height="86" rx="28" fill="#fff" stroke="#fff" stroke-width="64"/>
+    <!-- body -->
+    <path d="M72 380 L52 150 L160 240 L256 96 L352 240 L460 150 L440 380 Z" fill="url(#g)" stroke="#3A2306" stroke-width="20"/>
+    <rect x="72" y="360" width="368" height="86" rx="28" fill="url(#band)" stroke="#3A2306" stroke-width="20"/>
+    <!-- highlight -->
+    <path d="M100 330 L88 200 L150 252" fill="none" stroke="#FFFBD6" stroke-width="16" opacity=".9"/>
+    <path d="M110 384 L400 384" stroke="#FFF4B8" stroke-width="10" opacity=".8"/>
+    <!-- tip balls -->
+    <circle cx="52" cy="146" r="30" fill="url(#g)" stroke="#3A2306" stroke-width="16"/>
+    <circle cx="256" cy="92" r="34" fill="url(#g)" stroke="#3A2306" stroke-width="16"/>
+    <circle cx="460" cy="146" r="30" fill="url(#g)" stroke="#3A2306" stroke-width="16"/>
+    <!-- gems -->
+    <circle cx="256" cy="300" r="40" fill="url(#ruby)" stroke="#3A2306" stroke-width="14"/>
+    <circle cx="150" cy="320" r="26" fill="url(#saph)" stroke="#3A2306" stroke-width="12"/>
+    <circle cx="362" cy="320" r="26" fill="url(#saph)" stroke="#3A2306" stroke-width="12"/>
+    <circle cx="244" cy="286" r="10" fill="#fff" opacity=".85" stroke="none"/>
+  </g>
+</svg>
