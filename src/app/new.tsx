@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Chip, Field, IconButton } from '../components/ui';
-import { TIER_PRESETS, tierColorAt } from '../constants/presets';
+import { Button, Field, IconButton } from '../components/ui';
+import { CLASSIC_TIERS, tierColorAt } from '../constants/presets';
 import { colors, readableTextColor, spacing } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { useAllTemplates } from '../store/useCatalog';
-import { defaultTierLabels, useTierStore } from '../store/useTierStore';
+import { useTierStore } from '../store/useTierStore';
 
 const MAX_TIERS = 12;
 
@@ -24,30 +24,21 @@ export default function NewList() {
   const { column, gutter } = useResponsive();
   const { template: templateKey } = useLocalSearchParams<{ template?: string }>();
   const template = useAllTemplates().find((t) => t.key === templateKey);
-  const defaultPresetKey = useTierStore((s) => s.settings.defaultPresetKey);
   const createList = useTierStore((s) => s.createList);
 
   const [title, setTitle] = useState(template ? template.title : '');
-  const [presetKey, setPresetKey] = useState<string | null>(template?.tiers ? null : defaultPresetKey);
-  const [labels, setLabels] = useState<string[]>(() => template?.tiers ?? defaultTierLabels(defaultPresetKey));
-
-  const applyPreset = (key: string) => {
-    setPresetKey(key);
-    setLabels(defaultTierLabels(key));
-  };
+  // Always starts from the classic S → D tiers (or the template's own), renamable below.
+  const [labels, setLabels] = useState<string[]>(() => template?.tiers ?? CLASSIC_TIERS);
 
   const editLabel = (index: number, value: string) => {
-    setPresetKey(null);
     setLabels((prev) => prev.map((l, i) => (i === index ? value : l)));
   };
 
   const removeLabel = (index: number) => {
-    setPresetKey(null);
     setLabels((prev) => prev.filter((_, i) => i !== index));
   };
 
   const addLabel = () => {
-    setPresetKey(null);
     setLabels((prev) => [...prev, nextLabel(prev)]);
   };
 
@@ -79,18 +70,15 @@ export default function NewList() {
 
         <View style={{ gap: spacing.sm }}>
           <Text style={styles.label}>Rangs</Text>
-          <View style={styles.chips}>
-            {TIER_PRESETS.map((p) => (
-              <Chip key={p.key} label={p.name} selected={presetKey === p.key} onPress={() => applyPreset(p.key)} />
-            ))}
-          </View>
-        </View>
-
-        <View style={{ gap: spacing.sm }}>
           {labels.map((label, i) => (
             <View key={i} style={styles.tierRow}>
               <View style={[styles.tierBadge, { backgroundColor: tierColorAt(i) }]}>
-                <Text numberOfLines={1} style={[styles.tierBadgeText, { color: readableTextColor(tierColorAt(i)) }]}>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.35}
+                  style={[styles.tierBadgeText, { color: readableTextColor(tierColorAt(i)) }]}
+                >
                   {label || '?'}
                 </Text>
               </View>
@@ -120,10 +108,9 @@ export default function NewList() {
 
 const styles = StyleSheet.create({
   label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tierRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tierBadge: { width: 52, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
-  tierBadgeText: { fontWeight: '800', fontSize: 16 },
+  tierBadgeText: { fontWeight: '800', fontSize: 16, alignSelf: 'stretch', textAlign: 'center' },
   hint: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
   footer: { paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
   templateBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, padding: spacing.md, borderRadius: 14 },

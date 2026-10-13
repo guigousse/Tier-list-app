@@ -36,7 +36,7 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: P
         </Text>
         {isCompact ? null : (
           <Text numberOfLines={1} style={[styles.muted, styles.hint]}>
-            Maintenez une carte pour la glisser
+            Touchez ou glissez une carte
           </Text>
         )}
       </View>

@@ -16,6 +16,9 @@ export const TIER_PRESETS: TierPreset[] = [
 
 export const DEFAULT_PRESET_KEY = 'classic';
 
+/** Default tiers of every new tier list. */
+export const CLASSIC_TIERS = ['S', 'A', 'B', 'C', 'D'];
+
 export function tierColorAt(index: number): string {
   return TIER_COLORS[index % TIER_COLORS.length];
 }

@@ -283,30 +283,37 @@ export function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) 
   useEffect(() => registerCard(card.id, zone, ref, scrolls), [card.id, zone, registerCard, scrolls]);
 
   const gesture = useMemo(() => {
-    const pan = Gesture.Pan()
-      .enabled(!locked)
-      .activateAfterLongPress(220)
-      .onStart((e) => {
-        dragX.set(e.absoluteX);
-        dragY.set(e.absoluteY);
-        active.set(true);
-        scheduleOnRN(begin, card);
-      })
-      .onUpdate((e) => {
-        dragX.set(e.absoluteX);
-        dragY.set(e.absoluteY);
-      })
-      .onEnd((e, success) => {
-        scheduleOnRN(drop, card.id, e.absoluteX, e.absoluteY, success);
-      });
+    const dragging = (pan: ReturnType<typeof Gesture.Pan>) =>
+      pan
+        .enabled(!locked)
+        .onStart((e) => {
+          dragX.set(e.absoluteX);
+          dragY.set(e.absoluteY);
+          active.set(true);
+          scheduleOnRN(begin, card);
+        })
+        .onUpdate((e) => {
+          dragX.set(e.absoluteX);
+          dragY.set(e.absoluteY);
+        })
+        .onEnd((e, success) => {
+          scheduleOnRN(drop, card.id, e.absoluteX, e.absoluteY, success);
+        });
+    // Moving across the list's scroll direction grabs the card at once (up out of the
+    // horizontal tray, sideways out of a tier row); along it, the list scrolls. A
+    // short press grabs it in any direction.
+    const swipe = scrolls
+      ? Gesture.Pan().activeOffsetX([-10, 10]).failOffsetY([-12, 12])
+      : Gesture.Pan().activeOffsetY([-10, 10]).failOffsetX([-12, 12]);
+    const hold = Gesture.Pan().activateAfterLongPress(150);
     const tap = Gesture.Tap()
       .maxDuration(400)
       .runOnJS(true)
       .onEnd((_e, success) => {
         if (success) onPress(card);
       });
-    return Gesture.Exclusive(pan, tap);
-  }, [active, begin, card, drop, dragX, dragY, locked, onPress]);
+    return Gesture.Exclusive(Gesture.Race(dragging(swipe), dragging(hold)), tap);
+  }, [active, begin, card, drop, dragX, dragY, locked, onPress, scrolls]);
 
   return (
     <GestureDetector gesture={gesture}>

@@ -9,7 +9,7 @@ function clickPlayer(): AudioPlayer {
     // Respect the silent switch and never pause the user's music.
     setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
     player = createAudioPlayer(require('../../assets/sounds/click.wav'));
-    player.volume = 0.7;
+    player.volume = 0.45;
   }
   return player;
 }

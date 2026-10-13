@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,6 +10,7 @@ import { captureRef } from 'react-native-view-shot';
 
 import { ActionSheet, Button, Field, IconButton, Sheet, type MenuAction } from '../../components/ui';
 import { ShareSheet } from '../../components/ShareSheet';
+import { CardFocus } from '../../components/editor/CardFocus';
 import { CardSheet, type CardDraft } from '../../components/editor/CardSheet';
 import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
@@ -90,10 +92,18 @@ function Editor({ list }: { list: TierList }) {
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
 
+  // Tapping a card shows it large with the tiers below, to place it without dragging.
+  const [focusId, setFocusId] = useState<string | null>(null);
   const openCard = useCallback((card: Card) => {
     playClick();
-    setCardSheet({ cardId: card.id });
+    setFocusId(card.id);
   }, []);
+  const focusCard = focusId ? (list.cards[focusId] ?? null) : null;
+  const focusZone: Zone | null = focusCard
+    ? list.pool.includes(focusCard.id)
+      ? POOL
+      : (list.tiers.find((t) => list.placement[t.id]?.includes(focusCard.id))?.id ?? POOL)
+    : null;
   const openTier = useCallback((tier: { id: string }) => setEditingTierId(tier.id), []);
 
   const createCards = (drafts: CardDraft[]) => drafts.forEach((d) => store.addCard(list.id, d));
@@ -214,7 +224,7 @@ function Editor({ list }: { list: TierList }) {
                 tier={tier}
                 cards={cardsOf(list.placement[tier.id])}
                 onPressTier={daily ? undefined : openTier}
-                onPressCard={daily ? noop : openCard}
+                onPressCard={validated ? noop : openCard}
               />
             ))}
             <Text style={styles.watermark}>Tiercraft</Text>
@@ -241,7 +251,7 @@ function Editor({ list }: { list: TierList }) {
             cards={cardsOf(list.pool)}
             total={total}
             onAdd={daily ? undefined : () => setCardSheet({ cardId: null })}
-            onPressCard={daily ? noop : openCard}
+            onPressCard={openCard}
           />
           {daily ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
@@ -251,6 +261,27 @@ function Editor({ list }: { list: TierList }) {
           ) : null}
         </>
       )}
+
+      <CardFocus
+        card={focusCard}
+        zone={focusZone}
+        tiers={list.tiers}
+        onClose={() => setFocusId(null)}
+        onPlace={(zone) => {
+          if (focusCard) store.moveCard(list.id, focusCard.id, zone);
+          if (useTierStore.getState().settings.haptics) Haptics.selectionAsync().catch(() => {});
+        }}
+        onEdit={
+          daily
+            ? undefined
+            : () => {
+                const id = focusId;
+                setFocusId(null);
+                // iOS cannot present the edit sheet while this modal fades out.
+                setTimeout(() => setCardSheet({ cardId: id }), 350);
+              }
+        }
+      />
 
       <TierSheet
         tier={editingTier}
