@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, readableTextColor, spacing } from '../../constants/theme';
@@ -17,12 +17,10 @@ type Props = {
   onClose: () => void;
   /** Places the card at the end of `zone`. */
   onPlace: (zone: Zone) => void;
-  /** Omitted when the card can't be edited (daily tier list). */
-  onEdit?: () => void;
 };
 
-/** A card shown large in the middle of the screen, with the tiers below to place it in one tap. */
-export function CardFocus({ card, zone, tiers, onClose, onPlace, onEdit }: Props) {
+/** A card shown in the middle of the screen with the tiers below, to place it in one tap (daily tier list). */
+export function CardFocus({ card, zone, tiers, onClose, onPlace }: Props) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const size = Math.round(Math.min(width * 0.62, height * 0.36, 300));
@@ -37,16 +35,16 @@ export function CardFocus({ card, zone, tiers, onClose, onPlace, onEdit }: Props
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fermer" />
         <View style={[styles.top, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
-          {onEdit ? <IconButton icon="create-outline" label="Modifier la carte" color="#FFFFFF" onPress={onEdit} /> : <View />}
+          <View />
           <IconButton icon="close" label="Fermer" color="#FFFFFF" size={26} onPress={onClose} />
         </View>
 
         {card ? (
           <View style={styles.center} pointerEvents="box-none">
-            <Animated.View entering={FadeIn.duration(140)} style={styles.cardShadow}>
+            <View style={styles.cardShadow}>
               {/* The name is written below the card, larger. */}
               <CardView card={card} size={size} showLabel={false} />
-            </Animated.View>
+            </View>
             {card.label ? (
               <Text numberOfLines={2} style={styles.label}>
                 {card.label}

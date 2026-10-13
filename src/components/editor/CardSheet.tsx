@@ -208,6 +208,18 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
             </View>
           </View>
 
+          {card ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text style={styles.label}>Placer dans</Text>
+              <View style={styles.wrap}>
+                {tiers.map((t) => (
+                  <Chip key={t.id} label={t.label} selected={zone === t.id} onPress={() => onMove(t.id)} />
+                ))}
+                <Chip label="Non classée" selected={zone === POOL} onPress={() => onMove(POOL)} />
+              </View>
+            </View>
+          ) : null}
+
           <View style={{ gap: spacing.sm }}>
             <Text style={styles.label}>Image</Text>
             <View style={styles.row}>
@@ -273,17 +285,6 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
             <ColorPicker key={card?.id ?? 'new'} value={color} onChange={setColor} palette={CARD_COLORS} />
           </View>
 
-          {card ? (
-            <View style={{ gap: spacing.sm }}>
-              <Text style={styles.label}>Placer dans</Text>
-              <View style={styles.wrap}>
-                {tiers.map((t) => (
-                  <Chip key={t.id} label={t.label} selected={zone === t.id} onPress={() => onMove(t.id)} />
-                ))}
-                <Chip label="Non classée" selected={zone === POOL} onPress={() => onMove(POOL)} />
-              </View>
-            </View>
-          ) : null}
 
           {card ? <Button variant="ghost" icon="trash-outline" label="Supprimer la carte" onPress={confirmDelete} /> : null}
         </>

@@ -93,12 +93,19 @@ function Editor({ list }: { list: TierList }) {
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
 
-  // Tapping a card shows it large with the tiers below, to place it without dragging.
+  // Tapping a card opens its edit sheet (tier choice included); on the daily tier list,
+  // a view with the tiers to place it.
   const [focusId, setFocusId] = useState<string | null>(null);
-  const openCard = useCallback((card: Card) => {
-    playClick();
-    setFocusId(card.id);
-  }, []);
+  const isDaily = Boolean(list.daily);
+  const openCard = useCallback(
+    (card: Card) => {
+      playClick();
+      // Cards of the daily tier list can't be edited: only offer to place them.
+      if (isDaily) setFocusId(card.id);
+      else setCardSheet({ cardId: card.id });
+    },
+    [isDaily],
+  );
   const focusCard = focusId ? (list.cards[focusId] ?? null) : null;
   const focusZone: Zone | null = focusCard
     ? list.pool.includes(focusCard.id)
@@ -273,16 +280,6 @@ function Editor({ list }: { list: TierList }) {
           if (focusCard) store.moveCard(list.id, focusCard.id, zone);
           if (useTierStore.getState().settings.haptics) Haptics.selectionAsync().catch(() => {});
         }}
-        onEdit={
-          daily
-            ? undefined
-            : () => {
-                const id = focusId;
-                setFocusId(null);
-                // iOS cannot present the edit sheet while this modal fades out.
-                setTimeout(() => setCardSheet({ cardId: id }), 350);
-              }
-        }
       />
 
       <TierSheet
