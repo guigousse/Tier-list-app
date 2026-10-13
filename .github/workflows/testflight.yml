@@ -8,11 +8,10 @@
 #   EXPO_TOKEN  Expo access token (expo.dev → Account settings → Access tokens)
 name: TestFlight
 
-# Runs when a tag "testflight-…" is pushed (git tag testflight-27 && git push origin testflight-27),
-# or by hand from the Actions tab.
+# Runs on a push whose last commit message contains "[testflight]", or by hand from
+# the Actions tab.
 on:
   push:
-    tags: ['testflight-*']
   workflow_dispatch:
 
 concurrency: testflight
@@ -22,6 +21,7 @@ permissions:
 
 jobs:
   ios:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[testflight]')
     runs-on: macos-15
     timeout-minutes: 120
     env:
