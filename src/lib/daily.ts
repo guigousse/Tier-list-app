@@ -1,27 +1,40 @@
 import type { TierList } from '../store/types';
-import { useTierStore } from '../store/useTierStore';
-import { submitDailyVote } from './api';
+import { rankingOf, useTierStore } from '../store/useTierStore';
+import { submitDailyVote, submitListVote } from './api';
 
-/** Tier index (0 = S … 4 = D) of each published item, or null if one isn't ranked. */
+/** Tier index (0 = S … 4 = D) of each published item of a daily list, or null if one isn't ranked. */
 export function dailyRanks(list: TierList): number[] | null {
-  if (!list.daily) return null;
-  const tierOf = new Map<string, number>();
-  list.tiers.forEach((t, i) => (list.placement[t.id] ?? []).forEach((id) => tierOf.set(id, i)));
-  const ranks = list.daily.cardIds.map((id) => tierOf.get(id));
-  return ranks.every((r) => r !== undefined) ? (ranks as number[]) : null;
+  return list.daily ? rankingOf(list, list.daily.cardIds) : null;
 }
 
-/** Sends validated daily rankings that haven't reached the server yet (e.g. validated offline). */
-export async function syncDailyVotes(): Promise<void> {
+/**
+ * Sends validated rankings (daily and popular tier lists) that haven't reached the
+ * server yet, e.g. validated offline.
+ */
+let syncing: Promise<void> | null = null;
+
+export function syncDailyVotes(): Promise<void> {
+  // Several screens ask at once (validation, results): share one run.
+  syncing ??= sendPendingVotes().finally(() => {
+    syncing = null;
+  });
+  return syncing;
+}
+
+async function sendPendingVotes(): Promise<void> {
   const { lists, deviceId, markVoteSent } = useTierStore.getState();
-  const pending = Object.values(lists).filter((l) => l.daily?.validatedAt && !l.daily.voteSent);
-  for (const list of pending) {
-    const ranks = dailyRanks(list);
-    if (!ranks) continue;
+  for (const list of Object.values(lists)) {
     try {
-      // false means this device already voted that day: nothing left to send either way.
-      await submitDailyVote(list.daily!.day, deviceId, ranks);
-      markVoteSent(list.id);
+      if (list.daily?.validatedAt && !list.daily.voteSent) {
+        const ranks = dailyRanks(list);
+        if (!ranks) continue;
+        // false means this device already voted that day: nothing left to send either way.
+        await submitDailyVote(list.daily.day, deviceId, ranks);
+        markVoteSent(list.id);
+      } else if (list.popular?.validatedRanks && !list.popular.voteSent) {
+        await submitListVote(list.popular.voteKey, deviceId, list.popular.validatedRanks);
+        markVoteSent(list.id);
+      }
     } catch {
       // Offline or server error: retried on the next sync.
     }

@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
-import { TIER_PRESETS, DEFAULT_PRESET_KEY, tierColorAt } from '../constants/presets';
+import { TIER_PRESETS, DEFAULT_PRESET_KEY, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
@@ -28,6 +28,7 @@ type NewListInput = {
   cardRanks?: number[];
   /** Where the list comes from (e.g. "daily:2026-10-13"), to find it again instead of duplicating it. */
   importedFrom?: string;
+  emoji?: string;
 };
 
 type State = {
@@ -63,6 +64,10 @@ type State = {
   createDailyList: (daily: DailyList) => string;
   /** Freezes the ranking of a daily tier list once every card is placed. */
   validateDaily: (listId: string) => boolean;
+  /** Creates the local copy of a popular tier list: classic S→D tiers, fixed cards. */
+  createPopularList: (template: Template) => string;
+  /** Records the current ranking of a popular tier list as validated (can be done again). */
+  validatePopular: (listId: string) => boolean;
   markVoteSent: (listId: string) => void;
 };
 
@@ -73,6 +78,21 @@ const DEFAULT_SETTINGS: Settings = {
   showCardLabels: true,
   defaultPresetKey: DEFAULT_PRESET_KEY,
 };
+
+/** Tier index (0 = S …) of each card of `cardIds`, or null if one isn't ranked. */
+export function rankingOf(list: TierList, cardIds: string[]): number[] | null {
+  const tierOf = new Map<string, number>();
+  list.tiers.forEach((t, i) => (list.placement[t.id] ?? []).forEach((id) => tierOf.set(id, i)));
+  const ranks = cardIds.map((id) => tierOf.get(id));
+  return ranks.every((r) => r !== undefined) ? (ranks as number[]) : null;
+}
+
+/** Statistics key of a popular list: its template key and a hash of its cards. */
+export function popularVoteKey(template: Template): string {
+  let h = 5381;
+  for (const ch of template.items.join('\n')) h = ((h * 33) ^ ch.codePointAt(0)!) >>> 0;
+  return `popular:${template.key}:${h.toString(36)}`;
+}
 
 function buildTiers(labels: string[]): Tier[] {
   return labels.map((label, i) => ({ id: newId(), label, color: tierColorAt(i) }));
@@ -109,7 +129,7 @@ export const useTierStore = create<State>()(
         settings: DEFAULT_SETTINGS,
         deviceId: newId(),
 
-        createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom }) => {
+        createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
           const now = Date.now();
           const tiers = buildTiers(tierLabels.length ? tierLabels : ['S']);
           const cards: Record<string, Card> = {};
@@ -131,6 +151,7 @@ export const useTierStore = create<State>()(
             pool,
             favorite: false,
             importedFrom,
+            emoji,
             createdAt: now,
             updatedAt: now,
             openedAt: now,
@@ -329,6 +350,7 @@ export const useTierStore = create<State>()(
             pool: [...cardIds],
             favorite: false,
             daily: { day: daily.day, emoji: daily.emoji, cardIds },
+            emoji: daily.emoji,
             importedFrom: `daily:${daily.day}`,
             createdAt: now,
             updatedAt: now,
@@ -345,11 +367,39 @@ export const useTierStore = create<State>()(
           return true;
         },
 
+        createPopularList: (template) => {
+          const id = get().createList({
+            title: template.title,
+            tierLabels: TIER_PRESETS[0].labels,
+            cardLabels: template.items,
+            cardRanks: template.ranks,
+            emoji: template.emoji,
+          });
+          set((state) => {
+            const list = state.lists[id];
+            // Cards were created in the order of the template items.
+            const cardIds = Object.keys(list.cards);
+            const popular = { key: template.key, voteKey: popularVoteKey(template), cardIds };
+            return { lists: { ...state.lists, [id]: { ...list, popular } } };
+          });
+          return id;
+        },
+
+        validatePopular: (listId) => {
+          const list = get().lists[listId];
+          if (!list?.popular || list.pool.length > 0) return false;
+          const ranks = rankingOf(list, list.popular.cardIds);
+          if (!ranks) return false;
+          patchList(listId, (l) => ({ popular: { ...l.popular!, validatedAt: Date.now(), validatedRanks: ranks, voteSent: false } }));
+          return true;
+        },
+
         markVoteSent: (listId) =>
           set((state) => {
             const list = state.lists[listId];
-            if (!list?.daily) return state;
-            return { lists: { ...state.lists, [listId]: { ...list, daily: { ...list.daily, voteSent: true } } } };
+            if (list?.daily) return { lists: { ...state.lists, [listId]: { ...list, daily: { ...list.daily, voteSent: true } } } };
+            if (list?.popular) return { lists: { ...state.lists, [listId]: { ...list, popular: { ...list.popular, voteSent: true } } } };
+            return state;
           }),
 
         clearAll: () => {

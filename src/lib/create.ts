@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 
 import { CLASSIC_TIERS, type Template } from '../constants/presets';
-import { useTierStore } from '../store/useTierStore';
+import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
 import { downloadCardImage } from './images';
 
@@ -16,9 +16,20 @@ export function createAndOpen(template?: Template): void {
     tierLabels: template?.tiers ?? CLASSIC_TIERS,
     cardLabels: template?.items,
     cardRanks: template?.ranks,
+    emoji: template?.emoji,
   });
   router.push({ pathname: '/editor/[id]', params: { id } });
   if (template?.appStoreIds) attachAppIcons(id, template).catch(() => {});
+}
+
+/** Opens the player's copy of a popular tier list, creating it the first time. */
+export function openPopular(template: Template): void {
+  const store = useTierStore.getState();
+  const voteKey = popularVoteKey(template);
+  const existing = Object.values(store.lists).find((l) => l.popular?.voteKey === voteKey);
+  const id = existing?.id ?? store.createPopularList(template);
+  router.push({ pathname: '/editor/[id]', params: { id } });
+  if (!existing && template.appStoreIds) attachAppIcons(id, template).catch(() => {});
 }
 
 /** Gives the template's cards their app icon, in the background (cards keep their name if offline). */

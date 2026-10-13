@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyCard } from '../components/DailyCard';
+import { PopularGrid } from '../components/PopularGrid';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
@@ -33,20 +34,17 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const lists = useTierStore((s) => s.lists);
-  // Daily tier lists live in their own card and history.
-  const all = useMemo(() => Object.values(lists).filter((l) => !l.daily), [lists]);
+  // Daily and popular tier lists live in their own sections.
+  const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular), [lists]);
   const validatedDaily = useMemo(() => Object.values(lists).filter((l) => l.daily?.validatedAt).length, [lists]);
-  const recent = useMemo(() => [...all].sort((a, b) => b.openedAt - a.openedAt).slice(0, 5), [all]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
   const open = (id: string) => router.push({ pathname: '/editor/[id]', params: { id } });
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[column, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: gutter, gap: spacing.xl }]}
-    >
-      <View style={{ gap: spacing.sm }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Fixed banner: only the content below scrolls. */}
+      <View style={[column, styles.banner, { paddingTop: insets.top + spacing.md, paddingHorizontal: gutter }]}>
         <View style={styles.header}>
           <Text numberOfLines={1} style={styles.brand}>
             Tiercraft
@@ -60,6 +58,10 @@ export default function Home() {
         </View>
       </View>
 
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[column, { paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: gutter, gap: spacing.xl }]}
+      >
       <View style={{ gap: spacing.sm }}>
         <DailyCard />
         {validatedDaily > 0 ? (
@@ -77,25 +79,8 @@ export default function Home() {
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <SectionTitle
-          right={
-            all.length > 0 ? (
-              <Clickable onPress={() => router.push('/lists')} hitSlop={8}>
-                <Text style={styles.link}>Tout voir</Text>
-              </Clickable>
-            ) : undefined
-          }
-        >
-          Récemment ouvertes
-        </SectionTitle>
-        {recent.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🏆</Text>
-            <Text style={styles.emptyText}>Aucune tier list pour l’instant. Créez la première ou partez d’un modèle !</Text>
-          </View>
-        ) : (
-          recent.map((l) => <ListRow key={l.id} list={l} onPress={() => open(l.id)} timestampKey="openedAt" />)
-        )}
+        <SectionTitle>Listes populaires</SectionTitle>
+        <PopularGrid />
       </View>
 
       {favorites.length > 0 ? (
@@ -106,11 +91,13 @@ export default function Home() {
           ))}
         </View>
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  banner: { gap: spacing.sm, paddingBottom: spacing.sm, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   brand: { flexShrink: 1, color: colors.text, fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
   brandStrip: { flexDirection: 'row', gap: 4 },

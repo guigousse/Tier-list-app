@@ -28,6 +28,18 @@ ranks)` et lit uniquement les résultats agrégés via `get_daily_results(day)`
 modifiez pas `items` d'une tier list du jour qui a déjà reçu des votes : les
 votes sont rangés dans l'ordre des cartes.
 
+## Listes populaires
+
+Les modèles (intégrés à l'app ou de la table `templates`) apparaissent sur
+l'accueil comme « Listes populaires » : cartes fixes, rangs S→D, classement à
+valider. Contrairement à la tier list du jour, le joueur peut modifier son
+classement et le revalider : son vote est remplacé.
+
+Table `list_votes` (un vote par appareil et par liste), sans accès direct :
+`submit_list_vote(list_key, device_id, ranks)` et `get_list_results(list_key)`.
+`list_key` vaut `popular:<clé du modèle>:<empreinte des cartes>` : modifier les
+cartes d'un modèle repart donc sur de nouvelles statistiques.
+
 ## Ajouter un modèle
 
 Table `templates` : `key` unique, `title`, `emoji`, `items`, `tiers` (facultatif),

@@ -22,7 +22,7 @@ import { syncDailyVotes } from '../../lib/daily';
 import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
-import { useTierStore } from '../../store/useTierStore';
+import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -86,9 +86,14 @@ function Editor({ list }: { list: TierList }) {
       : (list.tiers.find((t) => list.placement[t.id]?.includes(editingCard.id))?.id ?? POOL)
     : null;
 
-  // The daily tier list has fixed tiers and cards; only the ranking changes, until it is validated.
+  // Daily and popular tier lists have fixed tiers and cards: only the ranking changes.
   const daily = list.daily;
+  const popular = list.popular;
+  const fixed = Boolean(daily || popular);
+  // The daily ranking is frozen once validated; a popular one can change and be validated again.
   const validated = Boolean(daily?.validatedAt);
+  const popularRanks = popular ? rankingOf(list, popular.cardIds) : null;
+  const popularUpToDate = Boolean(popularRanks && popular?.validatedRanks?.join() === popularRanks.join());
 
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
@@ -96,15 +101,14 @@ function Editor({ list }: { list: TierList }) {
   // Tapping a card opens its edit sheet (tier choice included); on the daily tier list,
   // a view with the tiers to place it.
   const [focusId, setFocusId] = useState<string | null>(null);
-  const isDaily = Boolean(list.daily);
   const openCard = useCallback(
     (card: Card) => {
       playClick();
-      // Cards of the daily tier list can't be edited: only offer to place them.
-      if (isDaily) setFocusId(card.id);
+      // Cards of daily and popular tier lists can't be edited: only offer to place them.
+      if (fixed) setFocusId(card.id);
       else setCardSheet({ cardId: card.id });
     },
-    [isDaily],
+    [fixed],
   );
   const focusCard = focusId ? (list.cards[focusId] ?? null) : null;
   const focusZone: Zone | null = focusCard
@@ -140,17 +144,24 @@ function Editor({ list }: { list: TierList }) {
     ]);
 
   const confirmValidate = () =>
-    Alert.alert('Valider votre classement ?', 'Il sera figé et ajouté à votre historique. Vous découvrirez ensuite le classement moyen des joueurs.', [
-      { text: 'Annuler', style: 'cancel' },
-      {
-        text: 'Valider',
-        onPress: () => {
-          if (!store.validateDaily(list.id)) return;
-          syncDailyVotes();
-          showResults();
+    Alert.alert(
+      'Valider votre classement ?',
+      daily
+        ? 'Il sera figé et ajouté à votre historique. Vous découvrirez ensuite le classement moyen des joueurs.'
+        : 'Il comptera dans le classement moyen des joueurs. Vous pourrez le modifier et le valider à nouveau plus tard.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Valider',
+          onPress: () => {
+            const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
+            if (!ok) return;
+            syncDailyVotes();
+            showResults();
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   const confirmDelete = () =>
     Alert.alert('Supprimer la tier list ?', `« ${list.title} » sera définitivement supprimée.`, [
@@ -167,12 +178,11 @@ function Editor({ list }: { list: TierList }) {
 
   const showResults = () => router.push({ pathname: '/results/[id]', params: { id: list.id } });
 
-  const menuActions: MenuAction[] = daily
+  const menuActions: MenuAction[] = fixed
     ? [
         { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
-        validated
-          ? { label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults }
-          : { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
+        ...(validated || popular?.validatedAt ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
+        ...(validated ? [] : [{ label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset } as const]),
         { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ]
     : [
@@ -203,8 +213,8 @@ function Editor({ list }: { list: TierList }) {
         <IconButton icon="chevron-back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
         <Clickable
           accessibilityRole="button"
-          accessibilityHint={daily ? undefined : 'Renommer'}
-          disabled={Boolean(daily)}
+          accessibilityHint={fixed ? undefined : 'Renommer'}
+          disabled={fixed}
           style={styles.titleWrap}
           onPress={() => {
             setTitle(list.title);
@@ -214,9 +224,9 @@ function Editor({ list }: { list: TierList }) {
           <Text numberOfLines={1} style={styles.title}>
             {list.title}
           </Text>
-          {daily ? null : <Ionicons name="pencil" size={14} color={colors.textMuted} />}
+          {fixed ? null : <Ionicons name="pencil" size={14} color={colors.textMuted} />}
         </Clickable>
-        <IconButton icon="share-outline" label="Partager" onPress={daily ? exportImage : () => setShareOpen(true)} />
+        <IconButton icon="share-outline" label="Partager" onPress={fixed ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
 
@@ -232,13 +242,13 @@ function Editor({ list }: { list: TierList }) {
                 key={tier.id}
                 tier={tier}
                 cards={cardsOf(list.placement[tier.id])}
-                onPressTier={daily ? undefined : openTier}
+                onPressTier={fixed ? undefined : openTier}
                 onPressCard={validated ? noop : openCard}
               />
             ))}
             <Text style={styles.watermark}>Tiercraft</Text>
           </View>
-          {daily ? null : (
+          {fixed ? null : (
             <View style={styles.below}>
               <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
             </View>
@@ -256,15 +266,25 @@ function Editor({ list }: { list: TierList }) {
       ) : (
         <>
           <Tray
-            bottomInset={!daily}
+            bottomInset={!fixed}
             cards={cardsOf(list.pool)}
             total={total}
-            onAdd={daily ? undefined : () => setCardSheet({ cardId: null })}
+            onAdd={fixed ? undefined : () => setCardSheet({ cardId: null })}
             onPressCard={openCard}
           />
-          {daily ? (
+          {popularUpToDate ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-              <Button label="Valider mon classement" icon="checkmark-done" onPress={confirmValidate} disabled={list.pool.length > 0} />
+              <Text style={styles.dailyText}>✓ Classement validé · déplacez des cartes pour le modifier</Text>
+              <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
+            </View>
+          ) : fixed ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Button
+                label={popular?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
+                icon="checkmark-done"
+                onPress={confirmValidate}
+                disabled={list.pool.length > 0}
+              />
               {list.pool.length > 0 ? <Text style={styles.dailyText}>Classez toutes les cartes pour valider.</Text> : null}
             </View>
           ) : null}

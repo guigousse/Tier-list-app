@@ -6,39 +6,43 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CardView } from '../../components/CardView';
 import { Button } from '../../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
-import { fetchDailyResults, type DailyResults } from '../../lib/api';
-import { dailyRanks, syncDailyVotes } from '../../lib/daily';
+import { fetchDailyResults, fetchListResults, type DailyResults } from '../../lib/api';
+import { syncDailyVotes } from '../../lib/daily';
 import { formatDay, plural } from '../../lib/format';
 import { useResponsive } from '../../lib/layout';
 import type { Card } from '../../store/types';
-import { useTierStore } from '../../store/useTierStore';
+import { rankingOf, useTierStore } from '../../store/useTierStore';
 
-/** Average ranking of all players for a validated daily tier list. */
+/** Average ranking of all players for a validated daily or popular tier list. */
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter, cardSize } = useResponsive();
   const { id } = useLocalSearchParams<{ id: string }>();
   const list = useTierStore((s) => (id ? s.lists[id] : undefined));
-  const [results, setResults] = useState<{ day: string; data?: DailyResults; failed?: boolean } | null>(null);
+  const [results, setResults] = useState<{ key: string; data?: DailyResults; failed?: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  const day = list?.daily?.day;
-  const validated = Boolean(list?.daily?.validatedAt);
+  const ranked = list?.daily ?? list?.popular;
+  // Results are fetched by daily date or popular statistics key.
+  const key = list?.daily ? list.daily.day : list?.popular?.voteKey;
+  const validated = Boolean(ranked?.validatedAt);
 
   useEffect(() => {
-    if (!day || !validated) return;
+    if (!key || !validated || !list) return;
     let cancelled = false;
+    const isDaily = Boolean(list.daily);
     // Make sure our own vote is counted before reading the results.
     syncDailyVotes()
-      .then(() => fetchDailyResults(day))
-      .then((data) => !cancelled && setResults({ day, data }))
-      .catch(() => !cancelled && setResults({ day, failed: true }));
+      .then(() => (isDaily ? fetchDailyResults(key) : fetchListResults(key)))
+      .then((data) => !cancelled && setResults({ key, data }))
+      .catch(() => !cancelled && setResults({ key, failed: true }));
     return () => {
       cancelled = true;
     };
-  }, [day, validated, attempt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the list object changes on every edit
+  }, [key, validated, attempt]);
 
-  if (!list?.daily) {
+  if (!list || !ranked) {
     return (
       <View style={styles.center}>
         <Text style={styles.muted}>Cette tier list n’existe plus.</Text>
@@ -55,10 +59,11 @@ export default function ResultsScreen() {
     );
   }
 
-  const current = results?.day === day ? results : null;
+  const current = results?.key === key ? results : null;
   const data = current?.data;
-  const mine = dailyRanks(list) ?? [];
-  const cards = list.daily.cardIds.map((cid) => list.cards[cid]).filter(Boolean) as Card[];
+  // For a popular list, "you" is the validated ranking (the list may have changed since).
+  const mine = (list.popular ? list.popular.validatedRanks : rankingOf(list, ranked.cardIds)) ?? [];
+  const cards = ranked.cardIds.map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const size = Math.round(cardSize('small'));
 
   // Each item goes to the tier closest to its average, best averages first.
@@ -76,9 +81,9 @@ export default function ResultsScreen() {
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
       <View style={{ gap: 4 }}>
-        <Text style={styles.kicker}>Tier list du jour · {formatDay(list.daily.day)}</Text>
+        <Text style={styles.kicker}>{list.daily ? `Tier list du jour · ${formatDay(list.daily.day)}` : 'Liste populaire'}</Text>
         <Text style={styles.title}>
-          {list.daily.emoji} {list.title}
+          {list.emoji ?? list.daily?.emoji} {list.title}
         </Text>
         {data ? <Text style={styles.subtitle}>Classement moyen de {plural(data.votes, 'joueur')}</Text> : null}
       </View>

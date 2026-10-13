@@ -20,7 +20,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...init?.headers },
     });
     if (!res.ok) throw new Error(`Supabase ${res.status}`);
-    return (await res.json()) as T;
+    // Functions returning nothing answer with an empty body.
+    const text = await res.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   } finally {
     clearTimeout(timer);
   }
@@ -42,6 +44,15 @@ export async function fetchSharedList(code: string): Promise<SharedList | null> 
 /** Sends the validated ranking of a daily tier list (ranks[i]: 0 = S … 4 = D for item i). */
 export function submitDailyVote(day: string, deviceId: string, ranks: number[]): Promise<boolean> {
   return rpc<boolean>('submit_daily_vote', { day, device_id: deviceId, ranks });
+}
+
+/** Records or replaces this device's ranking of a popular tier list. */
+export function submitListVote(listKey: string, deviceId: string, ranks: number[]): Promise<void> {
+  return rpc<void>('submit_list_vote', { list_key: listKey, device_id: deviceId, ranks });
+}
+
+export function fetchListResults(listKey: string): Promise<DailyResults> {
+  return rpc<DailyResults>('get_list_results', { list_key: listKey });
 }
 
 export type DailyResults = {
