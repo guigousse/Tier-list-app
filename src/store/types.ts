@@ -10,6 +10,8 @@ export type Card = {
   color: string;
   /** File name of the picture inside the app's image directory. */
   imageName?: string;
+  /** Author and licence of a picture taken from Wikimedia Commons, shown with the card. */
+  imageCredit?: string;
 };
 
 /** Where a card lives: a tier id, or the unranked tray at the bottom. */

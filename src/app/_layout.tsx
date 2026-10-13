@@ -64,7 +64,6 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="new" options={{ title: 'Nouvelle tier list', presentation: 'modal' }} />
             <Stack.Screen name="lists" options={{ title: 'Mes tier lists' }} />
             <Stack.Screen name="templates" options={{ title: 'Modèles' }} />
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />

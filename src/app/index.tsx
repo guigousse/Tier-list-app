@@ -8,6 +8,7 @@ import { DailyCard } from '../components/DailyCard';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
+import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
@@ -73,7 +74,7 @@ export default function Home() {
       </View>
 
       <View style={styles.tiles}>
-        <Tile icon="add-circle-outline" title="Nouvelle tier list" subtitle="Partir de zéro" onPress={() => router.push('/new')} />
+        <Tile icon="add-circle-outline" title="Nouvelle tier list" subtitle="Partir de zéro" onPress={() => createAndOpen()} />
         <Tile icon="albums-outline" title="Mes tier lists" subtitle={`${all.length} enregistrée${all.length > 1 ? 's' : ''}`} onPress={() => router.push('/lists')} />
         <Tile icon="sparkles-outline" title="Modèles" subtitle="Prêts à classer" onPress={() => router.push('/templates')} />
       </View>

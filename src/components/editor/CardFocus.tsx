@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, readableTextColor, spacing } from '../../constants/theme';
@@ -43,13 +43,18 @@ export function CardFocus({ card, zone, tiers, onClose, onPlace, onEdit }: Props
 
         {card ? (
           <View style={styles.center} pointerEvents="box-none">
-            <Animated.View entering={ZoomIn.springify().damping(16)} style={styles.cardShadow}>
+            <Animated.View entering={FadeIn.duration(140)} style={styles.cardShadow}>
               {/* The name is written below the card, larger. */}
               <CardView card={card} size={size} showLabel={false} />
             </Animated.View>
             {card.label ? (
               <Text numberOfLines={2} style={styles.label}>
                 {card.label}
+              </Text>
+            ) : null}
+            {card.imageName && card.imageCredit ? (
+              <Text numberOfLines={2} style={styles.credit}>
+                Image : {card.imageCredit}
               </Text>
             ) : null}
           </View>
@@ -100,6 +105,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl },
   cardShadow: { borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.6, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 16 },
   label: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  credit: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -spacing.sm },
   bottom: { gap: spacing.sm },
   hint: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
   carousel: { gap: spacing.sm, paddingHorizontal: spacing.lg, flexGrow: 1, justifyContent: 'center' },

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -206,6 +207,7 @@ function Editor({ list }: { list: TierList }) {
           <Text numberOfLines={1} style={styles.title}>
             {list.title}
           </Text>
+          {daily ? null : <Ionicons name="pencil" size={14} color={colors.textMuted} />}
         </Clickable>
         <IconButton icon="share-outline" label="Partager" onPress={daily ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
@@ -344,8 +346,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.sm,
   },
-  titleWrap: { flex: 1, paddingHorizontal: spacing.xs },
-  title: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
+  title: { color: colors.text, fontSize: 18, fontWeight: '800', flexShrink: 1 },
   capture: { backgroundColor: colors.background },
   watermark: { color: colors.border, fontSize: 11, fontWeight: '700', textAlign: 'right', padding: 6 },
   below: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },

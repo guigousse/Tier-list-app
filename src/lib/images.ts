@@ -46,6 +46,15 @@ export async function pickCardImage(source: 'library' | 'camera'): Promise<strin
   return name;
 }
 
+/** Downloads a picture from the web and stores a copy. Returns its file name. */
+export async function downloadCardImage(url: string): Promise<string> {
+  if (Platform.OS === 'web') return url;
+  const ext = url.match(/\.(jpe?g|png|webp)(?:$|\?)/i)?.[1]?.toLowerCase() ?? 'jpg';
+  const name = `${newId()}.${ext === 'jpeg' ? 'jpg' : ext}`;
+  await File.downloadFileAsync(url, new File(imagesDir(), name));
+  return name;
+}
+
 export function deleteCardImage(name: string | undefined): void {
   if (!name || name.includes(':')) return;
   try {

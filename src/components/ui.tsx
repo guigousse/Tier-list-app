@@ -50,7 +50,9 @@ export function Button({ label, onPress, icon, variant = 'primary', disabled, st
       ]}
     >
       {icon ? <Ionicons name={icon} size={18} color={fg} /> : null}
-      <Text style={[styles.buttonLabel, { color: fg }]}>{label}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.buttonLabel, { color: fg, flexShrink: 1 }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }

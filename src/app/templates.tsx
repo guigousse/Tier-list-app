@@ -1,8 +1,8 @@
-import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
+import { createAndOpen } from '../lib/create';
 import { CONTENT_MAX_WIDTH, useResponsive } from '../lib/layout';
 import { useAllTemplates } from '../store/useCatalog';
 import { Clickable } from '../components/Clickable';
@@ -22,7 +22,7 @@ export default function Templates() {
           <Clickable
             key={t.key}
             accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/new', params: { template: t.key } })}
+            onPress={() => createAndOpen(t)}
             style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && { opacity: 0.8 }]}
           >
             <Text style={styles.emoji}>{t.emoji}</Text>

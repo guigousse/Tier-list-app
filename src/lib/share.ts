@@ -123,13 +123,13 @@ export function parsePayload(data: unknown, code: string): SharedList | null {
   const tiers = (d.r as unknown[])
     .slice(0, MAX_TIERS)
     .filter(Array.isArray)
-    .map(([label, color]) => ({ label: text(label, 30) || '?', color: isHex(color) ? color : '#7F7FFF' }));
+    .map(([label, color]) => ({ label: text(label, 50) || '?', color: isHex(color) ? color : '#7F7FFF' }));
   if (tiers.length === 0) return null;
   const cards = (d.c as unknown[])
     .slice(0, MAX_CARDS)
     .filter(Array.isArray)
     .map(([label, color, tier]) => ({
-      label: text(label, 40),
+      label: text(label, 80),
       color: isHex(color) ? color : '#2B2F3A',
       tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
     }));

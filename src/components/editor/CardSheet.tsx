@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { CARD_COLORS, colors, spacing } from '../../constants/theme';
-import { deleteCardImage, pickCardImage } from '../../lib/images';
+import { deleteCardImage, downloadCardImage, pickCardImage } from '../../lib/images';
+import { findImages, searchTerm, type WikiImage } from '../../lib/wikimedia';
 import { POOL, type Card, type Tier, type Zone } from '../../store/types';
 import { CardView } from '../CardView';
 import { ColorPicker } from '../ColorPicker';
@@ -27,10 +28,16 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
   const [label, setLabel] = useState('');
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [imageName, setImageName] = useState<string | undefined>();
+  const [imageCredit, setImageCredit] = useState<string | undefined>();
   const [bulk, setBulk] = useState(false);
   const [bulkText, setBulkText] = useState('');
   /** Pictures picked during this session of the sheet, not saved yet. */
   const pending = useRef(new Set<string>());
+
+  /** Wikimedia pictures proposed for the card name, browsed one at a time. */
+  const [web, setWeb] = useState<{ images: WikiImage[]; index: number } | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [shown, setShown] = useState<{ visible: boolean; cardId?: string }>({ visible: false });
 
@@ -41,8 +48,10 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
       setLabel(card?.label ?? '');
       setColor(card?.color ?? CARD_COLORS[0]);
       setImageName(card?.imageName);
+      setImageCredit(card?.imageCredit);
       setBulk(false);
       setBulkText('');
+      setWeb(null);
     }
   }
 
@@ -62,12 +71,48 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
       if (!name) return;
       pending.current.add(name);
       setImageName(name);
+      setImageCredit(undefined);
     } catch {
       Alert.alert('Image indisponible', "Impossible d'importer cette image.");
     }
   };
 
-  const draft = (): CardDraft => ({ label: label.trim(), color, imageName });
+  const searchWeb = async () => {
+    const term = searchTerm(label);
+    if (!term) {
+      Alert.alert('Nom manquant', 'Donnez d’abord un nom à la carte pour chercher une image.');
+      return;
+    }
+    setSearching(true);
+    try {
+      const images = await findImages(term);
+      if (images.length === 0) Alert.alert('Aucune image trouvée', `Wikimedia n’a pas d’image pertinente pour « ${term} ».`);
+      else setWeb({ images, index: 0 });
+    } catch {
+      Alert.alert('Recherche impossible', 'Wikimedia est injoignable : vérifiez votre connexion.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const applyWebImage = async () => {
+    const image = web?.images[web.index];
+    if (!image) return;
+    setSaving(true);
+    try {
+      const name = await downloadCardImage(image.url);
+      pending.current.add(name);
+      setImageName(name);
+      setImageCredit(`${image.credit || 'Auteur inconnu'} — Wikimedia Commons`);
+      setWeb(null);
+    } catch {
+      Alert.alert('Image indisponible', "Impossible de télécharger cette image.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const draft = (): CardDraft => ({ label: label.trim(), color, imageName, imageCredit: imageName ? imageCredit : undefined });
 
   const saveSingle = (keepOpen: boolean) => {
     const d = draft();
@@ -82,6 +127,7 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
     if (keepOpen) {
       setLabel('');
       setImageName(undefined);
+      setImageCredit(undefined);
     } else {
       onClose();
     }
@@ -152,7 +198,7 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
                 label="Nom"
                 value={label}
                 onChangeText={setLabel}
-                maxLength={40}
+                maxLength={80}
                 placeholder="Ex. 🍕 Pizza"
                 autoFocus={!card}
                 returnKeyType="done"
@@ -169,8 +215,57 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
               {Platform.OS !== 'web' ? (
                 <Button style={styles.flex} variant="secondary" icon="camera-outline" label="Caméra" onPress={() => pick('camera')} />
               ) : null}
+              <Button
+                style={styles.flex}
+                variant="secondary"
+                icon="globe-outline"
+                label={searching ? 'Recherche…' : 'Wikimedia'}
+                onPress={searchWeb}
+                disabled={searching}
+              />
             </View>
-            {imageName ? <Button variant="ghost" icon="close-circle-outline" label="Retirer l'image" onPress={() => setImageName(undefined)} /> : null}
+            {web ? (
+              <View style={styles.proposal}>
+                <Image source={{ uri: web.images[web.index].url }} style={styles.proposalImage} resizeMode="cover" />
+                <View style={{ flex: 1, gap: spacing.sm }}>
+                  <Text numberOfLines={2} style={styles.credit}>
+                    {web.images[web.index].credit || 'Wikimedia Commons'}
+                  </Text>
+                  <Text style={styles.creditSource}>
+                    Wikimedia Commons · {web.index + 1}/{web.images.length}
+                  </Text>
+                  <View style={styles.row}>
+                    {saving ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Button style={styles.flex} icon="checkmark" label="Utiliser" onPress={applyWebImage} />
+                    )}
+                  </View>
+                  <View style={styles.row}>
+                    {web.images.length > 1 ? (
+                      <Button
+                        style={styles.flex}
+                        variant="secondary"
+                        label="Autre"
+                        onPress={() => setWeb({ ...web, index: (web.index + 1) % web.images.length })}
+                      />
+                    ) : null}
+                    <Button style={styles.flex} variant="ghost" label="Annuler" onPress={() => setWeb(null)} />
+                  </View>
+                </View>
+              </View>
+            ) : null}
+            {imageName ? (
+              <Button
+                variant="ghost"
+                icon="close-circle-outline"
+                label="Retirer l'image"
+                onPress={() => {
+                  setImageName(undefined);
+                  setImageCredit(undefined);
+                }}
+              />
+            ) : null}
           </View>
 
           <View style={{ gap: spacing.sm }}>
@@ -202,5 +297,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   flex: { flex: 1, paddingHorizontal: spacing.sm },
+  proposal: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surfaceAlt, borderRadius: 14, padding: spacing.md },
+  proposalImage: { width: 110, height: 110, borderRadius: 10, backgroundColor: colors.border },
+  credit: { color: colors.text, fontSize: 13, fontWeight: '600' },
+  creditSource: { color: colors.textMuted, fontSize: 12 },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
 });

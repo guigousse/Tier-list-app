@@ -8,6 +8,7 @@ import { ShareSheet } from '../components/ShareSheet';
 import { ActionSheet, Button, Chip, Field, Sheet } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
+import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 
@@ -75,7 +76,7 @@ export default function Lists() {
             <Text style={styles.emptyText}>
               {ownCount === 0 ? 'Vous n’avez encore aucune tier list.' : 'Aucun résultat.'}
             </Text>
-            {ownCount === 0 ? <Button label="Créer une tier list" icon="add" onPress={() => router.push('/new')} /> : null}
+            {ownCount === 0 ? <Button label="Créer une tier list" icon="add" onPress={() => createAndOpen()} /> : null}
           </View>
         }
         renderItem={({ item }) => <ListRow list={item} onPress={() => open(item.id)} onMore={() => setMenuFor(item)} />}
