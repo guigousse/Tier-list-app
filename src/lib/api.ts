@@ -55,6 +55,24 @@ export function fetchListResults(listKey: string): Promise<DailyResults> {
   return rpc<DailyResults>('get_list_results', { list_key: listKey });
 }
 
+/** Counts this device's view of a popular tier list (once per device). */
+export function recordTemplateView(templateKey: string, deviceId: string): Promise<void> {
+  return rpc<void>('record_template_view', { template_key: templateKey, device_id: deviceId });
+}
+
+/** Adds or removes this device's favourite on a popular tier list. */
+export function setTemplateFavorite(templateKey: string, deviceId: string, favorite: boolean): Promise<void> {
+  return rpc<void>('set_template_favorite', { template_key: templateKey, device_id: deviceId, favorite });
+}
+
+export type TemplateStats = Record<string, { views: number; favorites: number }>;
+
+/** Unique views and favourites of the popular tier lists, by template key. */
+export async function fetchTemplateStats(): Promise<TemplateStats> {
+  const rows = await rpc<{ template_key: string; views: number; favorites: number }[]>('get_template_stats', {});
+  return Object.fromEntries((rows ?? []).map((r) => [r.template_key, { views: Number(r.views), favorites: Number(r.favorites) }]));
+}
+
 export type DailyResults = {
   votes: number;
   /** Per published item, in order: average tier (0 = S … 4 = D) and votes per tier. */

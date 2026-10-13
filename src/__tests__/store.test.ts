@@ -85,6 +85,25 @@ describe('popular tier lists', () => {
 describe('migrateStore', () => {
   it('drops the removed tier preset setting from v1 data', () => {
     const migrated = migrateStore({ settings: { haptics: true, defaultPresetKey: 'classic' }, lists: {} }, 1);
-    expect(migrated.settings).toEqual({ haptics: true, onboarded: true });
+    expect(migrated.settings).toEqual({ haptics: true, onboarded: false });
+  });
+
+  it('shows the welcome screens only to people without tier lists', () => {
+    expect(migrateStore({ settings: {}, lists: { a: {} } }, 2).settings?.onboarded).toBe(true);
+    expect(migrateStore({ settings: {}, lists: {} }, 2).settings?.onboarded).toBe(false);
+  });
+
+  it('keeps the welcome screens seen in v3 data', () => {
+    expect(migrateStore({ settings: { onboarded: false }, lists: {} }, 3).settings?.onboarded).toBe(false);
+  });
+});
+
+describe('template favourites', () => {
+  it('toggles a popular tier list favourite', () => {
+    const { toggleTemplateFavorite } = useTierStore.getState();
+    expect(toggleTemplateFavorite('fruits')).toBe(true);
+    expect(useTierStore.getState().favoriteTemplates).toContain('fruits');
+    expect(toggleTemplateFavorite('fruits')).toBe(false);
+    expect(useTierStore.getState().favoriteTemplates).not.toContain('fruits');
   });
 });

@@ -66,6 +66,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="lists" options={{ title: 'Mes listes' }} />
             <Stack.Screen name="templates" options={{ title: 'Modèles de liste' }} />
+            <Stack.Screen name="popular" options={{ title: 'Listes populaires' }} />
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
             <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />

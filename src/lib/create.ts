@@ -4,6 +4,7 @@ import { CLASSIC_TIERS, type Template } from '../constants/presets';
 import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
 import { downloadCardImage } from './images';
+import { countView } from './popular';
 
 /**
  * Creates a tier list (classic S → D tiers, or the template's) and opens it in the
@@ -29,6 +30,7 @@ export function openPopular(template: Template): void {
   const existing = Object.values(store.lists).find((l) => l.popular?.voteKey === voteKey);
   const id = existing?.id ?? store.createPopularList(template);
   router.push({ pathname: '/editor/[id]', params: { id } });
+  countView(template.key);
   if (!existing && template.appStoreIds) attachAppIcons(id, template).catch(() => {});
 }
 

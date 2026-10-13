@@ -5,12 +5,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyCard } from '../components/DailyCard';
-import { PopularGrid } from '../components/PopularGrid';
+import { PopularList } from '../components/PopularList';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
+import { usePopularTemplates } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
 
@@ -38,6 +39,8 @@ export default function Home() {
   const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular), [lists]);
   const validatedDaily = useMemo(() => Object.values(lists).filter((l) => l.daily?.validatedAt).length, [lists]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
+
+  const popular = usePopularTemplates();
 
   const open = (id: string) => router.push({ pathname: '/editor/[id]', params: { id } });
 
@@ -86,7 +89,13 @@ export default function Home() {
 
       <View style={{ gap: spacing.md }}>
         <SectionTitle>Listes populaires</SectionTitle>
-        <PopularGrid />
+        <PopularList templates={popular.slice(0, 5)} />
+        {popular.length > 5 ? (
+          <Clickable accessibilityRole="button" onPress={() => router.push('/popular')} hitSlop={8} style={styles.historyLink}>
+            <Text style={styles.link}>Voir plus</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </Clickable>
+        ) : null}
       </View>
 
       {favorites.length > 0 ? (

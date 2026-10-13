@@ -42,6 +42,10 @@ type State = {
   settings: Settings;
   /** Anonymous id of this install, sent with daily votes (one vote per device and day). */
   deviceId: string;
+  /** Keys of the popular tier lists this device marked as favourite. */
+  favoriteTemplates: string[];
+  /** Keys of the popular tier lists whose view was already counted online. */
+  viewedTemplates: string[];
 
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
@@ -75,6 +79,8 @@ type State = {
   /** Records the current ranking of a popular tier list as validated (can be done again). */
   validatePopular: (listId: string) => boolean;
   markVoteSent: (listId: string) => void;
+  toggleTemplateFavorite: (key: string) => boolean;
+  markTemplateViewed: (key: string) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -120,6 +126,8 @@ type Persisted = {
   lists?: Record<string, TierList>;
   settings?: Partial<Settings> & { defaultPresetKey?: string };
   deviceId?: string;
+  favoriteTemplates?: string[];
+  viewedTemplates?: string[];
 };
 
 /** Upgrades data saved by an older version of the app (see `version` below). */
@@ -130,8 +138,8 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
     if (data.settings) delete data.settings.defaultPresetKey;
   }
   if (version < 3) {
-    // v3: welcome screens. People who already used the app don't need them.
-    data.settings = { ...data.settings, onboarded: true };
+    // v3: welcome screens. People who already made tier lists don't need them.
+    data.settings = { ...data.settings, onboarded: Object.keys(data.lists ?? {}).length > 0 };
   }
   return data;
 }
@@ -153,6 +161,8 @@ export const useTierStore = create<State>()(
         lists: {},
         settings: DEFAULT_SETTINGS,
         deviceId: newId(),
+        favoriteTemplates: [],
+        viewedTemplates: [],
 
         createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
           const now = Date.now();
@@ -427,6 +437,17 @@ export const useTierStore = create<State>()(
             return state;
           }),
 
+        toggleTemplateFavorite: (key) => {
+          const favorite = !get().favoriteTemplates.includes(key);
+          set((state) => ({
+            favoriteTemplates: favorite ? [...state.favoriteTemplates, key] : state.favoriteTemplates.filter((k) => k !== key),
+          }));
+          return favorite;
+        },
+
+        markTemplateViewed: (key) =>
+          set((state) => (state.viewedTemplates.includes(key) ? state : { viewedTemplates: [...state.viewedTemplates, key] })),
+
         clearAll: () => {
           Object.values(get().lists).forEach((l) =>
             Object.values(l.cards).forEach((c) => deleteCardImage(c.imageName)),
@@ -438,16 +459,24 @@ export const useTierStore = create<State>()(
     {
       name: 'tiercraft-store',
       // Bump with every change to the persisted shape, and handle it in `migrate`.
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => migrateStore(persisted, version),
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ lists: state.lists, settings: state.settings, deviceId: state.deviceId }),
+      partialize: (state) => ({
+        lists: state.lists,
+        settings: state.settings,
+        deviceId: state.deviceId,
+        favoriteTemplates: state.favoriteTemplates,
+        viewedTemplates: state.viewedTemplates,
+      }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
         return {
           ...current,
           lists: p.lists ?? current.lists,
           deviceId: p.deviceId ?? current.deviceId,
+          favoriteTemplates: p.favoriteTemplates ?? current.favoriteTemplates,
+          viewedTemplates: p.viewedTemplates ?? current.viewedTemplates,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
       },
