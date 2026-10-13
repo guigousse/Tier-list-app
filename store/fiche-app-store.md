@@ -60,11 +60,15 @@ Tout le reste : non collecté (pas de coordonnées, de localisation, d’histori
 
 ## Captures d’écran
 
-iPhone 6,9 pouces (1320 × 2868) obligatoires : voir `store/screenshots/`. Ordre conseillé :
-1. Tier list du jour et accueil
-2. Classement d’une liste (éditeur)
-3. Classement moyen et score de proximité
-4. Partage par code
+iPhone 6,9 pouces (1320 × 2868) obligatoires : voir `store/screenshots/`, à envoyer dans l’ordre des numéros (les six images forment un panorama continu) :
+1. « Classez tout, de S à D. » : titre et accueil
+2. « Glissez. Tranchez. » : classement
+3. « Un défi chaque jour. » : tier list du jour
+4. « D’accord avec les autres ? » : classement moyen
+5. « Vos rangs, vos règles. » : personnalisation
+6. « Un code, et c’est partagé. » : partage
+
+Pour les régénérer : écrans bruts dans `store/screens/`, mise en page dans `scripts/store-screenshots/panorama.html`, puis `node scripts/store-screenshots/render.mjs` (Playwright).
 
 ## Avant de soumettre
 
