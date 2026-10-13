@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -124,6 +125,7 @@ export default function Settings() {
 
       <View style={styles.group}>
         <Text style={styles.groupTitle}>À propos</Text>
+        <Button variant="secondary" icon="play-circle-outline" label="Revoir la présentation" onPress={() => router.push('/welcome')} />
         <Button variant="secondary" icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => Linking.openURL(`https://${SHARE_HOST}/confidentialite`)} />
         <Button variant="secondary" icon="help-circle-outline" label="Assistance" onPress={() => Linking.openURL(`https://${SHARE_HOST}/support`)} />
         <Row label="Version">
