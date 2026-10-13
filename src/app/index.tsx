@@ -12,10 +12,15 @@ import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 
 function Tile({ icon, title, subtitle, onPress }: { icon: IconName; title: string; subtitle: string; onPress: () => void }) {
+  const { isCompact } = useResponsive();
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.tile, pressed && { opacity: 0.8 }]}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, isCompact && styles.tileCompact, pressed && { opacity: 0.8 }]}
+    >
       <Ionicons name={icon} size={24} color={colors.primary} />
-      <Text numberOfLines={2} style={styles.tileTitle}>
+      <Text numberOfLines={2} style={[styles.tileTitle, isCompact && styles.tileTitleCompact]}>
         {title}
       </Text>
       <Text numberOfLines={2} style={styles.tileSubtitle}>
@@ -56,25 +61,6 @@ export default function Home() {
         </View>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/new')}
-        style={({ pressed }) => [styles.hero, pressed && { opacity: 0.9 }]}
-      >
-        <View style={styles.heroTiers}>
-          {['S', 'A', 'B', 'C', 'D'].map((l, i) => (
-            <View key={l} style={[styles.heroTier, { backgroundColor: TIER_COLORS[i] }]}>
-              <Text style={styles.heroTierLabel}>{l}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text numberOfLines={2} style={styles.heroTitle}>Nouvelle tier list</Text>
-          <Text style={styles.heroSubtitle}>Partez de zéro et ajoutez vos cartes.</Text>
-        </View>
-        <Ionicons name="add-circle" size={36} color={colors.primaryText} />
-      </Pressable>
-
       <View style={{ gap: spacing.sm }}>
         <DailyCard />
         {validatedDaily > 0 ? (
@@ -86,6 +72,7 @@ export default function Home() {
       </View>
 
       <View style={styles.tiles}>
+        <Tile icon="add-circle-outline" title="Nouvelle tier list" subtitle="Partir de zéro" onPress={() => router.push('/new')} />
         <Tile icon="albums-outline" title="Mes tier lists" subtitle={`${all.length} enregistrée${all.length > 1 ? 's' : ''}`} onPress={() => router.push('/lists')} />
         <Tile icon="sparkles-outline" title="Modèles" subtitle="Prêts à classer" onPress={() => router.push('/templates')} />
       </View>
@@ -129,29 +116,18 @@ const styles = StyleSheet.create({
   brand: { flexShrink: 1, color: colors.text, fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
   brandStrip: { flexDirection: 'row', gap: 4 },
   brandStripSegment: { flex: 1, height: 4, borderRadius: 2 },
-  hero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-    backgroundColor: colors.primary,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-  },
-  heroTiers: { width: 44, gap: 3 },
-  heroTier: { height: 14, borderRadius: 3, justifyContent: 'center', paddingLeft: 4 },
-  heroTierLabel: { fontSize: 9, fontWeight: '800', color: '#111' },
-  heroTitle: { color: colors.primaryText, fontSize: 20, fontWeight: '800' },
-  heroSubtitle: { color: 'rgba(255,255,255,0.85)', fontSize: 14 },
   tiles: { flexDirection: 'row', gap: spacing.md },
   tile: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     gap: 6,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  tileCompact: { padding: spacing.sm },
+  tileTitleCompact: { fontSize: 14 },
   tileTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   tileSubtitle: { color: colors.textMuted, fontSize: 13 },
   historyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingVertical: spacing.xs },
