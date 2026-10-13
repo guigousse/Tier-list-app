@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["9D78779LKL.com.guigousse.TierCraft"],
+        "components": [{ "/": "/import", "comment": "Shared tier lists: /import?d=<code>" }]
+      }
+    ]
+  }
+}

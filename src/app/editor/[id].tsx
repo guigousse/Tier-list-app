@@ -15,7 +15,7 @@ import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
-import { sendList } from '../../lib/share';
+import { copyLink, sendList } from '../../lib/share';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -189,7 +189,7 @@ function Editor({ list }: { list: TierList }) {
         actions={[
           { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
           { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
-          { label: 'Envoyer la tier list', icon: 'paper-plane-outline', onPress: () => sendList(list) },
+          { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
           { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
           {
             label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
@@ -214,7 +214,8 @@ function Editor({ list }: { list: TierList }) {
         onClose={() => setShareOpen(false)}
         title="Partager"
         actions={[
-          { label: 'Envoyer la tier list (modifiable)', icon: 'paper-plane-outline', onPress: () => sendList(list) },
+          { label: 'Copier le lien', icon: 'link-outline', onPress: () => copyLink(list) },
+          { label: 'Envoyer le lien…', icon: 'paper-plane-outline', onPress: () => sendList(list) },
           { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         ]}
       />

@@ -22,7 +22,8 @@ trap 'cp "$tmp/eas.json" eas.json; rm -rf "$tmp"' EXIT
 ) > "$tmp/AuthKey.p8"
 openssl pkey -in "$tmp/AuthKey.p8" -noout
 
-bunx eas-cli@latest build -p ios --profile production --non-interactive --wait --json > "$tmp/build.json"
+# The key also lets EAS sync capabilities (e.g. Associated Domains) with Apple.
+EXPO_ASC_API_KEY_PATH="$tmp/AuthKey.p8" bunx eas-cli@latest build -p ios --profile production --non-interactive --wait --json > "$tmp/build.json"
 build_id=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[0]["id"])' "$tmp/build.json")
 echo "Build: https://expo.dev/accounts/guigousse/projects/tiercraft/builds/$build_id"
 

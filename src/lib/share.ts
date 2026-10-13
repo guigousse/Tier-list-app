@@ -1,4 +1,5 @@
-import { Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { Alert, Platform, Share } from 'react-native';
 
 import type { TierList } from '../store/types';
 
@@ -7,6 +8,8 @@ import type { TierList } from '../store/types';
  * the sender's phone), cards keep their tier and order.
  */
 export type SharedList = {
+  /** The encoded form, used to recognise a link that was already imported. */
+  code: string;
   title: string;
   tiers: { label: string; color: string }[];
   /** `tier` is the index in `tiers`, or -1 when the card is not ranked. */
@@ -14,7 +17,13 @@ export type SharedList = {
 };
 
 const VERSION = 1;
-const LINK_PREFIX = 'tiercraft://import?d=';
+/**
+ * Website serving the share pages (share-site/ deployed on Vercel). iOS opens
+ * https://SHARE_HOST/import?d=… links straight in the app thanks to the
+ * associated domain declared in app.json; without the app, the page sends
+ * people to the App Store.
+ */
+export const SHARE_HOST = 'tiercraft.vercel.app';
 const MAX_TIERS = 30;
 const MAX_CARDS = 300;
 
@@ -90,19 +99,26 @@ export function encodeList(list: TierList): string {
 }
 
 export function shareLink(list: TierList): string {
-  return LINK_PREFIX + encodeList(list);
+  return `https://${SHARE_HOST}/import?d=${encodeList(list)}`;
+}
+
+/** Copies the share link of `list` to the clipboard and confirms it. */
+export async function copyLink(list: TierList): Promise<void> {
+  try {
+    await Clipboard.setStringAsync(shareLink(list));
+    Alert.alert('Lien copié', 'Collez-le dans une conversation : il ouvrira la tier list dans Tiercraft.');
+  } catch {
+    Alert.alert('Copie impossible', 'Le lien n’a pas pu être copié.');
+  }
 }
 
 /** Opens the system share sheet with a message the recipient can open in Tiercraft. */
 export async function sendList(list: TierList): Promise<void> {
-  const link = shareLink(list);
-  const message = [
-    `Voici ma tier list « ${list.title} » sur Tiercraft :`,
-    link,
-    'Touchez le lien pour l’ouvrir. Sinon, copiez ce message puis dans Tiercraft : Mes tier lists → Importer.',
-  ].join('\n\n');
+  const url = shareLink(list);
+  const intro = `Voici ma tier list « ${list.title} » sur Tiercraft`;
   try {
-    await Share.share({ message }, { dialogTitle: list.title });
+    // iOS shares the URL as a rich link next to the text; Android only takes a message.
+    await Share.share(Platform.OS === 'ios' ? { message: intro, url } : { message: `${intro} :\n${url}` }, { dialogTitle: list.title });
   } catch {
     // The user closed the share sheet or sharing is unavailable: nothing to do.
   }
@@ -137,7 +153,7 @@ export function decodeShared(input: string): SharedList | null {
         color: isHex(color) ? color : '#2B2F3A',
         tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
       }));
-    return { title: text(data.t, 60) || 'Tier list partagée', tiers, cards };
+    return { code, title: text(data.t, 60) || 'Tier list partagée', tiers, cards };
   } catch {
     return null;
   }

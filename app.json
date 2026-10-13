@@ -19,7 +19,10 @@
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:tiercraft.vercel.app"
+      ]
     },
     "android": {
       "package": "com.guigousse.tiercraft",

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,10 +7,13 @@ import { Button, Field } from '../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../constants/theme';
 import { plural } from '../lib/format';
 import { useResponsive } from '../lib/layout';
-import { decodeShared } from '../lib/share';
+import { decodeShared, SHARE_HOST } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
-/** Opened by a tiercraft://import?d=… link, or from the app to paste a shared message. */
+/**
+ * Opened by a shared link (https://…/import?d=… or tiercraft://import?d=…), which
+ * adds the tier list right away, or from the app to paste a link by hand.
+ */
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
@@ -25,6 +28,14 @@ export default function ImportScreen() {
     router.replace({ pathname: '/editor/[id]', params: { id } });
   };
 
+  // A link was opened: add the tier list without asking and show it.
+  const autoAdded = useRef(false);
+  useEffect(() => {
+    if (!d || !shared || autoAdded.current) return;
+    autoAdded.current = true;
+    add();
+  });
+
   const ranked = shared ? shared.cards.filter((c) => c.tier >= 0).length : 0;
 
   return (
@@ -36,7 +47,7 @@ export default function ImportScreen() {
             <Field
               value={pasted}
               onChangeText={setPasted}
-              placeholder="tiercraft://import?d=…"
+              placeholder={`https://${SHARE_HOST}/import?d=…`}
               multiline
               autoCorrect={false}
               autoCapitalize="none"

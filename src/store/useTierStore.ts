@@ -28,7 +28,7 @@ type State = {
   settings: Settings;
 
   createList: (input: NewListInput) => string;
-  /** Adds a tier list received from someone else and returns its id. */
+  /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
   importList: (shared: SharedList) => string;
   deleteList: (id: string) => void;
   duplicateList: (id: string) => string | undefined;
@@ -119,6 +119,8 @@ export const useTierStore = create<State>()(
         },
 
         importList: (shared) => {
+          const existing = Object.values(get().lists).find((l) => l.importedFrom === shared.code);
+          if (existing) return existing.id;
           const now = Date.now();
           const tiers = shared.tiers.map((t) => ({ id: newId(), label: t.label, color: t.color }));
           const cards: Record<string, Card> = {};
@@ -130,7 +132,19 @@ export const useTierStore = create<State>()(
             if (c.tier >= 0) placement[tiers[c.tier].id].push(id);
             else pool.push(id);
           }
-          const list: TierList = { id: newId(), title: shared.title, tiers, cards, placement, pool, favorite: false, createdAt: now, updatedAt: now, openedAt: now };
+          const list: TierList = {
+            id: newId(),
+            title: shared.title,
+            tiers,
+            cards,
+            placement,
+            pool,
+            favorite: false,
+            importedFrom: shared.code,
+            createdAt: now,
+            updatedAt: now,
+            openedAt: now,
+          };
           set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
           return list.id;
         },
@@ -168,6 +182,7 @@ export const useTierStore = create<State>()(
             ),
             pool: source.pool.map(mapCard),
             favorite: false,
+            importedFrom: undefined,
             createdAt: now,
             updatedAt: now,
             openedAt: now,
