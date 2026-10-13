@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 
 import { ActionSheet, Button, Field, IconButton, Sheet } from '../../components/ui';
+import { ShareSheet } from '../../components/ShareSheet';
 import { CardSheet, type CardDraft } from '../../components/editor/CardSheet';
 import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
@@ -15,7 +16,6 @@ import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
-import { copyLink, sendList } from '../../lib/share';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -209,16 +209,7 @@ function Editor({ list }: { list: TierList }) {
         ]}
       />
 
-      <ActionSheet
-        visible={shareOpen}
-        onClose={() => setShareOpen(false)}
-        title="Partager"
-        actions={[
-          { label: 'Copier le lien', icon: 'link-outline', onPress: () => copyLink(list) },
-          { label: 'Envoyer le lien…', icon: 'paper-plane-outline', onPress: () => sendList(list) },
-          { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
-        ]}
-      />
+      <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={exportImage} />
 
       <Sheet
         visible={renaming}

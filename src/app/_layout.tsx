@@ -1,10 +1,12 @@
 import { DarkTheme, SplashScreen, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
+import { useCatalog } from '../store/useCatalog';
 import { useHydrated } from '../store/useTierStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -31,6 +33,13 @@ export default function RootLayout() {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
   }, [hydrated]);
 
+  // Fetch the latest online templates and daily tier list (cached for offline use).
+  useEffect(() => {
+    useCatalog.getState().refresh();
+    const sub = AppState.addEventListener('change', (s) => s === 'active' && useCatalog.getState().refresh());
+    return () => sub.remove();
+  }, []);
+
   if (!hydrated) return null;
 
   return (
@@ -54,6 +63,7 @@ export default function RootLayout() {
             <Stack.Screen name="templates" options={{ title: 'Modèles' }} />
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
             <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
+            <Stack.Screen name="s/[code]" options={{ headerShown: false }} />
             <Stack.Screen name="editor/[id]" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
         </ThemeProvider>

@@ -82,54 +82,70 @@ function utf8Decode(bytes: number[]): string {
   return out;
 }
 
-/** Compact, URL-safe code describing `list`. */
-export function encodeList(list: TierList): string {
+type Payload = { v: number; t: string; r: [string, string][]; c: [string, string, number][] };
+
+/** JSON form of `list` shared through links and codes. */
+export function toPayload(list: TierList): Payload {
   const tierIndex = new Map(list.tiers.map((t, i) => [t.id, i]));
   const ordered: [string, number][] = [
     ...list.tiers.flatMap((t) => (list.placement[t.id] ?? []).map((id): [string, number] => [id, tierIndex.get(t.id)!])),
     ...list.pool.map((id): [string, number] => [id, -1]),
   ];
-  const payload = {
+  return {
     v: VERSION,
     t: list.title,
     r: list.tiers.map((t) => [t.label, t.color]),
     c: ordered.filter(([id]) => list.cards[id]).map(([id, tier]) => [list.cards[id].label, list.cards[id].color, tier]),
   };
-  return toBase64Url(utf8Encode(JSON.stringify(payload)));
 }
 
-export function shareLink(list: TierList): string {
+/** Compact, URL-safe string describing `list`, used by offline links. */
+export function encodeList(list: TierList): string {
+  return toBase64Url(utf8Encode(JSON.stringify(toPayload(list))));
+}
+
+/** Offline link: carries the whole tier list, works without the share service. */
+export function offlineLink(list: TierList): string {
   return `https://${SHARE_HOST}/import?d=${encodeList(list)}`;
 }
 
-/** Copies the share link of `list` to the clipboard and confirms it. */
-export async function copyLink(list: TierList): Promise<void> {
-  try {
-    await Clipboard.setStringAsync(shareLink(list));
-    Alert.alert('Lien copié', 'Collez-le dans une conversation : il ouvrira la tier list dans Tiercraft.');
-  } catch {
-    Alert.alert('Copie impossible', 'Le lien n’a pas pu être copié.');
-  }
-}
-
-/** Opens the system share sheet with a message the recipient can open in Tiercraft. */
-export async function sendList(list: TierList): Promise<void> {
-  const url = shareLink(list);
-  const intro = `Voici ma tier list « ${list.title} » sur Tiercraft`;
-  try {
-    // iOS shares the URL as a rich link next to the text; Android only takes a message.
-    await Share.share(Platform.OS === 'ios' ? { message: intro, url } : { message: `${intro} :\n${url}` }, { dialogTitle: list.title });
-  } catch {
-    // The user closed the share sheet or sharing is unavailable: nothing to do.
-  }
+export function codeLink(code: string): string {
+  return `https://${SHARE_HOST}/s/${code}`;
 }
 
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v);
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
 
+/** Validates a payload received from a link or the share service. */
+export function parsePayload(data: unknown, code: string): SharedList | null {
+  const d = data as Partial<Record<'v' | 't' | 'r' | 'c', unknown>> | null;
+  if (!d || d.v !== VERSION || !Array.isArray(d.r) || !Array.isArray(d.c)) return null;
+  const tiers = (d.r as unknown[])
+    .slice(0, MAX_TIERS)
+    .filter(Array.isArray)
+    .map(([label, color]) => ({ label: text(label, 30) || '?', color: isHex(color) ? color : '#7F7FFF' }));
+  if (tiers.length === 0) return null;
+  const cards = (d.c as unknown[])
+    .slice(0, MAX_CARDS)
+    .filter(Array.isArray)
+    .map(([label, color, tier]) => ({
+      label: text(label, 40),
+      color: isHex(color) ? color : '#2B2F3A',
+      tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
+    }));
+  return { code, title: text(d.t, 60) || 'Tier list partagée', tiers, cards };
+}
+
+/** Normalises a typed share code ("k7f-3qx" → "K7F3QX"), or null if it isn't one. */
+export function normalizeCode(input: string): string | null {
+  const fromLink = input.match(/\/s\/([A-Za-z2-9]{6})\b/);
+  const raw = fromLink?.[1] ?? input.replace(/[\s-]/g, '');
+  return /^[A-HJ-NP-Za-hj-np-z2-9]{6}$/.test(raw) ? raw.toUpperCase() : null;
+}
+
 /**
- * Reads a shared tier list from a code, a link, or a whole pasted message
- * containing the link. Returns null when nothing valid is found.
+ * Reads a tier list carried by an offline link, or a whole pasted message
+ * containing one. Returns null when nothing valid is found.
  */
 export function decodeShared(input: string): SharedList | null {
   const fromLink = input.match(/[?&]d=([A-Za-z0-9_-]+)/);
@@ -138,23 +154,27 @@ export function decodeShared(input: string): SharedList | null {
   const bytes = fromBase64Url(code);
   if (!bytes) return null;
   try {
-    const data = JSON.parse(utf8Decode(bytes));
-    if (data?.v !== VERSION || !Array.isArray(data.r) || !Array.isArray(data.c)) return null;
-    const tiers = (data.r as unknown[][])
-      .slice(0, MAX_TIERS)
-      .filter(Array.isArray)
-      .map(([label, color]) => ({ label: text(label, 30) || '?', color: isHex(color) ? color : '#7F7FFF' }));
-    if (tiers.length === 0) return null;
-    const cards = (data.c as unknown[][])
-      .slice(0, MAX_CARDS)
-      .filter(Array.isArray)
-      .map(([label, color, tier]) => ({
-        label: text(label, 40),
-        color: isHex(color) ? color : '#2B2F3A',
-        tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
-      }));
-    return { code, title: text(data.t, 60) || 'Tier list partagée', tiers, cards };
+    return parsePayload(JSON.parse(utf8Decode(bytes)), code);
   } catch {
     return null;
+  }
+}
+
+/** Opens the system share sheet with `url` and a short intro. */
+export async function shareUrl(title: string, intro: string, url: string): Promise<void> {
+  try {
+    // iOS shares the URL as a rich link next to the text; Android only takes a message.
+    await Share.share(Platform.OS === 'ios' ? { message: intro, url } : { message: `${intro}\n${url}` }, { dialogTitle: title });
+  } catch {
+    // The user closed the share sheet or sharing is unavailable: nothing to do.
+  }
+}
+
+export async function copyText(value: string, confirmation: string): Promise<void> {
+  try {
+    await Clipboard.setStringAsync(value);
+    Alert.alert('Copié', confirmation);
+  } catch {
+    Alert.alert('Copie impossible', 'Le texte n’a pas pu être copié.');
   }
 }
