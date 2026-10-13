@@ -116,7 +116,6 @@ export default function ResultsScreen() {
     null,
   );
   const tierLabel = (t: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, Math.round(t)))]?.label ?? '?';
-  const verdict = agreement === null ? '' : agreement >= 85 ? 'Dans le consensus' : agreement >= 65 ? 'Plutôt d’accord' : 'Esprit rebelle';
 
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
@@ -125,7 +124,6 @@ export default function ResultsScreen() {
         <Text style={styles.title}>
           {list.emoji ?? list.daily?.emoji} {list.title}
         </Text>
-        {data ? <Text style={styles.subtitle}>Classement moyen de {plural(data.votes, 'joueur')}</Text> : null}
         {streak > 0 ? <Text style={styles.streak}>🔥 Série : {plural(streak, 'jour')} d’affilée</Text> : null}
       </View>
 
@@ -149,7 +147,7 @@ export default function ResultsScreen() {
           {data && data.votes > 1 && agreement !== null ? (
             <View style={styles.score}>
               <Text style={styles.scoreValue}>{agreement} %</Text>
-              <Text style={styles.scoreLabel}>d’accord avec les joueurs · {verdict}</Text>
+              <Text style={styles.scoreLabel}>de correspondance avec les autres personnes</Text>
               {original && Math.abs(original.mine - original.average) >= 1 ? (
                 <Text style={styles.scoreDetail}>
                   Votre choix le plus original : {original.card.label} (vous : {tierLabel(original.mine)}, joueurs : {tierLabel(original.average)})
@@ -176,7 +174,10 @@ export default function ResultsScreen() {
           </View>
 
           <View style={{ gap: spacing.md }}>
-            <Text style={styles.section}>Détail des votes</Text>
+            <View style={styles.sectionRow}>
+              <Text style={styles.section}>Détail des votes</Text>
+              {data ? <Text style={styles.sectionHint}>parmi {plural(data.votes, 'répondant')}</Text> : null}
+            </View>
             {detail.map(({ card, index }) => {
               const counts = data!.items[index].counts;
               const votes = counts.reduce((a, b) => a + b, 0) || 1;
@@ -226,6 +227,8 @@ const styles = StyleSheet.create({
   labelText: { fontSize: 18, fontWeight: '800' },
   cards: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 4 },
   section: { color: colors.text, fontSize: 18, fontWeight: '700' },
+  sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
+  sectionHint: { color: colors.textMuted, fontSize: 14 },
   detail: { gap: 6 },
   detailHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   detailLabel: { color: colors.text, fontSize: 15, fontWeight: '600', flexShrink: 1 },
