@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
 import { syncDailyVotes } from '../lib/daily';
+import { restoreIdentity } from '../lib/identity';
 import { useCatalog } from '../store/useCatalog';
 import { useHydrated } from '../store/useTierStore';
 
@@ -31,7 +32,10 @@ export default function RootLayout() {
   const hydrated = useHydrated();
 
   useEffect(() => {
-    if (hydrated) SplashScreen.hideAsync().catch(() => {});
+    if (!hydrated) return;
+    SplashScreen.hideAsync().catch(() => {});
+    // Profile and device id kept in the Keychain (back after a reinstall).
+    restoreIdentity().then(() => syncDailyVotes());
   }, [hydrated]);
 
   // Fetch the latest online templates and daily tier list (cached for offline use)

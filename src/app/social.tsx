@@ -12,7 +12,7 @@ import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, type Friends, type PublicProfile } from '../lib/api';
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
-import { friendCode, parseFriendCode, socialError } from '../lib/social';
+import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
 import { useTierStore } from '../store/useTierStore';
 
 function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?: () => void; right?: React.ReactNode }) {
@@ -139,6 +139,9 @@ export default function Social() {
         </View>
         <IconButton icon="create-outline" label="Modifier le profil" onPress={() => setEditing(true)} />
       </View>
+      {data?.me.hidden ? (
+        <Text style={styles.warning}>Votre profil a été masqué après plusieurs signalements : les autres joueurs voient « Joueur signalé ».</Text>
+      ) : null}
       <View style={styles.actions}>
         <Button style={{ flex: 1 }} variant="secondary" icon="copy-outline" label="Mon code" onPress={() => copyText(myCode, `${myCode} est copié.`)} />
         <Button
@@ -189,6 +192,7 @@ export default function Social() {
                   player={p}
                   right={
                     <View style={styles.respond}>
+                      <IconButton icon="flag-outline" label="Signaler" color={colors.textMuted} onPress={() => confirmReport(p, load)} />
                       <IconButton icon="close" label="Refuser" color={colors.textMuted} onPress={() => respond(p.id, false)} />
                       <IconButton icon="checkmark" label="Accepter" color="#2EAD6B" onPress={() => respond(p.id, true)} />
                     </View>
@@ -251,6 +255,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   message: { fontSize: 14, lineHeight: 19 },
+  warning: { color: colors.danger, fontSize: 14, lineHeight: 19, marginTop: -spacing.md },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

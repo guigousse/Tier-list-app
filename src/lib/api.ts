@@ -117,8 +117,11 @@ export async function fetchPastDailies(before = today()): Promise<DailyList[]> {
   return rows.map((r) => ({ day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items }));
 }
 
-/** Public part of a player profile. `completed`: tier lists they ranked (popular and daily). */
-export type PublicProfile = { id: string; pseudo: string; tag: number; avatar: string; completed: number };
+/**
+ * Public part of a player profile. `completed`: tier lists they ranked (popular and daily).
+ * `hidden`: masked after several reports.
+ */
+export type PublicProfile = { id: string; pseudo: string; tag: number; avatar: string; completed: number; hidden?: boolean };
 
 export function createProfile(deviceId: string, secret: string, pseudo: string, avatar: string): Promise<PublicProfile> {
   return rpc<PublicProfile>('create_profile', { device_id: deviceId, secret, pseudo, avatar });
@@ -145,6 +148,11 @@ export function respondFriendRequest(secret: string, other: string, accept: bool
 
 export function removeFriend(secret: string, other: string): Promise<void> {
   return rpc<void>('remove_friend', { secret, other });
+}
+
+/** Reports a player's pseudo or avatar; also ends the link with them. */
+export function reportPlayer(secret: string, other: string, reason: 'pseudo' | 'avatar'): Promise<void> {
+  return rpc<void>('report_player', { secret, other, reason });
 }
 
 /** A friend's validated ranking: key is a popular list key or "daily:YYYY-MM-DD". */

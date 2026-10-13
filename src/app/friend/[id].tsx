@@ -13,7 +13,7 @@ import { fetchFriendLists, removeFriend, type FriendVote, type PublicProfile } f
 import { openPopular } from '../../lib/create';
 import { splitEmoji } from '../../lib/emoji';
 import { useResponsive } from '../../lib/layout';
-import { agreement, friendCode, myRanks, socialError, voteTemplate } from '../../lib/social';
+import { agreement, confirmReport, friendCode, myRanks, socialError, voteTemplate } from '../../lib/social';
 import { useCatalog, usePopularTemplates } from '../../store/useCatalog';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -108,7 +108,13 @@ export default function Friend() {
       <Stack.Screen
         options={{
           title: data?.profile.pseudo ?? 'Ami',
-          headerRight: () => (data ? <IconButton icon="person-remove-outline" label="Retirer cet ami" onPress={remove} /> : null),
+          headerRight: () =>
+            data ? (
+              <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                <IconButton icon="flag-outline" label="Signaler ce joueur" onPress={() => confirmReport(data.profile, () => router.back())} />
+                <IconButton icon="person-remove-outline" label="Retirer cet ami" onPress={remove} />
+              </View>
+            ) : null,
         }}
       />
       {error ? (

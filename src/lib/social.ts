@@ -1,9 +1,12 @@
+import { Alert } from 'react-native';
+
 import type { Template } from '../constants/presets';
 import { dailyTemplate } from '../store/useCatalog';
 import type { TierList } from '../store/types';
 import { popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
-import { createProfile, updateProfile, type DailyList, type FriendVote } from './api';
+import { createProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
 import { newId } from './id';
+import { saveIdentity } from './identity';
 
 /** Avatars to choose from. */
 export const AVATARS = ['🦊', '🐼', '🐸', '🐙', '🦁', '🐯', '🐨', '🐵', '🦄', '🐲', '🦉', '🐧', '🐳', '🦖', '👾', '🤖', '👻', '🎃', '🌵', '🍄', '🔥', '⚡', '🌈', '👑'];
@@ -31,6 +34,8 @@ export function parseFriendCode(text: string): { pseudo: string; tag: number } |
 /** Message to show for a failed social call. */
 export function socialError(e: unknown): string {
   const message = e instanceof Error ? e.message : '';
+  if (message.includes('pseudo refused')) return 'Ce pseudo n’est pas autorisé : choisissez-en un autre.';
+  if (message.includes('invalid avatar')) return 'Cet avatar n’est pas disponible.';
   if (message.includes('invalid pseudo')) return 'Le pseudo doit faire 2 à 20 caractères : lettres, chiffres, espaces, « _ », « - » ou « . ».';
   if (message.includes('pseudo unavailable')) return 'Ce pseudo est très demandé : essayez-en un autre.';
   if (message.includes('player not found')) return 'Aucun joueur avec ce pseudo et ce numéro.';
@@ -51,6 +56,7 @@ export async function saveProfile(pseudo: string, avatar: string): Promise<void>
   const secret = `${newId()}${newId()}`.replace(/-/g, '');
   const saved = await createProfile(deviceId, secret, pseudo, avatar);
   setProfile({ id: saved.id, secret, pseudo: saved.pseudo, tag: saved.tag, avatar: saved.avatar });
+  await saveIdentity();
 }
 
 /** Agreement between two rankings of the same cards, from 0 to 100 (same tier everywhere: 100). */
@@ -79,4 +85,23 @@ export function myRanks(template: Template, lists: Record<string, TierList>): nu
     if (template.day && l.daily?.day === template.day && l.daily.validatedAt) return rankingOf(l, l.daily.cardIds);
   }
   return null;
+}
+
+/** Asks what to report about a player, reports them, then calls `done`. */
+export function confirmReport(player: { id: string; pseudo: string; tag: number }, done: () => void): void {
+  const secret = useTierStore.getState().profile?.secret;
+  if (!secret) return;
+  const send = (reason: 'pseudo' | 'avatar') =>
+    reportPlayer(secret, player.id, reason).then(
+      () => {
+        Alert.alert('Merci', 'Le signalement est envoyé. Vous n’êtes plus liés à ce joueur.');
+        done();
+      },
+      (e) => Alert.alert('Oups', socialError(e)),
+    );
+  Alert.alert('Signaler ce joueur ?', `${friendCode(player)} ne sera plus votre ami. Après plusieurs signalements, son profil est masqué.`, [
+    { text: 'Annuler', style: 'cancel' },
+    { text: 'Pseudo inapproprié', style: 'destructive', onPress: () => send('pseudo') },
+    { text: 'Avatar inapproprié', style: 'destructive', onPress: () => send('avatar') },
+  ]);
 }
