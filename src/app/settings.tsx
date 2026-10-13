@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip } from '../components/ui';
 import { TIER_PRESETS } from '../constants/presets';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
+import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 
 const SIZES: { key: CardSize; label: string }[] = [
@@ -28,6 +29,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 
 export default function Settings() {
   const insets = useSafeAreaInsets();
+  const { column, gutter } = useResponsive();
   const settings = useTierStore((s) => s.settings);
   const count = useTierStore((s) => Object.keys(s.lists).length);
   const { updateSettings, clearAll } = useTierStore.getState();
@@ -39,7 +41,7 @@ export default function Settings() {
     ]);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }}>
+    <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
       <View style={styles.group}>
         <Text style={styles.groupTitle}>Éditeur</Text>
         <Row label="Retour haptique" hint="Vibration légère lors du glisser-déposer">

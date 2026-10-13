@@ -13,7 +13,9 @@ import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
-import { CARD_SIZES, colors, spacing } from '../../constants/theme';
+import { colors, spacing } from '../../constants/theme';
+import { useResponsive } from '../../lib/layout';
+import { copyLink, sendList } from '../../lib/share';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -24,6 +26,7 @@ export default function EditorScreen() {
   const list = useTierStore((s) => (id ? s.lists[id] : undefined));
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
+  const { cardSize } = useResponsive();
 
   useEffect(() => {
     if (id) useTierStore.getState().markOpened(id);
@@ -41,7 +44,7 @@ export default function EditorScreen() {
   }
 
   return (
-    <DragProvider cardSize={CARD_SIZES[settings.cardSize]} showLabels={settings.showCardLabels} haptics={settings.haptics} onMove={onMove}>
+    <DragProvider cardSize={cardSize(settings.cardSize)} showLabels={settings.showCardLabels} haptics={settings.haptics} onMove={onMove}>
       <Editor list={list} />
     </DragProvider>
   );
@@ -56,6 +59,7 @@ function Editor({ list }: { list: TierList }) {
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [cardSheet, setCardSheet] = useState<{ cardId: string | null } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(list.title);
   const [exporting, setExporting] = useState(false);
@@ -130,7 +134,7 @@ function Editor({ list }: { list: TierList }) {
             {list.title}
           </Text>
         </Pressable>
-        <IconButton icon="share-outline" label="Partager en image" onPress={exportImage} />
+        <IconButton icon="share-outline" label="Partager" onPress={() => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
 
@@ -185,6 +189,7 @@ function Editor({ list }: { list: TierList }) {
         actions={[
           { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
           { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+          { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
           { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
           {
             label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
@@ -201,6 +206,17 @@ function Editor({ list }: { list: TierList }) {
           },
           { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
           { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+        ]}
+      />
+
+      <ActionSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Partager"
+        actions={[
+          { label: 'Copier le lien', icon: 'link-outline', onPress: () => copyLink(list) },
+          { label: 'Envoyer le lien…', icon: 'paper-plane-outline', onPress: () => sendList(list) },
+          { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         ]}
       />
 

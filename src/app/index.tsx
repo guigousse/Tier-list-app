@@ -7,20 +7,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
+import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 
 function Tile({ icon, title, subtitle, onPress }: { icon: IconName; title: string; subtitle: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.tile, pressed && { opacity: 0.8 }]}>
       <Ionicons name={icon} size={24} color={colors.primary} />
-      <Text style={styles.tileTitle}>{title}</Text>
-      <Text style={styles.tileSubtitle}>{subtitle}</Text>
+      <Text numberOfLines={2} style={styles.tileTitle}>
+        {title}
+      </Text>
+      <Text numberOfLines={2} style={styles.tileSubtitle}>
+        {subtitle}
+      </Text>
     </Pressable>
   );
 }
 
 export default function Home() {
   const insets = useSafeAreaInsets();
+  const { column, gutter } = useResponsive();
   const lists = useTierStore((s) => s.lists);
   const all = useMemo(() => Object.values(lists), [lists]);
   const recent = useMemo(() => [...all].sort((a, b) => b.openedAt - a.openedAt).slice(0, 5), [all]);
@@ -31,14 +37,20 @@ export default function Home() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: spacing.lg, gap: spacing.xl }}
+      contentContainerStyle={[column, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: gutter, gap: spacing.xl }]}
     >
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.brand}>Tiercraft</Text>
-          <Text style={styles.tagline}>Classez tout, de S à D.</Text>
+      <View style={{ gap: spacing.sm }}>
+        <View style={styles.header}>
+          <Text numberOfLines={1} style={styles.brand}>
+            Tiercraft
+          </Text>
+          <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
         </View>
-        <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
+        <View style={styles.brandStrip}>
+          {TIER_COLORS.slice(0, 5).map((c) => (
+            <View key={c} style={[styles.brandStripSegment, { backgroundColor: c }]} />
+          ))}
+        </View>
       </View>
 
       <Pressable
@@ -54,7 +66,7 @@ export default function Home() {
           ))}
         </View>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={styles.heroTitle}>Nouvelle tier list</Text>
+          <Text numberOfLines={2} style={styles.heroTitle}>Nouvelle tier list</Text>
           <Text style={styles.heroSubtitle}>Partez de zéro et ajoutez vos cartes.</Text>
         </View>
         <Ionicons name="add-circle" size={36} color={colors.primaryText} />
@@ -100,9 +112,10 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { color: colors.text, fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
-  tagline: { color: colors.textMuted, fontSize: 15 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  brand: { flexShrink: 1, color: colors.text, fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
+  brandStrip: { flexDirection: 'row', gap: 4 },
+  brandStripSegment: { flex: 1, height: 4, borderRadius: 2 },
   hero: {
     flexDirection: 'row',
     alignItems: 'center',

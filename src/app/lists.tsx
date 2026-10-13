@@ -7,6 +7,8 @@ import { ListRow } from '../components/ListRow';
 import { ActionSheet, Button, Chip, Field, Sheet } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
+import { useResponsive } from '../lib/layout';
+import { copyLink, sendList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
 type Sort = 'updated' | 'opened' | 'name' | 'favorites';
@@ -20,6 +22,7 @@ const SORTS: { key: Sort; label: string }[] = [
 
 export default function Lists() {
   const insets = useSafeAreaInsets();
+  const { column, gutter } = useResponsive();
   const lists = useTierStore((s) => s.lists);
   const { deleteList, duplicateList, renameList, toggleFavorite } = useTierStore.getState();
   const [query, setQuery] = useState('');
@@ -53,10 +56,11 @@ export default function Lists() {
         data={data}
         keyExtractor={(l) => l.id}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
+        contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
             <Field value={query} onChangeText={setQuery} placeholder="Rechercher…" clearButtonMode="while-editing" autoCorrect={false} />
+            <Button label="Importer une tier list reçue" icon="download-outline" variant="secondary" onPress={() => router.push('/import')} />
             <View style={styles.chips}>
               {SORTS.map((s) => (
                 <Chip key={s.key} label={s.label} selected={sort === s.key} onPress={() => setSort(s.key)} />
@@ -96,6 +100,8 @@ export default function Lists() {
                     setRenaming(menuFor);
                   },
                 },
+                { label: 'Copier le lien', icon: 'link-outline', onPress: () => copyLink(menuFor) },
+                { label: 'Envoyer le lien…', icon: 'paper-plane-outline', onPress: () => sendList(menuFor) },
                 { label: 'Dupliquer', icon: 'copy-outline', onPress: () => duplicateList(menuFor.id) },
                 { label: 'Supprimer', icon: 'trash-outline', destructive: true, onPress: () => confirmDelete(menuFor) },
               ]

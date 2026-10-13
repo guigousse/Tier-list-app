@@ -26,6 +26,8 @@ export type TierList = {
   /** Ordered ids of the cards that are not ranked yet. */
   pool: string[];
   favorite: boolean;
+  /** Share code this list was imported from, so opening the same link twice doesn't duplicate it. */
+  importedFrom?: string;
   createdAt: number;
   updatedAt: number;
   openedAt: number;

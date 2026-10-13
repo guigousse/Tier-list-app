@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../constants/theme';
+import { useResponsive } from '../../lib/layout';
 import { POOL, type Card } from '../../store/types';
 import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
 
@@ -19,16 +20,21 @@ export function Tray({ cards, total, onAdd, onPressCard }: Props) {
   const insets = useSafeAreaInsets();
   const { ref, highlight } = useDropZone(POOL, false);
   const { cardSize } = useDragContext();
+  const { isCompact } = useResponsive();
 
   return (
     <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: insets.bottom + spacing.sm }]}>
       <Animated.View style={[StyleSheet.absoluteFill, highlight]} pointerEvents="none" />
       <View style={styles.header}>
-        <Text style={styles.title}>
+        <Text numberOfLines={1} style={styles.title}>
           À classer · {cards.length}
           <Text style={styles.muted}> / {total}</Text>
         </Text>
-        <Text style={styles.muted}>Maintenez une carte pour la glisser</Text>
+        {isCompact ? null : (
+          <Text numberOfLines={1} style={[styles.muted, styles.hint]}>
+            Maintenez une carte pour la glisser
+          </Text>
+        )}
       </View>
       <ScrollView
         horizontal
@@ -68,11 +74,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.sm,
   },
   title: { color: colors.text, fontSize: 15, fontWeight: '700' },
   muted: { color: colors.textMuted, fontSize: 12, fontWeight: '400' },
+  hint: { flexShrink: 1, textAlign: 'right' },
   content: { gap: 6, paddingHorizontal: spacing.lg, alignItems: 'center' },
   add: {
     borderRadius: 8,
