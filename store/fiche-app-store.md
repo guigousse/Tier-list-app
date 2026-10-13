@@ -11,9 +11,9 @@
 | Catégorie principale | Divertissement | |
 | Catégorie secondaire | Réseaux sociaux | |
 | Classification | 4+ (aucun contenu sensible) | |
-| URL d’assistance | https://tiercraft.vercel.app/support | |
-| URL de confidentialité | https://tiercraft.vercel.app/confidentialite | |
-| URL marketing | https://tiercraft.vercel.app | |
+| URL d’assistance | https://tiercraft-nine.vercel.app/support | |
+| URL de confidentialité | https://tiercraft-nine.vercel.app/confidentialite | |
+| URL marketing | https://tiercraft-nine.vercel.app | |
 | Copyright | 2026 Guillaume Fenard | |
 
 ## Texte promotionnel (170 caractères, modifiable sans nouvelle version)

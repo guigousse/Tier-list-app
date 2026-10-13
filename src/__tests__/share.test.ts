@@ -52,7 +52,7 @@ describe('normalizeCode', () => {
   it('accepts codes typed loosely or inside a short link', () => {
     expect(normalizeCode('k7f-3qx')).toBe('K7F3QX');
     expect(normalizeCode('K7F 3QX')).toBe('K7F3QX');
-    expect(normalizeCode('https://tiercraft.vercel.app/s/k7f3qx')).toBe('K7F3QX');
+    expect(normalizeCode('https://tiercraft-nine.vercel.app/s/k7f3qx')).toBe('K7F3QX');
   });
 
   it('refuses ambiguous characters and wrong lengths', () => {
