@@ -1,0 +1,64 @@
+# iOS build on a GitHub macOS runner (free for public repositories), uploaded to
+# TestFlight. Same result as scripts/testflight.sh, without using EAS cloud builds:
+# `eas build --local` only reads the signing credentials and build number from EAS.
+#
+# Repository secrets needed (Settings → Secrets and variables → Actions):
+#   EXPO_TOKEN          Expo access token (expo.dev → Account settings → Access tokens)
+#   ASC_API_KEY_P8      App Store Connect API key (.p8 content)
+#   EXPO_ASC_KEY_ID     its Key ID
+#   EXPO_ASC_ISSUER_ID  its Issuer ID
+name: TestFlight
+
+# Runs when a tag "testflight-…" is pushed (git tag testflight-27 && git push origin testflight-27),
+# or by hand from the Actions tab.
+on:
+  push:
+    tags: ['testflight-*']
+  workflow_dispatch:
+
+concurrency: testflight
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+      EXPO_ASC_KEY_ID: ${{ secrets.EXPO_ASC_KEY_ID }}
+      EXPO_ASC_ISSUER_ID: ${{ secrets.EXPO_ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use the newest Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+
+      - run: npm ci
+      - run: npm install -g eas-cli
+
+      - name: App Store Connect key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          key=~/.appstoreconnect/private_keys/AuthKey_${EXPO_ASC_KEY_ID}.p8
+          (
+            umask 077
+            echo "-----BEGIN PRIVATE KEY-----"
+            printf '%s' "$ASC_API_KEY_P8" | sed 's/\\n//g; s/-----[A-Z ]*-----//g' | tr -d ' \r\n' | fold -w 64
+            echo
+            echo "-----END PRIVATE KEY-----"
+          ) > "$key"
+          openssl pkey -in "$key" -noout
+          echo "EXPO_ASC_API_KEY_PATH=$key" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: eas build -p ios --profile production --local --non-interactive --output "$RUNNER_TEMP/Tiercraft.ipa"
+
+      - name: Upload to TestFlight
+        run: xcrun altool --upload-app -f "$RUNNER_TEMP/Tiercraft.ipa" -t ios --apiKey "$EXPO_ASC_KEY_ID" --apiIssuer "$EXPO_ASC_ISSUER_ID"
