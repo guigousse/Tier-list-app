@@ -33,6 +33,8 @@ type DragContextValue = {
   draggingId: string | null;
   cardSize: number;
   showLabels: boolean;
+  /** Cards can't be dragged (validated daily tier list). */
+  locked: boolean;
   registerZone: (id: Zone, ref: RefObject<View | null>, scrolls: boolean) => () => void;
   registerCard: (id: string, zone: Zone, ref: RefObject<View | null>, scrolls: boolean) => () => void;
   /** Viewport of the vertical tier scroller, used for auto-scroll. */
@@ -78,10 +80,11 @@ type ProviderProps = {
   cardSize: number;
   showLabels: boolean;
   haptics: boolean;
+  locked?: boolean;
   onMove: (cardId: string, zone: Zone, index: number) => void;
 };
 
-export function DragProvider({ children, cardSize, showLabels, haptics, onMove }: ProviderProps) {
+export function DragProvider({ children, cardSize, showLabels, haptics, locked = false, onMove }: ProviderProps) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollOffset(scrollRef);
   const rootRef = useRef<View>(null);
@@ -213,6 +216,7 @@ export function DragProvider({ children, cardSize, showLabels, haptics, onMove }
       draggingId: dragging?.id ?? null,
       cardSize,
       showLabels,
+      locked,
       registerZone,
       registerCard,
       viewportRef,
@@ -228,7 +232,7 @@ export function DragProvider({ children, cardSize, showLabels, haptics, onMove }
       dragY,
       active,
     }),
-    [scrollRef, hoverZone, dragging, cardSize, showLabels, registerZone, registerCard, begin, drop, dragX, dragY, active, viewportHeight, contentHeight],
+    [scrollRef, hoverZone, dragging, cardSize, showLabels, locked, registerZone, registerCard, begin, drop, dragX, dragY, active, viewportHeight, contentHeight],
   );
 
   const overlayStyle = useAnimatedStyle(() => ({
@@ -274,34 +278,42 @@ type DraggableProps = {
 };
 
 export function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) {
-  const { registerCard, begin, drop, dragX, dragY, active, draggingId, cardSize, showLabels } = useDrag();
+  const { registerCard, begin, drop, dragX, dragY, active, draggingId, cardSize, showLabels, locked } = useDrag();
   const ref = useRef<View>(null);
   useEffect(() => registerCard(card.id, zone, ref, scrolls), [card.id, zone, registerCard, scrolls]);
 
   const gesture = useMemo(() => {
-    const pan = Gesture.Pan()
-      .activateAfterLongPress(220)
-      .onStart((e) => {
-        dragX.set(e.absoluteX);
-        dragY.set(e.absoluteY);
-        active.set(true);
-        scheduleOnRN(begin, card);
-      })
-      .onUpdate((e) => {
-        dragX.set(e.absoluteX);
-        dragY.set(e.absoluteY);
-      })
-      .onEnd((e, success) => {
-        scheduleOnRN(drop, card.id, e.absoluteX, e.absoluteY, success);
-      });
+    const dragging = (pan: ReturnType<typeof Gesture.Pan>) =>
+      pan
+        .enabled(!locked)
+        .onStart((e) => {
+          dragX.set(e.absoluteX);
+          dragY.set(e.absoluteY);
+          active.set(true);
+          scheduleOnRN(begin, card);
+        })
+        .onUpdate((e) => {
+          dragX.set(e.absoluteX);
+          dragY.set(e.absoluteY);
+        })
+        .onEnd((e, success) => {
+          scheduleOnRN(drop, card.id, e.absoluteX, e.absoluteY, success);
+        });
+    // Moving across the list's scroll direction grabs the card at once (up out of the
+    // horizontal tray, sideways out of a tier row); along it, the list scrolls. A
+    // short press grabs it in any direction.
+    const swipe = scrolls
+      ? Gesture.Pan().activeOffsetX([-10, 10]).failOffsetY([-12, 12])
+      : Gesture.Pan().activeOffsetY([-10, 10]).failOffsetX([-12, 12]);
+    const hold = Gesture.Pan().activateAfterLongPress(150);
     const tap = Gesture.Tap()
       .maxDuration(400)
       .runOnJS(true)
       .onEnd((_e, success) => {
         if (success) onPress(card);
       });
-    return Gesture.Exclusive(pan, tap);
-  }, [active, begin, card, drop, dragX, dragY, onPress]);
+    return Gesture.Exclusive(Gesture.Race(dragging(swipe), dragging(hold)), tap);
+  }, [active, begin, card, drop, dragX, dragY, locked, onPress, scrolls]);
 
   return (
     <GestureDetector gesture={gesture}>
@@ -311,7 +323,7 @@ export function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) 
         accessible
         accessibilityRole="button"
         accessibilityLabel={card.label || 'Carte'}
-        accessibilityHint="Touchez pour modifier ou déplacer, maintenez pour glisser"
+        accessibilityHint={locked ? undefined : 'Touchez pour modifier ou déplacer, maintenez pour glisser'}
         style={{ opacity: draggingId === card.id ? 0.25 : 1 }}
       >
         <CardView card={card} size={cardSize} showLabel={showLabels} />

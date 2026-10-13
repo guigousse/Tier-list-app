@@ -4,7 +4,6 @@ import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip } from '../components/ui';
-import { TIER_PRESETS } from '../constants/presets';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
@@ -51,6 +50,13 @@ export default function Settings() {
             trackColor={{ true: colors.primary, false: colors.border }}
           />
         </Row>
+        <Row label="Sons des boutons" hint="Petit clic quand vous touchez un bouton (coupé en mode silencieux)">
+          <Switch
+            value={settings.sounds}
+            onValueChange={(sounds) => updateSettings({ sounds })}
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </Row>
         <Row label="Afficher le nom des cartes">
           <Switch
             value={settings.showCardLabels}
@@ -63,19 +69,6 @@ export default function Settings() {
           <View style={styles.chips}>
             {SIZES.map((s) => (
               <Chip key={s.key} label={s.label} selected={settings.cardSize === s.key} onPress={() => updateSettings({ cardSize: s.key })} />
-            ))}
-          </View>
-        </View>
-        <View style={styles.block}>
-          <Text style={styles.rowLabel}>Rangs par défaut</Text>
-          <View style={styles.chips}>
-            {TIER_PRESETS.map((p) => (
-              <Chip
-                key={p.key}
-                label={`${p.name} (${p.labels.length})`}
-                selected={settings.defaultPresetKey === p.key}
-                onPress={() => updateSettings({ defaultPresetKey: p.key })}
-              />
             ))}
           </View>
         </View>

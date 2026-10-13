@@ -1,15 +1,17 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { colors, readableTextColor } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
 import type { Card, Tier } from '../../store/types';
 import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
+import { Clickable } from '../Clickable';
 
 type Props = {
   tier: Tier;
   cards: Card[];
-  onPressTier: (tier: Tier) => void;
+  /** Omitted when tiers can't be edited (daily tier list). */
+  onPressTier?: (tier: Tier) => void;
   onPressCard: (card: Card) => void;
 };
 
@@ -21,16 +23,17 @@ export function TierRow({ tier, cards, onPressTier, onPressCard }: Props) {
 
   return (
     <View ref={ref} collapsable={false} style={styles.row}>
-      <Pressable
+      <Clickable
         accessibilityRole="button"
-        accessibilityLabel={`Rang ${tier.label}, modifier`}
-        onPress={() => onPressTier(tier)}
+        accessibilityLabel={onPressTier ? `Rang ${tier.label}, modifier` : `Rang ${tier.label}`}
+        disabled={!onPressTier}
+        onPress={() => onPressTier?.(tier)}
         style={[styles.label, { width: tierLabelWidth, backgroundColor: tier.color, minHeight: cardSize + 8 }]}
       >
         <Text numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5} style={[styles.labelText, { color: fg }]}>
           {tier.label}
         </Text>
-      </Pressable>
+      </Clickable>
       <Animated.View style={[styles.cards, highlight]}>
         {cards.map((c) => (
           <DraggableCard key={c.id} card={c} zone={tier.id} scrolls onPress={onPressCard} />

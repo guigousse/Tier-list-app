@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,22 +8,26 @@ import { colors, spacing } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card } from '../../store/types';
 import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
+import { Clickable } from '../Clickable';
 
 type Props = {
   cards: Card[];
   total: number;
-  onAdd: () => void;
+  /** Omitted when cards can't be added (daily tier list). */
+  onAdd?: () => void;
   onPressCard: (card: Card) => void;
+  /** Pad for the home indicator; off when something is shown below the tray. */
+  bottomInset?: boolean;
 };
 
-export function Tray({ cards, total, onAdd, onPressCard }: Props) {
+export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: Props) {
   const insets = useSafeAreaInsets();
   const { ref, highlight } = useDropZone(POOL, false);
   const { cardSize } = useDragContext();
   const { isCompact } = useResponsive();
 
   return (
-    <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: insets.bottom + spacing.sm }]}>
+    <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: (bottomInset ? insets.bottom : 0) + spacing.sm }]}>
       <Animated.View style={[StyleSheet.absoluteFill, highlight]} pointerEvents="none" />
       <View style={styles.header}>
         <Text numberOfLines={1} style={styles.title}>
@@ -32,7 +36,7 @@ export function Tray({ cards, total, onAdd, onPressCard }: Props) {
         </Text>
         {isCompact ? null : (
           <Text numberOfLines={1} style={[styles.muted, styles.hint]}>
-            Maintenez une carte pour la glisser
+            Touchez ou glissez une carte
           </Text>
         )}
       </View>
@@ -41,7 +45,8 @@ export function Tray({ cards, total, onAdd, onPressCard }: Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={[styles.content, { minHeight: cardSize + 8 }]}
       >
-        <Pressable
+        {onAdd ? (
+        <Clickable
           accessibilityRole="button"
           accessibilityLabel="Ajouter des cartes"
           onPress={onAdd}
@@ -49,7 +54,8 @@ export function Tray({ cards, total, onAdd, onPressCard }: Props) {
         >
           <Ionicons name="add" size={28} color={colors.primary} />
           <Text style={styles.addLabel}>Ajouter</Text>
-        </Pressable>
+        </Clickable>
+        ) : null}
         {cards.map((c) => (
           <DraggableCard key={c.id} card={c} zone={POOL} scrolls={false} onPress={onPressCard} />
         ))}

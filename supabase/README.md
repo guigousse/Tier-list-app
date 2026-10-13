@@ -15,7 +15,30 @@ insert into public.daily_lists (day, title, emoji, description, items) values
  array['🍦 Glace vanille', '🍧 Granité', '🍨 Sorbet citron', '🧁 Vacherin']);
 ```
 
-`tiers` (facultatif) remplace les rangs par défaut, ex. `array['Top', 'Bof', 'Flop']`.
+Les tier lists du jour utilisent toujours les rangs classiques S, A, B, C, D
+(la colonne `tiers` est ignorée) et ne sont pas modifiables dans l'app : le
+joueur classe les cartes puis valide.
+
+## Votes et classement moyen
+
+Table `daily_votes` (un vote par appareil et par jour, définitif), sans accès
+direct : l'app envoie le classement validé via `submit_daily_vote(day, device_id,
+ranks)` et lit uniquement les résultats agrégés via `get_daily_results(day)`
+(nombre de votes, rang moyen et répartition par rang pour chaque carte). Ne
+modifiez pas `items` d'une tier list du jour qui a déjà reçu des votes : les
+votes sont rangés dans l'ordre des cartes.
+
+## Listes populaires
+
+Les modèles (intégrés à l'app ou de la table `templates`) apparaissent sur
+l'accueil comme « Listes populaires » : cartes fixes, rangs S→D, classement à
+valider. Contrairement à la tier list du jour, le joueur peut modifier son
+classement et le revalider : son vote est remplacé.
+
+Table `list_votes` (un vote par appareil et par liste), sans accès direct :
+`submit_list_vote(list_key, device_id, ranks)` et `get_list_results(list_key)`.
+`list_key` vaut `popular:<clé du modèle>:<empreinte des cartes>` : modifier les
+cartes d'un modèle repart donc sur de nouvelles statistiques.
 
 ## Ajouter un modèle
 

@@ -8,6 +8,7 @@ import { ShareSheet } from '../components/ShareSheet';
 import { ActionSheet, Button, Chip, Field, Sheet } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
+import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 
@@ -32,9 +33,10 @@ export default function Lists() {
   const [renaming, setRenaming] = useState<TierList | null>(null);
   const [newTitle, setNewTitle] = useState('');
 
+  const ownCount = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular).length, [lists]);
   const data = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let items = Object.values(lists).filter((l) => !q || l.title.toLowerCase().includes(q));
+    let items = Object.values(lists).filter((l) => !l.daily && !l.popular && (!q || l.title.toLowerCase().includes(q)));
     if (sort === 'favorites') items = items.filter((l) => l.favorite);
     return items.sort((a, b) => {
       if (sort === 'name') return a.title.localeCompare(b.title, 'fr');
@@ -72,9 +74,9 @@ export default function Lists() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              {Object.keys(lists).length === 0 ? 'Vous n’avez encore aucune tier list.' : 'Aucun résultat.'}
+              {ownCount === 0 ? 'Vous n’avez encore aucune tier list.' : 'Aucun résultat.'}
             </Text>
-            {Object.keys(lists).length === 0 ? <Button label="Créer une tier list" icon="add" onPress={() => router.push('/new')} /> : null}
+            {ownCount === 0 ? <Button label="Créer une tier list" icon="add" onPress={() => createAndOpen()} /> : null}
           </View>
         }
         renderItem={({ item }) => <ListRow list={item} onPress={() => open(item.id)} onMore={() => setMenuFor(item)} />}

@@ -55,7 +55,7 @@ export function TierSheet({ tier, index, count, cardCount, onClose, onSave, onMo
 
   return (
     <Sheet visible={tier !== null} onClose={save} title="Modifier le rang" footer={<Button label="Terminé" onPress={save} />}>
-      <Field label="Nom du rang" value={label} onChangeText={setLabel} maxLength={30} placeholder="S" />
+      <Field label="Nom du rang" value={label} onChangeText={setLabel} maxLength={50} placeholder="S" />
       <View style={{ gap: spacing.sm }}>
         <Text style={styles.label}>Couleur</Text>
         <ColorPicker key={shownTier?.id} value={color} onChange={setColor} />

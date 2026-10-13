@@ -1,10 +1,11 @@
-import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
+import { createAndOpen } from '../lib/create';
 import { CONTENT_MAX_WIDTH, useResponsive } from '../lib/layout';
 import { useAllTemplates } from '../store/useCatalog';
+import { Clickable } from '../components/Clickable';
 
 export default function Templates() {
   const insets = useSafeAreaInsets();
@@ -18,10 +19,10 @@ export default function Templates() {
       <Text style={styles.intro}>Choisissez un thème : les cartes sont déjà créées, il ne reste plus qu’à les classer.</Text>
       <View style={styles.grid}>
         {templates.map((t) => (
-          <Pressable
+          <Clickable
             key={t.key}
             accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/new', params: { template: t.key } })}
+            onPress={() => createAndOpen(t)}
             style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && { opacity: 0.8 }]}
           >
             <Text style={styles.emoji}>{t.emoji}</Text>
@@ -29,10 +30,10 @@ export default function Templates() {
               {t.title}
             </Text>
             <Text style={styles.meta}>{t.items.length} cartes</Text>
-            <Text numberOfLines={1} style={styles.sample}>
-              {t.items.slice(0, 5).map((i) => i.split(' ')[0]).join(' ')}
+            <Text numberOfLines={1} style={[styles.sample, t.appStoreIds && { fontSize: 13 }]}>
+              {t.appStoreIds ? 'Avec les icônes des apps' : t.items.slice(0, 5).map((i) => i.split(' ')[0]).join(' ')}
             </Text>
-          </Pressable>
+          </Clickable>
         ))}
       </View>
     </ScrollView>
@@ -53,5 +54,5 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 36 },
   title: { color: colors.text, fontSize: 17, fontWeight: '700' },
   meta: { color: colors.textMuted, fontSize: 13 },
-  sample: { fontSize: 18, marginTop: 4 },
+  sample: { fontSize: 18, marginTop: 4, color: colors.textMuted },
 });

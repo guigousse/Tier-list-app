@@ -43,7 +43,16 @@
         "expo-image-picker",
         {
           "photosPermission": "Tiercraft a besoin d'accéder à vos photos pour illustrer vos cartes.",
-          "cameraPermission": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer vos cartes."
+          "cameraPermission": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer vos cartes.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
         }
       ]
     ],

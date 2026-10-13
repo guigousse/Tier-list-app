@@ -20,7 +20,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...init?.headers },
     });
     if (!res.ok) throw new Error(`Supabase ${res.status}`);
-    return (await res.json()) as T;
+    // Functions returning nothing answer with an empty body.
+    const text = await res.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   } finally {
     clearTimeout(timer);
   }
@@ -39,12 +41,36 @@ export async function fetchSharedList(code: string): Promise<SharedList | null> 
   return payload ? parsePayload(payload, code) : null;
 }
 
+/** Sends the validated ranking of a daily tier list (ranks[i]: 0 = S … 4 = D for item i). */
+export function submitDailyVote(day: string, deviceId: string, ranks: number[]): Promise<boolean> {
+  return rpc<boolean>('submit_daily_vote', { day, device_id: deviceId, ranks });
+}
+
+/** Records or replaces this device's ranking of a popular tier list. */
+export function submitListVote(listKey: string, deviceId: string, ranks: number[]): Promise<void> {
+  return rpc<void>('submit_list_vote', { list_key: listKey, device_id: deviceId, ranks });
+}
+
+export function fetchListResults(listKey: string): Promise<DailyResults> {
+  return rpc<DailyResults>('get_list_results', { list_key: listKey });
+}
+
+export type DailyResults = {
+  votes: number;
+  /** Per published item, in order: average tier (0 = S … 4 = D) and votes per tier. */
+  items: { average: number; counts: number[] }[];
+};
+
+export function fetchDailyResults(day: string): Promise<DailyResults> {
+  return rpc<DailyResults>('get_daily_results', { day });
+}
+
 export type RemoteTemplate = { key: string; title: string; emoji: string; items: string[]; tiers?: string[] };
 
-export type DailyList = { day: string; title: string; emoji: string; description?: string; items: string[]; tiers?: string[] };
+export type DailyList = { day: string; title: string; emoji: string; description?: string; items: string[] };
 
 type TemplateRow = { key: string; title: string; emoji: string; items: string[]; tiers: string[] | null };
-type DailyRow = TemplateRow & { day: string; description: string | null };
+type DailyRow = Omit<TemplateRow, 'key' | 'tiers'> & { day: string; description: string | null };
 
 /** Templates published from the Supabase dashboard. */
 export async function fetchTemplates(): Promise<RemoteTemplate[]> {
@@ -60,8 +86,8 @@ export function today(): string {
 
 /** Most recent daily tier list up to today (local date), if any. */
 export async function fetchDaily(day = today()): Promise<DailyList | null> {
-  const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items,tiers&day=lte.${day}&order=day.desc&limit=1`);
+  const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items&day=lte.${day}&order=day.desc&limit=1`);
   const r = rows[0];
   if (!r) return null;
-  return { day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items, tiers: r.tiers ?? undefined };
+  return { day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items };
 }

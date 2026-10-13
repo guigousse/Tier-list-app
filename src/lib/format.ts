@@ -14,3 +14,9 @@ export function relativeTime(timestamp: number, now = Date.now()): string {
 export function plural(n: number, singular: string, pluralForm = `${singular}s`): string {
   return `${n} ${n > 1 ? pluralForm : singular}`;
 }
+
+/** "2026-10-13" → "mardi 13 octobre". */
+export function formatDay(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
