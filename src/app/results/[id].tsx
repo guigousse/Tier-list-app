@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CardView } from '../../components/CardView';
@@ -10,6 +10,8 @@ import { fetchDailyResults, fetchListResults, type DailyResults } from '../../li
 import { syncDailyVotes } from '../../lib/daily';
 import { formatDay, plural } from '../../lib/format';
 import { useResponsive } from '../../lib/layout';
+import { setDailyReminder } from '../../lib/reminders';
+import { dailyStreak } from '../../lib/streak';
 import type { Card } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
 
@@ -19,6 +21,7 @@ export default function ResultsScreen() {
   const { column, gutter, cardSize } = useResponsive();
   const { id } = useLocalSearchParams<{ id: string }>();
   const list = useTierStore((s) => (id ? s.lists[id] : undefined));
+  const allLists = useTierStore((s) => s.lists);
   const [results, setResults] = useState<{ key: string; data?: DailyResults; failed?: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
 
@@ -41,6 +44,28 @@ export default function ResultsScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the list object changes on every edit
   }, [key, validated, attempt]);
+
+  // After the first daily validation, offer the daily reminder once.
+  const isDailyValidated = Boolean(list?.daily?.validatedAt);
+  useEffect(() => {
+    const { settings, updateSettings } = useTierStore.getState();
+    if (!isDailyValidated || settings.reminderAsked) return;
+    updateSettings({ reminderAsked: true });
+    const timer = setTimeout(
+      () =>
+        Alert.alert('Ne ratez aucune tier list du jour', `Recevoir un rappel chaque jour à ${settings.reminderHour} h ? (modifiable dans les Réglages)`, [
+          { text: 'Plus tard', style: 'cancel' },
+          {
+            text: 'Oui',
+            onPress: async () => {
+              if (await setDailyReminder(true, settings.reminderHour)) useTierStore.getState().updateSettings({ dailyReminder: true });
+            },
+          },
+        ]),
+      1200,
+    );
+    return () => clearTimeout(timer);
+  }, [isDailyValidated]);
 
   if (!list || !ranked) {
     return (
@@ -65,6 +90,7 @@ export default function ResultsScreen() {
   const mine = (list.popular ? list.popular.validatedRanks : rankingOf(list, ranked.cardIds)) ?? [];
   const cards = ranked.cardIds.map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const size = Math.round(cardSize('small'));
+  const streak = list.daily ? dailyStreak(Object.values(allLists)) : 0;
 
   // Each item goes to the tier closest to its average, best averages first.
   const rows = list.tiers.map(() => [] as { card: Card; average: number; index: number }[]);
@@ -78,6 +104,20 @@ export default function ResultsScreen() {
   }
   const detail = data ? rows.flat() : [];
 
+  // How close the player is to everyone: 100 % = same tier as the average on every card.
+  const compared = data
+    ? cards.flatMap((card, i) => (data.items[i] && mine[i] !== undefined ? [{ card, mine: mine[i], average: data.items[i].average }] : []))
+    : [];
+  const agreement = compared.length
+    ? Math.round((compared.reduce((sum, c) => sum + (1 - Math.abs(c.mine - c.average) / 4), 0) / compared.length) * 100)
+    : null;
+  const original = compared.reduce<(typeof compared)[number] | null>(
+    (best, c) => (!best || Math.abs(c.mine - c.average) > Math.abs(best.mine - best.average) ? c : best),
+    null,
+  );
+  const tierLabel = (t: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, Math.round(t)))]?.label ?? '?';
+  const verdict = agreement === null ? '' : agreement >= 85 ? 'Dans le consensus' : agreement >= 65 ? 'Plutôt d’accord' : 'Esprit rebelle';
+
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
       <View style={{ gap: 4 }}>
@@ -86,6 +126,7 @@ export default function ResultsScreen() {
           {list.emoji ?? list.daily?.emoji} {list.title}
         </Text>
         {data ? <Text style={styles.subtitle}>Classement moyen de {plural(data.votes, 'joueur')}</Text> : null}
+        {streak > 0 ? <Text style={styles.streak}>🔥 Série : {plural(streak, 'jour')} d’affilée</Text> : null}
       </View>
 
       {!current ? (
@@ -105,6 +146,20 @@ export default function ResultsScreen() {
         </View>
       ) : (
         <>
+          {data && data.votes > 1 && agreement !== null ? (
+            <View style={styles.score}>
+              <Text style={styles.scoreValue}>{agreement} %</Text>
+              <Text style={styles.scoreLabel}>d’accord avec les joueurs · {verdict}</Text>
+              {original && Math.abs(original.mine - original.average) >= 1 ? (
+                <Text style={styles.scoreDetail}>
+                  Votre choix le plus original : {original.card.label} (vous : {tierLabel(original.mine)}, joueurs : {tierLabel(original.average)})
+                </Text>
+              ) : null}
+            </View>
+          ) : data && data.votes <= 1 ? (
+            <Text style={styles.subtitle}>Vous êtes parmi les premiers à valider : revenez plus tard pour voir l’avis des autres joueurs.</Text>
+          ) : null}
+
           <View style={styles.board}>
             {list.tiers.map((tier, t) => (
               <View key={tier.id} style={styles.row}>
@@ -158,6 +213,11 @@ const styles = StyleSheet.create({
   kicker: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   title: { color: colors.text, fontSize: 22, fontWeight: '700' },
   muted: { color: colors.textMuted, fontSize: 15, textAlign: 'center' },
+  streak: { color: '#FFBF7F', fontSize: 14, fontWeight: '700' },
+  score: { alignItems: 'center', gap: 4, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.primary },
+  scoreValue: { color: colors.text, fontSize: 40, fontWeight: '800' },
+  scoreLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  scoreDetail: { color: colors.text, fontSize: 13, textAlign: 'center', marginTop: spacing.xs },
   subtitle: { color: colors.textMuted, fontSize: 15 },
   error: { color: colors.danger, fontSize: 15, textAlign: 'center' },
   board: { borderRadius: radius.md, overflow: 'hidden' },

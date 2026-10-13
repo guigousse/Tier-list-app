@@ -15,6 +15,11 @@ export type Settings = {
   haptics: boolean;
   /** Click sound on buttons. */
   sounds: boolean;
+  /** Daily local notification announcing the daily tier list, at `reminderHour`:00. */
+  dailyReminder: boolean;
+  reminderHour: number;
+  /** Whether the reminder was already offered (after the first daily validation). */
+  reminderAsked: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
 };
@@ -73,6 +78,9 @@ type State = {
 const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   sounds: true,
+  dailyReminder: false,
+  reminderHour: 18,
+  reminderAsked: false,
   cardSize: 'medium',
   showCardLabels: true,
 };

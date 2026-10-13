@@ -6,7 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip } from '../components/ui';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
+import { setDailyReminder } from '../lib/reminders';
 import { useTierStore } from '../store/useTierStore';
+
+const REMINDER_HOURS = [9, 12, 18, 21];
 
 const SIZES: { key: CardSize; label: string }[] = [
   { key: 'small', label: 'Petite' },
@@ -72,6 +75,42 @@ export default function Settings() {
             ))}
           </View>
         </View>
+      </View>
+
+      <View style={styles.group}>
+        <Text style={styles.groupTitle}>Tier list du jour</Text>
+        <Row label="Rappel quotidien" hint="Une notification quand la nouvelle tier list du jour vous attend">
+          <Switch
+            value={settings.dailyReminder}
+            onValueChange={async (on) => {
+              const ok = await setDailyReminder(on, settings.reminderHour);
+              if (!ok) {
+                Alert.alert('Notifications désactivées', 'Autorisez les notifications de Tiercraft dans les Réglages de l’iPhone.');
+                return;
+              }
+              updateSettings({ dailyReminder: on, reminderAsked: true });
+            }}
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </Row>
+        {settings.dailyReminder ? (
+          <View style={styles.block}>
+            <Text style={styles.rowLabel}>Heure du rappel</Text>
+            <View style={styles.chips}>
+              {REMINDER_HOURS.map((h) => (
+                <Chip
+                  key={h}
+                  label={`${h} h`}
+                  selected={settings.reminderHour === h}
+                  onPress={() => {
+                    updateSettings({ reminderHour: h });
+                    setDailyReminder(true, h);
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.group}>

@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { radius, spacing } from '../constants/theme';
+import { dailyStreak } from '../lib/streak';
 import { useCatalog } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from './Clickable';
@@ -16,6 +17,8 @@ const SHINE_WIDTH = 80;
 export function DailyCard() {
   const daily = useCatalog((s) => s.daily);
   const existing = useTierStore((s) => (daily ? Object.values(s.lists).find((l) => l.daily?.day === daily.day) : undefined));
+  const lists = useTierStore((s) => s.lists);
+  const streak = useMemo(() => dailyStreak(Object.values(lists)), [lists]);
   const [width, setWidth] = useState(0);
 
   // Shine: a light band crossing the card every few seconds.
@@ -67,7 +70,7 @@ export function DailyCard() {
 
       <Text style={styles.emoji}>{daily.emoji}</Text>
       <View style={{ flex: 1 }}>
-        <Text style={styles.kicker}>Tier list du jour</Text>
+        <Text style={styles.kicker}>Tier list du jour{streak > 0 ? `  ·  🔥 ${streak}` : ''}</Text>
         <Text numberOfLines={1} style={styles.title}>
           {daily.title}
         </Text>
