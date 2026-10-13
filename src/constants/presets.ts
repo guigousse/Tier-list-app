@@ -1,21 +1,5 @@
 import { TIER_COLORS } from './theme';
 
-export type TierPreset = {
-  key: string;
-  name: string;
-  labels: string[];
-};
-
-export const TIER_PRESETS: TierPreset[] = [
-  { key: 'classic', name: 'Classique', labels: ['S', 'A', 'B', 'C', 'D'] },
-  { key: 'extended', name: 'Étendu', labels: ['S', 'A', 'B', 'C', 'D', 'E', 'F'] },
-  { key: 'top3', name: 'Podium', labels: ['Or', 'Argent', 'Bronze'] },
-  { key: 'love', name: 'Avis', labels: ['Adoré', 'Aimé', 'Bof', 'Détesté'] },
-  { key: 'numbers', name: 'Notes', labels: ['10', '8', '6', '4', '2'] },
-];
-
-export const DEFAULT_PRESET_KEY = 'classic';
-
 /** Default tiers of every new tier list. */
 export const CLASSIC_TIERS = ['S', 'A', 'B', 'C', 'D'];
 

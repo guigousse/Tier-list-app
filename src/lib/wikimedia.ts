@@ -1,3 +1,5 @@
+import { leadingEmoji } from './emoji';
+
 /** Picture found on Wikimedia Commons for a card name. */
 export type WikiImage = {
   /** Thumbnail URL (about 600 px wide), downloaded when the user picks it. */
@@ -67,7 +69,8 @@ function toImages(pages: Page[]): WikiImage[] {
 
 /** Card name without its leading emoji, e.g. "🍕 Pizza" → "Pizza". */
 export function searchTerm(label: string): string {
-  return label.replace(/^[\p{Extended_Pictographic}‍️\s]+/u, '').trim();
+  const emoji = leadingEmoji(label.trim());
+  return (emoji ? label.trim().slice(emoji.length) : label).trim();
 }
 
 /** Commons file names of the flag, logo and main image of the Wikidata item named `term`. */

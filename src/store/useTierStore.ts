@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
-import { TIER_PRESETS, DEFAULT_PRESET_KEY, tierColorAt, type Template } from '../constants/presets';
+import { CLASSIC_TIERS, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
@@ -17,7 +17,6 @@ export type Settings = {
   sounds: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
-  defaultPresetKey: string;
 };
 
 type NewListInput = {
@@ -76,7 +75,6 @@ const DEFAULT_SETTINGS: Settings = {
   sounds: true,
   cardSize: 'medium',
   showCardLabels: true,
-  defaultPresetKey: DEFAULT_PRESET_KEY,
 };
 
 /** Tier index (0 = S …) of each card of `cardIds`, or null if one isn't ranked. */
@@ -98,10 +96,6 @@ function buildTiers(labels: string[]): Tier[] {
   return labels.map((label, i) => ({ id: newId(), label, color: tierColorAt(i) }));
 }
 
-export function defaultTierLabels(presetKey: string): string[] {
-  return (TIER_PRESETS.find((p) => p.key === presetKey) ?? TIER_PRESETS[0]).labels;
-}
-
 /** Removes `cardId` from wherever it currently is. */
 function detach(list: TierList, cardId: string): Pick<TierList, 'pool' | 'placement'> {
   const placement: Record<string, string[]> = {};
@@ -109,6 +103,22 @@ function detach(list: TierList, cardId: string): Pick<TierList, 'pool' | 'placem
     placement[tierId] = ids.filter((id) => id !== cardId);
   }
   return { pool: list.pool.filter((id) => id !== cardId), placement };
+}
+
+type Persisted = {
+  lists?: Record<string, TierList>;
+  settings?: Partial<Settings> & { defaultPresetKey?: string };
+  deviceId?: string;
+};
+
+/** Upgrades data saved by an older version of the app (see `version` below). */
+export function migrateStore(persisted: unknown, version: number): Persisted {
+  const data = (persisted ?? {}) as Persisted;
+  if (version < 2) {
+    // v2: tier presets were removed from the settings.
+    if (data.settings) delete data.settings.defaultPresetKey;
+  }
+  return data;
 }
 
 export const useTierStore = create<State>()(
@@ -334,7 +344,7 @@ export const useTierStore = create<State>()(
 
         createDailyList: (daily) => {
           const now = Date.now();
-          const tiers = buildTiers(TIER_PRESETS[0].labels);
+          const tiers = buildTiers(CLASSIC_TIERS);
           const cards: Record<string, Card> = {};
           const cardIds = daily.items.map((label, i) => {
             const id = newId();
@@ -370,7 +380,7 @@ export const useTierStore = create<State>()(
         createPopularList: (template) => {
           const id = get().createList({
             title: template.title,
-            tierLabels: TIER_PRESETS[0].labels,
+            tierLabels: CLASSIC_TIERS,
             cardLabels: template.items,
             cardRanks: template.ranks,
             emoji: template.emoji,
@@ -412,7 +422,9 @@ export const useTierStore = create<State>()(
     },
     {
       name: 'tiercraft-store',
-      version: 1,
+      // Bump with every change to the persisted shape, and handle it in `migrate`.
+      version: 2,
+      migrate: (persisted, version) => migrateStore(persisted, version),
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ lists: state.lists, settings: state.settings, deviceId: state.deviceId }),
       merge: (persisted, current) => {

@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { plural, relativeTime } from '../lib/format';
+import { leadingEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
 import type { TierList } from '../store/types';
 import { IconButton } from './ui';
@@ -14,8 +15,6 @@ type Props = {
   onMore?: () => void;
   timestampKey?: 'openedAt' | 'updatedAt';
 };
-
-const leadingEmoji = (label: string) => label.match(/^\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/u)?.[0];
 
 /** The list's emoji, else a card picture or emoji, else its tier colours. */
 function ListPreview({ list }: { list: TierList }) {

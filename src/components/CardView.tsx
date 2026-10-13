@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { readableTextColor } from '../constants/theme';
+import { splitEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
 import type { Card } from '../store/types';
 
@@ -9,13 +10,6 @@ type Props = {
   size: number;
   showLabel?: boolean;
 };
-
-/** Leading emoji of a label like "🍎 Pomme", if any. */
-function splitEmoji(label: string): { emoji?: string; text: string } {
-  const match = label.match(/^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*(.*)$/u);
-  if (!match) return { text: label };
-  return { emoji: match[1], text: match[2] };
-}
 
 export function CardView({ card, size, showLabel = true }: Props) {
   const uri = imageUri(card.imageName);

@@ -16,7 +16,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.guigousse.TierCraft",
-      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -61,6 +60,14 @@
         "projectId": "44164e21-47fe-412d-9cd0-38064a2df799"
       }
     },
-    "owner": "guigousse"
+    "owner": "guigousse",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/44164e21-47fe-412d-9cd0-38064a2df799",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
