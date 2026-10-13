@@ -30,8 +30,8 @@ export default function Templates() {
               {t.title}
             </Text>
             <Text style={styles.meta}>{t.items.length} cartes</Text>
-            <Text numberOfLines={1} style={styles.sample}>
-              {t.items.slice(0, 5).map((i) => i.split(' ')[0]).join(' ')}
+            <Text numberOfLines={1} style={[styles.sample, t.appStoreIds && { fontSize: 13 }]}>
+              {t.appStoreIds ? 'Avec les icônes des apps' : t.items.slice(0, 5).map((i) => i.split(' ')[0]).join(' ')}
             </Text>
           </Clickable>
         ))}
@@ -54,5 +54,5 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 36 },
   title: { color: colors.text, fontSize: 17, fontWeight: '700' },
   meta: { color: colors.textMuted, fontSize: 13 },
-  sample: { fontSize: 18, marginTop: 4 },
+  sample: { fontSize: 18, marginTop: 4, color: colors.textMuted },
 });

@@ -13,7 +13,7 @@ import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
 
-function Tile({ icon, title, subtitle, onPress }: { icon: IconName; title: string; subtitle: string; onPress: () => void }) {
+function Tile({ icon, title, onPress }: { icon: IconName; title: string; onPress: () => void }) {
   const { isCompact } = useResponsive();
   return (
     <Clickable
@@ -21,12 +21,9 @@ function Tile({ icon, title, subtitle, onPress }: { icon: IconName; title: strin
       onPress={onPress}
       style={({ pressed }) => [styles.tile, isCompact && styles.tileCompact, pressed && { opacity: 0.8 }]}
     >
-      <Ionicons name={icon} size={24} color={colors.primary} />
+      <Ionicons name={icon} size={26} color={colors.primary} />
       <Text numberOfLines={2} style={[styles.tileTitle, isCompact && styles.tileTitleCompact]}>
         {title}
-      </Text>
-      <Text numberOfLines={2} style={styles.tileSubtitle}>
-        {subtitle}
       </Text>
     </Clickable>
   );
@@ -74,9 +71,9 @@ export default function Home() {
       </View>
 
       <View style={styles.tiles}>
-        <Tile icon="add-circle-outline" title="Nouvelle tier list" subtitle="Partir de zéro" onPress={() => createAndOpen()} />
-        <Tile icon="albums-outline" title="Mes tier lists" subtitle={`${all.length} enregistrée${all.length > 1 ? 's' : ''}`} onPress={() => router.push('/lists')} />
-        <Tile icon="sparkles-outline" title="Modèles" subtitle="Prêts à classer" onPress={() => router.push('/templates')} />
+        <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
+        <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
+        <Tile icon="sparkles-outline" title="Modèle de liste" onPress={() => router.push('/templates')} />
       </View>
 
       <View style={{ gap: spacing.md }}>
@@ -124,14 +121,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
-    gap: 6,
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },
   tileCompact: { padding: spacing.sm },
   tileTitleCompact: { fontSize: 14 },
-  tileTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  tileSubtitle: { color: colors.textMuted, fontSize: 13 },
+  tileTitle: { color: colors.text, fontSize: 15, fontWeight: '700', textAlign: 'center' },
   historyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingVertical: spacing.xs },
   link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   empty: { alignItems: 'center', gap: spacing.sm, padding: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg },

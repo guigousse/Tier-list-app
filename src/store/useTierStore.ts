@@ -24,6 +24,8 @@ type NewListInput = {
   title: string;
   tierLabels: string[];
   cardLabels?: string[];
+  /** Per card label: tier index it starts in (-1 or missing: unranked). */
+  cardRanks?: number[];
   /** Where the list comes from (e.g. "daily:2026-10-13"), to find it again instead of duplicating it. */
   importedFrom?: string;
 };
@@ -107,22 +109,25 @@ export const useTierStore = create<State>()(
         settings: DEFAULT_SETTINGS,
         deviceId: newId(),
 
-        createList: ({ title, tierLabels, cardLabels = [], importedFrom }) => {
+        createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom }) => {
           const now = Date.now();
           const tiers = buildTiers(tierLabels.length ? tierLabels : ['S']);
           const cards: Record<string, Card> = {};
           const pool: string[] = [];
+          const placement: Record<string, string[]> = Object.fromEntries(tiers.map((t) => [t.id, []]));
           cardLabels.forEach((label, i) => {
             const id = newId();
             cards[id] = { id, label, color: CARD_COLORS[i % 7] };
-            pool.push(id);
+            const tier = tiers[cardRanks[i] ?? -1];
+            if (tier) placement[tier.id].push(id);
+            else pool.push(id);
           });
           const list: TierList = {
             id: newId(),
             title: title.trim() || 'Ma tier list',
             tiers,
             cards,
-            placement: Object.fromEntries(tiers.map((t) => [t.id, []])),
+            placement,
             pool,
             favorite: false,
             importedFrom,

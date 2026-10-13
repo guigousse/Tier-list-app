@@ -30,10 +30,42 @@ export type Template = {
   items: string[];
   /** Tier labels to start with instead of the user's default preset. */
   tiers?: string[];
+  /** Per item: App Store id whose icon becomes the card picture. */
+  appStoreIds?: (number | undefined)[];
+  /** Per item: tier index the card starts in (-1 or missing: to rank). */
+  ranks?: number[];
 };
 
 /** Ready-to-rank card sets, shown in the "Modèles" screen. */
 export const TEMPLATES: Template[] = [
+  {
+    key: 'mobile-games',
+    title: 'Jeux mobiles',
+    emoji: '📱',
+    items: [
+      'Broc : jeu de brocante cosy',
+      'Clash Royale',
+      'Clash of Clans',
+      'Brawl Stars',
+      'Candy Crush Saga',
+      'Subway Surfers',
+      'Pokémon GO',
+      'Among Us!',
+      'Roblox',
+      'Minecraft',
+      'Geometry Dash',
+      'Monument Valley',
+      'Plants vs. Zombies 2',
+      'Hay Day',
+      'Fruit Ninja',
+    ],
+    appStoreIds: [
+      6784023113, 1053012308, 529479190, 1229016807, 553834731, 512939461, 1094591345, 1351168404, 431946152, 479516143,
+      625334537, 728293409, 597986893, 506627515, 362949845,
+    ],
+    // Broc starts in S.
+    ranks: [0],
+  },
   {
     key: 'fruits',
     title: 'Fruits',
