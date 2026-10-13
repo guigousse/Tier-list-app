@@ -72,7 +72,10 @@ export default function RootLayout() {
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />
             <Stack.Screen name="results/[id]" options={{ title: 'Classement moyen' }} />
             <Stack.Screen name="history" options={{ title: 'Historique' }} />
-            <Stack.Screen name="welcome" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
+            <Stack.Screen
+              name="welcome"
+              options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}
+            />
             <Stack.Screen name="editor/[id]" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
         </ThemeProvider>
