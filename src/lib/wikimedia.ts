@@ -13,7 +13,7 @@ export type WikiImage = {
 const COMMONS = 'https://commons.wikimedia.org/w/api.php';
 const WIKIDATA = 'https://www.wikidata.org/w/api.php';
 const WIKIPEDIA = 'https://fr.wikipedia.org/w/api.php';
-const HEADERS = { 'Api-User-Agent': 'Tiercraft/1.0 (https://tiercraft-nine.vercel.app)' };
+const HEADERS = { 'Api-User-Agent': 'Tiercraft/1.0 (https://tier-list-app-share-site.vercel.app)' };
 // SVG files (flags, logos) come with a PNG thumbnail, which is what gets downloaded.
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 /** Wikidata properties holding the most recognisable picture of a thing, best first. */

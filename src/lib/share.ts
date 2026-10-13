@@ -23,7 +23,7 @@ const VERSION = 1;
  * associated domain declared in app.json; without the app, the page sends
  * people to the App Store.
  */
-export const SHARE_HOST = 'tiercraft-nine.vercel.app';
+export const SHARE_HOST = 'tier-list-app-share-site.vercel.app';
 const MAX_TIERS = 30;
 const MAX_CARDS = 300;
 
