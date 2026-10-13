@@ -52,12 +52,19 @@
           if (typeof data.t === 'string' && data.t) document.getElementById('title').textContent = '« ' + data.t.slice(0, 60) + ' »';
         } catch (e) {}
       }
-      // On iPhone/iPad, links open the app directly when it is installed (universal
-      // link). Landing here means it isn't: go to the App Store.
+      // On iPhone/iPad, a tapped link normally opens the app directly (universal
+      // link). It can still land here: link opened inside a browser or an in-app
+      // web view, or iOS not having checked the domain yet. Try the app's own
+      // scheme; if the page is still visible shortly after, the app isn't
+      // installed: go to the App Store.
       var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      if (ios && !sessionStorage.getItem('tc-redirected')) {
+      if (ios && code && !sessionStorage.getItem('tc-redirected')) {
         sessionStorage.setItem('tc-redirected', '1');
-        setTimeout(function () { location.href = document.getElementById('store').href; }, 1200);
+        var timer = setTimeout(function () { location.href = document.getElementById('store').href; }, 1800);
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) clearTimeout(timer);
+        });
+        location.href = document.getElementById('open').href;
       }
     })();
   </script>
