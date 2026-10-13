@@ -51,6 +51,13 @@ export default function Settings() {
             trackColor={{ true: colors.primary, false: colors.border }}
           />
         </Row>
+        <Row label="Sons des boutons" hint="Petit clic quand vous touchez un bouton (coupé en mode silencieux)">
+          <Switch
+            value={settings.sounds}
+            onValueChange={(sounds) => updateSettings({ sounds })}
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </Row>
         <Row label="Afficher le nom des cartes">
           <Switch
             value={settings.showCardLabels}

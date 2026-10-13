@@ -1,10 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { colors, readableTextColor } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
 import type { Card, Tier } from '../../store/types';
 import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
+import { Clickable } from '../Clickable';
 
 type Props = {
   tier: Tier;
@@ -22,7 +23,7 @@ export function TierRow({ tier, cards, onPressTier, onPressCard }: Props) {
 
   return (
     <View ref={ref} collapsable={false} style={styles.row}>
-      <Pressable
+      <Clickable
         accessibilityRole="button"
         accessibilityLabel={onPressTier ? `Rang ${tier.label}, modifier` : `Rang ${tier.label}`}
         disabled={!onPressTier}
@@ -32,7 +33,7 @@ export function TierRow({ tier, cards, onPressTier, onPressCard }: Props) {
         <Text numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5} style={[styles.labelText, { color: fg }]}>
           {tier.label}
         </Text>
-      </Pressable>
+      </Clickable>
       <Animated.View style={[styles.cards, highlight]}>
         {cards.map((c) => (
           <DraggableCard key={c.id} card={c} zone={tier.id} scrolls onPress={onPressCard} />

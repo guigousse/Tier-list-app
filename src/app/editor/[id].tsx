@@ -1,7 +1,7 @@
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,9 +16,11 @@ import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
 import { syncDailyVotes } from '../../lib/daily';
+import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
+import { Clickable } from '../../components/Clickable';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
@@ -88,7 +90,10 @@ function Editor({ list }: { list: TierList }) {
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
 
-  const openCard = useCallback((card: Card) => setCardSheet({ cardId: card.id }), []);
+  const openCard = useCallback((card: Card) => {
+    playClick();
+    setCardSheet({ cardId: card.id });
+  }, []);
   const openTier = useCallback((tier: { id: string }) => setEditingTierId(tier.id), []);
 
   const createCards = (drafts: CardDraft[]) => drafts.forEach((d) => store.addCard(list.id, d));
@@ -178,7 +183,7 @@ function Editor({ list }: { list: TierList }) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.xs }]}>
         <IconButton icon="chevron-back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
-        <Pressable
+        <Clickable
           accessibilityRole="button"
           accessibilityHint={daily ? undefined : 'Renommer'}
           disabled={Boolean(daily)}
@@ -191,7 +196,7 @@ function Editor({ list }: { list: TierList }) {
           <Text numberOfLines={1} style={styles.title}>
             {list.title}
           </Text>
-        </Pressable>
+        </Clickable>
         <IconButton icon="share-outline" label="Partager" onPress={daily ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>

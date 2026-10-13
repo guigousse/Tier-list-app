@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DailyCard } from '../components/DailyCard';
@@ -10,11 +10,12 @@ import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
+import { Clickable } from '../components/Clickable';
 
 function Tile({ icon, title, subtitle, onPress }: { icon: IconName; title: string; subtitle: string; onPress: () => void }) {
   const { isCompact } = useResponsive();
   return (
-    <Pressable
+    <Clickable
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.tile, isCompact && styles.tileCompact, pressed && { opacity: 0.8 }]}
@@ -26,7 +27,7 @@ function Tile({ icon, title, subtitle, onPress }: { icon: IconName; title: strin
       <Text numberOfLines={2} style={styles.tileSubtitle}>
         {subtitle}
       </Text>
-    </Pressable>
+    </Clickable>
   );
 }
 
@@ -64,10 +65,10 @@ export default function Home() {
       <View style={{ gap: spacing.sm }}>
         <DailyCard />
         {validatedDaily > 0 ? (
-          <Pressable accessibilityRole="button" onPress={() => router.push('/history')} hitSlop={8} style={styles.historyLink}>
+          <Clickable accessibilityRole="button" onPress={() => router.push('/history')} hitSlop={8} style={styles.historyLink}>
             <Ionicons name="time-outline" size={16} color={colors.primary} />
             <Text style={styles.link}>Historique des tier lists du jour ({validatedDaily})</Text>
-          </Pressable>
+          </Clickable>
         ) : null}
       </View>
 
@@ -81,9 +82,9 @@ export default function Home() {
         <SectionTitle
           right={
             all.length > 0 ? (
-              <Pressable onPress={() => router.push('/lists')} hitSlop={8}>
+              <Clickable onPress={() => router.push('/lists')} hitSlop={8}>
                 <Text style={styles.link}>Tout voir</Text>
-              </Pressable>
+              </Clickable>
             ) : undefined
           }
         >

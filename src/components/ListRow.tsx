@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { plural, relativeTime } from '../lib/format';
 import type { TierList } from '../store/types';
 import { IconButton } from './ui';
+import { Clickable } from './Clickable';
 
 type Props = {
   list: TierList;
@@ -19,7 +20,7 @@ export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: P
   const verb = timestampKey === 'openedAt' ? 'Ouverte' : 'Modifiée';
   return (
     <View style={styles.row}>
-      <Pressable
+      <Clickable
         accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [styles.main, pressed && { opacity: 0.8 }]}
@@ -48,7 +49,7 @@ export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: P
           </Text>
         </View>
         {onMore ? null : <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />}
-      </Pressable>
+      </Clickable>
       {onMore ? <IconButton icon="ellipsis-horizontal" label="Options" onPress={onMore} color={colors.textMuted} /> : null}
     </View>
   );

@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
+import { playClick } from '../lib/sound';
 import { SHEET_MAX_WIDTH } from '../lib/layout';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -37,7 +38,10 @@ export function Button({ label, onPress, icon, variant = 'primary', disabled, st
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={() => {
+        playClick();
+        onPress();
+      }}
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
@@ -66,7 +70,10 @@ export function IconButton({ icon, onPress, label, color = colors.text, size = 2
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={8}
-      onPress={onPress}
+      onPress={() => {
+        playClick();
+        onPress();
+      }}
       style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.6 : 1 }, style]}
     >
       <Ionicons name={icon} size={size} color={color} />
@@ -155,6 +162,7 @@ export function ActionSheet({
             key={a.label}
             accessibilityRole="button"
             onPress={() => {
+              playClick();
               onClose();
               // iOS cannot present an alert or another modal while this one animates out.
               setTimeout(a.onPress, 350);
@@ -175,7 +183,10 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      onPress={onPress}
+      onPress={() => {
+        playClick();
+        onPress();
+      }}
       style={[styles.chip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
     >
       <Text style={[styles.chipLabel, selected && { color: colors.primaryText }]}>{label}</Text>

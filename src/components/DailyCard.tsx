@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { radius, spacing } from '../constants/theme';
 import { useCatalog } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
+import { Clickable } from './Clickable';
 
 const SHINE_WIDTH = 80;
 
@@ -46,7 +47,7 @@ export function DailyCard() {
   };
 
   return (
-    <Pressable
+    <Clickable
       accessibilityRole="button"
       accessibilityLabel={`Tier list du jour : ${daily.title}`}
       accessibilityHint={validated ? 'Voir le classement moyen' : 'Classer les cartes'}
@@ -80,7 +81,7 @@ export function DailyCard() {
           </Animated.View>
         )}
       </View>
-    </Pressable>
+    </Clickable>
   );
 }
 

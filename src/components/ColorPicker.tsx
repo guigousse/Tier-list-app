@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { colors, isValidHex, PALETTE, readableTextColor, spacing } from '../constants/theme';
 import { Field } from './ui';
+import { Clickable } from './Clickable';
 
 type Props = {
   value: string;
@@ -22,7 +23,7 @@ export function ColorPicker({ value, onChange, palette = PALETTE }: Props) {
         {palette.map((c) => {
           const selected = c.toLowerCase() === value.toLowerCase();
           return (
-            <Pressable
+            <Clickable
               key={c}
               accessibilityRole="button"
               accessibilityLabel={`Couleur ${c}`}
@@ -34,7 +35,7 @@ export function ColorPicker({ value, onChange, palette = PALETTE }: Props) {
               style={[styles.swatch, { backgroundColor: c }, selected && styles.selected]}
             >
               {selected ? <Ionicons name="checkmark" size={18} color={readableTextColor(c)} /> : null}
-            </Pressable>
+            </Clickable>
           );
         })}
       </View>

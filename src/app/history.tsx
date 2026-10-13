@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { formatDay } from '../lib/format';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
+import { Clickable } from '../components/Clickable';
 
 /** Validated daily tier lists, most recent first. */
 export default function History() {
@@ -30,7 +31,7 @@ export default function History() {
       renderItem={({ item }) => {
         const top = (item.placement[item.tiers[0]?.id] ?? []).map((cid) => item.cards[cid]?.label).filter(Boolean);
         return (
-          <Pressable
+          <Clickable
             accessibilityRole="button"
             onPress={() => router.push({ pathname: '/results/[id]', params: { id: item.id } })}
             style={({ pressed }) => [styles.row, pressed && { opacity: 0.8 }]}
@@ -48,7 +49,7 @@ export default function History() {
               ) : null}
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-          </Pressable>
+          </Clickable>
         );
       }}
     />

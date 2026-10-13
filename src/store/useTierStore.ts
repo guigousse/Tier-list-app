@@ -13,6 +13,8 @@ import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 
 export type Settings = {
   haptics: boolean;
+  /** Click sound on buttons. */
+  sounds: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
   defaultPresetKey: string;
@@ -64,6 +66,7 @@ type State = {
 
 const DEFAULT_SETTINGS: Settings = {
   haptics: true,
+  sounds: true,
   cardSize: 'medium',
   showCardLabels: true,
   defaultPresetKey: DEFAULT_PRESET_KEY,

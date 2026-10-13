@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { colors, spacing } from '../../constants/theme';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card } from '../../store/types';
 import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
+import { Clickable } from '../Clickable';
 
 type Props = {
   cards: Card[];
@@ -45,7 +46,7 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: P
         contentContainerStyle={[styles.content, { minHeight: cardSize + 8 }]}
       >
         {onAdd ? (
-        <Pressable
+        <Clickable
           accessibilityRole="button"
           accessibilityLabel="Ajouter des cartes"
           onPress={onAdd}
@@ -53,7 +54,7 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: P
         >
           <Ionicons name="add" size={28} color={colors.primary} />
           <Text style={styles.addLabel}>Ajouter</Text>
-        </Pressable>
+        </Clickable>
         ) : null}
         {cards.map((c) => (
           <DraggableCard key={c.id} card={c} zone={POOL} scrolls={false} onPress={onPressCard} />
