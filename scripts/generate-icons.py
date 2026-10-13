@@ -2,8 +2,9 @@
 
 Usage: python3 scripts/generate-icons.py  (requires Pillow)
 
-The mark is five tier bars (S to D), each starting with its letter, laid out
-to draw a C with a sparkle in its opening, on a deep violet background.
+The mark is five tier bars (S to D), each starting with its letter, getting
+longer from S to D, with a crown at the end of S and a poop at the end of D, on
+a deep violet background.
 """
 
 from pathlib import Path
@@ -18,9 +19,20 @@ BG_BOTTOM = (15, 17, 21)
 GLOW = (124, 92, 255)
 TIERS = [(255, 127, 127), (255, 191, 127), (255, 223, 127), (255, 255, 127), (191, 255, 127)]
 LETTERS = "SABCD"
-# (left edge, right edge) of each bar as a fraction of the mark width: together they draw a "C".
-BARS = [(0.16, 0.96), (0.04, 0.60), (0.0, 0.50), (0.04, 0.60), (0.16, 0.96)]
+# (left edge, right edge) of each bar as a fraction of the mark width: S shortest, D longest.
+BARS = [(0.0, 0.42), (0.0, 0.56), (0.0, 0.70), (0.0, 0.84), (0.0, 0.98)]
+# Emoji sitting at the end of a bar (tier index → emoji).
+BAR_EMOJI = {0: "\U0001F451", 4: "\U0001F4A9"}
 FONT = "/usr/share/fonts/opentype/inter/Inter-Black.otf"
+EMOJI_FONT = "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"
+
+
+def emoji(char: str, px: int) -> Image.Image:
+    """Colour emoji rendered at `px` pixels (Noto Color Emoji only has a 109 px bitmap)."""
+    font = ImageFont.truetype(EMOJI_FONT, 109)
+    img = Image.new("RGBA", (160, 160), (0, 0, 0, 0))
+    ImageDraw.Draw(img).text((80, 80), char, font=font, embedded_color=True, anchor="mm")
+    return img.crop(img.getbbox()).resize((px, px), Image.LANCZOS)
 
 
 def background(size: int) -> Image.Image:
@@ -38,12 +50,6 @@ def background(size: int) -> Image.Image:
     d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=150)
     glow = glow.filter(ImageFilter.GaussianBlur(size * 0.16))
     return Image.composite(Image.new("RGB", (size, size), GLOW), img, glow)
-
-
-def sparkle(d: ImageDraw.ImageDraw, cx: float, cy: float, r: float, fill) -> None:
-    w = r * 0.28
-    d.polygon([(cx, cy - r), (cx + w, cy - w), (cx + r, cy), (cx + w, cy + w),
-               (cx, cy + r), (cx - w, cy + w), (cx - r, cy), (cx - w, cy - w)], fill=fill)
 
 
 def mark(size: int, box: float, mono: bool = False, shadow: bool = True) -> Image.Image:
@@ -87,7 +93,13 @@ def mark(size: int, box: float, mono: bool = False, shadow: bool = True) -> Imag
             d.rounded_rectangle((a, b, a + bar_h * 1.1, e), radius=bar_h * 0.3, corners=(True, False, False, True), fill=shade)
             d.text((cx, cy), letter, font=font, fill=(26, 20, 40, 255), anchor="mm")
 
-    sparkle(d, x0 + span * 0.86, top + 2.5 * bar_h + 2 * gap, span * 0.08, (255, 255, 255, 255))
+    if not mono:
+        for i, char in BAR_EMOJI.items():
+            a, b, c, e = rect(i)
+            px = round(bar_h * 1.05)
+            em = emoji(char, px)
+            # Centred on the end of the bar, slightly overflowing it like a sticker.
+            img.alpha_composite(em, (round(c - px * 0.62), round((b + e) / 2 - px / 2)))
     return img.resize((size, size), Image.LANCZOS)
 
 
