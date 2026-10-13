@@ -54,9 +54,11 @@ export function Stage({ width, height, children, style }: { width: number; heigh
 }
 
 /** Where to put the finger (its top-left corner) so that its tip touches (x, y). */
-export function fingerOffset(x: number, y: number, size = FINGER): { x: number; y: number } {
+export function fingerOffset(x: number, y: number): { x: number; y: number } {
   'worklet';
-  return { x: x - size * 0.45, y: y - size * 0.05 };
+  // No default parameter reading a captured value: on the UI thread, defaults are
+  // evaluated before captured values exist (it crashed the app on iOS).
+  return { x: x - FINGER * 0.45, y: y - FINGER * 0.05 };
 }
 
 /** A tier list card: app icon or emoji on a colour. */
