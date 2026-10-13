@@ -4,11 +4,11 @@ import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListRow } from '../components/ListRow';
+import { ShareSheet } from '../components/ShareSheet';
 import { ActionSheet, Button, Chip, Field, Sheet } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
 import { useResponsive } from '../lib/layout';
-import { copyLink, sendList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
 type Sort = 'updated' | 'opened' | 'name' | 'favorites';
@@ -28,6 +28,7 @@ export default function Lists() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('updated');
   const [menuFor, setMenuFor] = useState<TierList | null>(null);
+  const [shareFor, setShareFor] = useState<TierList | null>(null);
   const [renaming, setRenaming] = useState<TierList | null>(null);
   const [newTitle, setNewTitle] = useState('');
 
@@ -100,14 +101,15 @@ export default function Lists() {
                     setRenaming(menuFor);
                   },
                 },
-                { label: 'Copier le lien', icon: 'link-outline', onPress: () => copyLink(menuFor) },
-                { label: 'Envoyer le lien…', icon: 'paper-plane-outline', onPress: () => sendList(menuFor) },
+                { label: 'Partager', icon: 'share-outline', onPress: () => setShareFor(menuFor) },
                 { label: 'Dupliquer', icon: 'copy-outline', onPress: () => duplicateList(menuFor.id) },
                 { label: 'Supprimer', icon: 'trash-outline', destructive: true, onPress: () => confirmDelete(menuFor) },
               ]
             : []
         }
       />
+
+      <ShareSheet list={shareFor ? (lists[shareFor.id] ?? null) : null} visible={shareFor !== null} onClose={() => setShareFor(null)} />
 
       <Sheet
         visible={renaming !== null}

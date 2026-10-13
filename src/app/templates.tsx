@@ -2,12 +2,13 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TEMPLATES } from '../constants/presets';
 import { colors, radius, spacing } from '../constants/theme';
 import { CONTENT_MAX_WIDTH, useResponsive } from '../lib/layout';
+import { useAllTemplates } from '../store/useCatalog';
 
 export default function Templates() {
   const insets = useSafeAreaInsets();
+  const templates = useAllTemplates();
   const { column, gutter, width, isTablet } = useResponsive();
   const columns = isTablet ? 3 : 2;
   const inner = Math.min(width, CONTENT_MAX_WIDTH) - gutter * 2;
@@ -16,7 +17,7 @@ export default function Templates() {
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.lg, paddingBottom: insets.bottom + spacing.xl }]}>
       <Text style={styles.intro}>Choisissez un thème : les cartes sont déjà créées, il ne reste plus qu’à les classer.</Text>
       <View style={styles.grid}>
-        {TEMPLATES.map((t) => (
+        {templates.map((t) => (
           <Pressable
             key={t.key}
             accessibilityRole="button"

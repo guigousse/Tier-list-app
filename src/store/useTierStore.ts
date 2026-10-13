@@ -21,6 +21,8 @@ type NewListInput = {
   title: string;
   tierLabels: string[];
   cardLabels?: string[];
+  /** Where the list comes from (e.g. "daily:2026-10-13"), to find it again instead of duplicating it. */
+  importedFrom?: string;
 };
 
 type State = {
@@ -92,7 +94,7 @@ export const useTierStore = create<State>()(
         lists: {},
         settings: DEFAULT_SETTINGS,
 
-        createList: ({ title, tierLabels, cardLabels = [] }) => {
+        createList: ({ title, tierLabels, cardLabels = [], importedFrom }) => {
           const now = Date.now();
           const tiers = buildTiers(tierLabels.length ? tierLabels : ['S']);
           const cards: Record<string, Card> = {};
@@ -110,6 +112,7 @@ export const useTierStore = create<State>()(
             placement: Object.fromEntries(tiers.map((t) => [t.id, []])),
             pool,
             favorite: false,
+            importedFrom,
             createdAt: now,
             updatedAt: now,
             openedAt: now,

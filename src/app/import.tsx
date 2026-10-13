@@ -1,26 +1,50 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Field } from '../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../constants/theme';
+import { fetchSharedList } from '../lib/api';
 import { plural } from '../lib/format';
 import { useResponsive } from '../lib/layout';
-import { decodeShared, SHARE_HOST } from '../lib/share';
+import { decodeShared, normalizeCode, type SharedList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
+type Lookup = { code: string; status: 'loading' | 'found' | 'missing' | 'offline'; shared?: SharedList };
+
 /**
- * Opened by a shared link (https://…/import?d=… or tiercraft://import?d=…), which
- * adds the tier list right away, or from the app to paste a link by hand.
+ * Adds a tier list received from someone else. Opened by a shared link
+ * (…/s/CODE, or an offline …/import?d=… link), which adds it right away, or
+ * from the app to type a code / paste a link by hand.
  */
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
-  const { d } = useLocalSearchParams<{ d?: string }>();
-  const [pasted, setPasted] = useState('');
+  const { d, c } = useLocalSearchParams<{ d?: string; c?: string }>();
+  const fromLink = Boolean(d || c);
+  const [typed, setTyped] = useState('');
+  const [lookup, setLookup] = useState<Lookup | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
-  const shared = useMemo(() => decodeShared(d ? `?d=${d}` : pasted), [d, pasted]);
+  const input = d ? `?d=${d}` : c ? `/s/${c}` : typed;
+  const offline = useMemo(() => decodeShared(input), [input]);
+  const code = offline ? null : normalizeCode(input);
+
+  useEffect(() => {
+    if (!code) return;
+    let cancelled = false;
+    fetchSharedList(code)
+      .then((shared) => !cancelled && setLookup({ code, status: shared ? 'found' : 'missing', shared: shared ?? undefined }))
+      .catch(() => !cancelled && setLookup({ code, status: 'offline' }));
+    return () => {
+      cancelled = true;
+    };
+  }, [code, attempt]);
+
+  // Until the request for this code answers, it is loading.
+  const current: Lookup | null = !code ? null : lookup?.code === code ? lookup : { code, status: 'loading' };
+  const shared = offline ?? current?.shared ?? null;
 
   const add = () => {
     if (!shared) return;
@@ -31,28 +55,27 @@ export default function ImportScreen() {
   // A link was opened: add the tier list without asking and show it.
   const autoAdded = useRef(false);
   useEffect(() => {
-    if (!d || !shared || autoAdded.current) return;
+    if (!fromLink || !shared || autoAdded.current) return;
     autoAdded.current = true;
     add();
   });
 
-  const ranked = shared ? shared.cards.filter((c) => c.tier >= 0).length : 0;
+  const ranked = shared ? shared.cards.filter((card) => card.tier >= 0).length : 0;
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[column, { padding: gutter, gap: spacing.xl }]}>
-        {!d ? (
+        {!fromLink ? (
           <View style={{ gap: spacing.sm }}>
-            <Text style={styles.intro}>Collez le message ou le lien reçu pour ajouter la tier list à votre téléphone.</Text>
+            <Text style={styles.intro}>Saisissez le code reçu (6 caractères) ou collez le lien.</Text>
             <Field
-              value={pasted}
-              onChangeText={setPasted}
-              placeholder={`https://${SHARE_HOST}/import?d=…`}
-              multiline
+              value={typed}
+              onChangeText={setTyped}
+              placeholder="Ex. K7F 3QX"
               autoCorrect={false}
-              autoCapitalize="none"
+              autoCapitalize="characters"
               autoFocus
-              style={{ minHeight: 120, textAlignVertical: 'top' }}
+              style={styles.input}
             />
           </View>
         ) : null}
@@ -76,8 +99,25 @@ export default function ImportScreen() {
             </View>
             <Text style={styles.hint}>Les photos des cartes ne sont pas transmises, seuls leurs noms et couleurs le sont.</Text>
           </View>
-        ) : d || pasted.trim() ? (
-          <Text style={styles.error}>Ce lien ne contient pas de tier list valide.</Text>
+        ) : current?.status === 'loading' ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : current?.status === 'missing' ? (
+          <Text style={styles.error}>Aucune tier list ne correspond au code {current.code}.</Text>
+        ) : current?.status === 'offline' ? (
+          <View style={{ gap: spacing.md }}>
+            <Text style={styles.error}>Impossible de récupérer la tier list : vérifiez votre connexion.</Text>
+            <Button
+              label="Réessayer"
+              icon="refresh"
+              variant="secondary"
+              onPress={() => {
+                setLookup(null);
+                setAttempt((n) => n + 1);
+              }}
+            />
+          </View>
+        ) : input.trim() && !code ? (
+          <Text style={styles.error}>Ce n’est pas un code ou un lien Tiercraft valide.</Text>
         ) : null}
       </ScrollView>
 
@@ -92,6 +132,7 @@ export default function ImportScreen() {
 
 const styles = StyleSheet.create({
   intro: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
+  input: { fontSize: 22, fontWeight: '700', letterSpacing: 2, textAlign: 'center' },
   preview: { gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
   title: { color: colors.text, fontSize: 20, fontWeight: '700' },
   meta: { color: colors.textMuted, fontSize: 14 },

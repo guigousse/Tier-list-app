@@ -4,9 +4,10 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip, Field, IconButton } from '../components/ui';
-import { TEMPLATES, TIER_PRESETS, tierColorAt } from '../constants/presets';
+import { TIER_PRESETS, tierColorAt } from '../constants/presets';
 import { colors, readableTextColor, spacing } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
+import { useAllTemplates } from '../store/useCatalog';
 import { defaultTierLabels, useTierStore } from '../store/useTierStore';
 
 const MAX_TIERS = 12;
@@ -22,13 +23,13 @@ export default function NewList() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const { template: templateKey } = useLocalSearchParams<{ template?: string }>();
-  const template = TEMPLATES.find((t) => t.key === templateKey);
+  const template = useAllTemplates().find((t) => t.key === templateKey);
   const defaultPresetKey = useTierStore((s) => s.settings.defaultPresetKey);
   const createList = useTierStore((s) => s.createList);
 
   const [title, setTitle] = useState(template ? template.title : '');
-  const [presetKey, setPresetKey] = useState<string | null>(defaultPresetKey);
-  const [labels, setLabels] = useState<string[]>(() => defaultTierLabels(defaultPresetKey));
+  const [presetKey, setPresetKey] = useState<string | null>(template?.tiers ? null : defaultPresetKey);
+  const [labels, setLabels] = useState<string[]>(() => template?.tiers ?? defaultTierLabels(defaultPresetKey));
 
   const applyPreset = (key: string) => {
     setPresetKey(key);

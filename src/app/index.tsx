@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DailyCard } from '../components/DailyCard';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
@@ -71,6 +72,8 @@ export default function Home() {
         </View>
         <Ionicons name="add-circle" size={36} color={colors.primaryText} />
       </Pressable>
+
+      <DailyCard />
 
       <View style={styles.tiles}>
         <Tile icon="albums-outline" title="Mes tier lists" subtitle={`${all.length} enregistrée${all.length > 1 ? 's' : ''}`} onPress={() => router.push('/lists')} />

@@ -24,6 +24,8 @@
     .btn { display: block; padding: 14px 18px; border-radius: 12px; font-weight: 600; text-decoration: none; margin-top: 12px; }
     .primary { background: var(--primary); color: #fff; }
     .secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .code { font-size: 22px; font-weight: 800; letter-spacing: 3px; margin: 20px 0 0; }
+    .code:empty { display: none; }
     .hint { color: var(--muted); font-size: 13px; margin-top: 20px; }
   </style>
 </head>
@@ -35,13 +37,28 @@
     <div class="strip"><span style="background:#FF7F7F"></span><span style="background:#FFBF7F"></span><span style="background:#FFDF7F"></span><span style="background:#FFFF7F"></span><span style="background:#BFFF7F"></span></div>
     <a class="btn primary" id="store" href="https://apps.apple.com/app/id6822017061">Télécharger Tiercraft sur l’App Store</a>
     <a class="btn secondary" id="open" href="tiercraft://import">J’ai déjà l’app : ouvrir la tier list</a>
-    <p class="hint">Une fois l’app installée, touchez à nouveau le lien reçu pour ajouter la tier list.</p>
+    <p class="code" id="code"></p>
+    <p class="hint">Une fois l’app installée, touchez à nouveau le lien reçu, ou saisissez le code dans Mes tier lists → Importer.</p>
   </main>
   <script>
     (function () {
       var params = new URLSearchParams(location.search);
+      var short = (location.pathname.match(/^\/s\/([A-Za-z0-9]{6})$/) || [])[1];
       var code = params.get('d') || '';
-      if (/^[A-Za-z0-9_-]+$/.test(code)) {
+      var showTitle = function (t) {
+        if (typeof t === 'string' && t) document.getElementById('title').textContent = '« ' + t.slice(0, 60) + ' »';
+      };
+      if (short) {
+        // Short link: the tier list is stored online under this code.
+        code = short.toUpperCase();
+        document.getElementById('open').href = 'tiercraft://s/' + code;
+        fetch('https://mefhdtpyhtvplpfleyhi.supabase.co/rest/v1/rpc/get_shared_list', {
+          method: 'POST',
+          headers: { apikey: 'sb_publishable_3nkx7nvNVBbfy4Q_sqEf3w_WXELIyYP', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code })
+        }).then(function (r) { return r.json(); }).then(function (p) { showTitle(p && p.t); }).catch(function () {});
+        document.getElementById('code').textContent = 'Code : ' + code.slice(0, 3) + ' ' + code.slice(3);
+      } else if (/^[A-Za-z0-9_-]+$/.test(code)) {
         document.getElementById('open').href = 'tiercraft://import?d=' + code;
         // Show the list title: the code is base64url-encoded UTF-8 JSON (see src/lib/share.ts).
         try {
@@ -49,15 +66,22 @@
           var bin = atob(b64 + '==='.slice((b64.length + 3) % 4));
           var bytes = Uint8Array.from(bin, function (c) { return c.charCodeAt(0); });
           var data = JSON.parse(new TextDecoder().decode(bytes));
-          if (typeof data.t === 'string' && data.t) document.getElementById('title').textContent = '« ' + data.t.slice(0, 60) + ' »';
+          showTitle(data.t);
         } catch (e) {}
       }
-      // On iPhone/iPad, links open the app directly when it is installed (universal
-      // link). Landing here means it isn't: go to the App Store.
+      // On iPhone/iPad, a tapped link normally opens the app directly (universal
+      // link). It can still land here: link opened inside a browser or an in-app
+      // web view, or iOS not having checked the domain yet. Try the app's own
+      // scheme; if the page is still visible shortly after, the app isn't
+      // installed: go to the App Store.
       var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      if (ios && !sessionStorage.getItem('tc-redirected')) {
+      if (ios && code && !sessionStorage.getItem('tc-redirected')) {
         sessionStorage.setItem('tc-redirected', '1');
-        setTimeout(function () { location.href = document.getElementById('store').href; }, 1200);
+        var timer = setTimeout(function () { location.href = document.getElementById('store').href; }, 1800);
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) clearTimeout(timer);
+        });
+        location.href = document.getElementById('open').href;
       }
     })();
   </script>

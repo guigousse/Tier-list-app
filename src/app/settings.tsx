@@ -84,7 +84,7 @@ export default function Settings() {
       <View style={styles.group}>
         <Text style={styles.groupTitle}>Données</Text>
         <Text style={styles.rowHint}>
-          {count} tier list{count > 1 ? 's' : ''} enregistrée{count > 1 ? 's' : ''} sur cet appareil. Vos données ne quittent jamais votre téléphone.
+          {count} tier list{count > 1 ? 's' : ''} enregistrée{count > 1 ? 's' : ''} sur cet appareil. Elles restent sur votre téléphone : seules les tier lists que vous partagez par code sont envoyées en ligne, sans les photos.
         </Text>
         <Button label="Tout effacer" icon="trash-outline" variant="danger" onPress={confirmClear} disabled={count === 0} />
       </View>

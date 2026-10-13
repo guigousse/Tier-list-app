@@ -25,6 +25,8 @@ export type Template = {
   title: string;
   emoji: string;
   items: string[];
+  /** Tier labels to start with instead of the user's default preset. */
+  tiers?: string[];
 };
 
 /** Ready-to-rank card sets, shown in the "Modèles" screen. */
