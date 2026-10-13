@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,6 +40,12 @@ export default function Home() {
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
   const open = (id: string) => router.push({ pathname: '/editor/[id]', params: { id } });
+
+  // First launch: welcome screens.
+  const onboarded = useTierStore((s) => s.settings.onboarded);
+  useEffect(() => {
+    if (!onboarded) router.push('/welcome');
+  }, [onboarded]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

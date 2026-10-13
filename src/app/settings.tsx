@@ -1,12 +1,13 @@
 import Constants from 'expo-constants';
 import type { ReactNode } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Chip } from '../components/ui';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { setDailyReminder } from '../lib/reminders';
+import { SHARE_HOST } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
 const REMINDER_HOURS = [9, 12, 18, 21];
@@ -123,6 +124,8 @@ export default function Settings() {
 
       <View style={styles.group}>
         <Text style={styles.groupTitle}>À propos</Text>
+        <Button variant="secondary" icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => Linking.openURL(`https://${SHARE_HOST}/confidentialite`)} />
+        <Button variant="secondary" icon="help-circle-outline" label="Assistance" onPress={() => Linking.openURL(`https://${SHARE_HOST}/support`)} />
         <Row label="Version">
           <Text style={styles.rowHint}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
         </Row>

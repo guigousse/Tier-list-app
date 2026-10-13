@@ -85,6 +85,6 @@ describe('popular tier lists', () => {
 describe('migrateStore', () => {
   it('drops the removed tier preset setting from v1 data', () => {
     const migrated = migrateStore({ settings: { haptics: true, defaultPresetKey: 'classic' }, lists: {} }, 1);
-    expect(migrated.settings).toEqual({ haptics: true });
+    expect(migrated.settings).toEqual({ haptics: true, onboarded: true });
   });
 });

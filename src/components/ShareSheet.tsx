@@ -57,7 +57,7 @@ export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
             <Text selectable accessibilityLabel={`Code ${code.split('').join(' ')}`} style={styles.code}>
               {code.slice(0, 3)} {code.slice(3)}
             </Text>
-            <Text style={styles.hint}>À saisir dans Tiercraft : Mes tier lists → Importer.</Text>
+            <Text style={styles.hint}>À saisir dans Tiercraft : Mes listes → Importer.</Text>
           </View>
           <View style={styles.row}>
             <Button style={styles.flex} variant="secondary" icon="copy-outline" label="Copier le code" onPress={() => copyText(code, `Le code ${code} est copié.`)} />

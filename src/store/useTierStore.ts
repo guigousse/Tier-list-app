@@ -20,6 +20,8 @@ export type Settings = {
   reminderHour: number;
   /** Whether the reminder was already offered (after the first daily validation). */
   reminderAsked: boolean;
+  /** Whether the welcome screens were seen. */
+  onboarded: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
 };
@@ -81,6 +83,7 @@ const DEFAULT_SETTINGS: Settings = {
   dailyReminder: false,
   reminderHour: 18,
   reminderAsked: false,
+  onboarded: false,
   cardSize: 'medium',
   showCardLabels: true,
 };
@@ -125,6 +128,10 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
   if (version < 2) {
     // v2: tier presets were removed from the settings.
     if (data.settings) delete data.settings.defaultPresetKey;
+  }
+  if (version < 3) {
+    // v3: welcome screens. People who already used the app don't need them.
+    data.settings = { ...data.settings, onboarded: true };
   }
   return data;
 }
@@ -431,7 +438,7 @@ export const useTierStore = create<State>()(
     {
       name: 'tiercraft-store',
       // Bump with every change to the persisted shape, and handle it in `migrate`.
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => migrateStore(persisted, version),
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ lists: state.lists, settings: state.settings, deviceId: state.deviceId }),
