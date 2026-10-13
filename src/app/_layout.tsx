@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
+import { syncDailyVotes } from '../lib/daily';
 import { useCatalog } from '../store/useCatalog';
 import { useHydrated } from '../store/useTierStore';
 
@@ -33,10 +34,15 @@ export default function RootLayout() {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
   }, [hydrated]);
 
-  // Fetch the latest online templates and daily tier list (cached for offline use).
+  // Fetch the latest online templates and daily tier list (cached for offline use)
+  // and send daily rankings validated offline.
   useEffect(() => {
-    useCatalog.getState().refresh();
-    const sub = AppState.addEventListener('change', (s) => s === 'active' && useCatalog.getState().refresh());
+    const sync = () => {
+      useCatalog.getState().refresh();
+      syncDailyVotes();
+    };
+    sync();
+    const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());
     return () => sub.remove();
   }, []);
 
@@ -64,6 +70,8 @@ export default function RootLayout() {
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
             <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />
+            <Stack.Screen name="results/[id]" options={{ title: 'Classement moyen' }} />
+            <Stack.Screen name="history" options={{ title: 'Historique' }} />
             <Stack.Screen name="editor/[id]" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
         </ThemeProvider>

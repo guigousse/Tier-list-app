@@ -4,33 +4,25 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { today } from '../lib/api';
+import { formatDay } from '../lib/format';
 import { useCatalog } from '../store/useCatalog';
-import { defaultTierLabels, useTierStore } from '../store/useTierStore';
-
-function formatDay(day: string): string {
-  const [y, m, d] = day.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-}
+import { useTierStore } from '../store/useTierStore';
 
 /** Home screen card for the daily tier list published online. */
 export function DailyCard() {
   const daily = useCatalog((s) => s.daily);
-  const source = daily ? `daily:${daily.day}` : '';
-  const existingId = useTierStore((s) => (source ? Object.values(s.lists).find((l) => l.importedFrom === source)?.id : undefined));
+  const existing = useTierStore((s) => (daily ? Object.values(s.lists).find((l) => l.daily?.day === daily.day) : undefined));
 
   if (!daily) return null;
   const isToday = daily.day === today();
+  const validated = Boolean(existing?.daily?.validatedAt);
 
   const open = () => {
-    const store = useTierStore.getState();
-    const id =
-      existingId ??
-      store.createList({
-        title: daily.title,
-        tierLabels: daily.tiers ?? defaultTierLabels(store.settings.defaultPresetKey),
-        cardLabels: daily.items,
-        importedFrom: source,
-      });
+    if (existing && validated) {
+      router.push({ pathname: '/results/[id]', params: { id: existing.id } });
+      return;
+    }
+    const id = existing?.id ?? useTierStore.getState().createDailyList(daily);
     router.push({ pathname: '/editor/[id]', params: { id } });
   };
 
@@ -45,14 +37,12 @@ export function DailyCard() {
           <Text numberOfLines={2} style={styles.title}>
             {daily.title}
           </Text>
-          {daily.description ? (
-            <Text numberOfLines={2} style={styles.description}>
-              {daily.description}
-            </Text>
-          ) : null}
+          <Text numberOfLines={2} style={styles.description}>
+            {validated ? 'Classement validé : découvrez le classement moyen des joueurs.' : daily.description}
+          </Text>
         </View>
         <View style={styles.cta}>
-          <Text style={styles.ctaLabel}>{existingId ? 'Reprendre' : 'Classer'}</Text>
+          <Text style={styles.ctaLabel}>{validated ? 'Résultats' : existing ? 'Reprendre' : 'Classer'}</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </View>
       </View>

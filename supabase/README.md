@@ -15,7 +15,18 @@ insert into public.daily_lists (day, title, emoji, description, items) values
  array['🍦 Glace vanille', '🍧 Granité', '🍨 Sorbet citron', '🧁 Vacherin']);
 ```
 
-`tiers` (facultatif) remplace les rangs par défaut, ex. `array['Top', 'Bof', 'Flop']`.
+Les tier lists du jour utilisent toujours les rangs classiques S, A, B, C, D
+(la colonne `tiers` est ignorée) et ne sont pas modifiables dans l'app : le
+joueur classe les cartes puis valide.
+
+## Votes et classement moyen
+
+Table `daily_votes` (un vote par appareil et par jour, définitif), sans accès
+direct : l'app envoie le classement validé via `submit_daily_vote(day, device_id,
+ranks)` et lit uniquement les résultats agrégés via `get_daily_results(day)`
+(nombre de votes, rang moyen et répartition par rang pour chaque carte). Ne
+modifiez pas `items` d'une tier list du jour qui a déjà reçu des votes : les
+votes sont rangés dans l'ordre des cartes.
 
 ## Ajouter un modèle
 

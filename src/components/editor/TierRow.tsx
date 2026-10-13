@@ -9,7 +9,8 @@ import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
 type Props = {
   tier: Tier;
   cards: Card[];
-  onPressTier: (tier: Tier) => void;
+  /** Omitted when tiers can't be edited (daily tier list). */
+  onPressTier?: (tier: Tier) => void;
   onPressCard: (card: Card) => void;
 };
 
@@ -23,8 +24,9 @@ export function TierRow({ tier, cards, onPressTier, onPressCard }: Props) {
     <View ref={ref} collapsable={false} style={styles.row}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Rang ${tier.label}, modifier`}
-        onPress={() => onPressTier(tier)}
+        accessibilityLabel={onPressTier ? `Rang ${tier.label}, modifier` : `Rang ${tier.label}`}
+        disabled={!onPressTier}
+        onPress={() => onPressTier?.(tier)}
         style={[styles.label, { width: tierLabelWidth, backgroundColor: tier.color, minHeight: cardSize + 8 }]}
       >
         <Text numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5} style={[styles.labelText, { color: fg }]}>

@@ -12,18 +12,21 @@ import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
 type Props = {
   cards: Card[];
   total: number;
-  onAdd: () => void;
+  /** Omitted when cards can't be added (daily tier list). */
+  onAdd?: () => void;
   onPressCard: (card: Card) => void;
+  /** Pad for the home indicator; off when something is shown below the tray. */
+  bottomInset?: boolean;
 };
 
-export function Tray({ cards, total, onAdd, onPressCard }: Props) {
+export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: Props) {
   const insets = useSafeAreaInsets();
   const { ref, highlight } = useDropZone(POOL, false);
   const { cardSize } = useDragContext();
   const { isCompact } = useResponsive();
 
   return (
-    <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: insets.bottom + spacing.sm }]}>
+    <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: (bottomInset ? insets.bottom : 0) + spacing.sm }]}>
       <Animated.View style={[StyleSheet.absoluteFill, highlight]} pointerEvents="none" />
       <View style={styles.header}>
         <Text numberOfLines={1} style={styles.title}>
@@ -41,6 +44,7 @@ export function Tray({ cards, total, onAdd, onPressCard }: Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={[styles.content, { minHeight: cardSize + 8 }]}
       >
+        {onAdd ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ajouter des cartes"
@@ -50,6 +54,7 @@ export function Tray({ cards, total, onAdd, onPressCard }: Props) {
           <Ionicons name="add" size={28} color={colors.primary} />
           <Text style={styles.addLabel}>Ajouter</Text>
         </Pressable>
+        ) : null}
         {cards.map((c) => (
           <DraggableCard key={c.id} card={c} zone={POOL} scrolls={false} onPress={onPressCard} />
         ))}

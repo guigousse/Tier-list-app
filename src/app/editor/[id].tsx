@@ -7,7 +7,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 
-import { ActionSheet, Button, Field, IconButton, Sheet } from '../../components/ui';
+import { ActionSheet, Button, Field, IconButton, Sheet, type MenuAction } from '../../components/ui';
 import { ShareSheet } from '../../components/ShareSheet';
 import { CardSheet, type CardDraft } from '../../components/editor/CardSheet';
 import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
@@ -15,11 +15,13 @@ import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
+import { syncDailyVotes } from '../../lib/daily';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { useTierStore } from '../../store/useTierStore';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+const noop = () => {};
 
 export default function EditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,7 +46,13 @@ export default function EditorScreen() {
   }
 
   return (
-    <DragProvider cardSize={cardSize(settings.cardSize)} showLabels={settings.showCardLabels} haptics={settings.haptics} onMove={onMove}>
+    <DragProvider
+      cardSize={cardSize(settings.cardSize)}
+      showLabels={settings.showCardLabels}
+      haptics={settings.haptics}
+      locked={Boolean(list.daily?.validatedAt)}
+      onMove={onMove}
+    >
       <Editor list={list} />
     </DragProvider>
   );
@@ -72,6 +80,10 @@ function Editor({ list }: { list: TierList }) {
       ? POOL
       : (list.tiers.find((t) => list.placement[t.id]?.includes(editingCard.id))?.id ?? POOL)
     : null;
+
+  // The daily tier list has fixed tiers and cards; only the ranking changes, until it is validated.
+  const daily = list.daily;
+  const validated = Boolean(daily?.validatedAt);
 
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
@@ -104,6 +116,19 @@ function Editor({ list }: { list: TierList }) {
       { text: 'Réinitialiser', style: 'destructive', onPress: () => store.resetPlacement(list.id) },
     ]);
 
+  const confirmValidate = () =>
+    Alert.alert('Valider votre classement ?', 'Il sera figé et ajouté à votre historique. Vous découvrirez ensuite le classement moyen des joueurs.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Valider',
+        onPress: () => {
+          if (!store.validateDaily(list.id)) return;
+          syncDailyVotes();
+          showResults();
+        },
+      },
+    ]);
+
   const confirmDelete = () =>
     Alert.alert('Supprimer la tier list ?', `« ${list.title} » sera définitivement supprimée.`, [
       { text: 'Annuler', style: 'cancel' },
@@ -117,13 +142,46 @@ function Editor({ list }: { list: TierList }) {
       },
     ]);
 
+  const showResults = () => router.push({ pathname: '/results/[id]', params: { id: list.id } });
+
+  const menuActions: MenuAction[] = daily
+    ? [
+        { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
+        validated
+          ? { label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults }
+          : { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
+        { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+      ]
+    : [
+        { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
+        { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+        { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
+        { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
+        {
+          label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+          icon: list.favorite ? 'star' : 'star-outline',
+          onPress: () => store.toggleFavorite(list.id),
+        },
+        {
+          label: 'Dupliquer',
+          icon: 'copy-outline',
+          onPress: () => {
+            const copy = store.duplicateList(list.id);
+            if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy } });
+          },
+        },
+        { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
+        { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+      ];
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.xs }]}>
         <IconButton icon="chevron-back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
         <Pressable
           accessibilityRole="button"
-          accessibilityHint="Renommer"
+          accessibilityHint={daily ? undefined : 'Renommer'}
+          disabled={Boolean(daily)}
           style={styles.titleWrap}
           onPress={() => {
             setTitle(list.title);
@@ -134,7 +192,7 @@ function Editor({ list }: { list: TierList }) {
             {list.title}
           </Text>
         </Pressable>
-        <IconButton icon="share-outline" label="Partager" onPress={() => setShareOpen(true)} />
+        <IconButton icon="share-outline" label="Partager" onPress={daily ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
 
@@ -146,17 +204,48 @@ function Editor({ list }: { list: TierList }) {
         >
           <View ref={captureTarget} collapsable={false} style={styles.capture}>
             {list.tiers.map((tier) => (
-              <TierRow key={tier.id} tier={tier} cards={cardsOf(list.placement[tier.id])} onPressTier={openTier} onPressCard={openCard} />
+              <TierRow
+                key={tier.id}
+                tier={tier}
+                cards={cardsOf(list.placement[tier.id])}
+                onPressTier={daily ? undefined : openTier}
+                onPressCard={daily ? noop : openCard}
+              />
             ))}
             <Text style={styles.watermark}>Tiercraft</Text>
           </View>
-          <View style={styles.below}>
-            <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
-          </View>
+          {daily ? null : (
+            <View style={styles.below}>
+              <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
+            </View>
+          )}
         </AnimatedScrollView>
       </View>
 
-      <Tray cards={cardsOf(list.pool)} total={total} onAdd={() => setCardSheet({ cardId: null })} onPressCard={openCard} />
+      {validated ? (
+        <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+          <Text style={styles.dailyText}>
+            Classement validé le {new Date(daily!.validatedAt!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+          </Text>
+          <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
+        </View>
+      ) : (
+        <>
+          <Tray
+            bottomInset={!daily}
+            cards={cardsOf(list.pool)}
+            total={total}
+            onAdd={daily ? undefined : () => setCardSheet({ cardId: null })}
+            onPressCard={daily ? noop : openCard}
+          />
+          {daily ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Button label="Valider mon classement" icon="checkmark-done" onPress={confirmValidate} disabled={list.pool.length > 0} />
+              {list.pool.length > 0 ? <Text style={styles.dailyText}>Classez toutes les cartes pour valider.</Text> : null}
+            </View>
+          ) : null}
+        </>
+      )}
 
       <TierSheet
         tier={editingTier}
@@ -186,27 +275,7 @@ function Editor({ list }: { list: TierList }) {
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         title="Options"
-        actions={[
-          { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
-          { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
-          { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
-          { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
-          {
-            label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
-            icon: list.favorite ? 'star' : 'star-outline',
-            onPress: () => store.toggleFavorite(list.id),
-          },
-          {
-            label: 'Dupliquer',
-            icon: 'copy-outline',
-            onPress: () => {
-              const copy = store.duplicateList(list.id);
-              if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy } });
-            },
-          },
-          { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
-          { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
-        ]}
+        actions={menuActions}
       />
 
       <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={exportImage} />
@@ -244,6 +313,8 @@ const styles = StyleSheet.create({
   capture: { backgroundColor: colors.background },
   watermark: { color: colors.border, fontSize: 11, fontWeight: '700', textAlign: 'right', padding: 6 },
   below: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  dailyBar: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, backgroundColor: colors.tray },
+  dailyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
   missingText: { color: colors.textMuted, fontSize: 16 },
 });

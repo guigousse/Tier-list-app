@@ -7,6 +7,7 @@ import { CARD_COLORS, type CardSize } from '../constants/theme';
 import { TIER_PRESETS, DEFAULT_PRESET_KEY, tierColorAt } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
+import type { DailyList } from '../lib/api';
 import type { SharedList } from '../lib/share';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 
@@ -28,6 +29,8 @@ type NewListInput = {
 type State = {
   lists: Record<string, TierList>;
   settings: Settings;
+  /** Anonymous id of this install, sent with daily votes (one vote per device and day). */
+  deviceId: string;
 
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
@@ -51,6 +54,12 @@ type State = {
 
   updateSettings: (patch: Partial<Settings>) => void;
   clearAll: () => void;
+
+  /** Creates the local copy of a daily tier list: classic S→D tiers, fixed cards. */
+  createDailyList: (daily: DailyList) => string;
+  /** Freezes the ranking of a daily tier list once every card is placed. */
+  validateDaily: (listId: string) => boolean;
+  markVoteSent: (listId: string) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -93,6 +102,7 @@ export const useTierStore = create<State>()(
       return {
         lists: {},
         settings: DEFAULT_SETTINGS,
+        deviceId: newId(),
 
         createList: ({ title, tierLabels, cardLabels = [], importedFrom }) => {
           const now = Date.now();
@@ -271,7 +281,7 @@ export const useTierStore = create<State>()(
 
         moveCard: (listId, cardId, to, index) =>
           patchList(listId, (l) => {
-            if (!l.cards[cardId]) return {};
+            if (!l.cards[cardId] || l.daily?.validatedAt) return {};
             if (to !== POOL && !l.placement[to]) return {};
             const next = detach(l, cardId);
             const target = to === POOL ? [...next.pool] : [...(next.placement[to] ?? [])];
@@ -282,12 +292,57 @@ export const useTierStore = create<State>()(
           }),
 
         resetPlacement: (listId) =>
-          patchList(listId, (l) => ({
-            pool: [...l.tiers.flatMap((t) => l.placement[t.id] ?? []), ...l.pool],
-            placement: Object.fromEntries(l.tiers.map((t) => [t.id, []])),
-          })),
+          patchList(listId, (l) =>
+            l.daily?.validatedAt
+              ? {}
+              : {
+                  pool: [...l.tiers.flatMap((t) => l.placement[t.id] ?? []), ...l.pool],
+                  placement: Object.fromEntries(l.tiers.map((t) => [t.id, []])),
+                },
+          ),
 
         updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
+
+        createDailyList: (daily) => {
+          const now = Date.now();
+          const tiers = buildTiers(TIER_PRESETS[0].labels);
+          const cards: Record<string, Card> = {};
+          const cardIds = daily.items.map((label, i) => {
+            const id = newId();
+            cards[id] = { id, label, color: CARD_COLORS[i % 7] };
+            return id;
+          });
+          const list: TierList = {
+            id: newId(),
+            title: daily.title,
+            tiers,
+            cards,
+            placement: Object.fromEntries(tiers.map((t) => [t.id, []])),
+            pool: [...cardIds],
+            favorite: false,
+            daily: { day: daily.day, emoji: daily.emoji, cardIds },
+            importedFrom: `daily:${daily.day}`,
+            createdAt: now,
+            updatedAt: now,
+            openedAt: now,
+          };
+          set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
+          return list.id;
+        },
+
+        validateDaily: (listId) => {
+          const list = get().lists[listId];
+          if (!list?.daily || list.daily.validatedAt || list.pool.length > 0) return false;
+          patchList(listId, (l) => ({ daily: { ...l.daily!, validatedAt: Date.now() } }));
+          return true;
+        },
+
+        markVoteSent: (listId) =>
+          set((state) => {
+            const list = state.lists[listId];
+            if (!list?.daily) return state;
+            return { lists: { ...state.lists, [listId]: { ...list, daily: { ...list.daily, voteSent: true } } } };
+          }),
 
         clearAll: () => {
           Object.values(get().lists).forEach((l) =>
@@ -301,12 +356,13 @@ export const useTierStore = create<State>()(
       name: 'tiercraft-store',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ lists: state.lists, settings: state.settings }),
+      partialize: (state) => ({ lists: state.lists, settings: state.settings, deviceId: state.deviceId }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
         return {
           ...current,
           lists: p.lists ?? current.lists,
+          deviceId: p.deviceId ?? current.deviceId,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
       },

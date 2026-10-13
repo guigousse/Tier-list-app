@@ -29,7 +29,9 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const lists = useTierStore((s) => s.lists);
-  const all = useMemo(() => Object.values(lists), [lists]);
+  // Daily tier lists live in their own card and history.
+  const all = useMemo(() => Object.values(lists).filter((l) => !l.daily), [lists]);
+  const validatedDaily = useMemo(() => Object.values(lists).filter((l) => l.daily?.validatedAt).length, [lists]);
   const recent = useMemo(() => [...all].sort((a, b) => b.openedAt - a.openedAt).slice(0, 5), [all]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
@@ -73,7 +75,15 @@ export default function Home() {
         <Ionicons name="add-circle" size={36} color={colors.primaryText} />
       </Pressable>
 
-      <DailyCard />
+      <View style={{ gap: spacing.sm }}>
+        <DailyCard />
+        {validatedDaily > 0 ? (
+          <Pressable accessibilityRole="button" onPress={() => router.push('/history')} hitSlop={8} style={styles.historyLink}>
+            <Ionicons name="time-outline" size={16} color={colors.primary} />
+            <Text style={styles.link}>Historique des tier lists du jour ({validatedDaily})</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       <View style={styles.tiles}>
         <Tile icon="albums-outline" title="Mes tier lists" subtitle={`${all.length} enregistrée${all.length > 1 ? 's' : ''}`} onPress={() => router.push('/lists')} />
@@ -144,6 +154,7 @@ const styles = StyleSheet.create({
   },
   tileTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   tileSubtitle: { color: colors.textMuted, fontSize: 13 },
+  historyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingVertical: spacing.xs },
   link: { color: colors.primary, fontSize: 15, fontWeight: '600' },
   empty: { alignItems: 'center', gap: spacing.sm, padding: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg },
   emptyEmoji: { fontSize: 40 },
