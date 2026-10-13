@@ -72,6 +72,7 @@ export default function RootLayout() {
             <Stack.Screen name="templates" options={{ title: 'Modèles de liste' }} />
             <Stack.Screen name="popular" options={{ title: 'Listes populaires' }} />
             <Stack.Screen name="social" options={{ title: 'Social' }} />
+            <Stack.Screen name="legal/[doc]" options={{ title: '' }} />
             <Stack.Screen name="friend/[id]" options={{ title: '' }} />
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
             <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />

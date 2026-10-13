@@ -8,6 +8,7 @@ import { RankingScene, sceneHeight } from '../components/onboarding/RankingScene
 import { ProfileForm } from '../components/ProfileForm';
 import { Button } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
+import { enableDefaultReminder } from '../lib/reminders';
 import { useTierStore } from '../store/useTierStore';
 
 type Scene = ComponentType<{ width: number; height: number; active: boolean }>;
@@ -41,6 +42,8 @@ export default function Welcome() {
     useTierStore.getState().updateSettings({ onboarded: true });
     if (router.canGoBack()) router.back();
     else router.replace('/');
+    // Daily reminder on by default: iOS asks for notifications once the welcome screens close.
+    setTimeout(() => enableDefaultReminder(), 600);
   };
 
   return (

@@ -1,10 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Clickable } from '../components/Clickable';
 import { Button, Chip } from '../components/ui';
+import { BROC_APP_STORE_URL } from '../constants/legal';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { setDailyReminder } from '../lib/reminders';
@@ -116,21 +119,47 @@ export default function Settings() {
       </View>
 
       <View style={styles.group}>
-        <Text style={styles.groupTitle}>Données</Text>
-        <Text style={styles.rowHint}>
-          {count} tier list{count > 1 ? 's' : ''} enregistrée{count > 1 ? 's' : ''} sur cet appareil. Elles restent sur votre téléphone : seules les tier lists que vous partagez par code sont envoyées en ligne, sans les photos.
-        </Text>
-        <Button label="Tout effacer" icon="trash-outline" variant="danger" onPress={confirmClear} disabled={count === 0} />
-      </View>
-
-      <View style={styles.group}>
         <Text style={styles.groupTitle}>À propos</Text>
         <Button variant="secondary" icon="play-circle-outline" label="Revoir la présentation" onPress={() => router.push('/welcome')} />
-        <Button variant="secondary" icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => Linking.openURL(`https://${SHARE_HOST}/confidentialite`)} />
+        <Button
+          variant="secondary"
+          icon="shield-checkmark-outline"
+          label="Politique de confidentialité"
+          onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'confidentialite' } })}
+        />
+        <Button
+          variant="secondary"
+          icon="document-text-outline"
+          label="Mentions légales"
+          onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'mentions' } })}
+        />
         <Button variant="secondary" icon="help-circle-outline" label="Assistance" onPress={() => Linking.openURL(`https://${SHARE_HOST}/support`)} />
         <Row label="Version">
           <Text style={styles.rowHint}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
         </Row>
+      </View>
+
+      {/* A discreet word about the publisher's other app. */}
+      <Clickable
+        accessibilityRole="link"
+        accessibilityLabel="Du même créateur : Broc, jeu de brocante cosy. Ouvrir dans l’App Store"
+        onPress={() => Linking.openURL(BROC_APP_STORE_URL)}
+        style={({ pressed }) => [styles.promo, pressed && { opacity: 0.8 }]}
+      >
+        <Text style={styles.promoEmoji}>🏺</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowHint}>Du même créateur</Text>
+          <Text style={styles.rowLabel}>Broc, jeu de brocante cosy</Text>
+        </View>
+        <Ionicons name="open-outline" size={18} color={colors.textMuted} />
+      </Clickable>
+
+      <View style={[styles.group, styles.danger]}>
+        <Text style={[styles.groupTitle, { color: colors.danger }]}>Zone de danger</Text>
+        <Text style={styles.rowHint}>
+          {count} tier list{count > 1 ? 's' : ''} enregistrée{count > 1 ? 's' : ''} sur cet appareil. Elles restent sur votre téléphone : seules les tier lists que vous partagez par code sont envoyées en ligne, sans les photos.
+        </Text>
+        <Button label="Effacer toutes les données" icon="trash-outline" variant="danger" onPress={confirmClear} disabled={count === 0} />
       </View>
     </ScrollView>
   );
@@ -144,4 +173,7 @@ const styles = StyleSheet.create({
   rowLabel: { color: colors.text, fontSize: 16 },
   rowHint: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  danger: { borderColor: colors.danger, backgroundColor: 'rgba(255, 92, 108, 0.1)' },
+  promo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  promoEmoji: { fontSize: 28 },
 });
