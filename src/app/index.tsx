@@ -105,9 +105,7 @@ export default function Home() {
       </View>
 
       <View style={styles.tiles}>
-        <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
-        <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
-        {/* The player: their avatar with its badges, no frame. */}
+        {/* The player first: their avatar with its badges, no frame. */}
         <Clickable
           accessibilityRole="button"
           accessibilityLabel={unread + pendingBadges > 0 ? `Profil, ${unread + pendingBadges} nouveauté${unread + pendingBadges > 1 ? 's' : ''}` : 'Profil'}
@@ -126,6 +124,8 @@ export default function Home() {
             </View>
           ) : null}
         </Clickable>
+        <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
+        <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
       </View>
 
       <View style={{ gap: spacing.md }}>
