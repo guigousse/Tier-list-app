@@ -1,4 +1,4 @@
-import { cardsNeedingImage, generateImages, generateWords, imageCredits, useAiJob, wordCredits } from '../lib/aiGenerate';
+import { cardsNeedingImage, generateImages, generateWords, imageCredits, MIN_IMAGES, useAiJob, wordCredits } from '../lib/aiGenerate';
 import { aiIcons, aiWords } from '../lib/api';
 import { useTierStore } from '../store/useTierStore';
 
@@ -85,7 +85,7 @@ describe('AI generation', () => {
         { concept: 'tomme', url: null },
       ],
     });
-    await generateImages(id);
+    await generateImages(id, cardsNeedingImage(store().lists[id]).map((c) => c.id));
 
     expect(icons).toHaveBeenCalledTimes(1);
     // A renamed card loses its concept: the server draws its label.
@@ -102,11 +102,26 @@ describe('AI generation', () => {
     expect(cardsNeedingImage(store().lists[id]).map((c) => c.label)).toEqual(['Tomme']);
   });
 
+  it('draws only the cards the player selected, at least three', async () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['Brie', 'Feta', 'Tomme', 'Gouda'] });
+    const ids = Object.values(store().lists[id].cards).map((c) => c.id);
+    expect(MIN_IMAGES).toBe(3);
+
+    await generateImages(id, ids.slice(0, 2));
+    expect(icons).not.toHaveBeenCalled();
+    expect(useAiJob.getState().job).toBeNull();
+
+    icons.mockResolvedValue({ icons: [{ url: 'https://x/1.png' }, { url: 'https://x/2.png' }, { url: 'https://x/3.png' }] });
+    await generateImages(id, [ids[0], ids[2], ids[3]]);
+    expect(icons.mock.calls[0][1].map((c: { label: string }) => c.label)).toEqual(['Brie', 'Tomme', 'Gouda']);
+    expect(store().lists[id].cards[ids[1]].iconUrl).toBeUndefined();
+  });
+
   it('keeps the cards when the images fail', async () => {
-    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['Truc'] });
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['Truc', 'Bidule', 'Machin'] });
     icons.mockRejectedValue(new Error('icon failed'));
-    await generateImages(id);
-    expect(Object.keys(store().lists[id].cards)).toHaveLength(1);
-    expect(useAiJob.getState().job).toMatchObject({ kind: 'images', phase: 'done', failed: 1 });
+    await generateImages(id, Object.keys(store().lists[id].cards));
+    expect(Object.keys(store().lists[id].cards)).toHaveLength(3);
+    expect(useAiJob.getState().job).toMatchObject({ kind: 'images', phase: 'done', failed: 3 });
   });
 });

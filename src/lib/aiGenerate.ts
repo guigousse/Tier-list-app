@@ -94,29 +94,32 @@ export function cardsNeedingImage(list: TierList): Card[] {
   return Object.values(list.cards).filter((c) => !c.imageName && !c.iconUrl && !c.iconSvg && !cardIconFor(splitEmoji(c.label).text));
 }
 
-export async function generateImages(listId: string): Promise<void> {
+/** Fewest images a generation draws: below that, a sheet costs more than it brings. */
+export const MIN_IMAGES = 3;
+
+/** Draws the selected cards that still need an image (at least `MIN_IMAGES`). */
+export async function generateImages(listId: string, cardIds: string[]): Promise<void> {
   const store = useTierStore.getState();
   const list = store.lists[listId];
   if (!list) return;
   // All drawn together on one sheet, so they all share the same style.
-  const queue = cardsNeedingImage(list);
+  const queue = cardsNeedingImage(list).filter((c) => cardIds.includes(c.id));
+  if (queue.length < MIN_IMAGES) return;
   useAiJob.setState({ job: { listId, kind: 'images', phase: 'working', cards: queue.length, icons: 0, failed: 0 } });
-  if (queue.length) {
-    try {
-      // A card without a concept (added by hand, or renamed): the server draws its label.
-      const asked = queue.map((c) => ({ label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' }));
-      const { icons } = await aiIcons(store.deviceId, asked);
-      queue.forEach((card, i) => {
-        const url = icons[i]?.url;
-        if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });
-        // The card may have been deleted meanwhile.
-        if (useTierStore.getState().lists[listId]?.cards[card.id]) useTierStore.getState().updateCard(listId, card.id, { iconUrl: url });
-        cacheAiIcon(url);
-        patch({ icons: (useAiJob.getState().job?.icons ?? 0) + 1 });
-      });
-    } catch {
-      patch({ failed: queue.length });
-    }
+  try {
+    // A card without a concept (added by hand, or renamed): the server draws its label.
+    const asked = queue.map((c) => ({ label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' }));
+    const { icons } = await aiIcons(store.deviceId, asked);
+    queue.forEach((card, i) => {
+      const url = icons[i]?.url;
+      if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });
+      // The card may have been deleted meanwhile.
+      if (useTierStore.getState().lists[listId]?.cards[card.id]) useTierStore.getState().updateCard(listId, card.id, { iconUrl: url });
+      cacheAiIcon(url);
+      patch({ icons: (useAiJob.getState().job?.icons ?? 0) + 1 });
+    });
+  } catch {
+    patch({ failed: queue.length });
   }
   patch({ phase: 'done' });
 }

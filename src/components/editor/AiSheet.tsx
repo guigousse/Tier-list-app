@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { aiBusy, cardsNeedingImage, CREDITS, generateImages, generateWords, imageCredits, TEST_BALANCE, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { aiBusy, cardsNeedingImage, CREDITS, generateImages, generateWords, imageCredits, MIN_IMAGES, TEST_BALANCE, useAiJob, wordCredits } from '../../lib/aiGenerate';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
-import { CardIcon } from '../CardIcon';
+import { CardView } from '../CardView';
 import { Button, Field, Sheet } from '../ui';
 
 const COUNTS = [5, 8, 10, 12, 15, 20];
@@ -52,10 +52,11 @@ function Balance({ cost }: { cost: number }) {
   );
 }
 
-function Footer({ label, cost, ready, busy, onPress }: { label: string; cost: number; ready: boolean; busy: boolean; onPress: () => void }) {
+function Footer({ label, cost, ready, busy, onPress, note }: { label: string; cost: number; ready: boolean; busy: boolean; onPress: () => void; note?: string }) {
   const affordable = cost <= TEST_BALANCE;
   return (
     <View style={styles.footer}>
+      {note ? <Text style={styles.short}>{note}</Text> : null}
       {busy ? <Text style={styles.short}>Une génération est déjà en cours pour cette liste.</Text> : null}
       {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {cost - TEST_BALANCE} crédits.</Text> : null}
       <Button label={`${label} · ${cost} crédits`} icon="sparkles" disabled={!ready || busy || !affordable} onPress={onPress} />
@@ -122,7 +123,6 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
     >
       <View style={styles.section}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionNumber}>1</Text>
           <Text style={styles.sectionTitle}>Thème de la liste</Text>
         </View>
         <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={60} returnKeyType="done" />
@@ -132,7 +132,6 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
       <View style={styles.section}>
         <View style={styles.sectionHead}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionNumber}>2</Text>
             <Text style={styles.sectionTitle}>Nombre de cartes</Text>
           </View>
           <View style={styles.stepper}>
@@ -166,7 +165,6 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
 
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionNumber}>3</Text>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
         <View style={styles.recap}>
@@ -183,18 +181,23 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
 }
 
 /**
- * Second step, the images: every card of the list still without a picture (generated,
- * edited or added by hand), all drawn together on one sheet, then the cost.
+ * Second step, the images: the cards of the list still without a picture (generated,
+ * edited or added by hand), all selected to start with; the player leaves out the ones
+ * they want, at least `MIN_IMAGES` stay. They're all drawn together on one sheet.
  */
 export function AiImagesSheet({ visible, onClose, listId }: Props) {
   const list = useTierStore((s) => s.lists[listId]);
-  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'images');
+  // The cards left out rather than the ones kept: a card added meanwhile starts selected.
+  const [left, setLeft] = useState<string[]>([]);
+  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'images', () => setLeft([]));
   const cards = list ? cardsNeedingImage(list) : [];
-  const n = cards.length;
+  const selected = cards.filter((c) => !left.includes(c.id));
+  const n = selected.length;
   const cost = imageCredits(n);
+  const toggle = (id: string) => setLeft(left.includes(id) ? left.filter((x) => x !== id) : [...left, id]);
   const start = () => {
     setShowJob(true);
-    generateImages(listId);
+    generateImages(listId, selected.map((c) => c.id));
   };
 
   if (showJob && job) {
@@ -226,40 +229,60 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
   }
 
   const perImage = n ? (cost / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0';
+  const allOn = n === cards.length;
+  const note =
+    cards.length < MIN_IMAGES
+      ? `Il faut au moins ${MIN_IMAGES} cartes sans image pour lancer une génération.`
+      : n < MIN_IMAGES
+        ? `Sélectionnez au moins ${MIN_IMAGES} cartes.`
+        : undefined;
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
       title="Générer les images"
-      footer={<Footer label="Dessiner" cost={cost} ready={n > 0} busy={busy} onPress={start} />}
+      footer={<Footer label="Dessiner" cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />}
     >
       <View style={styles.section}>
         <View style={styles.sectionHead}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionNumber}>1</Text>
-            <Text style={styles.sectionTitle}>Cartes à illustrer</Text>
-          </View>
-          <CardIcon id="camera" size={40} />
+          <Text style={styles.sectionTitle}>
+            Cartes à illustrer · {n} / {cards.length}
+          </Text>
+          {cards.length ? (
+            <Clickable accessibilityRole="button" onPress={() => setLeft(allOn ? cards.map((c) => c.id) : [])}>
+              <Text style={styles.link}>{allOn ? 'Tout désélectionner' : 'Tout sélectionner'}</Text>
+            </Clickable>
+          ) : null}
         </View>
-        {n ? (
-          <View style={styles.labels}>
-            {cards.map((c) => (
-              <View key={c.id} style={styles.label}>
-                <Text style={styles.labelText} numberOfLines={1}>
-                  {c.label}
-                </Text>
-              </View>
-            ))}
+        {cards.length ? (
+          <View style={styles.grid}>
+            {cards.map((c) => {
+              const on = !left.includes(c.id);
+              return (
+                <Clickable
+                  key={c.id}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={c.label}
+                  accessibilityState={{ checked: on }}
+                  onPress={() => toggle(c.id)}
+                  style={[styles.pick, on && styles.pickOn]}
+                >
+                  <View style={!on && styles.pickOff}>
+                    <CardView card={c} size={PICK_SIZE} />
+                  </View>
+                  <View style={[styles.tick, on && styles.tickOn]}>{on ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}</View>
+                </Clickable>
+              );
+            })}
           </View>
         ) : (
           <Text style={styles.hint}>Toutes les cartes de la liste ont déjà une image.</Text>
         )}
-        {n ? <Text style={styles.hint}>Les cartes qui ont déjà une image ou une photo la gardent.</Text> : null}
+        {cards.length ? <Text style={styles.hint}>Touchez une carte pour la retirer ou la remettre. Celles qui ont déjà une image ou une photo la gardent.</Text> : null}
       </View>
 
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionNumber}>2</Text>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
         <View style={styles.recap}>
@@ -273,6 +296,8 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
     </Sheet>
   );
 }
+
+const PICK_SIZE = 72;
 
 const styles = StyleSheet.create({
   credits: {
@@ -291,7 +316,6 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  sectionNumber: { color: colors.primary, fontSize: 16, fontWeight: '900' },
   total: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   short: { color: colors.danger, fontSize: 13, textAlign: 'center' },
   steps: { flexDirection: 'row', gap: 6 },
@@ -326,9 +350,25 @@ const styles = StyleSheet.create({
   },
   checkOn: { borderColor: colors.primary, backgroundColor: 'rgba(124, 92, 255, 0.1)' },
   checkTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  labels: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  label: { maxWidth: '100%', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 14, backgroundColor: colors.surfaceAlt },
-  labelText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  link: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  pick: { padding: 3, borderRadius: 11, borderWidth: 2, borderColor: 'transparent' },
+  pickOn: { borderColor: colors.primary },
+  pickOff: { opacity: 0.35 },
+  tick: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.textMuted,
+    backgroundColor: colors.surface,
+  },
+  tickOn: { borderColor: colors.primary, backgroundColor: colors.primary },
   recap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   recapTotal: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
   recapText: { color: colors.textMuted, fontSize: 14 },
