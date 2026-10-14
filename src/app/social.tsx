@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,7 +9,6 @@ import { AvatarWithBadges } from '../components/BadgeIcon';
 import { MailBox } from '../components/MailBox';
 import { Clickable } from '../components/Clickable';
 import { ProfileForm } from '../components/ProfileForm';
-import { ProfileRewards } from '../components/profile/ProfileRewards';
 import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
@@ -44,11 +43,11 @@ function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?
   );
 }
 
-type Tab = 'friends' | 'challenges' | 'rewards';
+type Tab = 'friends' | 'challenges';
 
 function initialTab(param: string | undefined): Tab {
   if (param === 'lists' || param === 'challenges') return 'challenges';
-  if (param === 'friends' || param === 'rewards') return param;
+  if (param === 'friends') return param;
   // Lists waiting to be ranked: open on them.
   return useMail.getState().inbox.some(isToRank) ? 'challenges' : 'friends';
 }
@@ -69,26 +68,6 @@ export default function Social() {
   const unread = useUnreadMail();
   const pendingBadges = usePendingBadges();
   const shownBadges = useTierStore((s) => s.shownBadges);
-  // Reward paths go up from the bottom of the page: scrolled to where the player stands.
-  const scroll = useRef<ScrollView>(null);
-  const sizes = useRef({ content: 0, view: 0, fromBottom: null as number | null });
-  const reveal = useCallback(() => {
-    const { content, view, fromBottom } = sizes.current;
-    if (fromBottom === null || !content || !view) return;
-    const y = content - (insets.bottom + spacing.xl) - fromBottom - view / 2;
-    scroll.current?.scrollTo({ y: Math.max(0, Math.min(y, content - view)), animated: false });
-  }, [insets.bottom]);
-  const showReward = useCallback(
-    (fromBottom: number) => {
-      sizes.current.fromBottom = fromBottom;
-      reveal();
-    },
-    [reveal],
-  );
-  const changeTab = (next: Tab) => {
-    sizes.current.fromBottom = null;
-    setTab(next);
-  };
 
   const load = useCallback(async () => {
     const secret = useTierStore.getState().profile?.secret;
@@ -189,14 +168,6 @@ export default function Social() {
 
   return (
     <ScrollView
-      ref={scroll}
-      onLayout={(e) => {
-        sizes.current.view = e.nativeEvent.layout.height;
-      }}
-      onContentSizeChange={(_, h) => {
-        sizes.current.content = h;
-        reveal();
-      }}
       keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
@@ -257,7 +228,7 @@ export default function Social() {
               accessibilityRole="tab"
               accessibilityState={{ selected: tab === t.key }}
               accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
-              onPress={() => changeTab(t.key)}
+              onPress={() => setTab(t.key)}
               style={[styles.tab, tab === t.key && styles.tabSelected]}
             >
               <Text numberOfLines={1} style={[styles.tabText, tab === t.key && { color: colors.text }]}>
@@ -274,12 +245,11 @@ export default function Social() {
         {/* Rewards: apart, a gift. */}
         <Clickable
           accessibilityRole="button"
-          accessibilityState={{ selected: tab === 'rewards' }}
           accessibilityLabel={pendingBadges ? `Récompenses, ${pendingBadges} badge${pendingBadges > 1 ? 's' : ''} à choisir` : 'Récompenses'}
-          onPress={() => changeTab('rewards')}
-          style={[styles.gift, tab === 'rewards' && styles.giftSelected]}
+          onPress={() => router.push('/rewards')}
+          style={({ pressed }) => [styles.gift, pressed && { opacity: 0.8 }]}
         >
-          <Ionicons name={tab === 'rewards' ? 'gift' : 'gift-outline'} size={24} color={tab === 'rewards' ? colors.primaryText : colors.primary} />
+          <Ionicons name="gift" size={24} color={colors.primary} />
           {pendingBadges ? (
             <View style={[styles.tabBadge, styles.giftBadge]}>
               <Text style={styles.tabBadgeText}>{pendingBadges > 9 ? '9+' : pendingBadges}</Text>
@@ -290,8 +260,6 @@ export default function Social() {
 
       {tab === 'challenges' ? (
         <MailBox />
-      ) : tab === 'rewards' ? (
-        <ProfileRewards onCurrent={showReward} />
       ) : (
         <>
           <View style={{ gap: spacing.sm }}>
@@ -451,7 +419,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  giftSelected: { backgroundColor: colors.primary },
   giftBadge: { position: 'absolute', top: -5, right: -5, borderWidth: 2, borderColor: colors.background },
   tabs: {
     flex: 1,

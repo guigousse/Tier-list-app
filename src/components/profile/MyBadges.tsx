@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -26,38 +27,31 @@ export function MyBadges() {
   const toggle = (id: string) => setDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : d.length < 3 ? [...d, id] : [...d.slice(1), id]));
 
   return (
-    <View style={styles.card}>
-      <View style={styles.head}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Mes badges</Text>
-          <Text style={styles.hint}>
-            {won.length === 0 ? `Premier badge au palier ${first.at} : ${first.question.toLowerCase()}` : `Épinglés sur votre avatar, vos amis les voient.`}
-          </Text>
-        </View>
-        {won.length > 0 ? <Button variant="secondary" label="Choisir" onPress={edit} style={{ paddingHorizontal: spacing.md }} /> : null}
+    <Clickable
+      accessibilityRole="button"
+      accessibilityLabel={won.length ? 'Mes badges : choisir ceux de mon profil' : 'Mes badges'}
+      disabled={won.length === 0}
+      onPress={edit}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={styles.title}>Mes badges</Text>
+        <Text numberOfLines={2} style={styles.hint}>
+          {won.length === 0 ? `Premier badge au palier ${first.at}` : 'Épinglés sur votre avatar'}
+        </Text>
       </View>
       <View style={styles.slots}>
-        {[0, 1, 2].map((i) => (
-          <Clickable key={i} accessibilityRole="button" disabled={won.length === 0} onPress={edit} style={styles.slot}>
-            {visible[i] ? (
-              <>
-                <BadgeIcon badge={visible[i]} size={52} />
-                <Text numberOfLines={1} style={styles.slotLabel}>
-                  {visible[i].label}
-                </Text>
-              </>
-            ) : (
-              <>
-                <View style={styles.empty}>
-                  <Text style={styles.emptyText}>?</Text>
-                </View>
-                <Text style={[styles.slotLabel, { color: colors.textMuted }]}>Vide</Text>
-              </>
-            )}
-          </Clickable>
-        ))}
+        {[0, 1, 2].map((i) =>
+          visible[i] ? (
+            <BadgeIcon key={i} badge={visible[i]} size={40} />
+          ) : (
+            <View key={i} style={styles.empty}>
+              <Text style={styles.emptyText}>?</Text>
+            </View>
+          ),
+        )}
       </View>
-
+      {won.length > 0 ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null}
       <Sheet visible={editing} onClose={() => setEditing(false)} title="Badges affichés">
         <View style={{ gap: spacing.md }}>
           <Text style={styles.hint}>Choisissez jusqu’à 3 badges à épingler sur votre avatar.</Text>
@@ -90,22 +84,32 @@ export function MyBadges() {
           />
         </View>
       </Sheet>
-    </View>
+    </Clickable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md, borderWidth: 1, borderColor: colors.border },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  title: { color: colors.text, fontSize: 17, fontWeight: '800' },
+  title: { color: colors.text, fontSize: 15, fontWeight: '800' },
   hint: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
-  slots: { flexDirection: 'row', justifyContent: 'space-around' },
+  slots: { flexDirection: 'row', gap: 4 },
   slot: { width: 96, alignItems: 'center', gap: 4 },
   slotLabel: { color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   empty: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: colors.border,

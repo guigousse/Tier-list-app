@@ -2,16 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-  ZoomIn,
-} from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { colors, radius, spacing } from '../../constants/theme';
@@ -169,8 +160,8 @@ export function RewardPath({
   avatar: AvatarConfig;
   /** "liste" / "jour", for labels. */
   unit: string;
-  /** Distance from the bottom of the path to the player's next step, to scroll there. */
-  onCurrent?: (fromBottom: number) => void;
+  /** Height of the player's current step from the top of the path, to scroll there. */
+  onCurrent?: (y: number) => void;
 }) {
   const [width, setWidth] = useState(0);
   const [open, setOpen] = useState<Milestone | null>(null);
@@ -223,8 +214,8 @@ export function RewardPath({
   const focus = pick !== -1 ? pick : nextIndex === -1 ? rows.length - 1 : nextIndex;
   const focusY = rows[focus]?.y ?? 0;
   useEffect(() => {
-    if (width > 0) onCurrent?.(height - focusY);
-  }, [width, height, focusY, onCurrent]);
+    if (width > 0) onCurrent?.(focusY);
+  }, [width, focusY, onCurrent]);
 
   const tapSticker = (fork: Fork, side: 0 | 1) => {
     if (value < fork.at) {
@@ -345,7 +336,9 @@ export function RewardPath({
               <View key={row.at} style={StyleSheet.absoluteFill} pointerEvents="box-none">
                 <View style={[styles.nodeWrap, { top: row.y - NODE / 2, left: x - NODE / 2 }]}>
                   {glow && reached && i > 0 ? <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: t.node }, pulseStyle]} /> : null}
-                  <View style={[styles.node, reached ? { backgroundColor: t.node, borderColor: t.from } : current ? { borderColor: t.node, borderWidth: 3 } : null]}>
+                  <View
+                    style={[styles.node, reached ? { backgroundColor: t.node, borderColor: t.from } : current ? { borderColor: t.node, borderWidth: 3 } : null]}
+                  >
                     {i === 0 ? (
                       <Ionicons name={theme === 'orange' ? 'flame' : 'flag'} size={22} color={reached ? '#FFFFFF' : colors.textMuted} />
                     ) : (
@@ -380,7 +373,9 @@ export function RewardPath({
                         {step.rewards[0].label}
                       </Text>
                       <Text numberOfLines={1} style={styles.previewMeta}>
-                        {step.rewards.length > 1 ? `+ ${step.rewards.length - 1} autre${step.rewards.length > 2 ? 's' : ''}` : PART_LABELS[step.rewards[0].part]}
+                        {step.rewards.length > 1
+                          ? `+ ${step.rewards.length - 1} autre${step.rewards.length > 2 ? 's' : ''}`
+                          : PART_LABELS[step.rewards[0].part]}
                       </Text>
                     </View>
                   </Clickable>

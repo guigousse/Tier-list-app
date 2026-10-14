@@ -109,6 +109,7 @@ export default function RootLayout() {
             <Stack.Screen name="templates" options={{ title: 'Modèles de liste' }} />
             <Stack.Screen name="popular" options={{ title: 'Listes populaires' }} />
             <Stack.Screen name="social" options={{ title: 'Profil' }} />
+            <Stack.Screen name="rewards" options={{ title: 'Récompenses' }} />
             <Stack.Screen name="legal/[doc]" options={{ title: '' }} />
             <Stack.Screen name="friend/[id]" options={{ title: '' }} />
             <Stack.Screen name="mail/[id]" options={{ title: '' }} />
