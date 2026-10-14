@@ -8,19 +8,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
 import {
-  avatarForBody,
   BACKGROUNDS,
-  BODIES,
+  BEARDS,
+  BROWS,
   EYE_COLORS,
+  EYE_SHAPES,
+  FACES,
   GLASSES,
   HAIR_COLORS,
   HAIR_STYLES,
   HATS,
+  MOUTHS,
   isUnlocked,
   randomAvatar,
   SKINS,
   unlockLabel,
   type AvatarConfig,
+  type AvatarZoom,
   type Progress,
   type Unlock,
 } from '../lib/avatar';
@@ -37,18 +41,24 @@ type Category = {
   key: keyof AvatarConfig;
   label: string;
   items: Option[];
-  /** What choosing `item` changes (by default, just this part). */
-  patch?: (item: Option, config: AvatarConfig) => Partial<AvatarConfig>;
   /** Thumbnail: the avatar wearing it, or a colour swatch / eye. */
   thumb: 'avatar' | 'swatch' | 'eye';
+  /** Close-up for small details (eyes, mouth). */
+  zoom?: AvatarZoom;
 };
+
+const EYES_ZOOM: AvatarZoom = { x: 36, y: 40, size: 48 };
+const MOUTH_ZOOM: AvatarZoom = { x: 40, y: 56, size: 40 };
+const BEARD_ZOOM: AvatarZoom = { x: 30, y: 46, size: 60 };
 
 const STEPS: { title: string; categories: Category[] }[] = [
   {
-    title: 'Homme ou femme ?',
-    categories: [{ key: 'body', label: 'Corps', items: BODIES, patch: (item, c) => avatarForBody(c, item.id as 'm' | 'f'), thumb: 'avatar' }],
+    title: 'Visage',
+    categories: [
+      { key: 'face', label: 'Forme', items: FACES, thumb: 'avatar' },
+      { key: 'skin', label: 'Peau', items: SKINS, thumb: 'swatch' },
+    ],
   },
-  { title: 'Couleur de peau', categories: [{ key: 'skin', label: 'Peau', items: SKINS, thumb: 'swatch' }] },
   {
     title: 'Coiffure',
     categories: [
@@ -56,7 +66,21 @@ const STEPS: { title: string; categories: Category[] }[] = [
       { key: 'hairColor', label: 'Couleur', items: HAIR_COLORS, thumb: 'swatch' },
     ],
   },
-  { title: 'Couleur des yeux', categories: [{ key: 'eyes', label: 'Yeux', items: EYE_COLORS, thumb: 'eye' }] },
+  {
+    title: 'Yeux',
+    categories: [
+      { key: 'eyeShape', label: 'Forme', items: EYE_SHAPES, thumb: 'avatar', zoom: EYES_ZOOM },
+      { key: 'eyes', label: 'Couleur', items: EYE_COLORS, thumb: 'eye' },
+      { key: 'brows', label: 'Sourcils', items: BROWS, thumb: 'avatar', zoom: EYES_ZOOM },
+    ],
+  },
+  {
+    title: 'Bouche et barbe',
+    categories: [
+      { key: 'mouth', label: 'Bouche', items: MOUTHS, thumb: 'avatar', zoom: MOUTH_ZOOM },
+      { key: 'beard', label: 'Pilosité', items: BEARDS, thumb: 'avatar', zoom: BEARD_ZOOM },
+    ],
+  },
   {
     title: 'Accessoires',
     categories: [
@@ -68,7 +92,7 @@ const STEPS: { title: string; categories: Category[] }[] = [
 ];
 
 /** Thumbnails of avatars: hairstyles are shown without a hat, to see them. */
-const thumbPatch: Partial<Record<keyof AvatarConfig, Partial<AvatarConfig>>> = { hair: { hat: 'none' }, glasses: { hat: 'none' } };
+const thumbPatch: Partial<Record<keyof AvatarConfig, Partial<AvatarConfig>>> = { face: { hat: 'none' }, hair: { hat: 'none' }, glasses: { hat: 'none' }, brows: { glasses: 'none' }, eyeShape: { glasses: 'none' } };
 
 const ITEM = 80;
 
@@ -96,7 +120,7 @@ function useProgress(): Progress {
 }
 
 /**
- * Avatar editor in steps (body, skin, hair, eyes, accessories, background). The
+ * Avatar editor in steps (face, hair, eyes, mouth and beard, accessories, background). The
  * avatar sits in the middle; swiping it, or scrolling the carousel below, puts on
  * the previous or next item at once. Locked items can be tried on, not kept.
  */
@@ -125,7 +149,7 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
     const next = category.items[(i + category.items.length) % category.items.length];
     if (next.id === config[category.key]) return;
     if (haptics) Haptics.selectionAsync().catch(() => {});
-    setConfig((c) => ({ ...c, ...(category.patch ? category.patch(next, c) : { [category.key]: next.id }) }));
+    setConfig((c) => ({ ...c, [category.key]: next.id }));
   };
 
   const goTo = (nextStep: number) => {
@@ -358,8 +382,8 @@ function Carousel({
 
 function Thumb({ category, option, config }: { category: Category; option: Option; config: AvatarConfig }) {
   if (category.thumb === 'avatar') {
-    const look = { ...config, ...thumbPatch[category.key], ...(category.patch ? category.patch(option, config) : { [category.key]: option.id }) };
-    return <AvatarDrawing config={look} size={58} />;
+    const look = { ...config, ...thumbPatch[category.key], [category.key]: option.id };
+    return <AvatarDrawing config={look} size={58} zoom={category.zoom} />;
   }
   if (category.thumb === 'eye') {
     return (
@@ -397,7 +421,7 @@ const styles = StyleSheet.create({
   lockHint: { color: colors.textMuted, fontSize: 14 },
   tabs: { flexDirection: 'row', alignSelf: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, padding: 4, gap: 4, marginBottom: spacing.sm },
   tabsSpacer: { height: 44 + spacing.sm },
-  tab: { minWidth: 110, minHeight: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md },
+  tab: { minWidth: 92, minHeight: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md },
   tabSelected: { backgroundColor: colors.surfaceAlt },
   tabText: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
   carousel: { flexGrow: 0, marginBottom: spacing.md },

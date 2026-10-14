@@ -14,19 +14,27 @@ import type { TierList } from '../store/types';
 
 describe('avatar codes', () => {
   it('round-trips a look', () => {
-    const look: AvatarConfig = { body: 'f', skin: 'p4', hair: 'bun', hairColor: 'red', eyes: 'green', hat: 'beanie', glasses: 'round', bg: 'mint' };
+    const look: AvatarConfig = {
+      face: 'heart', skin: 'p4', hair: 'bun', hairColor: 'red', eyeShape: 'lashes', eyes: 'green', brows: 'arched',
+      mouth: 'lips', beard: 'none', hat: 'beanie', glasses: 'round', bg: 'mint',
+    };
     const code = encodeAvatar(look);
-    expect(code).toBe('a1-f-p4-bun-red-green-beanie-round-mint');
+    expect(code).toBe('a2-heart-p4-bun-red-lashes-green-arched-lips-none-beanie-round-mint');
     expect(isAvatarCode(code)).toBe(true);
     expect(decodeAvatar(code)).toEqual(look);
   });
 
+  it('reads the first avatar codes', () => {
+    const look = decodeAvatar('a1-f-p2-long-blond-blue-none-round-violet');
+    expect(look).toMatchObject({ face: 'oval', eyeShape: 'lashes', skin: 'p2', hair: 'long', hairColor: 'blond', eyes: 'blue', glasses: 'round', bg: 'violet' });
+  });
+
   it('matches what the server accepts', () => {
-    for (let i = 0; i < 50; i++) expect(encodeAvatar(randomAvatar())).toMatch(/^a1(-[a-z0-9]{1,12}){8}$/);
+    for (let i = 0; i < 50; i++) expect(encodeAvatar(randomAvatar())).toMatch(/^a2(-[a-z0-9]{1,12}){12}$/);
   });
 
   it('falls back to the defaults for unknown or missing parts', () => {
-    expect(decodeAvatar('a1-x-p9-laser')).toEqual(DEFAULT_AVATAR);
+    expect(decodeAvatar('a2-x-p9-laser')).toEqual(DEFAULT_AVATAR);
     expect(isAvatarCode('🦊')).toBe(false);
   });
 

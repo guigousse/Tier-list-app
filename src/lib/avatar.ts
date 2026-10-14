@@ -1,8 +1,10 @@
 /**
- * Player avatars drawn in SVG, from a few choices: body, skin, hair (style and
- * colour), eyes, hat, glasses and background. Stored as a short code on the
- * profile ("a1-f-p2-long-blond-blue-none-round-violet"), so new items can be added
- * later without breaking saved avatars: unknown ids fall back to the defaults.
+ * Player avatars drawn in SVG, from a few choices: face shape and skin, hair
+ * (style and colour), eyes (shape, colour, eyebrows), mouth, facial hair, hat,
+ * glasses and background. Stored as a short code on the profile
+ * ("a2-oval-p2-long-blond-lashes-blue-thin-smile-none-none-round-violet"), so new
+ * items can be added later without breaking saved avatars: unknown ids fall back
+ * to the defaults.
  *
  * Some items are locked at first and unlocked by playing (daily streak, number of
  * tier lists completed).
@@ -12,17 +14,17 @@ export type Unlock = { streak: number } | { completed: number };
 
 type Item = { id: string; label: string; unlock?: Unlock };
 
-export type Body = Item & { id: 'm' | 'f' };
 export type Skin = Item & { fill: string; shade: string };
-export type HairStyle = Item;
 export type HairColor = Item & { fill: string };
 export type EyeColor = Item & { fill: string };
-export type Accessory = Item;
 export type Background = Item & { stops: string[]; shirt: string; stars?: boolean };
 
-export const BODIES: Body[] = [
-  { id: 'm', label: 'Homme' },
-  { id: 'f', label: 'Femme' },
+export const FACES: Item[] = [
+  { id: 'oval', label: 'Ovale' },
+  { id: 'round', label: 'Rond' },
+  { id: 'square', label: 'Carré' },
+  { id: 'heart', label: 'Cœur' },
+  { id: 'long', label: 'Allongé' },
 ];
 
 export const SKINS: Skin[] = [
@@ -37,7 +39,7 @@ export const SKINS: Skin[] = [
   { id: 'smurf', label: 'Bleu', fill: '#8DBBFF', shade: '#6A98E6', unlock: { completed: 25 } },
 ];
 
-export const HAIR_STYLES: HairStyle[] = [
+export const HAIR_STYLES: Item[] = [
   { id: 'short', label: 'Court' },
   { id: 'quiff', label: 'Mèche' },
   { id: 'curly', label: 'Bouclé' },
@@ -63,6 +65,15 @@ export const HAIR_COLORS: HairColor[] = [
   { id: 'purple', label: 'Violet', fill: '#9466FF', unlock: { streak: 30 } },
 ];
 
+export const EYE_SHAPES: Item[] = [
+  { id: 'round', label: 'Ronds' },
+  { id: 'lashes', label: 'Cils' },
+  { id: 'almond', label: 'En amande' },
+  { id: 'sleepy', label: 'Paupières' },
+  { id: 'happy', label: 'Rieurs' },
+  { id: 'wink', label: 'Clin d’œil', unlock: { completed: 10 } },
+];
+
 export const EYE_COLORS: EyeColor[] = [
   { id: 'brown', label: 'Marron', fill: '#6B3F21' },
   { id: 'hazel', label: 'Noisette', fill: '#977233' },
@@ -73,7 +84,36 @@ export const EYE_COLORS: EyeColor[] = [
   { id: 'gold', label: 'Or', fill: '#E0A21B', unlock: { completed: 25 } },
 ];
 
-export const HATS: Accessory[] = [
+export const BROWS: Item[] = [
+  { id: 'thick', label: 'Épais' },
+  { id: 'thin', label: 'Fins' },
+  { id: 'arched', label: 'Arqués' },
+  { id: 'flat', label: 'Droits' },
+  { id: 'bushy', label: 'Broussailleux' },
+  { id: 'raised', label: 'Sceptique', unlock: { streak: 7 } },
+];
+
+export const MOUTHS: Item[] = [
+  { id: 'smile', label: 'Sourire' },
+  { id: 'closed', label: 'Doux' },
+  { id: 'grin', label: 'Éclat de rire' },
+  { id: 'smirk', label: 'En coin' },
+  { id: 'lips', label: 'Lèvres' },
+  { id: 'o', label: 'Surpris' },
+  { id: 'tongue', label: 'Langue', unlock: { streak: 14 } },
+];
+
+export const BEARDS: Item[] = [
+  { id: 'none', label: 'Aucune' },
+  { id: 'stubble', label: 'Barbe de 3 jours' },
+  { id: 'mustache', label: 'Moustache' },
+  { id: 'goatee', label: 'Bouc' },
+  { id: 'short', label: 'Barbe courte' },
+  { id: 'full', label: 'Barbe fournie' },
+  { id: 'handlebar', label: 'Guidon', unlock: { completed: 10 } },
+];
+
+export const HATS: Item[] = [
   { id: 'none', label: 'Aucun' },
   { id: 'cap', label: 'Casquette' },
   { id: 'beanie', label: 'Bonnet' },
@@ -82,7 +122,7 @@ export const HATS: Accessory[] = [
   { id: 'wizard', label: 'Sorcier', unlock: { streak: 30 } },
 ];
 
-export const GLASSES: Accessory[] = [
+export const GLASSES: Item[] = [
   { id: 'none', label: 'Aucunes' },
   { id: 'round', label: 'Rondes' },
   { id: 'square', label: 'Carrées' },
@@ -103,41 +143,59 @@ export const BACKGROUNDS: Background[] = [
 ];
 
 export type AvatarConfig = {
-  body: Body['id'];
+  face: string;
   skin: string;
   hair: string;
   hairColor: string;
+  eyeShape: string;
   eyes: string;
+  brows: string;
+  mouth: string;
+  beard: string;
   hat: string;
   glasses: string;
   bg: string;
 };
 
+/** Every part of an avatar, in the order of its code, with its items. */
+export const AVATAR_PARTS: { key: keyof AvatarConfig; items: Item[] }[] = [
+  { key: 'face', items: FACES },
+  { key: 'skin', items: SKINS },
+  { key: 'hair', items: HAIR_STYLES },
+  { key: 'hairColor', items: HAIR_COLORS },
+  { key: 'eyeShape', items: EYE_SHAPES },
+  { key: 'eyes', items: EYE_COLORS },
+  { key: 'brows', items: BROWS },
+  { key: 'mouth', items: MOUTHS },
+  { key: 'beard', items: BEARDS },
+  { key: 'hat', items: HATS },
+  { key: 'glasses', items: GLASSES },
+  { key: 'bg', items: BACKGROUNDS },
+];
+
 export const DEFAULT_AVATAR: AvatarConfig = {
-  body: 'm',
+  face: 'oval',
   skin: 'p2',
   hair: 'short',
   hairColor: 'brown',
+  eyeShape: 'round',
   eyes: 'brown',
+  brows: 'thick',
+  mouth: 'smile',
+  beard: 'none',
   hat: 'none',
   glasses: 'none',
   bg: 'violet',
 };
 
-/** Default look for a body: the hair changes with it. */
-export function avatarForBody(config: AvatarConfig, body: Body['id']): AvatarConfig {
-  const hair = config.body === body ? config.hair : body === 'f' ? 'long' : 'short';
-  return { ...config, body, hair };
-}
-
-const PREFIX = 'a1';
+const PREFIX = 'a2';
 
 export function isAvatarCode(avatar: string): boolean {
-  return avatar.startsWith(`${PREFIX}-`);
+  return avatar.startsWith(`${PREFIX}-`) || avatar.startsWith('a1-');
 }
 
 export function encodeAvatar(c: AvatarConfig): string {
-  return [PREFIX, c.body, c.skin, c.hair, c.hairColor, c.eyes, c.hat, c.glasses, c.bg].join('-');
+  return [PREFIX, ...AVATAR_PARTS.map((p) => c[p.key])].join('-');
 }
 
 const pick = <T extends Item>(items: T[], id: string | undefined, fallback: string): T =>
@@ -145,39 +203,42 @@ const pick = <T extends Item>(items: T[], id: string | undefined, fallback: stri
 
 /** Reads an avatar code; unknown parts take the default. */
 export function decodeAvatar(code: string): AvatarConfig {
-  const [, body, skin, hair, hairColor, eyes, hat, glasses, bg] = code.split('-');
-  const d = DEFAULT_AVATAR;
-  return {
-    body: pick(BODIES, body, d.body).id,
-    skin: pick(SKINS, skin, d.skin).id,
-    hair: pick(HAIR_STYLES, hair, d.hair).id,
-    hairColor: pick(HAIR_COLORS, hairColor, d.hairColor).id,
-    eyes: pick(EYE_COLORS, eyes, d.eyes).id,
-    hat: pick(HATS, hat, d.hat).id,
-    glasses: pick(GLASSES, glasses, d.glasses).id,
-    bg: pick(BACKGROUNDS, bg, d.bg).id,
-  };
+  const [prefix, ...values] = code.split('-');
+  if (prefix === 'a1') {
+    // First drawn avatars: body-skin-hair-hairColor-eyes-hat-glasses-bg.
+    const [body, skin, hair, hairColor, eyes, hat, glasses, bg] = values;
+    const f = body === 'f';
+    return decodeAvatar(
+      encodeAvatar({
+        ...DEFAULT_AVATAR,
+        face: f ? 'oval' : 'square',
+        eyeShape: f ? 'lashes' : 'round',
+        brows: f ? 'thin' : 'thick',
+        skin, hair, hairColor, eyes, hat, glasses, bg,
+      }),
+    );
+  }
+  const config = { ...DEFAULT_AVATAR };
+  AVATAR_PARTS.forEach((p, i) => {
+    config[p.key] = pick(p.items, values[i], DEFAULT_AVATAR[p.key]).id;
+  });
+  return config;
 }
 
 /** A random look among the items available from the start. */
 export function randomAvatar(): AvatarConfig {
-  const free = <T extends Item>(items: T[]) => items.filter((i) => !i.unlock);
-  const any = <T extends Item>(items: T[]) => {
-    const list = free(items);
-    return list[Math.floor(Math.random() * list.length)].id;
+  const any = (items: Item[]) => {
+    const free = items.filter((i) => !i.unlock);
+    return free[Math.floor(Math.random() * free.length)].id;
   };
-  const body = Math.random() < 0.5 ? 'm' : 'f';
-  const hairs = body === 'f' ? ['long', 'bob', 'bun', 'curly', 'afro'] : ['short', 'quiff', 'curly', 'buzz', 'afro'];
-  return {
-    body,
-    skin: free(SKINS).filter((s) => s.id !== 'emoji')[Math.floor(Math.random() * 6)].id,
-    hair: hairs[Math.floor(Math.random() * hairs.length)],
-    hairColor: any(HAIR_COLORS),
-    eyes: any(EYE_COLORS),
-    hat: 'none',
-    glasses: Math.random() < 0.25 ? 'round' : 'none',
-    bg: any(BACKGROUNDS),
-  };
+  const config = { ...DEFAULT_AVATAR };
+  for (const p of AVATAR_PARTS) config[p.key] = any(p.items);
+  // Mostly plain: accessories and beards now and then.
+  if (Math.random() < 0.7) config.hat = 'none';
+  if (Math.random() < 0.6) config.glasses = 'none';
+  if (Math.random() < 0.6) config.beard = 'none';
+  if (config.skin === 'emoji' && Math.random() < 0.8) config.skin = 'p3';
+  return config;
 }
 
 /** What the player has done, for unlocks. */
@@ -396,63 +457,209 @@ function glasses(id: string): string {
   }
 }
 
+/** Face outline and where the ears go, by face shape. */
+const FACE_SHAPES: Record<string, { d: string; ears: [number, number] }> = {
+  oval: {
+    d: 'M60 32 C73 32 82 41 83 54 C84 64 82 73 76.5 79.5 C71.5 85 65.5 88 60 88 C54.5 88 48.5 85 43.5 79.5 C38 73 36 64 37 54 C38 41 47 32 60 32 Z',
+    ears: [37.5, 82.5],
+  },
+  round: {
+    d: 'M60 33 C77 33 87.5 44 87.5 59 C87.5 75 75.5 86.5 60 86.5 C44.5 86.5 32.5 75 32.5 59 C32.5 44 43 33 60 33 Z',
+    ears: [33.5, 86.5],
+  },
+  square: {
+    d: 'M60 31 C75 31 85 40 85 54 L85 70 C85 78 81 84 74 86.5 C70 88 65 88.5 60 88.5 C55 88.5 50 88 46 86.5 C39 84 35 78 35 70 L35 54 C35 40 45 31 60 31 Z',
+    ears: [35.5, 84.5],
+  },
+  heart: {
+    d: 'M60 31 C76 31 86 41 85 55 C84.5 66 79 75 71.5 82 C67 86.5 63.5 89.5 60 90.5 C56.5 89.5 53 86.5 48.5 82 C41 75 35.5 66 35 55 C34 41 44 31 60 31 Z',
+    ears: [35.5, 84.5],
+  },
+  long: {
+    d: 'M60 30 C72 30 81 39 81 53 C81 67 79 78 73.5 84 C69.5 88 64.5 90 60 90 C55.5 90 50.5 88 46.5 84 C41 78 39 67 39 53 C39 39 48 30 60 30 Z',
+    ears: [39.5, 80.5],
+  },
+};
+
+/** One eye centred on x (61.2 high), drawn with the iris gradient `iris`. */
+function eye(shape: string, x: number, right: boolean, iris: string, skinFill: string, skinShade: string, line: string): string {
+  const lidLine = (w: number, extra = '') =>
+    `<path fill="none" stroke="#3B2621" stroke-width="${w}" stroke-linecap="round" d="M${x - 5.6} 60.2 C${x - 4.4} 55.2 ${x + 4.4} 55.2 ${x + 5.6} 60.2${extra}"/>`;
+  const open = (ry: number) => `
+<ellipse fill="#FFFFFF" stroke="${line}" stroke-width=".6" stroke-opacity=".5" cx="${x}" cy="61.2" rx="5.3" ry="${ry}"/>
+<circle fill="${iris}" cx="${x + 0.2}" cy="61.9" r="${Math.min(3.7, ry - 0.6)}"/>
+<circle fill="#1E1614" cx="${x + 0.25}" cy="62" r="1.8"/>
+<circle fill="#FFFFFF" cx="${x + 1.5}" cy="60.4" r="1.25"/>
+<circle fill="#FFFFFF" opacity=".8" cx="${x - 1.2}" cy="63.4" r=".55"/>`;
+  const outer = right ? x + 5.6 : x - 5.6;
+  const flick = right ? 2.1 : -2.1;
+  const closed = `<path fill="none" stroke="#3B2621" stroke-width="1.8" stroke-linecap="round" d="M${x - 4.8} 61.8 C${x - 2.5} 58.4 ${x + 2.5} 58.4 ${x + 4.8} 61.8"/>`;
+  switch (shape) {
+    case 'lashes':
+      return open(5.6) + lidLine(1.9, ` M${outer} 60.2 L${outer + flick} 58.6`);
+    case 'almond':
+      return (
+        open(4.2) +
+        `<path fill="none" stroke="#3B2621" stroke-width="1.5" stroke-linecap="round" d="M${x - 5.8} 61.6 C${x - 3.5} 57.4 ${x + 3} 56.8 ${x + 5.8} 60.2"/>`
+      );
+    case 'sleepy':
+      return (
+        open(5.6) +
+        `<path fill="${skinFill}" stroke="${skinShade}" stroke-width=".8" d="M${x - 5.6} 61 C${x - 5} 55 ${x + 5} 55 ${x + 5.6} 61 C${x + 3} 60 ${x - 3} 60 ${x - 5.6} 61 Z"/>` +
+        `<path fill="none" stroke="#3B2621" stroke-width="1.5" stroke-linecap="round" d="M${x - 5.6} 61 C${x - 3} 60 ${x + 3} 60 ${x + 5.6} 61"/>`
+      );
+    case 'happy':
+      return closed;
+    case 'wink':
+      return right ? closed : open(5.6) + lidLine(1.3);
+    default:
+      return open(5.6) + lidLine(1.3);
+  }
+}
+
+function brows(id: string, fill: string): string {
+  const both = (d: string) => `<path fill="${fill}" d="${d}"/><path fill="${fill}" d="${mirror(d)}"/>`;
+  switch (id) {
+    case 'thin':
+      return both('M42.8 52.6 C45.6 49.6 50.4 49 54.4 50.4 C54.9 51.1 54.6 51.8 53.8 51.8 C50.2 51.2 46.6 51.8 43.8 53.6 C43.1 54 42.4 53.2 42.8 52.6 Z');
+    case 'arched':
+      return both('M42.6 54 C44.4 49 49.6 46.8 54.6 49.6 C55.2 50.2 54.8 51.2 54 51 C50 49.4 46.2 50.8 44 54.6 C43.5 55.2 42.4 54.8 42.6 54 Z');
+    case 'flat':
+      return both('M42.6 51.6 C46.4 50.6 50.6 50.4 54.6 50.8 C55.4 51 55.4 52.6 54.6 52.7 C50.6 52.6 46.6 52.9 43 53.6 C42 53.7 41.8 51.9 42.6 51.6 Z');
+    case 'bushy':
+      return both('M41.6 53 C44.4 48.4 50.6 47.4 55.4 49.4 C56.4 50 56 52.6 54.8 52.6 C51 52 47 52.6 43.8 54.9 C42.6 55.6 41 54.2 41.6 53 Z M44 50.6 L43 49 M48 49 L47.6 47.4 M52 48.8 L52.4 47.2');
+    case 'raised':
+      return (
+        `<path fill="${fill}" d="M42.2 52.8 C45.4 49.2 50.6 48.6 54.8 50.2 C55.4 51 55.1 52.2 54.1 52.2 C50.4 51.5 46.6 52.2 43.6 54.4 C42.7 54.9 41.8 53.6 42.2 52.8 Z"/>` +
+        `<path fill="${fill}" d="${mirror('M42.4 50.6 C44.6 45.6 50.4 44.6 54.8 47 C55.4 47.8 55 48.9 54 48.7 C50.4 47.3 46.4 48.2 44 51.8 C43.3 52.6 42 51.6 42.4 50.6 Z')}"/>`
+      );
+    default:
+      return both('M42.2 52.8 C45.4 49.2 50.6 48.6 54.8 50.2 C55.4 51 55.1 52.2 54.1 52.2 C50.4 51.5 46.6 52.2 43.6 54.4 C42.7 54.9 41.8 53.6 42.2 52.8 Z');
+  }
+}
+
+function mouth(id: string, skinShade: string): string {
+  const corners = `<path fill="none" stroke="${skinShade}" stroke-width="1.1" stroke-linecap="round" opacity=".7" d="M51.6 72 C52.2 71.6 52.8 71.6 53.3 72 M68.4 72 C67.8 71.6 67.2 71.6 66.7 72"/>`;
+  const line = darker(skinShade, 0.3);
+  switch (id) {
+    case 'closed':
+      return `<path fill="none" stroke="${darker(skinShade, 0.45)}" stroke-width="1.8" stroke-linecap="round" d="M53.5 73 C56.5 76.4 63.5 76.4 66.5 73"/>` + corners;
+    case 'grin':
+      return `<path fill="#7A2E3A" stroke="${line}" stroke-width=".8" stroke-linejoin="round" d="M51.5 71.6 C54 81.5 66 81.5 68.5 71.6 C63 73.2 57 73.2 51.5 71.6 Z"/>
+<path fill="#FFFFFF" d="M53.4 72.6 C57.6 73.9 62.4 73.9 66.6 72.6 L66 74.4 C62 75.4 58 75.4 54 74.4 Z"/>
+<path fill="#E8798A" d="M55.5 78.2 C57.5 76.4 62.5 76.4 64.5 78.2 C62.5 79.6 57.5 79.6 55.5 78.2 Z"/>`;
+    case 'smirk':
+      return `<path fill="none" stroke="${darker(skinShade, 0.45)}" stroke-width="1.8" stroke-linecap="round" d="M53.5 74.6 C57.5 75.6 62.5 75 66.8 71.6"/>
+<path fill="none" stroke="${skinShade}" stroke-width="1.1" stroke-linecap="round" opacity=".7" d="M67.6 70.8 C67.4 71.6 67.8 72.4 68.4 72.6"/>`;
+    case 'lips':
+      return `<path fill="#D9576A" stroke="#B53E52" stroke-width=".7" stroke-linejoin="round" d="M53 73 C55 71.4 57.6 71 60 72 C62.4 71 65 71.4 67 73 C64.5 77.6 55.5 77.6 53 73 Z"/>
+<path fill="none" stroke="#9E2F43" stroke-width=".9" stroke-linecap="round" d="M53.6 73.2 C57 74.4 63 74.4 66.4 73.2"/>
+<path fill="#FFFFFF" opacity=".45" d="M57 75.4 C58.6 76 61.4 76 63 75.4 C61.4 76.6 58.6 76.6 57 75.4 Z"/>`;
+    case 'o':
+      return `<ellipse fill="#7A2E3A" stroke="${line}" stroke-width=".8" cx="60" cy="74.6" rx="2.6" ry="3.2"/>
+<ellipse fill="#E8798A" cx="60" cy="76.2" rx="1.6" ry="1"/>`;
+    case 'tongue':
+      return `<path fill="#7A2E3A" stroke="${line}" stroke-width=".8" stroke-linejoin="round" d="M53 72.6 C56 77.4 64 77.4 67 72.6 C64 74.2 56 74.2 53 72.6 Z"/>
+<path fill="#EE7F92" stroke="#C9566C" stroke-width=".8" d="M57.4 75.2 C57.4 80.4 62.8 80.4 62.8 75.6 C61 76.6 59 76.4 57.4 75.2 Z"/>
+<path fill="none" stroke="#C9566C" stroke-width=".7" stroke-linecap="round" d="M60.1 76.3 L60.1 78.4"/>` + corners;
+    default:
+      return `<path fill="#7A2E3A" stroke="${line}" stroke-width=".8" stroke-linejoin="round" d="M53 72.6 C56 78 64 78 67 72.6 C64 74.2 56 74.2 53 72.6 Z"/>
+<path fill="#FFFFFF" d="M55.4 73.6 C58.4 74.6 61.6 74.6 64.6 73.6 L64.1 74.6 C61.3 75.4 58.7 75.4 55.9 74.6 Z"/>
+<ellipse fill="#E8798A" cx="60" cy="76" rx="3.1" ry="1.1"/>` + corners;
+  }
+}
+
+/**
+ * Facial hair: what grows on the jaw (drawn under the mouth, clipped to the face)
+ * and the moustache (drawn over it).
+ */
+function beard(id: string, paint: string, strands: string, fill: string, line: string, faceClip: string, halfWidth: number): { jaw: string; mustache: string } {
+  const mustache = `<path ${paint} d="M51.5 71.2 C53.6 68.4 57.4 68.2 60 70 C62.6 68.2 66.4 68.4 68.5 71.2 C66 72.2 63 72.2 60 71.3 C57 72.2 54 72.2 51.5 71.2 Z"/>`;
+  // Hair along the jaw: the face below `top`, minus an ellipse around the mouth and cheeks,
+  // as wide as the face (`halfWidth`: from its middle to an ear) leaves room for sideburns.
+  const ellipse = (cx: number, cy: number, rx: number, ry: number) =>
+    `M${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} Z`;
+  const jaw = (top: number, hole: [number, number, number, number], opacity = 1) =>
+    `<g clip-path="${faceClip}" opacity="${opacity}"><path fill="${fill}" fill-rule="evenodd" d="M20 ${top} H100 V100 H20 Z ${ellipse(...hole)}"/>` +
+    (opacity === 1 ? `<path fill="none" stroke="${line}" stroke-width="1" d="${ellipse(...hole)}"/>` : '') +
+    `</g>`;
+  switch (id) {
+    case 'stubble':
+      return {
+        jaw: jaw(62, [60, 60.5, halfWidth - 2.5, 19], 0.22) + `<path fill="${fill}" opacity=".22" d="M51 70.6 C54 68.6 57.6 68.8 60 70 C62.4 68.8 66 68.6 69 70.6 C66 71.4 54 71.4 51 70.6 Z"/>`,
+        mustache: '',
+      };
+    case 'mustache':
+      return { jaw: '', mustache };
+    case 'goatee':
+      return {
+        jaw: `<path ${paint} d="M54.2 78.4 C55.2 84.5 57.4 87.4 60 87.4 C62.6 87.4 64.8 84.5 65.8 78.4 C63.8 80 56.2 80 54.2 78.4 Z"/>` +
+          `<path ${strands} d="M58 81 L58.4 85 M62 81 L61.6 85"/>`,
+        mustache,
+      };
+    case 'short':
+      return {
+        jaw: jaw(62, [60, 60, halfWidth - 2.5, 19.5]) + `<path ${strands} d="M44 80 L45 83.5 M50 83 L50.6 86.5 M70 83 L69.4 86.5 M76 80 L75 83.5"/>`,
+        mustache,
+      };
+    case 'full':
+      return {
+        jaw:
+          jaw(60, [60, 58, halfWidth - 3.5, 18]) +
+          `<path ${paint} d="M46.5 84.5 C50 90.5 55 93.5 60 93.5 C65 93.5 70 90.5 73.5 84.5 C69 87.5 51 87.5 46.5 84.5 Z"/>` +
+          `<path ${strands} d="M41 72 L42.5 77 M47 80 L48.5 85 M55 85 L55.8 90 M65 85 L64.2 90 M73 80 L71.5 85 M79 72 L77.5 77"/>`,
+        mustache,
+      };
+    case 'handlebar':
+      return {
+        jaw: '',
+        mustache: `<path ${paint} d="M50 70.5 C47.5 70 46.5 67.5 48 66.4 C48.6 68.4 50 69 52 68.8 C55 67.6 58 68 60 69.6 C62 68 65 67.6 68 68.8 C70 69 71.4 68.4 72 66.4 C73.5 67.5 72.5 70 70 70.5 C66.5 71.6 63 71.8 60 71 C57 71.8 53.5 71.6 50 70.5 Z"/>`,
+      };
+    default:
+      return { jaw: '', mustache: '' };
+  }
+}
+
+/** Part of the drawing to show, for close-ups (e.g. on the eyes): square from (x, y). */
+export type AvatarZoom = { x: number; y: number; size: number };
+
 /** SVG markup of an avatar (round). `uid` keeps its gradient ids apart from other avatars'. */
-export function avatarSvg(c: AvatarConfig, uid = 'a'): string {
+export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8, y: 12, size: 104 }): string {
   const skin = pick(SKINS, c.skin, DEFAULT_AVATAR.skin);
   const hairFill = pick(HAIR_COLORS, c.hairColor, DEFAULT_AVATAR.hairColor).fill;
-  const eye = pick(EYE_COLORS, c.eyes, DEFAULT_AVATAR.eyes).fill;
+  const eyeFill = pick(EYE_COLORS, c.eyes, DEFAULT_AVATAR.eyes).fill;
   const bg = pick(BACKGROUNDS, c.bg, DEFAULT_AVATAR.bg);
-  const f = c.body === 'f';
+  const face = FACE_SHAPES[c.face] ?? FACE_SHAPES.oval;
   const id = (name: string) => `${name}-${uid}`;
   const url = (name: string) => `url(#${id(name)})`;
 
   const skinLine = outline(skin.shade);
   const hairLine = outline(hairFill);
-  const h = hair(
-    c.hair,
-    `fill="${url('hair')}" stroke="${hairLine}" stroke-width="1" stroke-linejoin="round"`,
-    `fill="none" stroke="${darker(hairFill, 0.28)}" stroke-width="1.1" stroke-linecap="round" opacity=".45"`,
-    `fill="#FFFFFF" opacity=".28"`,
-    url('hair'),
-    hairLine,
-  );
-  const brow = darker(hairFill, c.hairColor === 'grey' || c.hairColor === 'blond' ? 0.4 : 0.12);
+  const hairPaint = `fill="${url('hair')}" stroke="${hairLine}" stroke-width="1" stroke-linejoin="round"`;
+  const hairStrands = `fill="none" stroke="${darker(hairFill, 0.28)}" stroke-width="1.1" stroke-linecap="round" opacity=".45"`;
+  const h = hair(c.hair, hairPaint, hairStrands, `fill="#FFFFFF" opacity=".28"`, url('hair'), hairLine);
+  const b = beard(c.beard, hairPaint, hairStrands, url('hair'), hairLine, url('face'), (face.ears[1] - face.ears[0]) / 2);
+  const browFill = darker(hairFill, c.hairColor === 'grey' || c.hairColor === 'blond' ? 0.4 : 0.12);
   const stops = bg.stops.map((s, i) => `<stop offset="${i / (bg.stops.length - 1)}" stop-color="${s}"/>`).join('');
   const stars = bg.stars
     ? [[22, 30, 1.2], [92, 24, 1.6], [100, 56, 1], [17, 66, 1.4], [30, 92, 1], [96, 90, 1.2], [78, 18, 1]]
         .map(([x, y, r]) => `<circle fill="#FFFFFF" opacity=".85" cx="${x}" cy="${y}" r="${r}"/>`)
         .join('')
     : '';
-  const ears = f ? [37.5, 82.5] : [36.5, 83.5];
-  // A softer, rounder face for "f"; a slightly wider jaw for "m".
-  const face = f
-    ? 'M60 32 C73 32 82 41 83 54 C84 64 82 73 76.5 79.5 C71.5 85 65.5 88 60 88 C54.5 88 48.5 85 43.5 79.5 C38 73 36 64 37 54 C38 41 47 32 60 32 Z'
-    : 'M60 31 C74 31 84 40 84 54 C85 66 82 75 76.5 81 C71.5 86 65.5 88 60 88 C54.5 88 48.5 86 43.5 81 C38 75 35 66 36 54 C36 40 46 31 60 31 Z';
-  const lid = f
-    ? `<path fill="none" stroke="#3B2621" stroke-width="1.9" stroke-linecap="round" d="M43.4 60.2 C44.6 55.2 53.4 55.2 54.6 60.2 M43.4 60.2 L41.3 58.6"/>` +
-      `<path fill="none" stroke="#3B2621" stroke-width="1.9" stroke-linecap="round" d="${mirror('M43.4 60.2 C44.6 55.2 53.4 55.2 54.6 60.2 M43.4 60.2 L41.3 58.6')}"/>`
-    : `<path fill="none" stroke="#3B2621" stroke-width="1.3" stroke-linecap="round" opacity=".85" d="M43.8 59.6 C45.2 55.6 52.8 55.6 54.2 59.6 ${mirror('M43.8 59.6 C45.2 55.6 52.8 55.6 54.2 59.6')}"/>`;
-  const browPath = f
-    ? 'M42.8 52.6 C45.6 49.6 50.4 49 54.4 50.4 C54.9 51.1 54.6 51.8 53.8 51.8 C50.2 51.2 46.6 51.8 43.8 53.6 C43.1 54 42.4 53.2 42.8 52.6 Z'
-    : 'M42.2 52.8 C45.4 49.2 50.6 48.6 54.8 50.2 C55.4 51 55.1 52.2 54.1 52.2 C50.4 51.5 46.6 52.2 43.6 54.4 C42.7 54.9 41.8 53.6 42.2 52.8 Z';
-  const eyeAt = (x: number) => `
-<ellipse fill="#FFFFFF" stroke="${skinLine}" stroke-width=".6" stroke-opacity=".5" cx="${x}" cy="61.2" rx="5.3" ry="5.6"/>
-<path fill="${skin.shade}" opacity=".25" d="M${x - 5.3} 61.2 C${x - 5} 57 ${x + 5} 57 ${x + 5.3} 61.2 C${x + 3} 58.8 ${x - 3} 58.8 ${x - 5.3} 61.2 Z"/>
-<circle fill="${url('iris')}" cx="${x + 0.2}" cy="61.9" r="3.7"/>
-<circle fill="#1E1614" cx="${x + 0.25}" cy="62" r="1.8"/>
-<circle fill="#FFFFFF" cx="${x + 1.5}" cy="60.4" r="1.25"/>
-<circle fill="#FFFFFF" opacity=".8" cx="${x - 1.2}" cy="63.4" r=".55"/>`;
+  const [earL, earR] = face.ears;
+  const half = zoom.size / 2;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 12 104 104">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${zoom.x} ${zoom.y} ${zoom.size} ${zoom.size}">
 <defs>
 <linearGradient id="${id('bg')}" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient>
 <radialGradient id="${id('glow')}" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".38"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
 <radialGradient id="${id('skin')}" cx=".42" cy=".36" r=".72"><stop offset="0" stop-color="${lighter(skin.fill, 0.14)}"/><stop offset=".6" stop-color="${skin.fill}"/><stop offset="1" stop-color="${mix(skin.fill, skin.shade, 0.55)}"/></radialGradient>
 <linearGradient id="${id('hair')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(hairFill, 0.14)}"/><stop offset="1" stop-color="${darker(hairFill, 0.12)}"/></linearGradient>
-<radialGradient id="${id('iris')}" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="${lighter(eye, 0.35)}"/><stop offset="1" stop-color="${darker(eye, 0.15)}"/></radialGradient>
+<radialGradient id="${id('iris')}" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="${lighter(eyeFill, 0.35)}"/><stop offset="1" stop-color="${darker(eyeFill, 0.15)}"/></radialGradient>
 <radialGradient id="${id('blush')}"><stop offset="0" stop-color="#FF7F7A" stop-opacity=".5"/><stop offset="1" stop-color="#FF7F7A" stop-opacity="0"/></radialGradient>
 <linearGradient id="${id('shirt')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(bg.shirt, 0.12)}"/><stop offset="1" stop-color="${darker(bg.shirt, 0.1)}"/></linearGradient>
-<clipPath id="${id('clip')}"><circle cx="60" cy="64" r="52"/></clipPath>
+<clipPath id="${id('clip')}"><circle cx="${zoom.x + half}" cy="${zoom.y + half}" r="${half}"/></clipPath>
+<clipPath id="${id('face')}"><path d="${face.d}"/></clipPath>
 </defs>
 <g clip-path="${url('clip')}">
 <rect width="120" height="130" fill="${url('bg')}"/>
@@ -462,22 +669,20 @@ ${h.back}
 <path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88.5 49.5 93.5 C54 98.5 66 98.5 70.5 93.5 C69 88.5 68.5 83 69 76 Z"/>
 <path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>
 <g stroke="${skinLine}" stroke-width=".8" stroke-opacity=".55">
-<ellipse fill="${skin.fill}" cx="${ears[0]}" cy="62" rx="5.2" ry="6.8"/>
-<ellipse fill="${skin.fill}" cx="${ears[1]}" cy="62" rx="5.2" ry="6.8"/></g>
-<path fill="none" stroke="${skin.shade}" stroke-width="1.5" stroke-linecap="round" d="M${ears[0] + 1.6} 59 C${ears[0] - 1.6} 59.5 ${ears[0] - 1.8} 64 ${ears[0] + 0.8} 65.5 M${ears[1] - 1.6} 59 C${ears[1] + 1.6} 59.5 ${ears[1] + 1.8} 64 ${ears[1] - 0.8} 65.5"/>
-<path fill="${url('skin')}" stroke="${skinLine}" stroke-width="1" stroke-opacity=".45" d="${face}"/>
+<ellipse fill="${skin.fill}" cx="${earL}" cy="62" rx="5.2" ry="6.8"/>
+<ellipse fill="${skin.fill}" cx="${earR}" cy="62" rx="5.2" ry="6.8"/></g>
+<path fill="none" stroke="${skin.shade}" stroke-width="1.5" stroke-linecap="round" d="M${earL + 1.6} 59 C${earL - 1.6} 59.5 ${earL - 1.8} 64 ${earL + 0.8} 65.5 M${earR - 1.6} 59 C${earR + 1.6} 59.5 ${earR + 1.8} 64 ${earR - 0.8} 65.5"/>
+<path fill="${url('skin')}" stroke="${skinLine}" stroke-width="1" stroke-opacity=".45" d="${face.d}"/>
 <ellipse fill="${url('blush')}" cx="45" cy="70.5" rx="6.5" ry="4.2"/>
 <ellipse fill="${url('blush')}" cx="75" cy="70.5" rx="6.5" ry="4.2"/>
-${eyeAt(49)}${eyeAt(71)}
-${lid}
-<path fill="${brow}" d="${browPath}"/>
-<path fill="${brow}" d="${mirror(browPath)}"/>
+${b.jaw}
+${eye(c.eyeShape, 49, false, url('iris'), skin.fill, skin.shade, skinLine)}
+${eye(c.eyeShape, 71, true, url('iris'), skin.fill, skin.shade, skinLine)}
+${brows(c.brows, browFill)}
 <path fill="${skin.shade}" opacity=".55" d="M57.6 66.6 C58.4 69.4 61.6 69.4 62.4 66.6 C61.4 67.8 58.6 67.8 57.6 66.6 Z"/>
 <path fill="#FFFFFF" opacity=".35" d="M59.2 63 C59.6 64.4 60.4 64.4 60.8 63 Z"/>
-<path fill="#7A2E3A" stroke="${f ? '#C8505E' : darker(skin.shade, 0.3)}" stroke-width="${f ? 1.1 : 0.8}" stroke-linejoin="round" d="M53 72.6 C56 78 64 78 67 72.6 C64 74.2 56 74.2 53 72.6 Z"/>
-<path fill="#FFFFFF" d="M55.4 73.6 C58.4 74.6 61.6 74.6 64.6 73.6 L64.1 74.6 C61.3 75.4 58.7 75.4 55.9 74.6 Z"/>
-<ellipse fill="#E8798A" cx="60" cy="76" rx="3.1" ry="1.1"/>
-<path fill="none" stroke="${skin.shade}" stroke-width="1.1" stroke-linecap="round" opacity=".7" d="M51.6 72 C52.2 71.6 52.8 71.6 53.3 72 M68.4 72 C67.8 71.6 67.2 71.6 66.7 72"/>
+${mouth(c.mouth, skin.shade)}
+${b.mustache}
 ${h.front}
 ${glasses(c.glasses)}
 ${hat(c.hat)}
