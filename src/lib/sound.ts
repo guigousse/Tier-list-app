@@ -50,3 +50,21 @@ export function playTick(): void {
     // Audio unavailable: the carousel simply stays silent.
   }
 }
+
+let popPlayer: AudioPlayer | null = null;
+
+/** Balloon pop, when a badge disappears (unless sounds are off in the settings). */
+export function playPop(): void {
+  if (!useTierStore.getState().settings.sounds) return;
+  try {
+    clickPlayer();
+    if (!popPlayer) {
+      popPlayer = createAudioPlayer(require('../../assets/sounds/pop.wav'));
+      popPlayer.volume = 0.8;
+    }
+    popPlayer.seekTo(0).catch(() => {});
+    popPlayer.play();
+  } catch {
+    // Audio unavailable: the badge pops silently.
+  }
+}

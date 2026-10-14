@@ -1,13 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+  ZoomIn,
+} from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { colors, radius, spacing } from '../../constants/theme';
 import type { AvatarConfig } from '../../lib/avatar';
-import { PART_LABELS, stretchFill, withReward, type Milestone } from '../../lib/rewards';
 import type { Badge, Fork } from '../../lib/badges';
+import { PART_LABELS, stretchFill, withReward, type Milestone } from '../../lib/rewards';
+import { playPop } from '../../lib/sound';
+import { useTierStore } from '../../store/useTierStore';
 import { AvatarDrawing } from '../Avatar';
 import { BadgeIcon } from '../BadgeIcon';
 import { Clickable } from '../Clickable';
@@ -17,10 +29,11 @@ const ROW = 112;
 const NODE = 52;
 const TOP = NODE / 2 + 8;
 const PREVIEW = 62;
-const BADGE = 70;
-/** Width of a badge with its label under it. */
-const BADGE_LABEL = 116;
-const VS = 34;
+const STICKER = 64;
+/** Room for a sticker and its label under it. */
+const STICKER_BOX = 104;
+/** How long the losing sticker takes to pop. */
+const POP_MS = 420;
 
 type Point = { x: number; y: number };
 
@@ -31,10 +44,7 @@ function stretch(a: Point, b: Point): [Point, Point, Point, Point] {
 
 /** The first `t` (0 → 1) of a cubic, as an SVG path (de Casteljau). */
 function partial([p0, p1, p2, p3]: [Point, Point, Point, Point], t: number): string {
-  const lerp = (a: Point, b: Point) => ({
-    x: a.x + (b.x - a.x) * t,
-    y: a.y + (b.y - a.y) * t,
-  });
+  const lerp = (a: Point, b: Point) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
   const q0 = lerp(p0, p1);
   const q1 = lerp(p1, p2);
   const r0 = lerp(q0, q1);
@@ -47,21 +57,90 @@ const THEMES = {
   orange: { from: '#FFC24B', to: '#FF5A1F', node: '#FF7A1F' },
 };
 
-type Row = {
-  at: number;
-  y: number;
-  /** One point, or two for a fork (its two badges, in order). */
-  xs: number[];
-  step?: Milestone;
-  fork?: Fork;
-};
+type Row = { at: number; x: number; y: number; step?: Milestone; fork?: Fork };
+
+/** One bit of the burst of a popping sticker, flying out at `angle`. */
+function Shard({ angle, color, progress }: { angle: number; color: string; progress: { value: number } }) {
+  const style = useAnimatedStyle(() => {
+    const d = 10 + progress.value * 34;
+    return {
+      opacity: progress.value < 0.15 ? progress.value / 0.15 : 1 - progress.value,
+      transform: [{ translateX: Math.cos(angle) * d }, { translateY: Math.sin(angle) * d }, { scale: 1 - progress.value * 0.6 }],
+    };
+  });
+  return <Animated.View pointerEvents="none" style={[styles.shard, { backgroundColor: color }, style]} />;
+}
+
+const SHARDS = Array.from({ length: 9 }, (_, i) => (Math.PI * 2 * i) / 9 + 0.3);
+
+/**
+ * A badge on one side of a VS circle. While the player can choose it wiggles; once
+ * the other side is chosen it pops (bigger, gone, with a burst) and disappears.
+ */
+function ForkSticker({
+  badge,
+  side,
+  locked,
+  mine,
+  popping,
+  wiggle,
+  onPress,
+}: {
+  badge: Badge;
+  side: 0 | 1;
+  locked: boolean;
+  mine: boolean;
+  popping: boolean;
+  wiggle: { value: number } | null;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+  const burst = useSharedValue(0);
+  useEffect(() => {
+    if (!popping) return;
+    scale.value = withSequence(withTiming(1.3, { duration: 110 }), withTiming(0.1, { duration: 130 }));
+    opacity.value = withDelay(140, withTiming(0, { duration: 100 }));
+    burst.value = withDelay(150, withTiming(1, { duration: POP_MS - 150, easing: Easing.out(Easing.quad) }));
+  }, [popping, scale, opacity, burst]);
+  const direction = side === 0 ? 1 : -1;
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value * (mine ? 1.05 : 1) }, { rotate: `${wiggle ? (wiggle.value * 2 - 1) * 7 * direction : 0}deg` }],
+  }));
+
+  return (
+    <Clickable
+      accessibilityRole="button"
+      accessibilityLabel={`${badge.label}${mine ? ', votre camp' : locked ? ', à débloquer' : ''}`}
+      onPress={onPress}
+      disabled={popping}
+      style={styles.stickerBox}
+    >
+      <View style={styles.stickerArt}>
+        {popping ? SHARDS.map((a, k) => <Shard key={a} angle={a} color={k % 2 ? '#FFFFFF' : badge.glow} progress={burst} />) : null}
+        <Animated.View style={style}>
+          <BadgeIcon badge={badge} size={STICKER} state={locked ? 'locked' : undefined} />
+        </Animated.View>
+      </View>
+      {!popping ? (
+        <View style={[styles.stickerLabel, mine && styles.stickerLabelMine]}>
+          {mine ? <Ionicons name="checkmark" size={11} color="#FFFFFF" /> : null}
+          <Text numberOfLines={1} style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }]}>
+            {badge.label}
+          </Text>
+        </View>
+      ) : null}
+    </Clickable>
+  );
+}
 
 /**
  * A reward path, going up: numbered circles linked by a winding road that fills up
  * with the player's progress, each with a preview of the avatar item it unlocks.
- * At forks the road splits towards two badges: the player picks one side, which
- * gives up the other for good. `glow`: the filled road and the circles reached glow
- * like embers.
+ * At a fork the number gives way to a VS between two badges: the player picks one
+ * ("Sûr ?"), the other pops and is gone for good. `glow`: the filled road and the
+ * circles reached glow like embers.
  */
 export function RewardPath({
   steps,
@@ -95,55 +174,34 @@ export function RewardPath({
 }) {
   const [width, setWidth] = useState(0);
   const [open, setOpen] = useState<Milestone | null>(null);
+  /** The sticker asking "Sûr ?". */
+  const [asking, setAsking] = useState<{ fork: string; side: 0 | 1 } | null>(null);
+  /** The sticker popping after the other side was chosen. */
+  const [popping, setPopping] = useState<{ fork: string; side: 0 | 1 } | null>(null);
+  const popTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => clearTimeout(popTimer.current ?? undefined), []);
   const t = THEMES[theme];
 
   const height = TOP * 2 + (steps.length + forks.length) * ROW;
-  // A start point (0) at the bottom, then every step and fork going up; steps wind left and right.
+  // A start point (0) at the bottom, then every step going up, winding left and
+  // right; forks stay in the middle, with a sticker on each side.
   const rows = useMemo<Row[]>(() => {
     const amplitude = Math.min(90, width * 0.22);
-    const entries = [...steps.map((step) => ({ at: step.at, step, fork: undefined })), ...forks.map((fork) => ({ at: fork.at, step: undefined, fork }))].sort(
-      (a, b) => a.at - b.at,
-    );
+    const entries = [...steps.map((step) => ({ at: step.at, step })), ...forks.map((fork) => ({ at: fork.at, fork }))].sort((a, b) => a.at - b.at);
     let turn = 0;
-    return [{ at: 0, step: undefined, fork: undefined }, ...entries].map((e, i) => ({
+    return [{ at: 0 }, ...entries].map((e, i) => ({
       ...e,
       y: height - TOP - i * ROW,
-      xs: e.fork ? [width * 0.24, width * 0.76] : [width / 2 + Math.sin((turn++ * Math.PI) / 2) * amplitude],
+      x: 'fork' in e ? width / 2 : width / 2 + Math.sin((turn++ * Math.PI) / 2) * amplitude,
     }));
   }, [steps, forks, width, height]);
 
-  /** Index of the badge chosen at a fork row, if any. */
+  /** Side chosen at a fork row, if any. */
   const chosen = (row: Row) => (row.fork && choices[row.fork.id] ? row.fork.options.findIndex((o) => o.id === choices[row.fork!.id]) : -1);
 
-  // Stretches of road: every point of a row to every point of the next (a fork's
-  // two sides go on side by side if two forks follow each other).
-  const stretches = rows.slice(1).flatMap((b, i) => {
-    const a = rows[i];
-    const pairs: [number, number][] =
-      a.xs.length === 2 && b.xs.length === 2
-        ? [
-            [0, 0],
-            [1, 1],
-          ]
-        : a.xs.flatMap((_, p) => b.xs.map((__, q): [number, number] => [p, q]));
-    return pairs.map(([p, q]) => {
-      const lost = (chosen(a) !== -1 && chosen(a) !== p) || (chosen(b) !== -1 && chosen(b) !== q);
-      return {
-        curve: stretch({ x: a.xs[p], y: a.y }, { x: b.xs[q], y: b.y }),
-        lost,
-        fill: lost ? 0 : stretchFill(value, a.at, b.at),
-      };
-    });
-  });
-  const roadD = stretches
-    .filter((s) => !s.lost)
-    .map((s) => partial(s.curve, 1))
-    .join(' ');
-  const lostD = stretches
-    .filter((s) => s.lost)
-    .map((s) => partial(s.curve, 1))
-    .join(' ');
-  const filledD = stretches
+  const road = rows.slice(1).map((b, i) => ({ curve: stretch(rows[i], b), fill: stretchFill(value, rows[i].at, b.at) }));
+  const roadD = road.map((s) => partial(s.curve, 1)).join(' ');
+  const filledD = road
     .filter((s) => s.fill > 0)
     .map((s) => partial(s.curve, s.fill))
     .join(' ');
@@ -155,16 +213,9 @@ export function RewardPath({
     if (glow || waiting) breath.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }), -1, true);
   }, [glow, waiting, breath]);
   const glowStyle = useAnimatedStyle(() => ({ opacity: 0.35 + breath.value * 0.55 }));
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + breath.value * 0.1 }],
-    opacity: 0.12 + breath.value * 0.3,
-  }));
-
-  // Stickers waiting for a choice wiggle, each its own way; VS beats.
-  const wiggleLeft = useAnimatedStyle(() => ({ transform: [{ rotate: `${(breath.value * 2 - 1) * 7}deg` }] }));
-  const wiggleRight = useAnimatedStyle(() => ({ transform: [{ rotate: `${(1 - breath.value * 2) * 7}deg` }] }));
-  const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.92 + breath.value * 0.14 }], opacity: 0.35 + breath.value * 0.5 }));
-  const vsStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + breath.value * 0.15 }] }));
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + breath.value * 0.1 }], opacity: 0.12 + breath.value * 0.3 }));
+  const vsStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + breath.value * 0.14 }] }));
+  const vsHalo = useAnimatedStyle(() => ({ transform: [{ scale: 1 + breath.value * 0.35 }], opacity: 0.55 - breath.value * 0.45 }));
 
   const nextIndex = rows.findIndex((r) => r.at > value);
   // A badge to choose first, else the next step.
@@ -175,26 +226,25 @@ export function RewardPath({
     if (width > 0) onCurrent?.(height - focusY);
   }, [width, height, focusY, onCurrent]);
 
-  const tapBadge = (fork: Fork, badge: Badge, side: number, choice: number) => {
-    const other = fork.options[1 - side];
+  const tapSticker = (fork: Fork, side: 0 | 1) => {
     if (value < fork.at) {
       Alert.alert(
-        fork.question,
-        `Au palier ${fork.at}, choisissez votre camp : ${fork.options[0].label} ou ${fork.options[1].label}. L’autre badge sera perdu pour toujours !`,
+        `${fork.options[0].label} ou ${fork.options[1].label} ?`,
+        `Au palier ${fork.at}, choisissez votre camp. L’autre badge disparaîtra pour toujours !`,
       );
-    } else if (choice === -1) {
-      Alert.alert(`${badge.label} ?`, `Le badge ${other.label} sera perdu pour toujours. Pas de retour en arrière !`, [
-        { text: 'Réfléchir encore', style: 'cancel' },
-        { text: `Choisir ${badge.label}`, onPress: () => onChoose?.(fork, badge) },
-      ]);
-    } else {
-      Alert.alert(
-        choice === side ? badge.label : `${badge.label} : perdu`,
-        choice === side
-          ? 'Votre camp est choisi ! Affichez ce badge sur votre profil depuis « Mes badges ».'
-          : `Vous avez choisi ${other.label}. Pas de regrets ?`,
-      );
+      return;
     }
+    setAsking((a) => (a?.fork === fork.id && a.side === side ? null : { fork: fork.id, side }));
+  };
+
+  const confirm = (fork: Fork, side: 0 | 1) => {
+    setAsking(null);
+    setPopping({ fork: fork.id, side: side === 0 ? 1 : 0 });
+    onChoose?.(fork, fork.options[side]);
+    playPop();
+    if (useTierStore.getState().settings.haptics) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    clearTimeout(popTimer.current ?? undefined);
+    popTimer.current = setTimeout(() => setPopping(null), POP_MS + 80);
   };
 
   return (
@@ -208,9 +258,6 @@ export function RewardPath({
                 <Stop offset="1" stopColor={t.to} />
               </LinearGradient>
             </Defs>
-            {lostD ? (
-              <Path d={lostD} stroke={colors.surfaceAlt} strokeOpacity={0.45} strokeWidth={5} strokeDasharray="4 8" strokeLinecap="round" fill="none" />
-            ) : null}
             <Path d={roadD} stroke={colors.surfaceAlt} strokeWidth={8} strokeLinecap="round" fill="none" />
             <Path d={roadD} stroke={colors.border} strokeWidth={1.5} strokeDasharray="1.5 8" strokeLinecap="round" fill="none" />
             {filledD ? <Path d={filledD} stroke={`url(#fill-${theme})`} strokeWidth={8} strokeLinecap="round" fill="none" /> : null}
@@ -227,61 +274,70 @@ export function RewardPath({
           {rows.map((row, i) => {
             const reached = value >= row.at;
             const fork = row.fork;
+            const current = i === nextIndex;
+
             if (fork) {
               const choice = chosen(row);
               const toPick = reached && choice === -1;
               return (
                 <View key={`fork-${fork.id}`} style={StyleSheet.absoluteFill} pointerEvents="box-none">
-                  {/* Between the two stickers: the question, VS, and the step. */}
-                  <Text numberOfLines={2} style={[styles.question, { top: row.y - 62, left: width / 2 - 60 }]}>
-                    {fork.question}
-                  </Text>
-                  <Animated.View style={[styles.vs, { top: row.y - VS / 2, left: width / 2 - VS / 2 }, toPick && styles.vsLive, toPick && vsStyle]}>
-                    <Text style={styles.vsText}>VS</Text>
-                  </Animated.View>
-                  <Text style={[styles.forkAt, { top: row.y + VS / 2 + 6, left: width / 2 - 60 }, toPick && { color: t.node }]}>
-                    {toPick ? 'À vous de choisir !' : choice !== -1 ? 'Camp choisi' : `Palier ${row.at}`}
-                  </Text>
+                  <View style={[styles.nodeWrap, { top: row.y - NODE / 2, left: row.x - NODE / 2 }]}>
+                    {toPick ? <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: '#FF5A1F' }, vsHalo]} /> : null}
+                    <Animated.View
+                      style={[
+                        styles.node,
+                        reached ? { backgroundColor: t.node, borderColor: t.from } : current ? { borderColor: t.node, borderWidth: 3 } : null,
+                        toPick && styles.vsLive,
+                        toPick && vsStyle,
+                      ]}
+                    >
+                      <Text style={[styles.vsText, !reached && { color: colors.textMuted }]}>VS</Text>
+                    </Animated.View>
+                  </View>
 
-                  {fork.options.map((badge, side) => {
-                    const mine = choice === side;
-                    const lost = choice !== -1 && !mine;
+                  {fork.options.map((badge, n) => {
+                    const side = n as 0 | 1;
+                    const isPopping = popping?.fork === fork.id && popping.side === side;
+                    // The side given up is gone, once its pop is over.
+                    if (choice !== -1 && choice !== side && !isPopping) return null;
+                    const left = side === 0 ? row.x - NODE / 2 - spacing.sm - STICKER_BOX : row.x + NODE / 2 + spacing.sm;
+                    const isAsking = asking?.fork === fork.id && asking.side === side;
                     return (
-                      <Clickable
-                        key={badge.id}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${badge.label}, ${mine ? 'choisi' : lost ? 'perdu' : reached ? 'à choisir' : `palier ${row.at}`}`}
-                        onPress={() => tapBadge(fork, badge, side, choice)}
-                        style={[styles.badgeWrap, { top: row.y - BADGE / 2, left: row.xs[side] - BADGE_LABEL / 2 }]}
-                      >
-                        <View style={styles.badgeCircle}>
-                          {toPick ? (
-                            <Animated.View pointerEvents="none" style={[styles.badgeHalo, styles.badgeRing, { borderColor: badge.glow }, ringStyle]} />
-                          ) : mine ? (
-                            <View pointerEvents="none" style={[styles.badgeHalo, { backgroundColor: badge.glow, opacity: 0.16 }]} />
-                          ) : null}
-                          <Animated.View style={toPick ? (side === 0 ? wiggleLeft : wiggleRight) : mine ? { transform: [{ scale: 1.06 }] } : null}>
-                            <BadgeIcon badge={badge} size={BADGE} state={!reached ? 'locked' : lost ? 'lost' : undefined} />
+                      <View key={badge.id} style={[styles.stickerSlot, { top: row.y - STICKER / 2 - 4, left }]} pointerEvents="box-none">
+                        <ForkSticker
+                          badge={badge}
+                          side={side}
+                          locked={!reached}
+                          mine={choice === side}
+                          popping={isPopping}
+                          wiggle={toPick ? breath : null}
+                          onPress={() => (choice === -1 ? tapSticker(fork, side) : undefined)}
+                        />
+                        {isAsking ? (
+                          <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.askWrap}>
+                            <Clickable
+                              accessibilityRole="button"
+                              accessibilityLabel={`Sûr ? Choisir ${badge.label}`}
+                              onPress={() => confirm(fork, side)}
+                              style={({ pressed }) => [styles.ask, { backgroundColor: t.node }, pressed && { opacity: 0.85 }]}
+                            >
+                              <Text style={styles.askText}>Sûr ?</Text>
+                              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+                            </Clickable>
+                            <View style={[styles.askTail, { borderTopColor: t.node }]} />
                           </Animated.View>
-                        </View>
-                        <View style={[styles.badgeLabelPill, mine && { backgroundColor: t.node, borderColor: t.from }, lost && { opacity: 0.45 }]}>
-                          {mine ? <Ionicons name="checkmark" size={12} color="#FFFFFF" /> : null}
-                          <Text numberOfLines={1} style={[styles.badgeLabel, mine && { color: '#FFFFFF' }, lost && { textDecorationLine: 'line-through' }]}>
-                            {badge.label}
-                          </Text>
-                        </View>
-                      </Clickable>
+                        ) : null}
+                      </View>
                     );
                   })}
                 </View>
               );
             }
 
-            const x = row.xs[0];
+            const x = row.x;
             const step = row.step ?? null;
             const owned = step ? won >= step.at : false;
             const left = x <= width / 2;
-            const current = i === nextIndex;
             // The preview sits on the roomier side of the circle.
             const room = left ? width - x - NODE / 2 - spacing.md : x - NODE / 2 - spacing.md;
             const previewWidth = Math.min(170, room);
@@ -289,9 +345,7 @@ export function RewardPath({
               <View key={row.at} style={StyleSheet.absoluteFill} pointerEvents="box-none">
                 <View style={[styles.nodeWrap, { top: row.y - NODE / 2, left: x - NODE / 2 }]}>
                   {glow && reached && i > 0 ? <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: t.node }, pulseStyle]} /> : null}
-                  <View
-                    style={[styles.node, reached ? { backgroundColor: t.node, borderColor: t.from } : current ? { borderColor: t.node, borderWidth: 3 } : null]}
-                  >
+                  <View style={[styles.node, reached ? { backgroundColor: t.node, borderColor: t.from } : current ? { borderColor: t.node, borderWidth: 3 } : null]}>
                     {i === 0 ? (
                       <Ionicons name={theme === 'orange' ? 'flame' : 'flag'} size={22} color={reached ? '#FFFFFF' : colors.textMuted} />
                     ) : (
@@ -326,9 +380,7 @@ export function RewardPath({
                         {step.rewards[0].label}
                       </Text>
                       <Text numberOfLines={1} style={styles.previewMeta}>
-                        {step.rewards.length > 1
-                          ? `+ ${step.rewards.length - 1} autre${step.rewards.length > 2 ? 's' : ''}`
-                          : PART_LABELS[step.rewards[0].part]}
+                        {step.rewards.length > 1 ? `+ ${step.rewards.length - 1} autre${step.rewards.length > 2 ? 's' : ''}` : PART_LABELS[step.rewards[0].part]}
                       </Text>
                     </View>
                   </Clickable>
@@ -366,13 +418,7 @@ export function RewardPath({
 }
 
 const styles = StyleSheet.create({
-  nodeWrap: {
-    position: 'absolute',
-    width: NODE,
-    height: NODE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  nodeWrap: { position: 'absolute', width: NODE, height: NODE, alignItems: 'center', justifyContent: 'center' },
   node: {
     width: NODE,
     height: NODE,
@@ -383,17 +429,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  halo: {
-    position: 'absolute',
-    width: NODE + 14,
-    height: NODE + 14,
-    borderRadius: (NODE + 14) / 2,
+  halo: { position: 'absolute', width: NODE + 14, height: NODE + 14, borderRadius: (NODE + 14) / 2 },
+  nodeText: { color: colors.textMuted, fontSize: 18, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  vsLive: { backgroundColor: '#FF5A1F', borderColor: '#FFC24B' },
+  vsText: { color: '#FFFFFF', fontSize: 17, fontWeight: '900', fontStyle: 'italic', letterSpacing: -0.5 },
+  stickerSlot: { position: 'absolute', width: STICKER_BOX, alignItems: 'center' },
+  stickerBox: { width: STICKER_BOX, alignItems: 'center', gap: 2 },
+  stickerArt: { width: STICKER, height: STICKER, alignItems: 'center', justifyContent: 'center' },
+  stickerLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    maxWidth: STICKER_BOX,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 9,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  nodeText: {
-    color: colors.textMuted,
-    fontSize: 18,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
+  stickerLabelMine: { backgroundColor: '#2EAD6B', borderColor: '#7BE495' },
+  stickerLabelText: { flexShrink: 1, color: colors.text, fontSize: 11, fontWeight: '700' },
+  shard: { position: 'absolute', width: 9, height: 9, borderRadius: 4.5 },
+  askWrap: { position: 'absolute', bottom: STICKER + 10, alignItems: 'center' },
+  ask: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  askText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  askTail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 7,
+    borderRightWidth: 7,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   preview: {
     position: 'absolute',
@@ -408,47 +488,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   previewLocked: { opacity: 0.55 },
-  question: { position: 'absolute', width: 120, color: colors.text, fontSize: 12, fontWeight: '800', textAlign: 'center' },
-  forkAt: {
-    position: 'absolute',
-    width: 120,
-    color: colors.textMuted,
-    fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  vs: {
-    position: 'absolute',
-    width: VS,
-    height: VS,
-    borderRadius: VS / 2,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vsLive: { backgroundColor: '#FF5A1F', borderColor: '#FFC24B' },
-  vsText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', fontStyle: 'italic', letterSpacing: -0.5 },
-  badgeWrap: { position: 'absolute', width: BADGE_LABEL, alignItems: 'center', gap: 2 },
-  badgeCircle: { width: BADGE, height: BADGE, alignItems: 'center', justifyContent: 'center' },
-  badgeHalo: { position: 'absolute', width: BADGE + 14, height: BADGE + 14, borderRadius: (BADGE + 14) / 2 },
-  badgeRing: { borderWidth: 3, borderStyle: 'dashed' },
-  badgeLabelPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    maxWidth: BADGE_LABEL,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  badgeLabel: { flexShrink: 1, color: colors.text, fontSize: 12, fontWeight: '700' },
   lock: {
     position: 'absolute',
     right: -3,
