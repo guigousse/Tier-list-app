@@ -12,6 +12,8 @@ export type Card = {
   imageName?: string;
   /** Author and licence of a picture taken from Wikimedia Commons, shown with the card. */
   imageCredit?: string;
+  /** Icon drawn by the AI (SVG markup, already cleaned by the server). */
+  iconSvg?: string;
 };
 
 /** Where a card lives: a tier id, or the unranked tray at the bottom. */

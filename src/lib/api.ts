@@ -67,6 +67,37 @@ export function setTemplateFavorite(templateKey: string, deviceId: string, favor
 
 export type TemplateStats = Record<string, { completions: number; favorites: number }>;
 
+/** AI generation (edge function `ai-generate`): the AI key stays on the server. */
+async function aiCall<T>(body: object, timeoutMs: number): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-generate`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.error ?? `ai ${res.status}`);
+    return data as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export type AiCard = { label: string; emoji: string; concept: string };
+
+/** Card names for a theme (without the cards already in the list). */
+export function aiWords(deviceId: string, theme: string, count: number, existing: string[]): Promise<{ cards: AiCard[] }> {
+  return aiCall({ action: 'words', deviceId, theme, count, existing }, 90_000);
+}
+
+/** The icon of a card: from the shared library, or drawn now. */
+export function aiIcon(deviceId: string, label: string, concept: string): Promise<{ concept: string; svg: string; reused: boolean }> {
+  return aiCall({ action: 'icon', deviceId, label, concept }, 180_000);
+}
+
 /** Hidden theme tags and trend scores of the popular tier lists. */
 export async function fetchDiscovery(): Promise<Discovery> {
   const d = await rpc<Partial<Discovery> | null>('get_discovery', {});

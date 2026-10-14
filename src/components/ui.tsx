@@ -112,10 +112,12 @@ type SheetProps = {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Shown next to the title, before the close button. */
+  headerRight?: ReactNode;
 };
 
 /** Bottom sheet built on the native modal. */
-export function Sheet({ visible, onClose, title, children, footer }: SheetProps) {
+export function Sheet({ visible, onClose, title, children, footer, headerRight }: SheetProps) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -125,6 +127,7 @@ export function Sheet({ visible, onClose, title, children, footer }: SheetProps)
           <View style={styles.sheetHandle} />
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>{title}</Text>
+            {headerRight}
             <IconButton icon="close" label="Fermer" onPress={onClose} color={colors.textMuted} />
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.md }}>

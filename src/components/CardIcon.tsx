@@ -14,3 +14,8 @@ export const CardIcon = memo(function CardIcon({ id, size }: { id: string; size:
   }
   return <SvgXml xml={xml} width={size} height={size} />;
 });
+
+/** An icon drawn by the AI (markup stored on the card), memoized like the others. */
+export const SvgIcon = memo(function SvgIcon({ xml, size }: { xml: string; size: number }) {
+  return <SvgXml xml={xml} width={size} height={size} />;
+});
