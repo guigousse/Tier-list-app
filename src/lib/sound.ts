@@ -2,69 +2,88 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 
 import { useTierStore } from '../store/useTierStore';
 
-let player: AudioPlayer | null = null;
+type Sound = 'click' | 'tick' | 'pop';
 
-function clickPlayer(): AudioPlayer {
-  if (!player) {
+const SOURCES: Record<Sound, number> = {
+  click: require('../../assets/sounds/click.wav'),
+  tick: require('../../assets/sounds/tick.wav'),
+  pop: require('../../assets/sounds/pop.wav'),
+};
+const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.35, pop: 0.85 };
+/** Players per sound, used in turn so quick repeats can overlap instead of cutting each other. */
+const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2 };
+/** The same sound asked again within this time is one sound (two handlers on one tap). */
+const SAME_TAP_MS = 60;
+
+const pools: Partial<Record<Sound, AudioPlayer[]>> = {};
+const next: Record<Sound, number> = { click: 0, tick: 0, pop: 0 };
+const lastPlayed: Record<Sound, number> = { click: 0, tick: 0, pop: 0 };
+let modeSet = false;
+
+function pool(sound: Sound): AudioPlayer[] {
+  if (!modeSet) {
+    modeSet = true;
     // Respect the silent switch and never pause the user's music.
     setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
-    player = createAudioPlayer(require('../../assets/sounds/click.wav'));
-    player.volume = 0.45;
   }
-  return player;
+  let players = pools[sound];
+  if (!players) {
+    players = Array.from({ length: POOL[sound] }, () => {
+      const p = createAudioPlayer(SOURCES[sound]);
+      p.volume = VOLUMES[sound];
+      return p;
+    });
+    pools[sound] = players;
+  }
+  return players;
 }
 
-/** Short click played when a button is pressed (unless sounds are off in the settings). */
+function play(sound: Sound): void {
+  if (!useTierStore.getState().settings.sounds) return;
+  const now = Date.now();
+  if (now - lastPlayed[sound] < SAME_TAP_MS) return;
+  lastPlayed[sound] = now;
+  try {
+    const players = pool(sound);
+    // A player that isn't playing, else the one used longest ago.
+    const free = players.find((p) => !p.playing);
+    const player = free ?? players[next[sound]];
+    next[sound] = (players.indexOf(player) + 1) % players.length;
+    if (player.playing) player.pause();
+    // Rewind first, then play: playing before the rewind is done plays nothing (the
+    // player is still at the end) or plays twice.
+    player.seekTo(0).then(
+      () => player.play(),
+      () => player.play(),
+    );
+  } catch {
+    // Audio unavailable: the app simply stays silent.
+  }
+}
+
+/** Soft click played when a button is pressed (unless sounds are off in the settings). */
 export function playClick(): void {
-  if (!useTierStore.getState().settings.sounds) return;
-  try {
-    const p = clickPlayer();
-    p.seekTo(0).catch(() => {});
-    p.play();
-  } catch {
-    // Audio unavailable: buttons simply stay silent.
-  }
+  play('click');
 }
 
-// A few players in turn, so quick ticks (scrolling a carousel) can overlap.
-const ticks: AudioPlayer[] = [];
-let nextTick = 0;
-
-/** Soft tick for each item passed in a carousel (unless sounds are off in the settings). */
+/** Light tick for each item passed in a carousel (unless sounds are off in the settings). */
 export function playTick(): void {
-  if (!useTierStore.getState().settings.sounds) return;
-  try {
-    if (ticks.length === 0) {
-      clickPlayer();
-      for (let i = 0; i < 3; i++) {
-        const p = createAudioPlayer(require('../../assets/sounds/tick.wav'));
-        p.volume = 0.35;
-        ticks.push(p);
-      }
-    }
-    const p = ticks[nextTick];
-    nextTick = (nextTick + 1) % ticks.length;
-    p.seekTo(0).catch(() => {});
-    p.play();
-  } catch {
-    // Audio unavailable: the carousel simply stays silent.
-  }
+  play('tick');
 }
-
-let popPlayer: AudioPlayer | null = null;
 
 /** Balloon pop, when a badge disappears (unless sounds are off in the settings). */
 export function playPop(): void {
+  play('pop');
+}
+
+/** Loads the sounds ahead of time, so the first tap isn't silent. */
+export function preloadSounds(): void {
   if (!useTierStore.getState().settings.sounds) return;
   try {
-    clickPlayer();
-    if (!popPlayer) {
-      popPlayer = createAudioPlayer(require('../../assets/sounds/pop.wav'));
-      popPlayer.volume = 0.8;
-    }
-    popPlayer.seekTo(0).catch(() => {});
-    popPlayer.play();
+    pool('click');
+    pool('tick');
+    pool('pop');
   } catch {
-    // Audio unavailable: the badge pops silently.
+    // Audio unavailable.
   }
 }

@@ -10,6 +10,7 @@ import { colors } from '../constants/theme';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
+import { preloadSounds } from '../lib/sound';
 import { AppHeader } from '../components/AppHeader';
 import { useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
@@ -38,6 +39,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (!hydrated) return;
     SplashScreen.hideAsync().catch(() => {});
+    // Sounds loaded now, so the first tap isn't silent.
+    preloadSounds();
     if (hydrationRecovered()) {
       Alert.alert(
         'Données illisibles',
