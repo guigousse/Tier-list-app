@@ -6,6 +6,8 @@
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 
+import { normalizeConcept, uniqueConcepts } from "./concepts.ts";
+
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
 const WORDS_MODEL = "claude-opus-5-5";
 const ICON_MODEL = "claude-opus-5-5";
@@ -22,14 +24,8 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const slug = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 40);
+/** Library concepts shown to the AI so it reuses them: ~3 tokens each, so a few hundred stay cheap. */
+const LIBRARY_HINT = 500;
 
 /** One request with a JSON answer; refusals and unparsable answers are errors. */
 async function ask(model: string, effort: string, system: string, user: string, schema: object, maxTokens: number) {
@@ -56,6 +52,7 @@ On te donne un thème et un nombre de cartes. Propose des cartes :
 - toutes du thème, connues du grand public, assez variées pour que le classement fasse débat ;
 - sans doublon entre elles ni avec les cartes déjà présentes.
 Pour chaque carte, donne aussi un emoji qui la représente, et un « concept » : un nom anglais simple en kebab-case (ex. "pizza", "hiking-boot", "rubber-duck") désignant l'objet à dessiner comme icône. Pour une idée difficile à dessiner, choisis un objet qui la symbolise (« Balade » -> "hiking-boot", « Grasse matinée » -> "bed"). Pour une marque, une personne ou une œuvre, choisis un objet générique évocateur, jamais un logo ni un visage réel.
+Concepts : au singulier, sans mot inutile (« pizza » et non « pizza-slice »). Si un concept de la bibliothèque déjà dessinée désigne exactement le même objet, reprends-le tel quel : son icône est gratuite. Sinon, crée un concept assez précis pour que l'icône distingue la carte des autres de la liste (« camembert-box » plutôt que « cheese » dans une liste de fromages). Deux cartes de la liste n'ont jamais le même concept.
 Si le thème est haineux, sexuel ou violent envers des personnes, renvoie une liste vide.`;
 
 const WORDS_SCHEMA = {
@@ -172,20 +169,22 @@ Deno.serve(async (req) => {
       if (!theme) return json({ error: "theme" }, 400);
       const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
       if (!allowed) return json({ error: "quota" }, 429);
+      const { data: library } = await db.from("card_icons").select("concept").order("created_at", { ascending: false }).limit(LIBRARY_HINT);
+      const drawn = (library ?? []).map((r: { concept: string }) => r.concept).join(", ") || "vide";
       const result = await ask(
         WORDS_MODEL,
         "low",
         WORDS_SYSTEM,
-        `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}`,
+        `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}\nBibliothèque déjà dessinée : ${drawn}`,
         WORDS_SCHEMA,
         4000,
       );
       const seen = new Set(existing.map((e) => e.toLowerCase()));
-      const cards = ((result.cards ?? []) as { label: string; emoji: string; concept: string }[])
+      const kept = ((result.cards ?? []) as { label: string; emoji: string; concept: string }[])
         .map((c) => ({
           label: String(c.label).trim().slice(0, 40),
           emoji: String(c.emoji).trim().slice(0, 8),
-          concept: slug(String(c.concept || c.label)),
+          concept: String(c.concept ?? ""),
         }))
         .filter((c) => {
           const key = c.label.toLowerCase();
@@ -194,13 +193,14 @@ Deno.serve(async (req) => {
           return true;
         })
         .slice(0, count);
-      if (cards.length === 0) return json({ error: "theme refused" }, 422);
-      return json({ cards });
+      if (kept.length === 0) return json({ error: "theme refused" }, 422);
+      const concepts = uniqueConcepts(kept);
+      return json({ cards: kept.map((c, i) => ({ ...c, concept: concepts[i] })) });
     }
 
     if (body.action === "icon") {
       const label = String(body.label ?? "").trim().slice(0, 40);
-      const concept = slug(String(body.concept || label));
+      const concept = normalizeConcept(String(body.concept || label));
       if (!concept) return json({ error: "bad request" }, 400);
       // Already drawn for someone: free and instant.
       const { data: known } = await db.from("card_icons").select("svg").eq("concept", concept).maybeSingle();
