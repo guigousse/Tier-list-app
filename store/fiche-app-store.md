@@ -33,11 +33,14 @@ Fruits, jeux mobiles, destinations, super-pouvoirs, fromages… Classez les list
 ✏️ VOS PROPRES TIER LISTS
 Créez une liste en un geste, renommez les rangs, ajoutez vos cartes avec une photo, l’appareil photo ou une image trouvée automatiquement sur Wikimedia. Glissez-déposez les cartes, ou touchez-les pour choisir leur rang.
 
+👥 JOUEZ ENTRE AMIS
+Créez votre profil (un pseudo et un avatar, sans e-mail), ajoutez vos amis avec leur code et comparez vos classements liste par liste : qui est le plus d’accord avec vous ? Un joueur gênant se bloque ou se signale en un geste.
+
 📲 PARTAGEZ
 Envoyez une tier list avec un code à 6 caractères ou un lien : vos amis l’ouvrent dans Tiercraft et font leur propre classement. Exportez aussi votre classement en image.
 
 🔒 RESPECT DE LA VIE PRIVÉE
-Pas de compte, pas de publicité, pas de pistage. Vos listes restent sur votre téléphone ; seules celles que vous partagez et vos votes anonymes sont envoyés en ligne.
+Pas d’e-mail, pas de publicité, pas de pistage. Vos listes restent sur votre téléphone ; seuls les listes que vous partagez, vos votes et votre profil de joueur (facultatif) sont envoyés en ligne. Vous pouvez supprimer votre profil à tout moment depuis les Réglages.
 
 ## Mots-clés (100 caractères, séparés par des virgules, sans espace)
 
@@ -45,7 +48,7 @@ tierlist,classement,top,ranking,quiz,vote,sondage,débat,amis,jeu,liste,classer,
 
 ## Nouveautés de la version
 
-Première version : tier list du jour, listes populaires, création et partage de vos tier lists.
+Première version : tier list du jour, listes populaires, amis, création et partage de vos tier lists.
 
 ## Confidentialité de l’app (questionnaire « App Privacy »)
 
@@ -53,8 +56,12 @@ Réponse : **oui, l’app collecte des données**, aucune n’est utilisée pour
 
 | Type de données (Apple) | Collectée | Liée à l’identité | Pistage | Finalité |
 |---|---|---|---|---|
-| Contenu utilisateur → Autre contenu de l’utilisateur (tier lists partagées, classements) | Oui | Non | Non | Fonctionnalités de l’app |
-| Identifiants → ID de l’appareil (identifiant aléatoire créé par l’app, pour un vote par appareil) | Oui | Non | Non | Fonctionnalités de l’app |
+| Contenu utilisateur → Autre contenu de l’utilisateur (tier lists partagées, classements, avatar) | Oui | Oui | Non | Fonctionnalités de l’app |
+| Identifiants → ID utilisateur (pseudo#numéro du profil de joueur) | Oui | Oui | Non | Fonctionnalités de l’app |
+| Identifiants → ID de l’appareil (identifiant aléatoire créé par l’app, pour un vote par appareil) | Oui | Oui | Non | Fonctionnalités de l’app |
+| Contacts → Autre (liste d’amis dans l’app, pas le carnet d’adresses) | Oui | Oui | Non | Fonctionnalités de l’app |
+
+« Liée à l’identité » : oui, car le profil de joueur relie le pseudo aux classements et aux amis (les votes faits sans profil restent anonymes).
 
 Tout le reste : non collecté (pas de coordonnées, de localisation, d’historique, d’achats, de données de santé, de diagnostics…). Les adresses IP ne servent qu’à la protection contre les abus et sont supprimées sous 24 h.
 
@@ -72,7 +79,8 @@ Pour les régénérer : écrans bruts dans `store/screens/`, mise en page dans `
 
 ## Avant de soumettre
 
-- [ ] Remplacer CONTACT_EMAIL dans `share-site/support.html` par l’adresse de contact, puis redéployer le site.
-- [ ] Lancer `supabase/migrations/20261013040000_daily_cleanup.sql` dans le SQL Editor (purge annoncée dans la politique).
+- [ ] Remplacer CONTACT_EMAIL dans `share-site/support.html` et `PUBLISHER` dans `src/constants/legal.ts` par le nom et l’adresse de contact, puis redéployer le site.
+- [ ] Vérifier dans Supabase que `delete_profile`, `unblock_player` et la tâche `tiercraft-cleanup` (`select * from cron.job`) existent.
+- [ ] Notes pour la revue Apple : profils sans e-mail, pseudos filtrés, avatars fixes ; signaler et bloquer depuis une demande d’ami ou le profil d’un ami ; suppression du profil dans Réglages → Zone de danger.
 - [ ] Passer Supabase en offre Pro (le projet gratuit se met en pause après 7 jours sans activité).
 - [ ] Vérifier les icônes d’apps du modèle « Jeux mobiles » (droits des éditeurs).

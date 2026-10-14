@@ -1,5 +1,4 @@
--- TO RUN ONCE IN THE SUPABASE SQL EDITOR (needs confirmation, not applied yet):
--- removes share codes nobody opened for six months and old rate-limit counters,
+-- Removes share codes nobody opened for six months and old rate-limit counters,
 -- every day at 03:17 UTC.
 create or replace function private.cleanup()
 returns void

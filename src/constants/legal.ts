@@ -16,13 +16,13 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'En bref',
     paragraphs: [
-      'Tiercraft fonctionne sans compte et collecte le moins de données possible. Cette page explique ce qui reste sur votre téléphone, ce qui est envoyé en ligne, et pourquoi.',
+      'Tiercraft fonctionne sans compte e-mail et collecte le moins de données possible. Cette page explique ce qui reste sur votre téléphone, ce qui est envoyé en ligne, et pourquoi.',
     ],
   },
   {
     title: 'Ce qui reste sur votre téléphone',
     paragraphs: [
-      'Vos tier lists, leurs cartes, leurs photos et vos réglages sont enregistrés uniquement sur votre appareil. Un identifiant aléatoire et la clé secrète de votre profil sont aussi gardés dans le trousseau de l’iPhone, pour retrouver votre profil si vous réinstallez l’app.',
+      'Vos tier lists, leurs cartes, leurs photos et vos réglages sont enregistrés uniquement sur votre appareil. Un identifiant aléatoire et la clé secrète de votre profil sont aussi gardés dans le trousseau sécurisé du téléphone, pour retrouver votre profil si vous réinstallez l’app.',
     ],
   },
   {
@@ -31,7 +31,7 @@ export const PRIVACY: LegalSection[] = [
       'Quand vous partagez une tier list : son titre, les noms et couleurs des rangs et des cartes, et le classement (jamais les photos), pour créer le code de partage.',
       'Quand vous validez la tier list du jour ou une liste populaire : votre classement et l’identifiant aléatoire de l’app, pour calculer le classement moyen et éviter les votes en double.',
       'Quand vous ajoutez une liste populaire en favori : la liste concernée et l’identifiant aléatoire, pour le compteur de favoris.',
-      'Si vous créez un profil de joueur : votre pseudo, son numéro et votre avatar, vos amis et demandes d’amis, et les signalements que vous faites ou recevez. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes populaires, jamais vos listes personnelles).',
+      'Si vous créez un profil de joueur : votre pseudo, son numéro et votre avatar, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes populaires, jamais vos listes personnelles).',
       'À chaque échange avec le serveur : votre adresse IP, conservée moins de 24 heures, pour limiter les abus.',
     ],
   },
@@ -67,7 +67,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Vos droits',
     paragraphs: [
-      'Vous pouvez effacer vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. Pour accéder à vos données en ligne, les corriger ou les supprimer (profil compris), écrivez à l’adresse indiquée dans les mentions légales. Vous pouvez aussi saisir la CNIL (cnil.fr).',
+      'Vous pouvez effacer vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. Réglages → Supprimer mon profil efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour accéder à vos données en ligne ou les corriger, écrivez à l’adresse indiquée dans les mentions légales. Vous pouvez aussi saisir la CNIL (cnil.fr).',
     ],
   },
 ];
@@ -94,7 +94,7 @@ export const LEGAL_NOTICE: LegalSection[] = [
   {
     title: 'Contenus des joueurs',
     paragraphs: [
-      'Les pseudos et tier lists partagées sont publiés sous la responsabilité de leurs auteurs. Un pseudo inapproprié peut être signalé depuis le profil du joueur ; après plusieurs signalements, le profil est masqué.',
+      'Les pseudos et tier lists partagées sont publiés sous la responsabilité de leurs auteurs. Les pseudos sont filtrés et les avatars choisis dans une liste fixe. Un joueur peut être signalé ou bloqué depuis son profil ou sa demande d’ami : il ne peut alors plus vous contacter, et après plusieurs signalements son profil est masqué.',
     ],
   },
   {
