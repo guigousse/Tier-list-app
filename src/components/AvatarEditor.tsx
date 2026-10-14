@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +28,7 @@ import {
   type Progress,
   type Unlock,
 } from '../lib/avatar';
+import { playTick } from '../lib/sound';
 import { bestStreak, completedCount } from '../lib/streak';
 import { useTierStore } from '../store/useTierStore';
 import { AvatarDrawing } from './Avatar';
@@ -148,7 +149,9 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
   const select = (i: number) => {
     const next = category.items[(i + category.items.length) % category.items.length];
     if (next.id === config[category.key]) return;
+    // A tick for each item passed, like the notches of a wheel.
     if (haptics) Haptics.selectionAsync().catch(() => {});
+    playTick();
     setConfig((c) => ({ ...c, [category.key]: next.id }));
   };
 
@@ -270,7 +273,7 @@ function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: Av
 
   return (
     <View style={styles.swipeRow}>
-      <IconButton icon="chevron-back" label="Précédent" onPress={onPrevious} color={colors.textMuted} size={28} />
+      <Arrow icon="chevron-back" label="Précédent" onPress={onPrevious} />
       <GestureDetector gesture={swipe}>
         <Animated.View
           style={[styles.avatar, { borderRadius: size / 2 }, style]}
@@ -286,8 +289,17 @@ function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: Av
           </View>
         </Animated.View>
       </GestureDetector>
-      <IconButton icon="chevron-forward" label="Suivant" onPress={onNext} color={colors.textMuted} size={28} />
+      <Arrow icon="chevron-forward" label="Suivant" onPress={onNext} />
     </View>
+  );
+}
+
+/** Previous / next arrow beside the avatar (silent itself: the change ticks). */
+function Arrow({ icon, label, onPress }: { icon: 'chevron-back' | 'chevron-forward'; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={10} onPress={onPress} style={({ pressed }) => [styles.arrow, pressed && { opacity: 0.5 }]}>
+      <Ionicons name={icon} size={28} color={colors.textMuted} />
+    </Pressable>
   );
 }
 
@@ -355,7 +367,8 @@ function Carousel({
         const selected = i === index;
         const lock = lockOf(o);
         return (
-          <Clickable
+          // Not a Clickable: the tick of the change is the sound here.
+          <Pressable
             key={o.id}
             accessibilityRole="button"
             accessibilityLabel={lock ? `${o.label}, à débloquer : ${unlockLabel(lock).toLowerCase()}` : o.label}
@@ -373,7 +386,7 @@ function Carousel({
                 </View>
               ) : null}
             </View>
-          </Clickable>
+          </Pressable>
         );
       })}
     </ScrollView>
@@ -415,6 +428,7 @@ const styles = StyleSheet.create({
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   swipeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   avatar: { shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 22, shadowOffset: { width: 0, height: 10 } },
+  arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   caption: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md },
   itemLabel: { color: colors.text, fontSize: 18, fontWeight: '700' },
   itemCount: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginLeft: spacing.xs },

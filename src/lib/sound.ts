@@ -25,3 +25,28 @@ export function playClick(): void {
     // Audio unavailable: buttons simply stay silent.
   }
 }
+
+// A few players in turn, so quick ticks (scrolling a carousel) can overlap.
+const ticks: AudioPlayer[] = [];
+let nextTick = 0;
+
+/** Soft tick for each item passed in a carousel (unless sounds are off in the settings). */
+export function playTick(): void {
+  if (!useTierStore.getState().settings.sounds) return;
+  try {
+    if (ticks.length === 0) {
+      clickPlayer();
+      for (let i = 0; i < 3; i++) {
+        const p = createAudioPlayer(require('../../assets/sounds/tick.wav'));
+        p.volume = 0.35;
+        ticks.push(p);
+      }
+    }
+    const p = ticks[nextTick];
+    nextTick = (nextTick + 1) % ticks.length;
+    p.seekTo(0).catch(() => {});
+    p.play();
+  } catch {
+    // Audio unavailable: the carousel simply stays silent.
+  }
+}
