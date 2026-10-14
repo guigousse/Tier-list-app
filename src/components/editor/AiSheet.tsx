@@ -3,7 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
-import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, imageCredits, MIN_IMAGES, TEST_BALANCE, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, replaceableCards, imageCredits, MIN_IMAGES, TEST_BALANCE, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
@@ -41,6 +41,8 @@ function useJobView(visible: boolean, listId: string, kind: Mode, onOpen?: () =>
   return { job, running, busy, showJob: showJob && job ? job : null, setShowJob };
 }
 
+const credits = (n: number) => `${n} crédit${n > 1 ? 's' : ''}`;
+
 function Balance({ cost }: { cost: number }) {
   // No credits yet: a test balance, nothing is taken.
   const balance = TEST_BALANCE;
@@ -48,11 +50,11 @@ function Balance({ cost }: { cost: number }) {
     <>
       <View style={[styles.recap, styles.recapTotal]}>
         <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
-        <Text style={[styles.recapValue, { fontSize: 18 }, cost > balance && { color: colors.danger }]}>{cost} crédits</Text>
+        <Text style={[styles.recapValue, { fontSize: 18 }, cost > balance && { color: colors.danger }]}>{credits(cost)}</Text>
       </View>
       <View style={styles.recap}>
         <Text style={styles.recapText}>Votre solde</Text>
-        <Text style={styles.recapValue}>{balance} crédits</Text>
+        <Text style={styles.recapValue}>{credits(balance)}</Text>
       </View>
       <Text style={styles.hint}>Phase de test : solde fictif, rien n’est décompté.</Text>
     </>
@@ -65,25 +67,34 @@ function Footer({ label, cost, ready, busy, onPress, note }: { label: string; co
     <View style={styles.footer}>
       {note ? <Text style={styles.short}>{note}</Text> : null}
       {busy ? <Text style={styles.short}>Une génération est déjà en cours pour cette liste.</Text> : null}
-      {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {cost - TEST_BALANCE} crédits.</Text> : null}
-      <Button label={`${label} · ${cost} crédits`} icon="sparkles" disabled={!ready || busy || !affordable} onPress={onPress} />
+      {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {credits(cost - TEST_BALANCE)}.</Text> : null}
+      <Button label={`${label} · ${credits(cost)}`} icon="sparkles" disabled={!ready || busy || !affordable} onPress={onPress} />
     </View>
   );
 }
 
 /**
- * The cards: 1. theme (the list's title to start with), 2. how many cards, then the
- * cost. The list takes the theme as its title. The images come after, once the player
+ * The cards: 1. theme (the list's title to start with), 2. how many new cards, 3. the
+ * cards whose word to replace (1 credit each, like a new one), then the cost. The list takes the theme as its title. The images come after, once the player
  * has checked the words.
  */
 function useWordsPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
+  const list = useTierStore((s) => s.lists[listId]);
   const [theme, setTheme] = useState(title);
   const [count, setCount] = useState(10);
-  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'words', () => setTheme(title));
-  const cost = wordCredits(count);
+  // Cards whose word the player wants replaced: none to start with.
+  const [picked, setPicked] = useState<string[]>([]);
+  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'words', () => {
+    setTheme(title);
+    setPicked([]);
+  });
+  const candidates = list ? replaceableCards(list) : [];
+  const replace = candidates.filter((c) => picked.includes(c.id));
+  const cost = wordCredits(count, replace.length);
+  const togglePick = (id: string) => setPicked(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
   const start = () => {
     setShowJob(true);
-    generateWords(listId, theme.trim(), count);
+    generateWords(listId, theme.trim(), count, replace.map((c) => c.id));
   };
 
   if (showJob && job) {
@@ -105,9 +116,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
           <View style={{ gap: spacing.md }}>
             <View style={styles.status}>
               <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />
-              <Text style={styles.statusText}>
-                {job.cards} carte{job.cards > 1 ? 's' : ''} ajoutée{job.cards > 1 ? 's' : ''} à la liste
-              </Text>
+              <Text style={styles.statusText}>{wordsDone(job.cards, job.replaced ?? 0)}</Text>
             </View>
             <Text style={styles.hint}>
               Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, l’onglet Images les illustrera.
@@ -119,7 +128,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
 
   return {
     title: 'Générer les cartes',
-    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0} busy={busy} onPress={start} />,
+    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0 && cost > 0} busy={busy} onPress={start} />,
     body: (
       <>
       <View style={styles.section}>
@@ -133,13 +142,13 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
       <View style={styles.section}>
         <View style={styles.sectionHead}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Nombre de cartes</Text>
+            <Text style={styles.sectionTitle}>Nouvelles cartes</Text>
           </View>
           <View style={styles.stepper}>
             <Clickable
               accessibilityRole="button"
               accessibilityLabel="Une carte de moins"
-              onPress={() => setCount(Math.max(3, count - 1))}
+              onPress={() => setCount(count <= 3 ? 0 : count - 1)}
               style={styles.stepperButton}
             >
               <Ionicons name="remove" size={20} color={colors.text} />
@@ -148,7 +157,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Clickable
               accessibilityRole="button"
               accessibilityLabel="Une carte de plus"
-              onPress={() => setCount(Math.min(20, count + 1))}
+              onPress={() => setCount(count === 0 ? 3 : Math.min(20, count + 1))}
               style={styles.stepperButton}
             >
               <Ionicons name="add" size={20} color={colors.text} />
@@ -156,30 +165,83 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
           </View>
         </View>
         <View style={styles.chips}>
-          {COUNTS.map((n) => (
+          {[0, ...COUNTS].map((n) => (
             <Clickable key={n} accessibilityRole="button" onPress={() => setCount(n)} style={[styles.chip, n === count && styles.chipOn]}>
-              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n}</Text>
+              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n || 'Aucune'}</Text>
             </Clickable>
           ))}
         </View>
       </View>
 
+      {candidates.length ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Cartes à remplacer · {replace.length}</Text>
+            {replace.length ? (
+              <Clickable accessibilityRole="button" onPress={() => setPicked([])}>
+                <Text style={styles.link}>Aucune</Text>
+              </Clickable>
+            ) : null}
+          </View>
+          <View style={styles.grid}>
+            {candidates.map((c) => {
+              const on = picked.includes(c.id);
+              return (
+                <Clickable
+                  key={c.id}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={c.label}
+                  accessibilityState={{ checked: on }}
+                  onPress={() => togglePick(c.id)}
+                  style={[styles.pick, on && styles.pickOn]}
+                >
+                  <View style={!on && styles.pickOff}>
+                    <CardView card={c} size={PICK_SIZE} />
+                  </View>
+                  <View style={[styles.tick, on && styles.tickOn]}>{on ? <Ionicons name="refresh" size={13} color="#FFFFFF" /> : null}</View>
+                </Clickable>
+              );
+            })}
+          </View>
+          <Text style={styles.hint}>
+            Touchez une carte pour que l’IA lui trouve un autre mot du thème. Elle garde sa place et sa couleur ; son image s’efface, l’onglet Images dessinera la nouvelle.
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
-        <View style={styles.recap}>
-          <Text style={styles.recapText}>
-            {count} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
-          </Text>
-          <Text style={styles.recapValue}>{cost}</Text>
-        </View>
+        {count ? (
+          <View style={styles.recap}>
+            <Text style={styles.recapText}>
+              {count} nouvelle{count > 1 ? 's' : ''} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
+            </Text>
+            <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
+          </View>
+        ) : null}
+        {replace.length ? (
+          <View style={styles.recap}>
+            <Text style={styles.recapText}>
+              {replace.length} carte{replace.length > 1 ? 's' : ''} remplacée{replace.length > 1 ? 's' : ''} × {CREDITS.word} crédit
+            </Text>
+            <Text style={styles.recapValue}>{replace.length * CREDITS.word}</Text>
+          </View>
+        ) : null}
         <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
         <Balance cost={cost} />
       </View>
       </>
     ),
   };
+}
+
+function wordsDone(cards: number, replaced: number): string {
+  const parts = [];
+  if (cards) parts.push(`${cards} carte${cards > 1 ? 's' : ''} ajoutée${cards > 1 ? 's' : ''}`);
+  if (replaced) parts.push(`${replaced} remplacée${replaced > 1 ? 's' : ''}`);
+  return parts.join(' · ') || 'Aucune carte reçue';
 }
 
 /**

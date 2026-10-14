@@ -31,8 +31,9 @@ export function imageCredits(count: number): number {
 /** Balance shown while there are no real credits yet (nothing is taken). */
 export const TEST_BALANCE = 200;
 
-export function wordCredits(count: number): number {
-  return count * CREDITS.word;
+/** New cards, plus cards whose word is replaced: 1 credit each. */
+export function wordCredits(count: number, replaced = 0): number {
+  return (count + replaced) * CREDITS.word;
 }
 
 export function tierCredits(count: number): number {
@@ -52,6 +53,8 @@ export type AiJob = {
   icons: number;
   /** Icons that couldn't be drawn (the card keeps its emoji). */
   failed: number;
+  /** Cards whose word was replaced (words). */
+  replaced?: number;
   /** Tiers renamed. */
   tiers?: number;
   error?: string;
@@ -78,18 +81,39 @@ export function aiError(e: unknown): string {
   return 'Pas de connexion : réessayez dans un instant.';
 }
 
-export async function generateWords(listId: string, theme: string, count: number): Promise<void> {
+/** Cards whose word can be replaced: all but photos, which are the player's own. */
+export function replaceableCards(list: TierList): Card[] {
+  return Object.values(list.cards).filter((c) => !c.imageName);
+}
+
+/**
+ * `count` new cards for the theme, and new words for the cards of `replaceIds`, in
+ * place (same tier, same colour). One call: the AI sees every card, the replaced ones
+ * included, so it doesn't give them back.
+ */
+export async function generateWords(listId: string, theme: string, count: number, replaceIds: string[] = []): Promise<void> {
   const store = useTierStore.getState();
   const list = store.lists[listId];
   if (!list) return;
-  useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0 } });
+  const replace = replaceableCards(list).filter((c) => replaceIds.includes(c.id));
+  useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0, replaced: 0 } });
   try {
     const existing = Object.values(list.cards).map((c) => c.label);
-    const { cards } = await aiWords(store.deviceId, theme, count, existing);
-    cards.forEach((c) => store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: ANTHRACITE, aiConcept: c.concept || undefined }));
+    const { cards } = await aiWords(store.deviceId, theme, count + replace.length, existing);
+    const label = (c: (typeof cards)[number]) => `${c.emoji} ${c.label}`.trim();
+    let replaced = 0;
+    replace.forEach((card, i) => {
+      const c = cards[i];
+      if (!c || !useTierStore.getState().lists[listId]?.cards[card.id]) return;
+      // Its picture showed the old word: the images tab will draw the new one.
+      store.updateCard(listId, card.id, { label: label(c), aiConcept: c.concept || undefined, iconUrl: undefined, iconSvg: undefined });
+      replaced++;
+    });
+    const added = cards.slice(replace.length, replace.length + count);
+    added.forEach((c) => store.addCard(listId, { label: label(c), color: ANTHRACITE, aiConcept: c.concept || undefined }));
     // The theme asked is the best title the list can have.
     store.renameList(listId, theme);
-    patch({ cards: cards.length, phase: 'done' });
+    patch({ cards: added.length, replaced, phase: 'done' });
   } catch (e) {
     patch({ phase: 'error', error: aiError(e) });
   }

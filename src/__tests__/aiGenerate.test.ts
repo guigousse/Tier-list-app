@@ -216,4 +216,44 @@ describe('AI generation', () => {
     expect(store().lists[id].tiers.map((t) => t.label)).toEqual(['S', 'A']);
     expect(useAiJob.getState().job).toMatchObject({ kind: 'tiers', phase: 'error' });
   });
+
+  it('replaces the cards picked with new words, in place, and adds the others', async () => {
+    const id = store().createList({ title: 'Fromages', tierLabels: ['S', 'A'], cardLabels: ['🧀 Comté', '🧀 Gouda', '🧀 Brie'] });
+    const [comte, gouda] = Object.values(store().lists[id].cards);
+    store().moveCard(id, gouda.id, store().lists[id].tiers[0].id);
+    store().updateCard(id, gouda.id, { iconUrl: 'https://x/gouda.png', aiConcept: 'gouda-wheel', color: '#123456' });
+    words.mockResolvedValue({
+      cards: [
+        { label: 'Roquefort', emoji: '🧀', concept: 'roquefort' },
+        { label: 'Feta', emoji: '🧀', concept: 'feta-block' },
+      ],
+    });
+
+    await generateWords(id, 'Fromages', 1, [gouda.id]);
+
+    // One call for both: the AI knows every card, the replaced one included, to avoid it.
+    expect(words).toHaveBeenCalledWith(expect.any(String), 'Fromages', 2, ['🧀 Comté', '🧀 Gouda', '🧀 Brie']);
+    const after = store().lists[id];
+    const replaced = after.cards[gouda.id];
+    expect(replaced.label).toBe('🧀 Roquefort');
+    expect(replaced.aiConcept).toBe('roquefort');
+    // Its picture showed the old word: gone, the images tab will draw the new one.
+    expect(replaced.iconUrl).toBeUndefined();
+    expect(replaced.color).toBe('#123456');
+    expect(after.placement[after.tiers[0].id]).toContain(gouda.id);
+    expect(Object.values(after.cards).map((c) => c.label)).toEqual(['🧀 Comté', '🧀 Roquefort', '🧀 Brie', '🧀 Feta']);
+    expect(after.cards[comte.id].label).toBe('🧀 Comté');
+    expect(useAiJob.getState().job).toMatchObject({ kind: 'words', phase: 'done', cards: 1, replaced: 1 });
+  });
+
+  it('can replace cards without adding any, for 1 credit each', async () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['A', 'B'] });
+    const [a] = Object.values(store().lists[id].cards);
+    words.mockResolvedValue({ cards: [{ label: 'C', emoji: '', concept: 'c' }, { label: 'D', emoji: '', concept: 'd' }, { label: 'E', emoji: '', concept: 'e' }] });
+    expect(wordCredits(0, 1)).toBe(1);
+    expect(wordCredits(5, 2)).toBe(7);
+    await generateWords(id, 'Lettres', 0, [a.id]);
+    // The server sends at least 3: only what was asked is kept.
+    expect(Object.values(store().lists[id].cards).map((c) => c.label)).toEqual(['C', 'B']);
+  });
 });
