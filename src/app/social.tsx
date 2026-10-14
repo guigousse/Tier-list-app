@@ -191,10 +191,20 @@ export default function Social() {
       <View style={styles.me}>
         <AvatarWithBadges avatar={profile.avatar} seed={profile.id} size={64} badges={knownBadges(shownBadges)} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Text numberOfLines={1} style={styles.meName}>
-            {profile.pseudo}
-            <Text style={styles.rowTag}> #{profile.tag}</Text>
-          </Text>
+          {/* A tap copies the friend code, to send it. */}
+          <Clickable
+            accessibilityRole="button"
+            accessibilityLabel={`${myCode}, copier mon code ami`}
+            onPress={() => copyText(myCode, `${myCode} est copié : envoyez-le à vos amis.`)}
+            hitSlop={6}
+            style={({ pressed }) => [styles.meNameRow, pressed && { opacity: 0.6 }]}
+          >
+            <Text numberOfLines={1} style={[styles.meName, { flexShrink: 1 }]}>
+              {profile.pseudo}
+              <Text style={styles.rowTag}> #{profile.tag}</Text>
+            </Text>
+            <Ionicons name="copy-outline" size={16} color={colors.textMuted} />
+          </Clickable>
           <Text style={styles.rowMeta}>
             {data ? `${data.me.completed} liste${data.me.completed > 1 ? 's' : ''} complétée${data.me.completed > 1 ? 's' : ''}` : 'Votre code ami : ' + myCode}
           </Text>
@@ -204,16 +214,6 @@ export default function Social() {
       {data?.me.hidden ? (
         <Text style={styles.warning}>Votre profil a été masqué après plusieurs signalements : les autres joueurs voient « Joueur signalé ».</Text>
       ) : null}
-      <View style={styles.actions}>
-        <Button style={{ flex: 1 }} variant="secondary" icon="copy-outline" label="Mon code" onPress={() => copyText(myCode, `${myCode} est copié.`)} />
-        <Button
-          style={{ flex: 1 }}
-          variant="secondary"
-          icon="paper-plane-outline"
-          label="Inviter"
-          onPress={() => shareUrl('Tiercraft', `Ajoute-moi en ami sur Tiercraft : ${myCode}`, `https://${SHARE_HOST}`)}
-        />
-      </View>
 
       <View style={styles.tabRow}>
         <View style={styles.tabs} accessibilityRole="tablist">
@@ -279,7 +279,23 @@ export default function Social() {
                 onSubmitEditing={add}
                 style={styles.input}
               />
-              <Button icon="person-add-outline" label="Ajouter" onPress={add} disabled={!code.trim()} style={{ paddingHorizontal: spacing.md }} />
+              <Clickable
+                accessibilityRole="button"
+                accessibilityLabel="Ajouter"
+                onPress={add}
+                disabled={!code.trim()}
+                style={({ pressed }) => [styles.square, { backgroundColor: colors.primary }, !code.trim() && { opacity: 0.4 }, pressed && { opacity: 0.75 }]}
+              >
+                <Ionicons name="person-add" size={20} color={colors.primaryText} />
+              </Clickable>
+              <Clickable
+                accessibilityRole="button"
+                accessibilityLabel="Inviter un ami sur Tiercraft"
+                onPress={() => shareUrl('Tiercraft', `Ajoute-moi en ami sur Tiercraft : ${myCode}`, `https://${SHARE_HOST}`)}
+                style={({ pressed }) => [styles.square, { backgroundColor: colors.surfaceAlt }, pressed && { opacity: 0.75 }]}
+              >
+                <Ionicons name="paper-plane" size={20} color={colors.text} />
+              </Clickable>
             </View>
             {message ? <Text style={[styles.message, { color: message.ok ? '#2EAD6B' : colors.danger }]}>{message.text}</Text> : null}
           </View>
@@ -375,7 +391,8 @@ const styles = StyleSheet.create({
   intro: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
   me: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   meName: { color: colors.text, fontSize: 22, fontWeight: '800' },
-  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: -spacing.md },
+  meNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', maxWidth: '100%' },
+  square: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   addRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   input: {
     flex: 1,
