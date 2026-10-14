@@ -9,7 +9,8 @@ const SOURCES: Record<Sound, number> = {
   tick: require('../../assets/sounds/tick.wav'),
   pop: require('../../assets/sounds/pop.wav'),
 };
-const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.35, pop: 0.85 };
+// Files peak at 0.8: these volumes give Broc's own levels (click 0.4, tick 0.18, pop 0.42).
+const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525 };
 /** Players per sound, used in turn so quick repeats can overlap instead of cutting each other. */
 const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2 };
 /** The same sound asked again within this time is one sound (two handlers on one tap). */
