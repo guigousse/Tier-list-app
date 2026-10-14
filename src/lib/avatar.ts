@@ -457,28 +457,20 @@ function glasses(id: string): string {
   }
 }
 
-/** Face outline and where the ears go, by face shape. */
-const FACE_SHAPES: Record<string, { d: string; ears: [number, number] }> = {
-  oval: {
-    d: 'M60 32 C73 32 82 41 83 54 C84 64 82 73 76.5 79.5 C71.5 85 65.5 88 60 88 C54.5 88 48.5 85 43.5 79.5 C38 73 36 64 37 54 C38 41 47 32 60 32 Z',
-    ears: [37.5, 82.5],
-  },
-  round: {
-    d: 'M60 33 C77 33 87.5 44 87.5 59 C87.5 75 75.5 86.5 60 86.5 C44.5 86.5 32.5 75 32.5 59 C32.5 44 43 33 60 33 Z',
-    ears: [33.5, 86.5],
-  },
-  square: {
-    d: 'M60 31 C75 31 85 40 85 54 L85 70 C85 78 81 84 74 86.5 C70 88 65 88.5 60 88.5 C55 88.5 50 88 46 86.5 C39 84 35 78 35 70 L35 54 C35 40 45 31 60 31 Z',
-    ears: [35.5, 84.5],
-  },
-  heart: {
-    d: 'M60 31 C76 31 86 41 85 55 C84.5 66 79 75 71.5 82 C67 86.5 63.5 89.5 60 90.5 C56.5 89.5 53 86.5 48.5 82 C41 75 35.5 66 35 55 C34 41 44 31 60 31 Z',
-    ears: [35.5, 84.5],
-  },
-  long: {
-    d: 'M60 30 C72 30 81 39 81 53 C81 67 79 78 73.5 84 C69.5 88 64.5 90 60 90 C55.5 90 50.5 88 46.5 84 C41 78 39 67 39 53 C39 39 48 30 60 30 Z',
-    ears: [39.5, 80.5],
-  },
+/**
+ * Faces share the top of the head (forehead and temples, from one cheekbone at
+ * (36, 58) to the other at (84, 58)), so every hairstyle fits every face; only the
+ * jaw and chin change. `jaw` goes from the right cheekbone round the chin to the
+ * left one; `chin` is the lowest point of the face.
+ */
+const HEAD_TOP = 'M36 58 C36 41 46 31 60 31 C74 31 84 41 84 58';
+const EARS: [number, number] = [36.5, 83.5];
+const FACE_SHAPES: Record<string, { jaw: string; chin: number }> = {
+  oval: { jaw: 'C84 70 80 79 74.5 83.5 C70 87 65 88.5 60 88.5 C55 88.5 50 87 45.5 83.5 C40 79 36 70 36 58', chin: 88.5 },
+  round: { jaw: 'C84.5 73 74 86 60 86 C46 86 35.5 73 36 58', chin: 86 },
+  square: { jaw: 'C84 64 84 68 84 71 C84 79 80 84.5 73 86.5 C69 87.8 64.5 88.2 60 88.2 C55.5 88.2 51 87.8 47 86.5 C40 84.5 36 79 36 71 C36 68 36 64 36 58', chin: 88.2 },
+  heart: { jaw: 'C83.5 67 79 76 71.5 82.5 C67 86.5 63.5 89.8 60 90.5 C56.5 89.8 53 86.5 48.5 82.5 C41 76 36.5 67 36 58', chin: 90.5 },
+  long: { jaw: 'C84 72 81.5 82 75.5 87.5 C71 91.5 65.5 93 60 93 C54.5 93 49 91.5 44.5 87.5 C38.5 82 36 72 36 58', chin: 93 },
 };
 
 /** One eye centred on x (61.2 high), drawn with the iris gradient `iris`. */
@@ -570,53 +562,57 @@ function mouth(id: string, skinShade: string): string {
 }
 
 /**
- * Facial hair: what grows on the jaw (drawn under the mouth, clipped to the face)
- * and the moustache (drawn over it).
+ * Facial hair: what grows on the jaw (drawn under the mouth) and the moustache
+ * (drawn over it). Beards follow the face's own jaw line on the outside, and a
+ * curve around the mouth and cheeks on the inside, so they fit every face. A full
+ * beard also goes past the face: the jaw line, a little bigger, drawn behind it.
  */
-function beard(id: string, paint: string, strands: string, fill: string, line: string, faceClip: string, halfWidth: number): { jaw: string; mustache: string } {
+function beard(id: string, paint: string, strands: string, fill: string, face: { jaw: string; chin: number }, faceClip: string): { behind: string; jaw: string; mustache: string } {
   const mustache = `<path ${paint} d="M51.5 71.2 C53.6 68.4 57.4 68.2 60 70 C62.6 68.2 66.4 68.4 68.5 71.2 C66 72.2 63 72.2 60 71.3 C57 72.2 54 72.2 51.5 71.2 Z"/>`;
-  // Hair along the jaw: the face below `top`, minus an ellipse around the mouth and cheeks,
-  // as wide as the face (`halfWidth`: from its middle to an ear) leaves room for sideburns.
-  const ellipse = (cx: number, cy: number, rx: number, ry: number) =>
-    `M${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} Z`;
-  const jaw = (top: number, hole: [number, number, number, number], opacity = 1) =>
-    `<g clip-path="${faceClip}" opacity="${opacity}"><path fill="${fill}" fill-rule="evenodd" d="M20 ${top} H100 V100 H20 Z ${ellipse(...hole)}"/>` +
-    (opacity === 1 ? `<path fill="none" stroke="${line}" stroke-width="1" d="${ellipse(...hole)}"/>` : '') +
-    `</g>`;
+  // From the right cheekbone along the jaw to the left one, then back inside.
+  const along = (inside: string) => `M84 58 ${face.jaw} ${inside} Z`;
+  const short = along('L40 59 C40 68 45.5 76.5 52 78.6 C55 79.6 57.5 80.2 60 80.2 C62.5 80.2 65 79.6 68 78.6 C74.5 76.5 80 68 80 59');
+  const full = along('L40.5 58 C41 66 46 72 52 73.6 C55 74.4 57.5 74.7 60 74.7 C62.5 74.7 65 74.4 68 73.6 C74 72 79 66 79.5 58');
+  const c = face.chin;
   switch (id) {
     case 'stubble':
       return {
-        jaw: jaw(62, [60, 60.5, halfWidth - 2.5, 19], 0.22) + `<path fill="${fill}" opacity=".22" d="M51 70.6 C54 68.6 57.6 68.8 60 70 C62.4 68.8 66 68.6 69 70.6 C66 71.4 54 71.4 51 70.6 Z"/>`,
+        behind: '',
+        jaw: `<g clip-path="${faceClip}" opacity=".22"><path fill="${fill}" d="${short}"/>` +
+          `<path fill="${fill}" d="M51 70.6 C54 68.6 57.6 68.8 60 70 C62.4 68.8 66 68.6 69 70.6 C66 71.4 54 71.4 51 70.6 Z"/></g>`,
         mustache: '',
       };
     case 'mustache':
-      return { jaw: '', mustache };
+      return { behind: '', jaw: '', mustache };
     case 'goatee':
       return {
-        jaw: `<path ${paint} d="M54.2 78.4 C55.2 84.5 57.4 87.4 60 87.4 C62.6 87.4 64.8 84.5 65.8 78.4 C63.8 80 56.2 80 54.2 78.4 Z"/>` +
-          `<path ${strands} d="M58 81 L58.4 85 M62 81 L61.6 85"/>`,
+        behind: '',
+        jaw: `<path ${paint} d="M54.2 78.4 C54.8 ${c - 4} 57 ${c - 0.8} 60 ${c - 0.8} C63 ${c - 0.8} 65.2 ${c - 4} 65.8 78.4 C63.8 80 56.2 80 54.2 78.4 Z"/>` +
+          `<path ${strands} d="M58 81 L58.3 ${c - 2.5} M62 81 L61.7 ${c - 2.5}"/>`,
         mustache,
       };
     case 'short':
       return {
-        jaw: jaw(62, [60, 60, halfWidth - 2.5, 19.5]) + `<path ${strands} d="M44 80 L45 83.5 M50 83 L50.6 86.5 M70 83 L69.4 86.5 M76 80 L75 83.5"/>`,
+        behind: '',
+        jaw: `<g clip-path="${faceClip}"><path ${paint} d="${short}"/><path ${strands} d="M44 79 L45.5 82 M50 ${c - 6} L50.8 ${c - 3} M70 ${c - 6} L69.2 ${c - 3} M76 79 L74.5 82"/></g>`,
         mustache,
       };
     case 'full':
       return {
+        behind: `<path ${paint} transform="translate(60 58) scale(1.05 1.13) translate(-60 -58)" d="M84 58 ${face.jaw} Z"/>`,
         jaw:
-          jaw(60, [60, 58, halfWidth - 3.5, 18]) +
-          `<path ${paint} d="M46.5 84.5 C50 90.5 55 93.5 60 93.5 C65 93.5 70 90.5 73.5 84.5 C69 87.5 51 87.5 46.5 84.5 Z"/>` +
-          `<path ${strands} d="M41 72 L42.5 77 M47 80 L48.5 85 M55 85 L55.8 90 M65 85 L64.2 90 M73 80 L71.5 85 M79 72 L77.5 77"/>`,
+          `<g clip-path="${faceClip}"><path ${paint} d="${full}"/>` +
+          `<path ${strands} d="M42 70 L43.5 75 M48 78 L49.5 83 M55 ${c - 5} L55.6 ${c - 1} M65 ${c - 5} L64.4 ${c - 1} M72 78 L70.5 83 M78 70 L76.5 75"/></g>`,
         mustache,
       };
     case 'handlebar':
       return {
+        behind: '',
         jaw: '',
         mustache: `<path ${paint} d="M50 70.5 C47.5 70 46.5 67.5 48 66.4 C48.6 68.4 50 69 52 68.8 C55 67.6 58 68 60 69.6 C62 68 65 67.6 68 68.8 C70 69 71.4 68.4 72 66.4 C73.5 67.5 72.5 70 70 70.5 C66.5 71.6 63 71.8 60 71 C57 71.8 53.5 71.6 50 70.5 Z"/>`,
       };
     default:
-      return { jaw: '', mustache: '' };
+      return { behind: '', jaw: '', mustache: '' };
   }
 }
 
@@ -638,7 +634,7 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8,
   const hairPaint = `fill="${url('hair')}" stroke="${hairLine}" stroke-width="1" stroke-linejoin="round"`;
   const hairStrands = `fill="none" stroke="${darker(hairFill, 0.28)}" stroke-width="1.1" stroke-linecap="round" opacity=".45"`;
   const h = hair(c.hair, hairPaint, hairStrands, `fill="#FFFFFF" opacity=".28"`, url('hair'), hairLine);
-  const b = beard(c.beard, hairPaint, hairStrands, url('hair'), hairLine, url('face'), (face.ears[1] - face.ears[0]) / 2);
+  const b = beard(c.beard, hairPaint, hairStrands, url('hair'), face, url('face'));
   const browFill = darker(hairFill, c.hairColor === 'grey' || c.hairColor === 'blond' ? 0.4 : 0.12);
   const stops = bg.stops.map((s, i) => `<stop offset="${i / (bg.stops.length - 1)}" stop-color="${s}"/>`).join('');
   const stars = bg.stars
@@ -646,7 +642,8 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8,
         .map(([x, y, r]) => `<circle fill="#FFFFFF" opacity=".85" cx="${x}" cy="${y}" r="${r}"/>`)
         .join('')
     : '';
-  const [earL, earR] = face.ears;
+  const [earL, earR] = EARS;
+  const faceD = `${HEAD_TOP} ${face.jaw} Z`;
   const half = zoom.size / 2;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${zoom.x} ${zoom.y} ${zoom.size} ${zoom.size}">
@@ -659,7 +656,7 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8,
 <radialGradient id="${id('blush')}"><stop offset="0" stop-color="#FF7F7A" stop-opacity=".5"/><stop offset="1" stop-color="#FF7F7A" stop-opacity="0"/></radialGradient>
 <linearGradient id="${id('shirt')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(bg.shirt, 0.12)}"/><stop offset="1" stop-color="${darker(bg.shirt, 0.1)}"/></linearGradient>
 <clipPath id="${id('clip')}"><circle cx="${zoom.x + half}" cy="${zoom.y + half}" r="${half}"/></clipPath>
-<clipPath id="${id('face')}"><path d="${face.d}"/></clipPath>
+<clipPath id="${id('face')}"><path d="${faceD}"/></clipPath>
 </defs>
 <g clip-path="${url('clip')}">
 <rect width="120" height="130" fill="${url('bg')}"/>
@@ -668,11 +665,12 @@ ${h.back}
 <path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
 <path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88.5 49.5 93.5 C54 98.5 66 98.5 70.5 93.5 C69 88.5 68.5 83 69 76 Z"/>
 <path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>
+${b.behind}
 <g stroke="${skinLine}" stroke-width=".8" stroke-opacity=".55">
 <ellipse fill="${skin.fill}" cx="${earL}" cy="62" rx="5.2" ry="6.8"/>
 <ellipse fill="${skin.fill}" cx="${earR}" cy="62" rx="5.2" ry="6.8"/></g>
 <path fill="none" stroke="${skin.shade}" stroke-width="1.5" stroke-linecap="round" d="M${earL + 1.6} 59 C${earL - 1.6} 59.5 ${earL - 1.8} 64 ${earL + 0.8} 65.5 M${earR - 1.6} 59 C${earR + 1.6} 59.5 ${earR + 1.8} 64 ${earR - 0.8} 65.5"/>
-<path fill="${url('skin')}" stroke="${skinLine}" stroke-width="1" stroke-opacity=".45" d="${face.d}"/>
+<path fill="${url('skin')}" stroke="${skinLine}" stroke-width="1" stroke-opacity=".45" d="${faceD}"/>
 <ellipse fill="${url('blush')}" cx="45" cy="70.5" rx="6.5" ry="4.2"/>
 <ellipse fill="${url('blush')}" cx="75" cy="70.5" rx="6.5" ry="4.2"/>
 ${b.jaw}
