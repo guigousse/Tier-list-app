@@ -8,9 +8,6 @@ import { blockPlayer, createProfile, deleteProfile, reportPlayer, updateProfile,
 import { newId } from './id';
 import { saveIdentity } from './identity';
 
-/** Avatars to choose from. */
-export const AVATARS = ['🦊', '🐼', '🐸', '🐙', '🦁', '🐯', '🐨', '🐵', '🦄', '🐲', '🦉', '🐧', '🐳', '🦖', '👾', '🤖', '👻', '🎃', '🌵', '🍄', '🔥', '⚡', '🌈', '👑'];
-
 const AVATAR_COLORS = ['#7C5CFF', '#FF7F7F', '#FFBF7F', '#4CC9C0', '#5AA9FF', '#B45CFF', '#2EAD6B', '#FF7FB0'];
 
 /** Background colour of an avatar, stable for a player. */

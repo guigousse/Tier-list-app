@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../constants/theme';
-import { AVATARS, saveProfile, socialError } from '../lib/social';
+import { colors, spacing } from '../constants/theme';
+import { decodeAvatar, encodeAvatar, isAvatarCode, randomAvatar } from '../lib/avatar';
+import { saveProfile, socialError } from '../lib/social';
 import { useTierStore } from '../store/useTierStore';
 import { Avatar } from './Avatar';
+import { AvatarEditor } from './AvatarEditor';
 import { Clickable } from './Clickable';
 import { Button, Field } from './ui';
 
@@ -18,7 +21,16 @@ type Props = {
 export function ProfileForm({ onSaved, submitLabel }: Props) {
   const profile = useTierStore((s) => s.profile);
   const [pseudo, setPseudo] = useState(profile?.pseudo ?? '');
-  const [avatar, setAvatar] = useState(profile?.avatar ?? AVATARS[0]);
+  // Profiles made before drawn avatars start from a random look.
+  const [avatar, setAvatar] = useState(() => (profile && isAvatarCode(profile.avatar) ? profile.avatar : encodeAvatar(randomAvatar())));
+  const [editing, setEditing] = useState(false);
+  // A new editor at each opening, starting from the current look.
+  const [session, setSession] = useState(0);
+  const edit = () => {
+    setSession((n) => n + 1);
+    setEditing(true);
+  };
+  const config = useMemo(() => decodeAvatar(avatar), [avatar]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const valid = pseudo.trim().length >= 2;
@@ -39,7 +51,17 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
   return (
     <View style={{ gap: spacing.lg }}>
       <View style={styles.preview}>
-        <Avatar emoji={avatar} seed={pseudo.trim() || '?'} size={84} />
+        <Clickable
+          accessibilityRole="button"
+          accessibilityLabel="Personnaliser mon avatar"
+          onPress={edit}
+          style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+        >
+          <Avatar avatar={avatar} seed={pseudo.trim() || '?'} size={112} />
+          <View style={styles.editBadge}>
+            <Ionicons name="color-palette" size={16} color={colors.primaryText} />
+          </View>
+        </Clickable>
         <Text style={styles.name} numberOfLines={1}>
           {pseudo.trim() || 'Votre pseudo'}
           <Text style={styles.tag}>{profile ? ` #${profile.tag}` : ' #····'}</Text>
@@ -56,29 +78,23 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
         autoCorrect={false}
         returnKeyType="done"
       />
-      <View style={{ gap: spacing.xs }}>
-        <Text style={styles.label}>Avatar</Text>
-        <View style={styles.grid}>
-          {AVATARS.map((a) => (
-            <Clickable
-              key={a}
-              accessibilityRole="button"
-              accessibilityLabel={`Avatar ${a}`}
-              accessibilityState={{ selected: a === avatar }}
-              onPress={() => setAvatar(a)}
-              style={[styles.choice, a === avatar && styles.choiceSelected]}
-            >
-              <Text style={styles.choiceEmoji}>{a}</Text>
-            </Clickable>
-          ))}
-        </View>
-      </View>
+      <Button variant="secondary" icon="color-palette-outline" label="Personnaliser mon avatar" onPress={edit} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button
         label={busy ? 'Enregistrement…' : (submitLabel ?? (profile ? 'Enregistrer' : 'Créer mon profil'))}
         icon="checkmark"
         disabled={!valid || busy}
         onPress={submit}
+      />
+      <AvatarEditor
+        key={session}
+        visible={editing}
+        initial={config}
+        onClose={() => setEditing(false)}
+        onDone={(c) => {
+          setAvatar(encodeAvatar(c));
+          setEditing(false);
+        }}
       />
     </View>
   );
@@ -89,19 +105,18 @@ const styles = StyleSheet.create({
   name: { color: colors.text, fontSize: 22, fontWeight: '800', maxWidth: '100%' },
   tag: { color: colors.textMuted, fontWeight: '600' },
   hint: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 },
-  label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  choice: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
+  editBadge: {
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    borderWidth: 3,
+    borderColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
-  choiceSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceAlt },
-  choiceEmoji: { fontSize: 26 },
   error: { color: colors.danger, fontSize: 14, textAlign: 'center' },
 });

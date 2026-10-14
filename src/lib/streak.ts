@@ -20,3 +20,26 @@ export function dailyStreak(lists: TierList[], now = new Date()): number {
   }
   return streak;
 }
+
+/** Longest run of consecutive days whose daily tier list was validated, ever. */
+export function bestStreak(lists: TierList[]): number {
+  const days = [...new Set(lists.filter((l) => l.daily?.validatedAt).map((l) => l.daily!.day))].sort();
+  let best = 0;
+  let run = 0;
+  let previous: Date | null = null;
+  for (const day of days) {
+    const [y, m, d] = day.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    // Consecutive when the previous validated day is the calendar day before.
+    const next = previous && new Date(previous.getFullYear(), previous.getMonth(), previous.getDate() + 1);
+    run = next && next.getTime() === date.getTime() ? run + 1 : 1;
+    best = Math.max(best, run);
+    previous = date;
+  }
+  return best;
+}
+
+/** Tier lists ranked to the end: validated daily and popular tier lists. */
+export function completedCount(lists: TierList[]): number {
+  return lists.filter((l) => l.daily?.validatedAt || l.popular?.validatedAt).length;
+}

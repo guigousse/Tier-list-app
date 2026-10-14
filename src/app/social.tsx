@@ -23,7 +23,7 @@ function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && onPress && { opacity: 0.85 }]}
     >
-      <Avatar emoji={player.avatar} seed={player.id} />
+      <Avatar avatar={player.avatar} seed={player.id} />
       <View style={{ flex: 1 }}>
         <Text numberOfLines={1} style={styles.rowName}>
           {player.pseudo}
@@ -133,7 +133,7 @@ export default function Social() {
       contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}
     >
       <View style={styles.me}>
-        <Avatar emoji={profile.avatar} seed={profile.id} size={64} />
+        <Avatar avatar={profile.avatar} seed={profile.id} size={64} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text numberOfLines={1} style={styles.meName}>
             {profile.pseudo}

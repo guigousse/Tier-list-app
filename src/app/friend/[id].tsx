@@ -124,7 +124,7 @@ export default function Friend() {
       ) : (
         <>
           <View style={styles.header}>
-            <Avatar emoji={data.profile.avatar} seed={data.profile.id} size={88} />
+            <Avatar avatar={data.profile.avatar} seed={data.profile.id} size={88} />
             <Text style={styles.name}>
               {data.profile.pseudo}
               <Text style={styles.tag}> #{data.profile.tag}</Text>
