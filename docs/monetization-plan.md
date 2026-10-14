@@ -11,8 +11,8 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 
 ## Credits
 
-- **Free**: 3 credits per week, **capped at 6** (no hoarding).
-- **Welcome bonus**: 10 credits at sign-up, so every new player tries icons once.
+- **No free weekly credits** (decided 2026-10-14): they were the main cost.
+- **Welcome bonus** at sign-up, the only free credits (20 in the proposed scale).
 - **Packs** (consumable in-app purchases):
 
   | Price | Credits |
@@ -25,7 +25,7 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 ## Tiercraft+ (auto-renewable subscription)
 
 - 2.99 € / month or 19.99 € / year (yearly shown as the obvious choice).
-- 20 credits per week, cap 40.
+- Weekly credits (70 in the proposed scale), capped at twice that.
 - Can **propose tier lists to be made public** (moderation queue, the owner approves).
 - Cheap extras: exclusive "+" badge and avatar items, creator name on published lists, no ads.
 
@@ -44,15 +44,15 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 - Fixed costs ≈ 31 €/month (Supabase Pro + Apple developer account).
 - Net revenue is only ≈ 0.07 € per active player per month, so **free credits decide
   everything**: a free illustrated list (≈ 0.23 € of AI) given to every new player
-  sinks the model.
+  sinks the model. Hence no free weekly credits, only a welcome bonus.
 - The app's current scale (1 credit per card, 5 per image) with the old packs
   (25 credits for 1.99 €) is profitable but makes an illustrated list cost 4.78 €.
 - **Proposed scale**: 1 credit per card, **8 per image**, **100 credits for 1.99 €**
-  (other packs on the same scale), **5 free credits a week** (cap 10), **20 welcome
-  credits**, Tiercraft+ 70 credits a week. An illustrated 10-card list = 90 credits
-  ≈ 1.79 €, 82 % margin on bought credits; profitable from ≈ 860 monthly active
-  players, ≈ +340 €/month at 10,000 (≈ +490 € once 60 % of icons are reused).
-- Safety valve: if monthly AI cost > ~30 % of net revenue, lower the free credits first.
+  (other packs on the same scale), **20 welcome credits** (10 cards and 1 image),
+  no weekly gift, Tiercraft+ 70 credits a week. An illustrated 10-card list = 90 credits
+  ≈ 1.79 €, 82 % margin on bought credits; profitable from ≈ 660 monthly active
+  players, ≈ +450 €/month at 10,000.
+- Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
 
 ## Implementation notes
 
