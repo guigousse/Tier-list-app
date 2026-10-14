@@ -24,8 +24,10 @@ export type DailyInfo = {
   emoji: string;
   /** Card ids in the order of the published items, to send the ranking. */
   cardIds: string[];
-  /** When the player validated their ranking; it can't change afterwards. */
+  /** When the player first validated their ranking (it can be validated again). */
   validatedAt?: number;
+  /** Latest validated ranking (tier index per published item); older lists have none. */
+  validatedRanks?: number[];
   /** Whether the validated ranking reached the server. */
   voteSent?: boolean;
 };

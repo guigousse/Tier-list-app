@@ -4,7 +4,9 @@ import { submitDailyVote, submitListVote } from './api';
 
 /** Tier index (0 = S … 4 = D) of each published item of a daily list, or null if one isn't ranked. */
 export function dailyRanks(list: TierList): number[] | null {
-  return list.daily ? rankingOf(list, list.daily.cardIds) : null;
+  if (!list.daily) return null;
+  // The validated ranking, not moves made since without validating again.
+  return list.daily.validatedRanks ?? rankingOf(list, list.daily.cardIds);
 }
 
 /**

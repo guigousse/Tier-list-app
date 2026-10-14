@@ -20,6 +20,7 @@ import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
 import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
+import { TierStrip } from '../../components/TierStrip';
 import { socialError } from '../../lib/social';
 import { useCatalog } from '../../store/useCatalog';
 import { useMail } from '../../store/useMail';
@@ -59,7 +60,7 @@ export default function EditorScreen() {
       cardSize={cardSize(settings.cardSize)}
       showLabels={settings.showCardLabels}
       haptics={settings.haptics}
-      locked={Boolean(list.daily?.validatedAt || list.mail?.answeredAt)}
+      locked={Boolean(list.mail?.answeredAt)}
       onMove={onMove}
     >
       <Editor list={list} />
@@ -95,12 +96,13 @@ function Editor({ list }: { list: TierList }) {
   const popular = list.popular;
   const mail = list.mail;
   const fixed = Boolean(daily || popular || mail);
-  // The daily ranking is frozen once validated, and a received list's once sent back;
-  // a popular one can change and be validated again.
-  const validated = Boolean(daily?.validatedAt || mail?.answeredAt);
+  // A received list's ranking is frozen once sent back; daily and popular ones can
+  // change and be validated again.
+  const validated = Boolean(mail?.answeredAt);
   const [sending, setSending] = useState(false);
-  const popularRanks = popular ? rankingOf(list, popular.cardIds) : null;
-  const popularUpToDate = Boolean(popularRanks && popular?.validatedRanks?.join() === popularRanks.join());
+  const ranked = popular ?? daily;
+  const currentRanks = ranked ? rankingOf(list, ranked.cardIds) : null;
+  const upToDate = Boolean(currentRanks && ranked?.validatedRanks?.join() === currentRanks.join());
 
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
@@ -178,9 +180,7 @@ function Editor({ list }: { list: TierList }) {
         ])
       : Alert.alert(
       'Valider votre classement ?',
-      daily
-        ? 'Il sera figé et ajouté à votre historique. Vous découvrirez ensuite le classement moyen des joueurs.'
-        : 'Il comptera dans le classement moyen des joueurs. Vous pourrez le modifier et le valider à nouveau plus tard.',
+      'Il comptera dans le classement moyen des joueurs. Vous pourrez le modifier et le valider à nouveau plus tard.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -211,13 +211,14 @@ function Editor({ list }: { list: TierList }) {
       },
     ]);
 
-  const showResults = () => router.push({ pathname: '/results/[id]', params: { id: list.id } });
+  // The results replace this screen: going back returns where the player came from.
+  const showResults = () => router.replace({ pathname: '/results/[id]', params: { id: list.id } });
 
   const menuActions: MenuAction[] = fixed
     ? [
         { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         ...(mail?.answeredAt ? [{ label: 'Voir la comparaison', icon: 'git-compare-outline', onPress: showComparison } as const] : []),
-        ...(!mail && (validated || popular?.validatedAt) ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
+        ...(!mail && ranked?.validatedAt ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
         ...(validated ? [] : [{ label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset } as const]),
         { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ]
@@ -265,6 +266,7 @@ function Editor({ list }: { list: TierList }) {
         <IconButton icon="share-outline" label="Partager" onPress={fixed ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
+      <TierStrip style={styles.strip} />
 
       <View ref={viewportRef} collapsable={false} style={{ flex: 1 }} onLayout={(e) => onScrollLayout(e.nativeEvent.layout.height)}>
         <AnimatedScrollView
@@ -297,13 +299,6 @@ function Editor({ list }: { list: TierList }) {
           <Text style={styles.dailyText}>Classement envoyé à {mail.from}</Text>
           <Button label="Voir la comparaison" icon="git-compare-outline" onPress={showComparison} />
         </View>
-      ) : validated ? (
-        <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Text style={styles.dailyText}>
-            Classement validé le {new Date(daily!.validatedAt!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-          </Text>
-          <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
-        </View>
       ) : (
         <>
           <Tray
@@ -313,7 +308,7 @@ function Editor({ list }: { list: TierList }) {
             onAdd={fixed ? undefined : () => setCardSheet({ cardId: null })}
             onPressCard={openCard}
           />
-          {popularUpToDate ? (
+          {upToDate ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
               <Text style={styles.dailyText}>✓ Classement validé · déplacez des cartes pour le modifier</Text>
               <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
@@ -322,7 +317,7 @@ function Editor({ list }: { list: TierList }) {
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
               {mail ? <Text style={styles.dailyText}>Liste envoyée par {mail.from}</Text> : null}
               <Button
-                label={mail ? (sending ? 'Envoi…' : `Envoyer mon classement à ${mail.from}`) : popular?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
+                label={mail ? (sending ? 'Envoi…' : `Envoyer mon classement à ${mail.from}`) : ranked?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
                 icon={mail ? 'paper-plane' : 'checkmark-done'}
                 onPress={confirmValidate}
                 disabled={list.pool.length > 0 || sending}
@@ -410,6 +405,7 @@ const styles = StyleSheet.create({
   capture: { backgroundColor: colors.background },
   watermark: { color: colors.border, fontSize: 11, fontWeight: '700', textAlign: 'right', padding: 6 },
   below: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  strip: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
   dailyBar: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, backgroundColor: colors.tray },
   dailyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },

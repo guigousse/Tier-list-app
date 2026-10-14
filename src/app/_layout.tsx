@@ -10,6 +10,7 @@ import { colors } from '../constants/theme';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
+import { AppHeader } from '../components/AppHeader';
 import { useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated } from '../store/useTierStore';
@@ -94,6 +95,7 @@ export default function RootLayout() {
           <StatusBar style="light" />
           <Stack
             screenOptions={{
+              header: (props) => <AppHeader {...props} />,
               headerStyle: { backgroundColor: colors.background },
               headerTintColor: colors.text,
               headerTitleStyle: { fontWeight: '700' },
@@ -113,7 +115,7 @@ export default function RootLayout() {
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
             <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />
-            <Stack.Screen name="results/[id]" options={{ title: 'Classement moyen' }} />
+            <Stack.Screen name="results/[id]" options={{ title: 'Résultats' }} />
             <Stack.Screen name="history" options={{ title: 'Historique' }} />
             <Stack.Screen
               name="welcome"

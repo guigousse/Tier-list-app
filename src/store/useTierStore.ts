@@ -373,7 +373,7 @@ export const useTierStore = create<State>()(
 
         moveCard: (listId, cardId, to, index) =>
           patchList(listId, (l) => {
-            if (!l.cards[cardId] || l.daily?.validatedAt) return {};
+            if (!l.cards[cardId]) return {};
             if (to !== POOL && !l.placement[to]) return {};
             const next = detach(l, cardId);
             const target = to === POOL ? [...next.pool] : [...(next.placement[to] ?? [])];
@@ -384,14 +384,10 @@ export const useTierStore = create<State>()(
           }),
 
         resetPlacement: (listId) =>
-          patchList(listId, (l) =>
-            l.daily?.validatedAt
-              ? {}
-              : {
-                  pool: [...l.tiers.flatMap((t) => l.placement[t.id] ?? []), ...l.pool],
-                  placement: Object.fromEntries(l.tiers.map((t) => [t.id, []])),
-                },
-          ),
+          patchList(listId, (l) => ({
+            pool: [...l.tiers.flatMap((t) => l.placement[t.id] ?? []), ...l.pool],
+            placement: Object.fromEntries(l.tiers.map((t) => [t.id, []])),
+          })),
 
         updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
 
@@ -425,8 +421,13 @@ export const useTierStore = create<State>()(
 
         validateDaily: (listId) => {
           const list = get().lists[listId];
-          if (!list?.daily || list.daily.validatedAt || list.pool.length > 0) return false;
-          patchList(listId, (l) => ({ daily: { ...l.daily!, validatedAt: Date.now() } }));
+          if (!list?.daily || list.pool.length > 0) return false;
+          const ranks = rankingOf(list, list.daily.cardIds);
+          if (!ranks) return false;
+          // Like a popular list, it can be ranked again: the first validation date stays (streak, history).
+          patchList(listId, (l) => ({
+            daily: { ...l.daily!, validatedAt: l.daily!.validatedAt ?? Date.now(), validatedRanks: ranks, voteSent: false },
+          }));
           return true;
         },
 

@@ -86,7 +86,7 @@ export function myRanks(template: Template, lists: Record<string, TierList>): nu
   const voteKey = popularVoteKey(template);
   for (const l of Object.values(lists)) {
     if (l.popular?.voteKey === voteKey && l.popular.validatedRanks) return l.popular.validatedRanks;
-    if (template.day && l.daily?.day === template.day && l.daily.validatedAt) return rankingOf(l, l.daily.cardIds);
+    if (template.day && l.daily?.day === template.day && l.daily.validatedAt) return l.daily.validatedRanks ?? rankingOf(l, l.daily.cardIds);
   }
   return null;
 }

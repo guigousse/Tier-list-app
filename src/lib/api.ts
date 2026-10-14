@@ -242,3 +242,8 @@ export function markMailSeen(secret: string, mail: string): Promise<void> {
 export function setPushToken(secret: string, token: string | null): Promise<void> {
   return rpc<void>('set_push_token', { secret, token });
 }
+
+/** Friends who validated a list (popular list key, or "daily:YYYY-MM-DD"), with their ranking. */
+export function fetchFriendsVotes(secret: string, key: string): Promise<(PublicProfile & { ranks: number[] })[]> {
+  return rpc('get_friends_votes', { secret, key });
+}

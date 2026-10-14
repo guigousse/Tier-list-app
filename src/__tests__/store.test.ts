@@ -1,5 +1,5 @@
 import { TEMPLATES } from '../constants/presets';
-import { migrateStore, popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
+import { migrateStore, popularVoteKey, useTierStore } from '../store/useTierStore';
 import { POOL } from '../store/types';
 
 const store = () => useTierStore.getState();
@@ -47,16 +47,22 @@ describe('tier lists', () => {
 describe('daily tier list', () => {
   const daily = { day: '2026-10-13', title: 'Saisons', emoji: '🍂', items: ['Été', 'Hiver'] };
 
-  it('can only be validated once every card is ranked, then is frozen', () => {
+  it('can only be validated once every card is ranked, and can be ranked again', () => {
     const id = store().createDailyList(daily);
     expect(store().validateDaily(id)).toBe(false);
     const list = store().lists[id];
     list.pool.forEach((cid) => store().moveCard(id, cid, list.tiers[0].id));
     expect(store().validateDaily(id)).toBe(true);
-    // Frozen: moving a card does nothing.
-    store().moveCard(id, list.daily!.cardIds[0], POOL);
-    expect(store().lists[id].pool).toHaveLength(0);
-    expect(rankingOf(store().lists[id], list.daily!.cardIds)).toEqual([0, 0]);
+    const firstValidation = store().lists[id].daily!.validatedAt;
+    expect(store().lists[id].daily!.validatedRanks).toEqual([0, 0]);
+
+    // Still editable: a new validation replaces the ranking, the first date stays.
+    store().moveCard(id, list.daily!.cardIds[0], list.tiers[3].id);
+    expect(store().lists[id].daily!.validatedRanks).toEqual([0, 0]);
+    expect(store().validateDaily(id)).toBe(true);
+    expect(store().lists[id].daily!.validatedRanks).toEqual([3, 0]);
+    expect(store().lists[id].daily!.validatedAt).toBe(firstValidation);
+    expect(store().lists[id].daily!.voteSent).toBe(false);
   });
 });
 
