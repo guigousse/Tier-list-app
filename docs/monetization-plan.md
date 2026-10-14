@@ -36,6 +36,12 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   concepts (`spinach` instead of `spinach-pie`), which spoils the icon drawn from them.
 - New icon: ≈ 3.6 ¢ $ on average (2.6–5.0 ¢ $), ≈ 13 s. Sonnet 5.5 is 1.5 ¢ $ but
   visibly less detailed. A reused library icon costs nothing.
+- **Chosen instead: Gemini sheets** (comparison https://claude.ai/artifact/5spNptA4YyHoPDWYPXnSjF).
+  One picture for a whole list, cut on the server (`supabase/functions/ai-generate/sheet.ts`):
+  Gemini 3 Pro Image 2K ≈ 0.134 $ per sheet, i.e. ≈ 1.1–1.4 ¢ $ per icon on a full
+  sheet, ≈ 25 s; richer drawings than the SVG and one consistent style. Flash Image
+  is 0.039 $ per sheet but uneven. A 1K and a 2K picture cost the same: sheets are
+  never drawn smaller, their free cells draw concepts from `icon_wishlist`.
 - So a 10-card illustrated list ≈ 37 ¢ $, 98 % of it for icons.
 
 ## Economics (simulation, measured costs)
@@ -47,11 +53,12 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   sinks the model. Hence no free weekly credits, only a welcome bonus.
 - The app's current scale (1 credit per card, 5 per image) with the old packs
   (25 credits for 1.99 €) is profitable but makes an illustrated list cost 4.78 €.
-- **Proposed scale**: 1 credit per card, **8 per image**, **100 credits for 1.99 €**
-  (other packs on the same scale), **20 welcome credits** (10 cards and 1 image),
-  no weekly gift, Tiercraft+ 70 credits a week. An illustrated 10-card list = 90 credits
-  ≈ 1.79 €, 82 % margin on bought credits; profitable from ≈ 660 monthly active
-  players, ≈ +450 €/month at 10,000.
+- **Adopted scale** (2026-10-14): 1 credit per card; images **12 credits per list plus
+  3 per image** (degressive: 7 per image for 3 cards, 4.2 for 10, 3.6 for 20), because
+  all the icons of a list are drawn on one Gemini 3 Pro Image sheet (~0.134 $ whatever
+  the number of icons, free cells draw wishlist concepts ahead). 100 credits for
+  1.99 €, 20 welcome credits, no weekly gift, Tiercraft+ 70 credits a week. An
+  illustrated 10-card list = 52 credits ≈ 1.03 €.
 - Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
 
 ## Implementation notes

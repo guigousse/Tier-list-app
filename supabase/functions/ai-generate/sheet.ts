@@ -144,3 +144,23 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
   const minY = Math.min(...kept.map((p) => p.minY)), maxY = Math.max(...kept.map((p) => p.maxY));
   return { x: x0 + minX, y: y0 + minY, w: maxX - minX + 1, h: maxY - minY + 1 };
 }
+
+/** A sheet below this many cells costs as much as one this size: it is never drawn smaller. */
+const MIN_CELLS = 12;
+/** Gemini draws 20 icons readably on one 2K picture (5 × 4 cells of ~480 px). */
+const MAX_CELLS = 20;
+
+/**
+ * What one sheet draws: the icons asked for, then concepts waiting in the wishlist
+ * until the grid is full. A sheet costs the same with 3 icons or 12, so its free
+ * cells draw ahead the icons the next players will want.
+ */
+export function fillSheet<T extends { concept: string }>(missing: T[], wishlist: T[]): T[] {
+  if (missing.length === 0) return [];
+  const asked = missing.slice(0, MAX_CELLS);
+  const grid = gridFor(Math.max(asked.length, MIN_CELLS));
+  const cells = Math.min(grid.cols * grid.rows, MAX_CELLS);
+  const taken = new Set(asked.map((m) => m.concept));
+  const extra = wishlist.filter((w) => !taken.has(w.concept) && taken.add(w.concept));
+  return [...asked, ...extra.slice(0, cells - asked.length)];
+}

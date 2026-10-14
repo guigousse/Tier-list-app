@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/sheet.test.ts
-import { cellObject, clearBackground, gridFor, KEY } from "./sheet.ts";
+import { cellObject, clearBackground, fillSheet, gridFor, KEY } from "./sheet.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -126,4 +126,25 @@ Deno.test("une case vide est signalée, pour garder l'emoji de la carte", () => 
   paint(px, w, 5, 5, 25, 25, [200, 50, 50]);
   clearBackground(px, w, h);
   same(cellObject(px, w, h, { cols: 2, rows: 1 }, 1), null);
+});
+
+const c = (concept: string) => ({ label: concept, concept });
+
+Deno.test("une planche peu remplie est complétée par la liste d'attente, jusqu'à 12 cases", () => {
+  const wish = Array.from({ length: 15 }, (_, i) => c(`w${i}`));
+  const plan = fillSheet([c("a"), c("b"), c("c")], wish);
+  same(plan.length, 12);
+  same(plan.slice(0, 3).map((x) => x.concept), ["a", "b", "c"]);
+  same(plan[3].concept, "w0");
+});
+
+Deno.test("au-delà de 12, la planche se remplit jusqu'au bout de sa grille", () => {
+  const wish = Array.from({ length: 10 }, (_, i) => c(`w${i}`));
+  same(fillSheet(Array.from({ length: 13 }, (_, i) => c(`m${i}`)), wish).length, 16);
+  same(fillSheet(Array.from({ length: 20 }, (_, i) => c(`m${i}`)), wish).length, 20);
+});
+
+Deno.test("la liste d'attente ne redessine pas une carte déjà demandée, et rien à dessiner ne coûte rien", () => {
+  same(fillSheet([c("a")], [c("a"), c("b")]).map((x) => x.concept), ["a", "b"]);
+  same(fillSheet([], [c("a"), c("b")]), []);
 });

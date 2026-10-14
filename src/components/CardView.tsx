@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { readableTextColor } from '../constants/theme';
+import { aiIconUri } from '../lib/aiIconFiles';
 import { cardIconFor } from '../lib/cardIcons';
 import { splitEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
@@ -18,7 +19,8 @@ export function CardView({ card, size, showLabel = true }: Props) {
   const fg = readableTextColor(card.color);
   const { emoji, text } = splitEmoji(card.label);
   // A drawn icon for this card's name, when there's no photo.
-  const icon = uri || card.iconSvg ? undefined : cardIconFor(text || card.label);
+  const icon = uri || card.iconUrl || card.iconSvg ? undefined : cardIconFor(text || card.label);
+  const iconSize = size * (showLabel && text ? 0.62 : 0.78);
 
   return (
     <View style={[styles.card, { width: size, height: size, backgroundColor: card.color }]}>
@@ -33,12 +35,14 @@ export function CardView({ card, size, showLabel = true }: Props) {
             </View>
           ) : null}
         </>
-      ) : card.iconSvg || icon || emoji ? (
+      ) : card.iconUrl || card.iconSvg || icon || emoji ? (
         <>
-          {card.iconSvg ? (
-            <SvgIcon xml={card.iconSvg} size={size * (showLabel && text ? 0.62 : 0.78)} />
+          {card.iconUrl ? (
+            <Image source={{ uri: aiIconUri(card.iconUrl) }} style={{ width: iconSize, height: iconSize }} resizeMode="contain" />
+          ) : card.iconSvg ? (
+            <SvgIcon xml={card.iconSvg} size={iconSize} />
           ) : icon ? (
-            <CardIcon id={icon} size={size * (showLabel && text ? 0.62 : 0.78)} />
+            <CardIcon id={icon} size={iconSize} />
           ) : (
             <Text style={{ fontSize: size * 0.42 }}>{emoji}</Text>
           )}

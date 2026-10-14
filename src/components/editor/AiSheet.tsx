@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { creditCost, CREDITS, generateCards, TEST_BALANCE, useAiJob } from '../../lib/aiGenerate';
+import { creditCost, CREDITS, generateCards, imageCredits, TEST_BALANCE, useAiJob } from '../../lib/aiGenerate';
 import { Clickable } from '../Clickable';
 import { CardIcon } from '../CardIcon';
 import { Button, Field, Sheet } from '../ui';
@@ -34,6 +34,9 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
   }
 
   const cost = creditCost(count, images);
+  const perImage = (n: number) => (imageCredits(n) / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  // The price of one image drops with the number of cards: show what a few more would give.
+  const nudge = count < 20 ? Math.min(20, count < 10 ? 10 : count + 5) : null;
   const start = () => {
     setShowJob(true);
     generateCards(listId, theme.trim(), count, images);
@@ -85,7 +88,7 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
                   <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
                 </View>
                 {job.phase === 'icons' ? (
-                  <Text style={styles.hint}>Les images arrivent une par une : vous pouvez fermer, elles continuent d’arriver.</Text>
+                  <Text style={styles.hint}>Toutes les images sont dessinées ensemble, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
                 ) : null}
               </View>
             ) : null}
@@ -181,10 +184,15 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
         {images ? (
           <View style={styles.recap}>
             <Text style={styles.recapText}>
-              {count} image{count > 1 ? 's' : ''} × {CREDITS.image} crédits
+              {count} image{count > 1 ? 's' : ''} · {perImage(count)} crédits l’image
             </Text>
-            <Text style={styles.recapValue}>{count * CREDITS.image}</Text>
+            <Text style={styles.recapValue}>{imageCredits(count)}</Text>
           </View>
+        ) : null}
+        {images && nudge ? (
+          <Text style={styles.hint}>
+            Plus il y a d’images, moins chacune coûte : avec {nudge} cartes, l’image revient à {perImage(nudge)} crédits.
+          </Text>
         ) : null}
         <View style={[styles.recap, styles.recapTotal]}>
           <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>

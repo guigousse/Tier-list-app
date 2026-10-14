@@ -1,12 +1,15 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
 //   { action: "words", deviceId, theme, count, existing } -> { cards: [{ label, emoji, concept }] }
-//   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }
+//   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }  (SVG, older app versions)
+//   { action: "icons", deviceId, cards: [{ label, concept }] } -> { icons: [{ concept, url }] }  (one Gemini sheet)
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
 // by every player. Per-device and global daily quotas (ai_allow) bound the bill.
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 
 import { normalizeConcept, uniqueConcepts } from "./concepts.ts";
+import { drawSheet, SheetError } from "./iconSheet.ts";
+import { fillSheet } from "./sheet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
 const WORDS_MODEL = "claude-opus-5-5";
@@ -195,7 +198,10 @@ Deno.serve(async (req) => {
         .slice(0, count);
       if (kept.length === 0) return json({ error: "theme refused" }, 422);
       const concepts = uniqueConcepts(kept);
-      return json({ cards: kept.map((c, i) => ({ ...c, concept: concepts[i] })) });
+      const cards = kept.map((c, i) => ({ ...c, concept: concepts[i] }));
+      // Every concept proposed joins the wishlist: free cells of later sheets draw it.
+      await db.from("icon_wishlist").upsert(cards.map((c) => ({ concept: c.concept, label: c.label })), { onConflict: "concept", ignoreDuplicates: true });
+      return json({ cards });
     }
 
     if (body.action === "icon") {
@@ -214,8 +220,47 @@ Deno.serve(async (req) => {
       return json({ concept, svg, reused: false });
     }
 
+    if (body.action === "icons") {
+      const asked = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c: { label?: unknown; concept?: unknown }) => ({
+        label: String(c?.label ?? "").trim().slice(0, 40),
+        concept: normalizeConcept(String(c?.concept || c?.label || "")),
+      })).filter((c: { concept: string }) => c.concept);
+      if (asked.length === 0) return json({ error: "bad request" }, 400);
+      const concepts = [...new Set(asked.map((c: { concept: string }) => c.concept))];
+      // Already drawn as a picture for someone: free and instant. (An SVG-only concept
+      // is drawn again: the sheet style must stay the same across a list.)
+      const { data: known } = await db.from("card_icons").select("concept, image").in("concept", concepts).not("image", "is", null);
+      const urls = new Map<string, string>((known ?? []).map((k: { concept: string; image: string }) => [k.concept, k.image]));
+      const missing = asked.filter((c: { concept: string }, i: number) => !urls.has(c.concept) && asked.findIndex((x: { concept: string }) => x.concept === c.concept) === i);
+      if (missing.length) {
+        const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "icon" });
+        if (!allowed) return json({ error: "quota" }, 429);
+        const { data: wish } = await db.from("icon_wishlist").select("concept, label").order("created_at").limit(40);
+        const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
+        const plan = fillSheet(missing, pending as { concept: string; label: string }[]);
+        const tiles = await drawSheet(plan);
+        const drawn: { concept: string; label: string; image: string }[] = [];
+        await Promise.all(plan.map(async (card, i) => {
+          const png = tiles[i];
+          if (!png) return;
+          const path = `${card.concept}.png`;
+          const { error } = await db.storage.from("card-icons").upload(path, png, { contentType: "image/png", upsert: true, cacheControl: "31536000" });
+          if (error) return console.error("upload", card.concept, error.message);
+          const image = db.storage.from("card-icons").getPublicUrl(path).data.publicUrl;
+          drawn.push({ concept: card.concept, label: card.label, image });
+          urls.set(card.concept, image);
+        }));
+        if (drawn.length) {
+          await db.from("card_icons").upsert(drawn, { onConflict: "concept" });
+          await db.from("icon_wishlist").delete().in("concept", drawn.map((d) => d.concept));
+        }
+      }
+      return json({ icons: asked.map((c: { concept: string }) => ({ concept: c.concept, url: urls.get(c.concept) ?? null })) });
+    }
+
     return json({ error: "bad request" }, 400);
   } catch (e) {
+    if (e instanceof SheetError) return json({ error: e.message === "busy" ? "busy" : "icon failed" }, e.message === "busy" ? 503 : 502);
     if (e instanceof Anthropic.RateLimitError) return json({ error: "busy" }, 503);
     if (e instanceof Anthropic.APIError) {
       console.error("anthropic", e.status, e.message);
