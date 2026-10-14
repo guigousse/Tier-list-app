@@ -5,6 +5,7 @@ import { useCatalog } from '../store/useCatalog';
 import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
 import { downloadCardImage } from './images';
+import { recordTemplateView } from './api';
 
 /**
  * Creates a tier list (classic S → D tiers, or the template's) and opens it in the
@@ -35,6 +36,8 @@ export function openPopular(template: Template): void {
   const today = useCatalog.getState().daily;
   const id = existing?.id ?? (template.day && template.day === today?.day ? store.createDailyList(today) : store.createPopularList(template));
   router.push({ pathname: '/editor/[id]', params: { id } });
+  // Counts in the trends (latest view per device).
+  recordTemplateView(template.key, store.deviceId).catch(() => {});
   if (!existing && template.appStoreIds) attachAppIcons(id, template).catch(() => {});
 }
 

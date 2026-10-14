@@ -1,5 +1,6 @@
 import type { TierList } from '../store/types';
 import { parsePayload, toPayload, type SharedList } from './share';
+import type { Discovery } from './discover';
 
 /**
  * Tiercraft's Supabase project (tables and functions: see supabase/migrations).
@@ -65,6 +66,17 @@ export function setTemplateFavorite(templateKey: string, deviceId: string, favor
 }
 
 export type TemplateStats = Record<string, { completions: number; favorites: number }>;
+
+/** Hidden theme tags and trend scores of the popular tier lists. */
+export async function fetchDiscovery(): Promise<Discovery> {
+  const d = await rpc<Partial<Discovery> | null>('get_discovery', {});
+  return { tags: d?.tags ?? {}, trends: d?.trends ?? {} };
+}
+
+/** A popular tier list was opened: counts in the trends. */
+export function recordTemplateView(templateKey: string, deviceId: string): Promise<void> {
+  return rpc<void>('record_template_view', { template_key: templateKey, device_id: deviceId });
+}
 
 /** Completed rankings and favourites of the popular tier lists, by template key. */
 export async function fetchTemplateStats(): Promise<TemplateStats> {

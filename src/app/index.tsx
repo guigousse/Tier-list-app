@@ -1,18 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AvatarWithBadges } from '../components/BadgeIcon';
 import { DailyCard } from '../components/DailyCard';
-import { PopularList } from '../components/PopularList';
+import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
-import { usePopularTemplates } from '../store/useCatalog';
+import { popularity, useCatalog, usePopularTemplates } from '../store/useCatalog';
+import { forYou, trending } from '../lib/discover';
+import type { Template } from '../constants/presets';
 import { knownBadges, usePendingBadges } from '../lib/badges';
 import { useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
@@ -53,6 +55,17 @@ export default function Home() {
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
   const popular = usePopularTemplates();
+  // "Tendances": the last days' activity; "Pour toi": themes of the lists already completed.
+  const [discover, setDiscover] = useState<'trends' | 'forYou'>('trends');
+  const discovery = useCatalog((s) => s.discovery);
+  const stats = useCatalog((s) => s.stats);
+  const favoriteTemplates = useTierStore((s) => s.favoriteTemplates);
+  const copies = usePopularCopies();
+  const shown = useMemo(() => {
+    const isDone = (t: Template) => isValidated(copies(t));
+    const score = (key: string) => popularity(stats, key);
+    return discover === 'trends' ? trending(popular, discovery, score, isDone) : forYou(popular, discovery, score, isDone, favoriteTemplates);
+  }, [discover, popular, discovery, stats, copies, favoriteTemplates]);
   const unread = useUnreadMail();
   const pendingBadges = usePendingBadges();
   const profile = useTierStore((s) => s.profile);
@@ -81,7 +94,12 @@ export default function Home() {
           <Text numberOfLines={1} style={styles.brand}>
             Tiercraft
           </Text>
-          <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
+          <View style={styles.headerIcons}>
+            {validatedDaily > 0 ? (
+              <IconButton icon="time-outline" label={`Historique des tier lists du jour (${validatedDaily})`} onPress={() => router.push('/history')} />
+            ) : null}
+            <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
+          </View>
         </View>
         <View style={styles.brandStrip}>
           {TIER_COLORS.slice(0, 5).map((c) => (
@@ -94,15 +112,7 @@ export default function Home() {
         style={{ flex: 1 }}
         contentContainerStyle={[column, { paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: gutter, gap: spacing.xl }]}
       >
-      <View style={{ gap: spacing.sm }}>
-        <DailyCard />
-        {validatedDaily > 0 ? (
-          <Clickable accessibilityRole="button" onPress={() => router.push('/history')} hitSlop={8} style={styles.historyLink}>
-            <Ionicons name="time-outline" size={16} color={colors.primary} />
-            <Text style={styles.link}>Historique des tier lists du jour ({validatedDaily})</Text>
-          </Clickable>
-        ) : null}
-      </View>
+      <DailyCard />
 
       <View style={styles.tiles}>
         {/* The player first: their avatar with its badges, no frame. */}
@@ -129,8 +139,28 @@ export default function Home() {
       </View>
 
       <View style={{ gap: spacing.md }}>
-        <SectionTitle>Listes populaires</SectionTitle>
-        <PopularList templates={popular.slice(0, 5)} />
+        <View style={styles.sectionHead}>
+          <SectionTitle>Listes populaires</SectionTitle>
+          <View style={styles.discover} accessibilityRole="tablist">
+            {(
+              [
+                { key: 'trends', label: 'Tendances' },
+                { key: 'forYou', label: 'Pour toi' },
+              ] as const
+            ).map((t) => (
+              <Clickable
+                key={t.key}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: discover === t.key }}
+                onPress={() => setDiscover(t.key)}
+                style={[styles.discoverTab, discover === t.key && styles.discoverTabOn]}
+              >
+                <Text style={[styles.discoverText, discover === t.key && { color: colors.text }]}>{t.label}</Text>
+              </Clickable>
+            ))}
+          </View>
+        </View>
+        <PopularList templates={shown.slice(0, 5)} />
         {popular.length > 5 ? (
           <Clickable accessibilityRole="button" onPress={() => router.push('/popular')} hitSlop={8} style={styles.historyLink}>
             <Text style={styles.link}>Voir plus</Text>
@@ -158,6 +188,12 @@ const styles = StyleSheet.create({
   brand: { flexShrink: 1, color: colors.text, fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
   brandStrip: { flexDirection: 'row', gap: 4 },
   brandStripSegment: { flex: 1, height: 4, borderRadius: 2 },
+  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  discover: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.md, padding: 3, gap: 2 },
+  discoverTab: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.sm },
+  discoverTabOn: { backgroundColor: colors.surfaceAlt },
+  discoverText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   tiles: { flexDirection: 'row', gap: spacing.md },
   me: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
   meBadge: { top: -2, right: -4, borderColor: colors.background },

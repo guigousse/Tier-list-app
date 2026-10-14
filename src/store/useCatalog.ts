@@ -4,7 +4,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
-import { fetchDaily, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import { fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import type { Discovery } from '../lib/discover';
 
 /** Content published online (Supabase), cached so it shows offline too. */
 type CatalogState = {
@@ -14,6 +15,8 @@ type CatalogState = {
   pastDailies: DailyList[];
   /** Completed rankings and favourites of the popular tier lists. */
   stats: TemplateStats;
+  /** Hidden theme tags and trend scores, for "Tendances" and "Pour toi". */
+  discovery: Discovery;
   /** Applies a change made on this device right away, before the next refresh. */
   bumpStat: (key: string, field: 'completions' | 'favorites', delta: number) => void;
   /** Fetches the latest templates and daily tier list; keeps the cache on failure. */
@@ -27,6 +30,7 @@ export const useCatalog = create<CatalogState>()(
       daily: null,
       pastDailies: [],
       stats: {},
+      discovery: { tags: {}, trends: {} },
       bumpStat: (key, field, delta) =>
         set((state) => {
           const saved = state.stats[key];
@@ -34,17 +38,19 @@ export const useCatalog = create<CatalogState>()(
           return { stats: { ...state.stats, [key]: { ...current, [field]: Math.max(0, current[field] + delta) } } };
         }),
       refresh: async () => {
-        const [templates, daily, stats, pastDailies] = await Promise.allSettled([
+        const [templates, daily, stats, pastDailies, discovery] = await Promise.allSettled([
           fetchTemplates(),
           fetchDaily(),
           fetchTemplateStats(),
           fetchPastDailies(),
+          fetchDiscovery(),
         ]);
         set((state) => ({
           templates: templates.status === 'fulfilled' ? templates.value : state.templates,
           daily: daily.status === 'fulfilled' ? daily.value : state.daily,
           stats: stats.status === 'fulfilled' ? stats.value : state.stats,
           pastDailies: pastDailies.status === 'fulfilled' ? pastDailies.value : state.pastDailies,
+          discovery: discovery.status === 'fulfilled' ? discovery.value : state.discovery,
         }));
       },
     }),
@@ -54,7 +60,13 @@ export const useCatalog = create<CatalogState>()(
       version: 2,
       migrate: (persisted) => ({ ...(persisted as object), stats: {} }),
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ templates: state.templates, daily: state.daily, stats: state.stats, pastDailies: state.pastDailies }),
+      partialize: (state) => ({
+        templates: state.templates,
+        daily: state.daily,
+        stats: state.stats,
+        pastDailies: state.pastDailies,
+        discovery: state.discovery,
+      }),
     },
   ),
 );
