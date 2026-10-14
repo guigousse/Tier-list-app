@@ -23,6 +23,17 @@ export function gridFor(n: number) {
   return { cols, rows, aspect: `${cols / d}:${rows / d}` };
 }
 
+/**
+ * Magenta of any brightness: the shadow the model blends into the background
+ * (dark magenta) is far from the pure key but has its hue. Green well below both
+ * red and blue, which stay close: a red onion's purple (green too high) is spared.
+ */
+function magentaHue(px: Pixels, i: number) {
+  const r = px[i], g = px[i + 1], b = px[i + 2];
+  const low = Math.min(r, b);
+  return low > 40 && g < low * 0.35 && Math.abs(r - b) < Math.max(r, b) * 0.25;
+}
+
 function distance(px: Pixels, i: number) {
   const r = px[i] - KEY[0], g = px[i + 1] - KEY[1], b = px[i + 2] - KEY[2];
   return Math.sqrt(r * r + g * g + b * b);
@@ -32,13 +43,16 @@ function distance(px: Pixels, i: number) {
 export function clearBackground(px: Pixels, w: number, h: number) {
   const n = w * h;
   const clear = new Uint8Array(n);
-  // Flood from the edges: a pink inside the object is never reached by it.
+  // Flood from the edges and from every near-exact key pixel: a grid the model drew
+  // anyway would otherwise wall the flood out of the cells. A pink inside an object
+  // stays out of reach, behind the object's dark outline.
   const stack: number[] = [];
   for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
   for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+  for (let p = 0; p < n; p++) if (distance(px, p * 4) < TIGHT) stack.push(p);
   while (stack.length) {
     const p = stack.pop()!;
-    if (clear[p] || distance(px, p * 4) >= LOOSE) continue;
+    if (clear[p] || (distance(px, p * 4) >= LOOSE && !magentaHue(px, p * 4))) continue;
     clear[p] = 1;
     const x = p % w, y = (p - x) / w;
     if (x > 0) stack.push(p - 1);
@@ -46,7 +60,18 @@ export function clearBackground(px: Pixels, w: number, h: number) {
     if (y > 0) stack.push(p - w);
     if (y < h - 1) stack.push(p + w);
   }
-  for (let p = 0; p < n; p++) if (!clear[p] && distance(px, p * 4) < TIGHT) clear[p] = 1;
+  // Grid lines: rows or columns solid across almost the whole sheet. Icons never
+  // are, each one keeps a magenta margin in its cell.
+  for (let y = 0; y < h; y++) {
+    let solid = 0;
+    for (let x = 0; x < w; x++) solid += clear[y * w + x] ? 0 : 1;
+    if (solid >= w * 0.85) for (let x = 0; x < w; x++) clear[y * w + x] = 1;
+  }
+  for (let x = 0; x < w; x++) {
+    let solid = 0;
+    for (let y = 0; y < h; y++) solid += clear[y * w + x] ? 0 : 1;
+    if (solid >= h * 0.85) for (let y = 0; y < h; y++) clear[y * w + x] = 1;
+  }
   for (let p = 0; p < n; p++) if (clear[p]) px[p * 4 + 3] = 0;
 
   // Despill: edge pixels blended with the magenta keep a pink fringe; red and blue
@@ -107,11 +132,14 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
     }
   }
 
-  const largest = Math.max(0, ...parts.map((p) => p.size));
+  // A grid line the model drew despite the prompt: a part only a few pixels thick.
+  const thin = Math.min(cw, ch) * 0.04;
+  const solidParts = parts.filter((p) => Math.min(p.maxX - p.minX + 1, p.maxY - p.minY + 1) >= thin);
+  const largest = Math.max(0, ...solidParts.map((p) => p.size));
   // An object smaller than 0.5 % of its cell is noise, not a drawing.
   if (largest < cw * ch * 0.005) return null;
   // Pieces of the same drawing (chopsticks beside a sushi) stay; specks go.
-  const kept = parts.filter((p) => p.size >= largest * 0.02);
+  const kept = solidParts.filter((p) => p.size >= largest * 0.02);
   const minX = Math.min(...kept.map((p) => p.minX)), maxX = Math.max(...kept.map((p) => p.maxX));
   const minY = Math.min(...kept.map((p) => p.minY)), maxY = Math.max(...kept.map((p) => p.maxY));
   return { x: x0 + minX, y: y0 + minY, w: maxX - minX + 1, h: maxY - minY + 1 };

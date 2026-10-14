@@ -63,6 +63,54 @@ Deno.test("le liseré rosé laissé par l'anticrénelage est neutralisé", () =>
   if (px[i + 3] === 255 && px[i] > 100 && px[i + 2] > 100) throw new Error("liseré magenta encore visible");
 });
 
+Deno.test("l'ombre teintée de magenta autour de l'objet part avec le fond", () => {
+  const w = 40, h = 40, px = sheet(w, h);
+  paint(px, w, 12, 12, 28, 28, [230, 160, 90]);
+  // Ombre portée mélangée au fond : magenta sombre, loin du magenta pur.
+  paint(px, w, 12, 28, 28, 32, [110, 0, 115]);
+  clearBackground(px, w, h);
+  same(alpha(px, w, 20, 30), 0);
+  same(alpha(px, w, 20, 20), 255);
+});
+
+Deno.test("un violet d'oignon au bord de l'objet reste dessiné", () => {
+  const w = 40, h = 40, px = sheet(w, h);
+  paint(px, w, 12, 12, 28, 28, [230, 160, 90]);
+  paint(px, w, 28, 15, 31, 25, [176, 74, 168]);
+  clearBackground(px, w, h);
+  same(alpha(px, w, 29, 20), 255);
+});
+
+Deno.test("un trait de grille dessiné au bord de la case est ignoré", () => {
+  const w = 60, h = 30, px = sheet(w, h);
+  paint(px, w, 8, 6, 22, 24, [200, 50, 50]);
+  paint(px, w, 28, 2, 29, 28, [40, 20, 20]); // trait vertical près du bord droit de la case 0
+  clearBackground(px, w, h);
+  same(cellObject(px, w, h, { cols: 2, rows: 1 }, 0), { x: 8, y: 6, w: 14, h: 18 });
+});
+
+Deno.test("une grille dessinée par le modèle n'empêche pas de vider le fond des cases", () => {
+  const w = 60, h = 30, px = sheet(w, h);
+  paint(px, w, 29, 0, 31, 30, [60, 20, 40]); // trait vertical sur toute la hauteur
+  paint(px, w, 0, 14, 60, 16, [60, 20, 40]); // trait horizontal sur toute la largeur
+  paint(px, w, 36, 3, 50, 10, [230, 160, 90]);
+  paint(px, w, 36, 10, 50, 12, [120, 10, 110]); // ombre teintée, enfermée par la grille
+  clearBackground(px, w, h);
+  same(alpha(px, w, 40, 11), 0);
+  same(alpha(px, w, 30, 5), 0);
+  same(alpha(px, w, 10, 15), 0);
+  same(alpha(px, w, 40, 5), 255);
+});
+
+Deno.test("une rangée d'icônes larges n'est pas prise pour un trait de grille", () => {
+  const w = 60, h = 30, px = sheet(w, h);
+  paint(px, w, 3, 10, 27, 20, [230, 160, 90]);
+  paint(px, w, 33, 10, 57, 20, [90, 160, 230]);
+  clearBackground(px, w, h);
+  same(alpha(px, w, 20, 15), 255);
+  same(alpha(px, w, 40, 15), 255);
+});
+
 Deno.test("chaque case donne la boîte de son objet, sans les miettes ni la case voisine", () => {
   const w = 60, h = 30, px = sheet(w, h);
   paint(px, w, 5, 5, 25, 25, [200, 50, 50]); // case 0
