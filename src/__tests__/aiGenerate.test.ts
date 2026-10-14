@@ -1,16 +1,18 @@
-import { cardsNeedingImage, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, useAiJob, wordCredits } from '../lib/aiGenerate';
+import { cardsNeedingImage, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, textCredits, useAiJob, wordCredits } from '../lib/aiGenerate';
 import { ANTHRACITE } from '../constants/theme';
-import { aiIcons, aiWords } from '../lib/api';
+import { aiIcons, aiTiers, aiWords } from '../lib/api';
 import { useTierStore } from '../store/useTierStore';
 
 jest.mock('../lib/api', () => ({
   aiWords: jest.fn(),
   aiIcons: jest.fn(),
+  aiTiers: jest.fn(),
 }));
 jest.mock('../lib/aiIconFiles', () => ({ cacheAiIcon: jest.fn() }));
 
 const words = aiWords as jest.Mock;
 const icons = aiIcons as jest.Mock;
+const tiers = aiTiers as jest.Mock;
 const store = () => useTierStore.getState();
 
 beforeEach(() => {
@@ -18,6 +20,7 @@ beforeEach(() => {
   useAiJob.setState({ job: null });
   words.mockReset();
   icons.mockReset();
+  tiers.mockReset();
 });
 
 describe('AI generation', () => {
@@ -178,5 +181,40 @@ describe('AI generation', () => {
     await generateImages(id, Object.keys(store().lists[id].cards));
     expect(icons.mock.calls[0][1].map((c: { label: string }) => c.label)).toEqual(['A', 'B', 'C']);
     expect(photo).toBeDefined();
+  });
+
+  it('renames the tiers for 1 credit each, with the cards or alone', () => {
+    expect(textCredits(10, 0)).toBe(10);
+    expect(textCredits(10, 5)).toBe(15);
+    expect(textCredits(0, 5)).toBe(5);
+  });
+
+  it('renames the tiers in the tone chosen, best first, and adds the cards along', async () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S', 'A', 'B'] });
+    words.mockResolvedValue({ cards: [{ label: 'Brie', emoji: '🧀', concept: 'brie' }] });
+    tiers.mockResolvedValue({ labels: ['Divin', 'Bon', 'Bof'] });
+
+    await generateWords(id, 'Fromages', 1, 'humour');
+
+    expect(tiers).toHaveBeenCalledWith(expect.any(String), 'Fromages', ['S', 'A', 'B'], 'humour');
+    expect(store().lists[id].tiers.map((t) => t.label)).toEqual(['Divin', 'Bon', 'Bof']);
+    expect(Object.values(store().lists[id].cards)).toHaveLength(1);
+    expect(useAiJob.getState().job).toMatchObject({ kind: 'words', phase: 'done', cards: 1, tiers: 3 });
+  });
+
+  it('can rename the tiers alone, without asking for cards', async () => {
+    const id = store().createList({ title: 'Fromages', tierLabels: ['S', 'A'], cardLabels: ['Comté'] });
+    tiers.mockResolvedValue({ labels: ['Top', 'Flop'] });
+    await generateWords(id, 'Fromages', 0, 'serieux');
+    expect(words).not.toHaveBeenCalled();
+    expect(store().lists[id].tiers.map((t) => t.label)).toEqual(['Top', 'Flop']);
+    expect(Object.values(store().lists[id].cards).map((c) => c.label)).toEqual(['Comté']);
+  });
+
+  it('keeps a tier name the AI left out', async () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S', 'A', 'B'] });
+    tiers.mockResolvedValue({ labels: ['Top', ''] });
+    await generateWords(id, 'Fromages', 0, 'fantaisiste');
+    expect(store().lists[id].tiers.map((t) => t.label)).toEqual(['Top', 'A', 'B']);
   });
 });

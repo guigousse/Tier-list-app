@@ -3,13 +3,19 @@ import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { aiBusy, CREDITS, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, TEST_BALANCE, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { aiBusy, CREDITS, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, TEST_BALANCE, textCredits, type TierTone, useAiJob } from '../../lib/aiGenerate';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
 import { Button, Field, Sheet } from '../ui';
 
 const COUNTS = [5, 8, 10, 12, 15, 20];
+const TONES: { tone: TierTone | null; label: string }[] = [
+  { tone: null, label: 'Garder' },
+  { tone: 'humour', label: 'Humour' },
+  { tone: 'serieux', label: 'Sérieux' },
+  { tone: 'fantaisiste', label: 'Fantaisiste' },
+];
 
 type Props = { visible: boolean; onClose: () => void; listId: string };
 type Panel = { title: string; footer: ReactNode; body: ReactNode };
@@ -67,32 +73,36 @@ function Footer({ label, cost, ready, busy, onPress, note }: { label: string; co
 }
 
 /**
- * The words: 1. theme (the list's title to start with), 2. how many cards, then the
- * cost. The list takes the theme as its title. The images come after, once the player
- * has checked the words (the images tab).
+ * The text: 1. theme (the list's title to start with), 2. how many cards (or none),
+ * 3. the tiers renamed in a tone (or kept), then the cost. The list takes the theme as
+ * its title. The images come after, once the player has checked the words.
  */
 function useWordsPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
+  const tierCount = useTierStore((s) => s.lists[listId]?.tiers.length ?? 0);
   const [theme, setTheme] = useState(title);
   const [count, setCount] = useState(10);
+  const [tone, setTone] = useState<TierTone | null>(null);
   const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'words', () => setTheme(title));
-  const cost = wordCredits(count);
+  const renamed = tone ? tierCount : 0;
+  const cost = textCredits(count, renamed);
   const start = () => {
     setShowJob(true);
-    generateWords(listId, theme.trim(), count);
+    generateWords(listId, theme.trim(), count, tone ?? undefined);
   };
 
   if (showJob && job) {
     return {
-      title: 'Génération des cartes',
+      title: 'Génération du texte',
       footer: <Button label={running ? 'Continuer en arrière-plan' : 'Vérifier les cartes'} onPress={onClose} />,
       body:
         job.phase === 'working' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.statusText}>L’IA imagine vos cartes…</Text>
+            <Text style={styles.statusText}>L’IA écrit vos {count ? 'cartes' : 'rangs'}…</Text>
           </View>
         ) : job.phase === 'error' ? (
           <View style={{ gap: spacing.md }}>
+            {job.cards || job.tiers ? <Text style={styles.statusText}>{doneText(job.cards, job.tiers ?? 0)}</Text> : null}
             <Text style={styles.error}>{job.error}</Text>
             <Button variant="secondary" label="Modifier ma demande" icon="arrow-back" onPress={() => setShowJob(false)} />
           </View>
@@ -100,9 +110,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
           <View style={{ gap: spacing.md }}>
             <View style={styles.status}>
               <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />
-              <Text style={styles.statusText}>
-                {job.cards} carte{job.cards > 1 ? 's' : ''} ajoutée{job.cards > 1 ? 's' : ''} à la liste
-              </Text>
+              <Text style={styles.statusText}>{doneText(job.cards, job.tiers ?? 0)}</Text>
             </View>
             <Text style={styles.hint}>
               Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, l’onglet Images les illustrera.
@@ -113,8 +121,8 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
   }
 
   return {
-    title: 'Générer les cartes',
-    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0} busy={busy} onPress={start} />,
+    title: 'Générer le texte',
+    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0 && cost > 0} busy={busy} onPress={start} />,
     body: (
       <>
       <View style={styles.section}>
@@ -134,7 +142,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Clickable
               accessibilityRole="button"
               accessibilityLabel="Une carte de moins"
-              onPress={() => setCount(Math.max(3, count - 1))}
+              onPress={() => setCount(count <= 3 ? 0 : count - 1)}
               style={styles.stepperButton}
             >
               <Ionicons name="remove" size={20} color={colors.text} />
@@ -143,7 +151,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Clickable
               accessibilityRole="button"
               accessibilityLabel="Une carte de plus"
-              onPress={() => setCount(Math.min(20, count + 1))}
+              onPress={() => setCount(count === 0 ? 3 : Math.min(20, count + 1))}
               style={styles.stepperButton}
             >
               <Ionicons name="add" size={20} color={colors.text} />
@@ -151,30 +159,71 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
           </View>
         </View>
         <View style={styles.chips}>
-          {COUNTS.map((n) => (
+          {[0, ...COUNTS].map((n) => (
             <Clickable key={n} accessibilityRole="button" onPress={() => setCount(n)} style={[styles.chip, n === count && styles.chipOn]}>
-              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n}</Text>
+              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n || 'Aucune'}</Text>
             </Clickable>
           ))}
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionTitle}>Noms des rangs</Text>
+        </View>
+        <View style={styles.chips}>
+          {TONES.map((t) => (
+            <Clickable
+              key={t.label}
+              accessibilityRole="button"
+              accessibilityState={{ selected: t.tone === tone }}
+              onPress={() => setTone(t.tone)}
+              style={[styles.chip, t.tone === tone && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, t.tone === tone && { color: colors.primaryText }]}>{t.label}</Text>
+            </Clickable>
+          ))}
+        </View>
+        <Text style={styles.hint}>
+          {tone
+            ? `Les ${tierCount} rangs reçoivent un nom court dans ce ton, du meilleur au moins bon, d’après le thème.`
+            : 'Choisissez un ton pour renommer les rangs d’après le thème.'}
+        </Text>
       </View>
 
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
-        <View style={styles.recap}>
-          <Text style={styles.recapText}>
-            {count} mot{count > 1 ? 's' : ''} × {CREDITS.word} crédit
-          </Text>
-          <Text style={styles.recapValue}>{cost}</Text>
-        </View>
-        <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
+        {count ? (
+          <View style={styles.recap}>
+            <Text style={styles.recapText}>
+              {count} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
+            </Text>
+            <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
+          </View>
+        ) : null}
+        {renamed ? (
+          <View style={styles.recap}>
+            <Text style={styles.recapText}>
+              {renamed} rang{renamed > 1 ? 's' : ''} × {CREDITS.tier} crédit
+            </Text>
+            <Text style={styles.recapValue}>{renamed * CREDITS.tier}</Text>
+          </View>
+        ) : null}
+        {count ? <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text> : null}
         <Balance cost={cost} />
       </View>
       </>
     ),
   };
+}
+
+function doneText(cards: number, tiers: number): string {
+  const parts = [];
+  if (cards) parts.push(`${cards} carte${cards > 1 ? 's' : ''} ajoutée${cards > 1 ? 's' : ''}`);
+  if (tiers) parts.push(`${tiers} rang${tiers > 1 ? 's' : ''} renommé${tiers > 1 ? 's' : ''}`);
+  return parts.join(' · ') || 'Rien n’a changé';
 }
 
 /**

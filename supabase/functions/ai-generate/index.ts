@@ -1,5 +1,6 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
 //   { action: "words", deviceId, theme, count, existing } -> { cards: [{ label, emoji, concept }] }
+//   { action: "tiers", deviceId, theme, current, tone }  -> { labels }  (one name per tier, best first)
 //   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }  (SVG, older app versions)
 //   { action: "icons", deviceId, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }] }  (one Gemini sheet)
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
@@ -12,6 +13,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 import { drawSheet, SheetError } from "./iconSheet.ts";
 import { cardsToDraw, fillSheet } from "./sheet.ts";
+import { cleanTierLabels, TONES, type Tone } from "./tiers.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
 const WORDS_MODEL = "claude-opus-5-5";
@@ -76,6 +78,21 @@ const WORDS_SCHEMA = {
     },
   },
   required: ["cards"],
+  additionalProperties: false,
+};
+
+const TIERS_SYSTEM = `Tu nommes les rangs d'une tier list de l'application Tiercraft : les joueurs y classent des cartes du meilleur rang au moins bon.
+On te donne le thème, le ton voulu et les noms actuels des rangs, dans l'ordre. Donne un nouveau nom pour chaque rang, dans le même ordre, du meilleur au moins bon :
+- en français, très court : 1 ou 2 mots, 14 caractères au plus, pour tenir dans une colonne étroite ;
+- liés au thème, et qui disent clairement la gradation : on comprend lequel est meilleur sans voir la position ;
+- tous différents, sans numéro, sans guillemets, sans emoji ;
+- jamais grossiers ni blessants envers des personnes.
+Si le thème est haineux, sexuel ou violent envers des personnes, renvoie une liste vide.`;
+
+const TIERS_SCHEMA = {
+  type: "object",
+  properties: { labels: { type: "array", items: { type: "string" } } },
+  required: ["labels"],
   additionalProperties: false,
 };
 
@@ -223,6 +240,26 @@ Deno.serve(async (req) => {
       // Every concept proposed joins the wishlist: free cells of later sheets draw it.
       await db.from("icon_wishlist").upsert(cards.map((c) => ({ concept: c.concept, label: c.label })), { onConflict: "concept", ignoreDuplicates: true });
       return json({ cards });
+    }
+
+    if (body.action === "tiers") {
+      const theme = String(body.theme ?? "").trim().slice(0, 80);
+      const tone = String(body.tone ?? "") as Tone;
+      const current = (Array.isArray(body.current) ? body.current : []).map((l) => String(l).slice(0, 50)).slice(0, 12);
+      if (!theme || !(tone in TONES) || current.length === 0) return json({ error: "bad request" }, 400);
+      const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
+      if (!allowed) return json({ error: "quota" }, 429);
+      const result = await ask(
+        WORDS_MODEL,
+        "low",
+        TIERS_SYSTEM,
+        `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}`,
+        TIERS_SCHEMA,
+        1000,
+      );
+      const raw = (result.labels ?? []) as unknown[];
+      if (raw.length === 0) return json({ error: "theme refused" }, 422);
+      return json({ labels: cleanTierLabels(raw, current) });
     }
 
     if (body.action === "icon") {

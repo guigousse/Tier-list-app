@@ -28,3 +28,16 @@ export function useResponsive() {
     tierLabelWidth: isTablet ? 120 : isCompact ? 64 : 84,
   };
 }
+
+/** Width of a bold character, as a share of the font size (measured on a tier label). */
+const BOLD_CHAR = 0.6;
+
+/**
+ * Font size of a tier label in a column `width` wide (padding taken off): the longest
+ * word must fit on one line, or it is cut in the middle ("encha / ntée"), which the
+ * text's own shrinking doesn't prevent. Never below 11, where it stops being read.
+ */
+export function tierLabelFontSize(label: string, width: number): number {
+  const longest = Math.max(1, ...label.split(/\s+/).map((w) => w.length));
+  return Math.max(11, Math.min(20, Math.floor(width / (longest * BOLD_CHAR))));
+}

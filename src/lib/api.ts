@@ -93,6 +93,11 @@ export function aiWords(deviceId: string, theme: string, count: number, existing
   return aiCall({ action: 'words', deviceId, theme, count, existing }, 90_000);
 }
 
+/** New tier names for the theme, in `tone`, best tier first, as many as `current`. */
+export function aiTiers(deviceId: string, theme: string, current: string[], tone: 'humour' | 'serieux' | 'fantaisiste'): Promise<{ labels: string[] }> {
+  return aiCall({ action: 'tiers', deviceId, theme, current, tone }, 60_000);
+}
+
 /**
  * The icons of a list's cards, all at once: from the shared library, the others drawn
  * together on one sheet (about 30 s). `url` is null for an icon that came out empty.

@@ -4,7 +4,7 @@ import { ANTHRACITE } from '../constants/theme';
 import type { Card, TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
 import { cacheAiIcon } from './aiIconFiles';
-import { aiIcons, aiWords } from './api';
+import { aiIcons, aiTiers, aiWords } from './api';
 import { cardIconFor } from './cardIcons';
 import { splitEmoji } from './emoji';
 
@@ -22,7 +22,7 @@ import { splitEmoji } from './emoji';
  * cheaper each image. Small lists lose a little, made up by the icons their free
  * cells draw ahead and by every reused icon.
  */
-export const CREDITS = { word: 1, sheet: 2, image: 1 };
+export const CREDITS = { word: 1, tier: 1, sheet: 2, image: 1 };
 
 export function imageCredits(count: number): number {
   return count > 0 ? CREDITS.sheet + count * CREDITS.image : 0;
@@ -35,6 +35,14 @@ export function wordCredits(count: number): number {
   return count * CREDITS.word;
 }
 
+/** The text tab: cards to add, and tiers to rename (0 when left alone). */
+export function textCredits(cards: number, tiers: number): number {
+  return wordCredits(cards) + tiers * CREDITS.tier;
+}
+
+/** Tone of the tier names: the server knows each one's instructions. */
+export type TierTone = 'humour' | 'serieux' | 'fantaisiste';
+
 export type AiJob = {
   listId: string;
   kind: 'words' | 'images';
@@ -45,6 +53,8 @@ export type AiJob = {
   icons: number;
   /** Icons that couldn't be drawn (the card keeps its emoji). */
   failed: number;
+  /** Tiers renamed (words). */
+  tiers?: number;
   error?: string;
 };
 
@@ -69,21 +79,41 @@ export function aiError(e: unknown): string {
   return 'Pas de connexion : réessayez dans un instant.';
 }
 
-export async function generateWords(listId: string, theme: string, count: number): Promise<void> {
+/**
+ * The text tab: `count` cards for the theme (0: none), and the tiers renamed in `tone`
+ * when one is given. Both asked at once; what came back is kept even if the other failed.
+ */
+export async function generateWords(listId: string, theme: string, count: number, tone?: TierTone): Promise<void> {
   const store = useTierStore.getState();
   const list = store.lists[listId];
   if (!list) return;
-  useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0 } });
-  try {
-    const existing = Object.values(list.cards).map((c) => c.label);
-    const { cards } = await aiWords(store.deviceId, theme, count, existing);
-    cards.forEach((c) => store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: ANTHRACITE, aiConcept: c.concept || undefined }));
-    // The theme asked is the best title the list can have.
-    store.renameList(listId, theme);
-    patch({ cards: cards.length, phase: 'done' });
-  } catch (e) {
-    patch({ phase: 'error', error: aiError(e) });
+  useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0, tiers: 0 } });
+  const existing = Object.values(list.cards).map((c) => c.label);
+  const current = list.tiers.map((t) => t.label);
+  const [words, names] = await Promise.allSettled([
+    count > 0 ? aiWords(store.deviceId, theme, count, existing) : Promise.resolve({ cards: [] }),
+    tone ? aiTiers(store.deviceId, theme, current, tone) : Promise.resolve({ labels: [] as string[] }),
+  ]);
+  let cards = 0;
+  let tiers = 0;
+  if (words.status === 'fulfilled') {
+    words.value.cards.forEach((c) => store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: ANTHRACITE, aiConcept: c.concept || undefined }));
+    cards = words.value.cards.length;
   }
+  if (names.status === 'fulfilled') {
+    // By position, best tier first; a name left out keeps the old one.
+    list.tiers.forEach((t, i) => {
+      const label = names.value.labels[i]?.trim();
+      if (label && useTierStore.getState().lists[listId]?.tiers.some((x) => x.id === t.id)) {
+        store.updateTier(listId, t.id, { label });
+        tiers++;
+      }
+    });
+  }
+  const failure = [words, names].find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+  // The theme asked is the best title the list can have.
+  if (cards || tiers) store.renameList(listId, theme);
+  patch(failure ? { cards, tiers, phase: 'error', error: aiError(failure.reason) } : { cards, tiers, phase: 'done' });
 }
 
 /** Cards still without a picture: no photo, no AI icon, no icon drawn in the app. */
