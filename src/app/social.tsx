@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,14 +9,12 @@ import { MailBox } from '../components/MailBox';
 import { Clickable } from '../components/Clickable';
 import { ProfileForm } from '../components/ProfileForm';
 import { ProfileRewards } from '../components/profile/ProfileRewards';
-import { ProfileStats } from '../components/profile/ProfileStats';
 import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
-import { completedCount, dailyStreak } from '../lib/streak';
 import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 
@@ -44,11 +42,11 @@ function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?
   );
 }
 
-type Tab = 'friends' | 'challenges' | 'rewards' | 'stats';
+type Tab = 'friends' | 'challenges' | 'rewards';
 
 function initialTab(param: string | undefined): Tab {
   if (param === 'lists' || param === 'challenges') return 'challenges';
-  if (param === 'friends' || param === 'rewards' || param === 'stats') return param;
+  if (param === 'friends' || param === 'rewards') return param;
   // Lists waiting to be ranked: open on them.
   return useMail.getState().inbox.some(isToRank) ? 'challenges' : 'friends';
 }
@@ -67,11 +65,26 @@ export default function Social() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<Tab>(() => initialTab(params.tab));
   const unread = useUnreadMail();
-  const lists = useTierStore((s) => s.lists);
-  const numbers = useMemo(() => {
-    const all = Object.values(lists);
-    return { completed: completedCount(all), streak: dailyStreak(all) };
-  }, [lists]);
+  // Reward paths go up from the bottom of the page: scrolled to where the player stands.
+  const scroll = useRef<ScrollView>(null);
+  const sizes = useRef({ content: 0, view: 0, fromBottom: null as number | null });
+  const reveal = useCallback(() => {
+    const { content, view, fromBottom } = sizes.current;
+    if (fromBottom === null || !content || !view) return;
+    const y = content - (insets.bottom + spacing.xl) - fromBottom - view / 2;
+    scroll.current?.scrollTo({ y: Math.max(0, Math.min(y, content - view)), animated: false });
+  }, [insets.bottom]);
+  const showReward = useCallback(
+    (fromBottom: number) => {
+      sizes.current.fromBottom = fromBottom;
+      reveal();
+    },
+    [reveal],
+  );
+  const changeTab = (next: Tab) => {
+    sizes.current.fromBottom = null;
+    setTab(next);
+  };
 
   const load = useCallback(async () => {
     const secret = useTierStore.getState().profile?.secret;
@@ -172,6 +185,14 @@ export default function Social() {
 
   return (
     <ScrollView
+      ref={scroll}
+      onLayout={(e) => {
+        sizes.current.view = e.nativeEvent.layout.height;
+      }}
+      onContentSizeChange={(_, h) => {
+        sizes.current.content = h;
+        reveal();
+      }}
       keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
@@ -199,24 +220,9 @@ export default function Social() {
             {profile.pseudo}
             <Text style={styles.rowTag}> #{profile.tag}</Text>
           </Text>
-          <View style={styles.chips}>
-            <View style={[styles.chip, numbers.streak > 0 && styles.chipFlame]}>
-              <Text style={styles.chipText}>🔥 {numbers.streak}</Text>
-            </View>
-            <View style={styles.chip}>
-              <Text style={styles.chipText}>
-                ✅ {numbers.completed} liste{numbers.completed > 1 ? 's' : ''}
-              </Text>
-            </View>
-            {data ? (
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>
-                  🤝 {data.friends.length} ami
-                  {data.friends.length > 1 ? 's' : ''}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          <Text style={styles.rowMeta}>
+            {data ? `${data.me.completed} liste${data.me.completed > 1 ? 's' : ''} complétée${data.me.completed > 1 ? 's' : ''}` : 'Votre code ami : ' + myCode}
+          </Text>
         </View>
         <IconButton icon="create-outline" label="Modifier le profil" onPress={() => setEditing(true)} />
       </View>
@@ -237,11 +243,9 @@ export default function Social() {
       <View style={styles.tabs} accessibilityRole="tablist">
         {(
           [
-            // Widths in proportion to the labels, so "Récompenses" fits on a phone.
-            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0, grow: 1 },
-            { key: 'challenges', label: 'Défis', badge: unread, grow: 1.1 },
-            { key: 'rewards', label: 'Récompenses', badge: 0, grow: 1.6 },
-            { key: 'stats', label: 'Stats', badge: 0, grow: 0.9 },
+            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0 },
+            { key: 'challenges', label: 'Défis', badge: unread },
+            { key: 'rewards', label: 'Récompenses', badge: 0 },
           ] as const
         ).map((t) => (
           <Clickable
@@ -249,8 +253,8 @@ export default function Social() {
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === t.key }}
             accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
-            onPress={() => setTab(t.key)}
-            style={[styles.tab, { flex: t.grow }, tab === t.key && styles.tabSelected]}
+            onPress={() => changeTab(t.key)}
+            style={[styles.tab, tab === t.key && styles.tabSelected]}
           >
             <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.tabText, tab === t.key && { color: colors.text }]}>
               {t.label}
@@ -267,9 +271,7 @@ export default function Social() {
       {tab === 'challenges' ? (
         <MailBox />
       ) : tab === 'rewards' ? (
-        <ProfileRewards />
-      ) : tab === 'stats' ? (
-        <ProfileStats />
+        <ProfileRewards onCurrent={showReward} />
       ) : (
         <>
           <View style={{ gap: spacing.sm }}>
@@ -429,20 +431,6 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: -spacing.sm,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
-  chip: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipFlame: {
-    borderColor: 'rgba(255, 122, 31, 0.6)',
-    backgroundColor: 'rgba(255, 122, 31, 0.14)',
-  },
-  chipText: { color: colors.text, fontSize: 12, fontWeight: '700' },
   tab: {
     flex: 1,
     flexDirection: 'row',
@@ -454,7 +442,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabSelected: { backgroundColor: colors.surfaceAlt },
-  tabText: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
+  tabText: { color: colors.textMuted, fontSize: 15, fontWeight: '700' },
   tabBadge: {
     minWidth: 20,
     height: 20,

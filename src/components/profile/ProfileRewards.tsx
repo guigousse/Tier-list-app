@@ -10,7 +10,7 @@ import { Clickable } from '../Clickable';
 import { RewardPath } from './RewardPath';
 
 /** The two reward paths: public tier lists completed (green) and the daily flame (orange). */
-export function ProfileRewards() {
+export function ProfileRewards({ onCurrent }: { onCurrent?: (fromBottom: number) => void }) {
   const lists = useTierStore((s) => s.lists);
   const avatarCode = useTierStore((s) => s.profile?.avatar);
   const [track, setTrack] = useState<Track>('lists');
@@ -78,6 +78,7 @@ export function ProfileRewards() {
         glow={flame}
         avatar={avatar}
         unit={flame ? 'jour' : 'liste'}
+        onCurrent={onCurrent}
       />
     </View>
   );

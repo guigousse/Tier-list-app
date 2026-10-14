@@ -18,9 +18,9 @@ const PREVIEW = 62;
 
 type Point = { x: number; y: number };
 
-/** Cubic from `a` to `b`, leaving and arriving vertically. */
+/** Cubic from `a` up to `b`, leaving and arriving vertically. */
 function stretch(a: Point, b: Point): [Point, Point, Point, Point] {
-  return [a, { x: a.x, y: a.y + ROW / 2 }, { x: b.x, y: b.y - ROW / 2 }, b];
+  return [a, { x: a.x, y: a.y - ROW / 2 }, { x: b.x, y: b.y + ROW / 2 }, b];
 }
 
 /** The first `t` (0 → 1) of a cubic, as an SVG path (de Casteljau). */
@@ -54,6 +54,7 @@ export function RewardPath({
   glow = false,
   avatar,
   unit,
+  onCurrent,
 }: {
   steps: Milestone[];
   /** Where the road is filled up to. */
@@ -65,21 +66,23 @@ export function RewardPath({
   avatar: AvatarConfig;
   /** "liste" / "jour", for labels. */
   unit: string;
+  /** Distance from the bottom of the path to the player's next step, to scroll there. */
+  onCurrent?: (fromBottom: number) => void;
 }) {
   const [width, setWidth] = useState(0);
   const [open, setOpen] = useState<Milestone | null>(null);
   const t = THEMES[theme];
 
-  // A start point (0), then every step, winding left and right.
+  const height = TOP * 2 + steps.length * ROW;
+  // A start point (0) at the bottom, then every step going up, winding left and right.
   const nodes = useMemo(() => {
     const amplitude = Math.min(90, width * 0.22);
     return [0, ...steps.map((s) => s.at)].map((at, i) => ({
       at,
       x: width / 2 + Math.sin((i * Math.PI) / 2) * amplitude,
-      y: TOP + i * ROW,
+      y: height - TOP - i * ROW,
     }));
-  }, [steps, width]);
-  const height = TOP * 2 + (nodes.length - 1) * ROW;
+  }, [steps, width, height]);
 
   const road = nodes.slice(1).map((b, i) => stretch(nodes[i], b));
   const roadD = road.map((c) => partial(c, 1)).join(' ');
@@ -103,6 +106,10 @@ export function RewardPath({
   }));
 
   const nextIndex = nodes.findIndex((n) => n.at > value);
+  const focus = nextIndex === -1 ? nodes.length - 1 : nextIndex;
+  useEffect(() => {
+    if (width > 0) onCurrent?.(height - nodes[focus].y);
+  }, [width, height, nodes, focus, onCurrent]);
 
   return (
     <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
@@ -110,20 +117,20 @@ export function RewardPath({
         <>
           <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
             <Defs>
-              <LinearGradient id={`fill-${theme}`} x1="0" y1="0" x2="0" y2={height} gradientUnits="userSpaceOnUse">
+              <LinearGradient id={`fill-${theme}`} x1="0" y1={height} x2="0" y2="0" gradientUnits="userSpaceOnUse">
                 <Stop offset="0" stopColor={t.from} />
                 <Stop offset="1" stopColor={t.to} />
               </LinearGradient>
             </Defs>
-            <Path d={roadD} stroke={colors.surfaceAlt} strokeWidth={14} strokeLinecap="round" fill="none" />
-            <Path d={roadD} stroke={colors.border} strokeWidth={2} strokeDasharray="2 10" strokeLinecap="round" fill="none" />
-            {filledD ? <Path d={filledD} stroke={`url(#fill-${theme})`} strokeWidth={14} strokeLinecap="round" fill="none" /> : null}
+            <Path d={roadD} stroke={colors.surfaceAlt} strokeWidth={8} strokeLinecap="round" fill="none" />
+            <Path d={roadD} stroke={colors.border} strokeWidth={1.5} strokeDasharray="1.5 8" strokeLinecap="round" fill="none" />
+            {filledD ? <Path d={filledD} stroke={`url(#fill-${theme})`} strokeWidth={8} strokeLinecap="round" fill="none" /> : null}
           </Svg>
           {glow && filledD ? (
             <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, glowStyle]}>
               <Svg width={width} height={height}>
-                <Path d={filledD} stroke="#FF8A3D" strokeOpacity={0.35} strokeWidth={30} strokeLinecap="round" fill="none" />
-                <Path d={filledD} stroke="#FFE08A" strokeOpacity={0.8} strokeWidth={4} strokeLinecap="round" fill="none" />
+                <Path d={filledD} stroke="#FF8A3D" strokeOpacity={0.35} strokeWidth={20} strokeLinecap="round" fill="none" />
+                <Path d={filledD} stroke="#FFE08A" strokeOpacity={0.8} strokeWidth={2.5} strokeLinecap="round" fill="none" />
               </Svg>
             </Animated.View>
           ) : null}
