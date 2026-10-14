@@ -55,6 +55,7 @@ On te donne un thème et un nombre de cartes. Propose des cartes :
 - toutes du thème, connues du grand public, assez variées pour que le classement fasse débat ;
 - sans doublon entre elles ni avec les cartes déjà présentes.
 Pour chaque carte, donne aussi un emoji qui la représente, et un « concept » : un nom anglais simple en kebab-case (ex. "pizza", "hiking-boot", "rubber-duck") désignant l'objet à dessiner comme icône. Pour une idée difficile à dessiner, choisis un objet qui la symbolise (« Balade » -> "hiking-boot", « Grasse matinée » -> "bed"). Pour une marque, une personne ou une œuvre, choisis un objet générique évocateur, jamais un logo ni un visage réel.
+Pour une couleur, une matière ou une notion purement visuelle, le concept montre la chose elle-même, pas un objet qui en a la couleur : une tache de peinture de cette teinte (« Kaki » -> "khaki-paint-splash", « Turquoise » -> "turquoise-paint-splash").
 Concepts : au singulier, sans mot inutile (« pizza » et non « pizza-slice »). Si un concept de la bibliothèque déjà dessinée désigne exactement le même objet, reprends-le tel quel : son icône est gratuite. Sinon, crée un concept assez précis pour que l'icône distingue la carte des autres de la liste (« camembert-box » plutôt que « cheese » dans une liste de fromages). Deux cartes de la liste n'ont jamais le même concept.
 Si le thème est haineux, sexuel ou violent envers des personnes, renvoie une liste vide.`;
 
@@ -243,7 +244,9 @@ Deno.serve(async (req) => {
         await Promise.all(plan.map(async (card, i) => {
           const png = tiles[i];
           if (!png) return;
-          const path = `${card.concept}.png`;
+          // Name unique to this drawing: the CDN and the players' copies keep a file a
+          // year, a concept redrawn under the same name would stay the old picture.
+          const path = `${card.concept}-${Date.now().toString(36)}.png`;
           const { error } = await db.storage.from("card-icons").upload(path, png, { contentType: "image/png", upsert: true, cacheControl: "31536000" });
           if (error) return console.error("upload", card.concept, error.message);
           const image = db.storage.from("card-icons").getPublicUrl(path).data.publicUrl;

@@ -20,7 +20,7 @@ function prompt(cards: { label: string; concept: string }[], cols: number, rows:
   return [
     "The attached image shows the art style to copy exactly (not its objects): cozy cartoon sticker icons with bold rounded dark-brown outlines (#2A1B14), flat vivid colors, one darker shade and one soft light highlight per main shape, simple shapes that stay readable at 55 pixels.",
     `Draw one single image: a grid of ${cols} columns by ${rows} rows of equal square cells, on a flat uniform pure magenta background (#FF00FF) that fills the whole picture, including the space between the icons. The cells are invisible: only magenta between the icons.`,
-    "Each cell holds exactly one icon, centered, about 70% of the cell size, with magenta space all around it. The icons use any colors except magenta and hot pink.",
+    "Each cell holds exactly one icon, centered, about 70% of the cell size, with magenta space all around it. Each icon stands directly on the magenta background: no tile, card, square or frame behind it. The icons use any colors except magenta and pink.",
     "The picture contains only drawings: text, letters, numbers and logos are left out.",
     "Row by row, left to right, the cells contain:",
     list + empty,

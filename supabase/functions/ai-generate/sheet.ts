@@ -31,7 +31,11 @@ export function gridFor(n: number) {
 function magentaHue(px: Pixels, i: number) {
   const r = px[i], g = px[i + 1], b = px[i + 2];
   const low = Math.min(r, b);
-  return low > 40 && g < low * 0.35 && Math.abs(r - b) < Math.max(r, b) * 0.25;
+  if (low > 40 && g < low * 0.35 && Math.abs(r - b) < Math.max(r, b) * 0.25) return true;
+  // Light pink tile the model sometimes lays behind an icon (~252,150,250): red and
+  // blue both near full and equal, green clearly lower. A flamingo pink (blue well
+  // below red) or a lavender (red lower) does not match.
+  return low > 200 && Math.abs(r - b) < Math.max(r, b) * 0.1 && g < low * 0.75;
 }
 
 function distance(px: Pixels, i: number) {

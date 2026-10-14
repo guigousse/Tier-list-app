@@ -73,6 +73,24 @@ Deno.test("l'ombre teintée de magenta autour de l'objet part avec le fond", () 
   same(alpha(px, w, 20, 20), 255);
 });
 
+Deno.test("un carré rose clair que le modèle pose derrière l'icône part avec le fond", () => {
+  const w = 40, h = 40, px = sheet(w, h);
+  paint(px, w, 6, 6, 34, 34, [252, 150, 250]); // tuile rose clair
+  paint(px, w, 14, 14, 26, 26, [40, 170, 230]); // goutte cyan
+  clearBackground(px, w, h);
+  same(alpha(px, w, 8, 8), 0);
+  same(alpha(px, w, 20, 20), 255);
+});
+
+Deno.test("un rose d'objet (flamant) ou un lavande touchant le fond restent dessinés", () => {
+  const w = 40, h = 40, px = sheet(w, h);
+  paint(px, w, 10, 10, 20, 30, [255, 140, 180]);
+  paint(px, w, 20, 10, 30, 30, [180, 150, 220]);
+  clearBackground(px, w, h);
+  same(alpha(px, w, 15, 20), 255);
+  same(alpha(px, w, 25, 20), 255);
+});
+
 Deno.test("un violet d'oignon au bord de l'objet reste dessiné", () => {
   const w = 40, h = 40, px = sheet(w, h);
   paint(px, w, 12, 12, 28, 28, [230, 160, 90]);
