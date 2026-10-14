@@ -43,12 +43,6 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
   const balance = TEST_BALANCE;
   const affordable = cost <= balance;
   const ready = theme.trim().length > 0 && affordable;
-  const credits = (
-    <View style={styles.credits} accessibilityLabel={`Solde : ${balance} crédits`}>
-      <Ionicons name="sparkles" size={13} color="#FFD84A" />
-      <Text style={styles.creditsText}>{balance}</Text>
-    </View>
-  );
 
   if (showJob && job) {
     const iconsTotal = job.cards;
@@ -106,7 +100,6 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
       visible={visible}
       onClose={onClose}
       title="Générer avec l’IA"
-      headerRight={credits}
       footer={
         <View style={styles.footer}>
           {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {cost - balance} crédits.</Text> : null}
@@ -115,17 +108,19 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
       }
     >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          <Text style={styles.sectionNumber}>1 </Text>Thème de la liste
-        </Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionNumber}>1</Text>
+          <Text style={styles.sectionTitle}>Thème de la liste</Text>
+        </View>
         <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={80} returnKeyType="done" />
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>
-            <Text style={styles.sectionNumber}>2 </Text>Nombre de cartes
-          </Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionNumber}>2</Text>
+            <Text style={styles.sectionTitle}>Nombre de cartes</Text>
+          </View>
           <View style={styles.stepper}>
             <Clickable
               accessibilityRole="button"
@@ -156,9 +151,10 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          <Text style={styles.sectionNumber}>3 </Text>Génération d’images
-        </Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionNumber}>3</Text>
+          <Text style={styles.sectionTitle}>Génération d’images</Text>
+        </View>
         <Clickable
           accessibilityRole="checkbox"
           accessibilityState={{ checked: images }}
@@ -166,21 +162,16 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
           style={[styles.check, images && styles.checkOn]}
         >
           <Ionicons name={images ? 'checkbox' : 'square-outline'} size={26} color={images ? colors.primary : colors.textMuted} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.checkTitle}>Générer aussi les images des cartes</Text>
-            <Text style={styles.hint}>Des icônes dans le style de Tiercraft, qui arrivent après les mots, une par une.</Text>
-          </View>
-          <View style={styles.previews}>
-            <CardIcon id="croissant" size={30} />
-            <CardIcon id="gamepad" size={30} />
-          </View>
+          <Text style={[styles.checkTitle, { flex: 1 }]}>Générer les images liées aux cartes</Text>
+          <CardIcon id="camera" size={40} />
         </Clickable>
       </View>
 
       <View style={styles.total}>
-        <Text style={styles.sectionTitle}>
-          <Text style={styles.sectionNumber}>4 </Text>Total
-        </Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionNumber}>4</Text>
+          <Text style={styles.sectionTitle}>Total</Text>
+        </View>
         <View style={styles.recap}>
           <Text style={styles.recapText}>
             {count} mot{count > 1 ? 's' : ''} × {CREDITS.word} crédit
@@ -225,7 +216,8 @@ const styles = StyleSheet.create({
   section: { gap: spacing.sm, paddingBottom: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  sectionNumber: { color: colors.primary, fontWeight: '900' },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  sectionNumber: { color: colors.primary, fontSize: 16, fontWeight: '900' },
   total: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   short: { color: colors.danger, fontSize: 13, textAlign: 'center' },
   steps: { flexDirection: 'row', gap: 6 },

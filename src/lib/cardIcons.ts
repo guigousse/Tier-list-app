@@ -221,6 +221,21 @@ export const CARD_ICONS: Record<string, Icon> = {
 <path fill="#FFF3B0" opacity=".8" d="M24 24 C28 18 36 15 42 16 C36 18 30 22 27 28 Z"/>
 <g fill="#FFFFFF" stroke="#9FD3F2" stroke-width="1.4"><circle cx="16" cy="88" r="5"/><circle cx="84" cy="90" r="4"/><circle cx="92" cy="82" r="3"/></g>`,
   },
+  camera: {
+    silhouette: `<rect x="8" y="28" width="84" height="58" rx="12"/><path d="M32 30 L38 18 H62 L68 30 Z"/>`,
+    art: `
+<path fill="#3E4157" ${line()} d="M32 30 L38 18 H62 L68 30 Z"/>
+<rect fill="#5B5FD6" ${line()} x="8" y="28" width="84" height="58" rx="12"/>
+<path fill="#4448B8" d="M10 70 H90 V74 C90 80 86 84 80 84 H20 C14 84 10 80 10 74 Z"/>
+<rect fill="#3E4157" x="10" y="44" width="80" height="10"/>
+<circle fill="#E9EEF5" ${line()} cx="50" cy="56" r="20"/>
+<circle fill="#2F3142" ${line(2)} cx="50" cy="56" r="13"/>
+<circle fill="#5AB8FF" cx="50" cy="56" r="7"/>
+<circle fill="#FFFFFF" opacity=".8" cx="46" cy="52" r="3"/>
+<rect fill="#FFE066" ${line(1.8)} x="72" y="34" width="12" height="7" rx="2"/>
+<rect fill="#FF5F6D" ${line(1.8)} x="16" y="20" width="10" height="8" rx="2"/>
+<path fill="#FFFFFF" opacity=".3" d="M14 34 H44 C30 35 20 37 14 42 Z"/>`,
+  },
 };
 
 /** Card label → icon concept, for the lists drawn so far (one icon reused by several cards). */
