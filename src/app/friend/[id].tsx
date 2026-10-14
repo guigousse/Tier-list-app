@@ -111,7 +111,7 @@ export default function Friend() {
           headerRight: () =>
             data ? (
               <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                <IconButton icon="flag-outline" label="Signaler ce joueur" onPress={() => confirmReport(data.profile, () => router.back())} />
+                <IconButton icon="flag-outline" label="Signaler ou bloquer ce joueur" onPress={() => confirmReport(data.profile, () => router.back())} />
                 <IconButton icon="person-remove-outline" label="Retirer cet ami" onPress={remove} />
               </View>
             ) : null,

@@ -131,7 +131,14 @@ export function updateProfile(secret: string, pseudo: string, avatar: string): P
   return rpc<PublicProfile>('update_profile', { secret, pseudo, avatar });
 }
 
-export type Friends = { me: PublicProfile; friends: PublicProfile[]; incoming: PublicProfile[]; outgoing: PublicProfile[] };
+export type Friends = {
+  me: PublicProfile;
+  friends: PublicProfile[];
+  incoming: PublicProfile[];
+  outgoing: PublicProfile[];
+  /** Players this player blocked (absent before the server knew blocks). */
+  blocked?: PublicProfile[];
+};
 
 export function fetchFriends(secret: string): Promise<Friends> {
   return rpc<Friends>('get_friends', { secret });
@@ -150,7 +157,21 @@ export function removeFriend(secret: string, other: string): Promise<void> {
   return rpc<void>('remove_friend', { secret, other });
 }
 
-/** Reports a player's pseudo or avatar; also ends the link with them. */
+/** Ends the link with a player; neither can send the other a request until unblocked. */
+export function blockPlayer(secret: string, other: string): Promise<void> {
+  return rpc<void>('block_player', { secret, other });
+}
+
+export function unblockPlayer(secret: string, other: string): Promise<void> {
+  return rpc<void>('unblock_player', { secret, other });
+}
+
+/** Deletes the profile, its friends and blocks, and the votes made with its device id. */
+export function deleteProfile(secret: string): Promise<void> {
+  return rpc<void>('delete_profile', { secret });
+}
+
+/** Reports a player's pseudo or avatar; also blocks them. */
 export function reportPlayer(secret: string, other: string, reason: 'pseudo' | 'avatar'): Promise<void> {
   return rpc<void>('report_player', { secret, other, reason });
 }

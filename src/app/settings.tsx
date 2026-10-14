@@ -11,6 +11,7 @@ import { BROC_APP_STORE_URL } from '../constants/legal';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { setDailyReminder } from '../lib/reminders';
+import { deleteMyProfile, friendCode, socialError } from '../lib/social';
 import { SHARE_HOST } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
@@ -39,6 +40,7 @@ export default function Settings() {
   const { column, gutter } = useResponsive();
   const settings = useTierStore((s) => s.settings);
   const count = useTierStore((s) => Object.keys(s.lists).length);
+  const profile = useTierStore((s) => s.profile);
   const { updateSettings, clearAll } = useTierStore.getState();
 
   const confirmClear = () =>
@@ -46,6 +48,24 @@ export default function Settings() {
       { text: 'Annuler', style: 'cancel' },
       { text: 'Tout effacer', style: 'destructive', onPress: clearAll },
     ]);
+
+  const confirmDeleteProfile = () =>
+    Alert.alert(
+      'Supprimer votre profil ?',
+      `${profile ? friendCode(profile) : 'Votre profil'}, vos amis, vos joueurs bloqués et vos votes seront supprimés en ligne. Vos tier lists restent sur cet appareil. Cette action est irréversible.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () =>
+            deleteMyProfile().then(
+              () => Alert.alert('Profil supprimé', 'Votre profil et les données liées ont été supprimés.'),
+              (e) => Alert.alert('Oups', socialError(e)),
+            ),
+        },
+      ],
+    );
 
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
@@ -160,6 +180,14 @@ export default function Settings() {
           {count} tier list{count > 1 ? 's' : ''} enregistrée{count > 1 ? 's' : ''} sur cet appareil. Elles restent sur votre téléphone : seules les tier lists que vous partagez par code sont envoyées en ligne, sans les photos.
         </Text>
         <Button label="Effacer toutes les données" icon="trash-outline" variant="danger" onPress={confirmClear} disabled={count === 0} />
+        {profile ? (
+          <>
+            <Text style={styles.rowHint}>
+              Votre profil de joueur {friendCode(profile)} est enregistré en ligne avec vos amis et vos votes.
+            </Text>
+            <Button label="Supprimer mon profil" icon="person-remove-outline" variant="danger" onPress={confirmDeleteProfile} />
+          </>
+        ) : null}
       </View>
     </ScrollView>
   );

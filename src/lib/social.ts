@@ -4,7 +4,7 @@ import type { Template } from '../constants/presets';
 import { dailyTemplate } from '../store/useCatalog';
 import type { TierList } from '../store/types';
 import { popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
-import { createProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
+import { blockPlayer, createProfile, deleteProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
 import { newId } from './id';
 import { saveIdentity } from './identity';
 
@@ -40,6 +40,8 @@ export function socialError(e: unknown): string {
   if (message.includes('pseudo unavailable')) return 'Ce pseudo est très demandé : essayez-en un autre.';
   if (message.includes('player not found')) return 'Aucun joueur avec ce pseudo et ce numéro.';
   if (message.includes('cannot add yourself')) return 'C’est votre propre code !';
+  if (message.includes('player blocked')) return 'Vous avez bloqué ce joueur : débloquez-le d’abord, en bas de cette page.';
+  if (message.includes('unknown profile')) return 'Votre profil n’existe plus en ligne.';
   if (message.includes('too many requests')) return 'Trop d’essais : réessayez dans un moment.';
   return 'Pas de connexion : réessayez dans un instant.';
 }
@@ -87,21 +89,46 @@ export function myRanks(template: Template, lists: Record<string, TierList>): nu
   return null;
 }
 
-/** Asks what to report about a player, reports them, then calls `done`. */
+/** Asks whether to report a player (which also blocks them) or only block them, then calls `done`. */
 export function confirmReport(player: { id: string; pseudo: string; tag: number }, done: () => void): void {
   const secret = useTierStore.getState().profile?.secret;
   if (!secret) return;
-  const send = (reason: 'pseudo' | 'avatar') =>
-    reportPlayer(secret, player.id, reason).then(
+  const run = (call: Promise<void>, message: string) =>
+    call.then(
       () => {
-        Alert.alert('Merci', 'Le signalement est envoyé. Vous n’êtes plus liés à ce joueur.');
+        Alert.alert('C’est fait', message);
         done();
       },
       (e) => Alert.alert('Oups', socialError(e)),
     );
-  Alert.alert('Signaler ce joueur ?', `${friendCode(player)} ne sera plus votre ami. Après plusieurs signalements, son profil est masqué.`, [
-    { text: 'Annuler', style: 'cancel' },
-    { text: 'Pseudo inapproprié', style: 'destructive', onPress: () => send('pseudo') },
-    { text: 'Avatar inapproprié', style: 'destructive', onPress: () => send('avatar') },
-  ]);
+  const report = (reason: 'pseudo' | 'avatar') =>
+    run(reportPlayer(secret, player.id, reason), 'Le signalement est envoyé et ce joueur est bloqué : il ne pourra plus vous envoyer de demande.');
+  Alert.alert(
+    'Signaler ou bloquer ?',
+    `${friendCode(player)} ne sera plus votre ami et ne pourra plus vous envoyer de demande. Après plusieurs signalements, son profil est masqué.`,
+    [
+      { text: 'Pseudo inapproprié', style: 'destructive', onPress: () => report('pseudo') },
+      { text: 'Avatar inapproprié', style: 'destructive', onPress: () => report('avatar') },
+      { text: 'Bloquer sans signaler', style: 'destructive', onPress: () => run(blockPlayer(secret, player.id), 'Ce joueur est bloqué.') },
+      { text: 'Annuler', style: 'cancel' },
+    ],
+  );
+}
+
+/**
+ * Deletes the player's profile online (friends, blocks, votes), then forgets it on
+ * this device and in the Keychain. The tier lists stay on the device.
+ */
+export async function deleteMyProfile(): Promise<void> {
+  const { profile } = useTierStore.getState();
+  if (!profile) return;
+  try {
+    await deleteProfile(profile.secret);
+  } catch (e) {
+    // Already gone online: forget it here too.
+    if (!(e instanceof Error && e.message.includes('unknown profile'))) throw e;
+  }
+  // A new device id, so later votes aren't linked to the deleted ones.
+  useTierStore.setState({ profile: null, deviceId: newId() });
+  await saveIdentity();
 }

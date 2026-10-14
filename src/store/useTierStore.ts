@@ -147,6 +147,8 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
   return data;
 }
 
+const STORE_KEY = 'tiercraft-store';
+
 export const useTierStore = create<State>()(
   persist(
     (set, get) => {
@@ -459,10 +461,15 @@ export const useTierStore = create<State>()(
       };
     },
     {
-      name: 'tiercraft-store',
+      name: STORE_KEY,
       // Bump with every change to the persisted shape, and handle it in `migrate`.
       version: 4,
       migrate: (persisted, version) => migrateStore(persisted, version),
+      // Unreadable data (corrupted, or a migration that throws): keep a copy aside
+      // and start from the defaults, rather than staying on a blank screen.
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) recoverFromHydrationError(error);
+      },
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         lists: state.lists,
@@ -486,8 +493,37 @@ export const useTierStore = create<State>()(
   ),
 );
 
-const subscribeHydration = (onChange: () => void) => useTierStore.persist.onFinishHydration(onChange);
-const getHydrated = () => useTierStore.persist.hasHydrated();
+/** Set when the saved data couldn't be read: the app runs from the defaults. */
+let recovered = false;
+const recoveryListeners = new Set<() => void>();
+
+async function recoverFromHydrationError(error: unknown): Promise<void> {
+  console.error('Saved data could not be loaded', error);
+  try {
+    // Copied before anything is saved over it, so the lists can still be rescued.
+    const raw = await AsyncStorage.getItem(STORE_KEY);
+    if (raw) await AsyncStorage.setItem(`${STORE_KEY}-backup-${Date.now()}`, raw);
+  } catch {
+    // Too big or unreadable even as text: nothing can be kept.
+  }
+  recovered = true;
+  recoveryListeners.forEach((cb) => cb());
+}
+
+/** Whether the saved data was lost at launch (then shown once to the player). */
+export function hydrationRecovered(): boolean {
+  return recovered;
+}
+
+const subscribeHydration = (onChange: () => void) => {
+  recoveryListeners.add(onChange);
+  const unsubscribe = useTierStore.persist.onFinishHydration(onChange);
+  return () => {
+    recoveryListeners.delete(onChange);
+    unsubscribe();
+  };
+};
+const getHydrated = () => recovered || useTierStore.persist.hasHydrated();
 
 export function useHydrated(): boolean {
   return useSyncExternalStore(subscribeHydration, getHydrated, getHydrated);

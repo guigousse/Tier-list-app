@@ -9,7 +9,7 @@ import { Clickable } from '../components/Clickable';
 import { ProfileForm } from '../components/ProfileForm';
 import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
-import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, type Friends, type PublicProfile } from '../lib/api';
+import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
@@ -120,6 +120,12 @@ export default function Social() {
       { text: 'Annuler la demande', style: 'destructive', onPress: () => removeFriend(profile.secret, p.id).then(load, () => {}) },
     ]);
 
+  const unblock = (p: PublicProfile) =>
+    Alert.alert('Débloquer ce joueur ?', `${friendCode(p)} pourra de nouveau vous envoyer une demande d’ami.`, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Débloquer', onPress: () => unblockPlayer(profile.secret, p.id).then(load, (e) => Alert.alert('Oups', socialError(e))) },
+    ]);
+
   return (
     <ScrollView
       keyboardShouldPersistTaps="handled"
@@ -192,7 +198,7 @@ export default function Social() {
                   player={p}
                   right={
                     <View style={styles.respond}>
-                      <IconButton icon="flag-outline" label="Signaler" color={colors.textMuted} onPress={() => confirmReport(p, load)} />
+                      <IconButton icon="flag-outline" label="Signaler ou bloquer" color={colors.textMuted} onPress={() => confirmReport(p, load)} />
                       <IconButton icon="close" label="Refuser" color={colors.textMuted} onPress={() => respond(p.id, false)} />
                       <IconButton icon="checkmark" label="Accepter" color="#2EAD6B" onPress={() => respond(p.id, true)} />
                     </View>
@@ -218,6 +224,15 @@ export default function Social() {
               <SectionTitle>Demandes envoyées</SectionTitle>
               {data.outgoing.map((p) => (
                 <PlayerRow key={p.id} player={p} right={<IconButton icon="close" label="Annuler la demande" color={colors.textMuted} onPress={() => cancel(p)} />} />
+              ))}
+            </View>
+          ) : null}
+
+          {data.blocked?.length ? (
+            <View style={{ gap: spacing.sm }}>
+              <SectionTitle>Joueurs bloqués</SectionTitle>
+              {data.blocked.map((p) => (
+                <PlayerRow key={p.id} player={p} right={<Button variant="secondary" label="Débloquer" onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />} />
               ))}
             </View>
           ) : null}

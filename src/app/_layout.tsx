@@ -1,7 +1,7 @@
 import { DarkTheme, SplashScreen, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -9,7 +9,7 @@ import { colors } from '../constants/theme';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
 import { useCatalog } from '../store/useCatalog';
-import { useHydrated } from '../store/useTierStore';
+import { hydrationRecovered, useHydrated } from '../store/useTierStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -34,6 +34,12 @@ export default function RootLayout() {
   useEffect(() => {
     if (!hydrated) return;
     SplashScreen.hideAsync().catch(() => {});
+    if (hydrationRecovered()) {
+      Alert.alert(
+        'Données illisibles',
+        'Vos tier lists enregistrées n’ont pas pu être chargées. Une copie a été mise de côté : contactez l’assistance pour la récupérer.',
+      );
+    }
     // Profile and device id kept in the Keychain (back after a reinstall).
     restoreIdentity().then(() => syncDailyVotes());
   }, [hydrated]);
