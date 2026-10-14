@@ -17,9 +17,9 @@ import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
-import { AiSheet } from '../../components/editor/AiSheet';
+import { AiImagesSheet, AiWordsSheet } from '../../components/editor/AiSheet';
 import { MagicWand } from '../../components/editor/MagicWand';
-import { useAiJob } from '../../lib/aiGenerate';
+import { aiBusy, useAiJob } from '../../lib/aiGenerate';
 import { colors, spacing } from '../../constants/theme';
 import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
@@ -79,8 +79,8 @@ function Editor({ list }: { list: TierList }) {
 
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [cardSheet, setCardSheet] = useState<{ cardId: string | null } | null>(null);
-  const [aiOpen, setAiOpen] = useState(false);
-  const aiBusy = useAiJob((s) => s.job?.listId === list.id && (s.job.phase === 'words' || s.job.phase === 'icons'));
+  const [aiOpen, setAiOpen] = useState<'words' | 'images' | null>(null);
+  const aiRunning = useAiJob((s) => (aiBusy(s.job, list.id) ? s.job!.kind : null));
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -300,7 +300,11 @@ function Editor({ list }: { list: TierList }) {
         {/* AI generation: personal lists only (daily and popular cards are fixed). */}
         {fixed ? null : (
           <View style={styles.wand} pointerEvents="box-none">
-            <MagicWand onPress={() => setAiOpen(true)} busy={aiBusy} />
+            {/* The images come once there are cards to illustrate, checked by the player. */}
+            {total > 0 && aiRunning !== 'words' ? (
+              <MagicWand kind="images" onPress={() => setAiOpen('images')} busy={aiRunning === 'images'} />
+            ) : null}
+            <MagicWand kind="words" onPress={() => setAiOpen('words')} busy={aiRunning === 'words'} />
           </View>
         )}
       </View>
@@ -381,7 +385,12 @@ function Editor({ list }: { list: TierList }) {
         actions={menuActions}
       />
 
-      {fixed ? null : <AiSheet visible={aiOpen} onClose={() => setAiOpen(false)} listId={list.id} title={list.title} />}
+      {fixed ? null : (
+        <>
+          <AiWordsSheet visible={aiOpen === 'words'} onClose={() => setAiOpen(null)} listId={list.id} title={list.title} />
+          <AiImagesSheet visible={aiOpen === 'images'} onClose={() => setAiOpen(null)} listId={list.id} />
+        </>
+      )}
 
       <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={exportImage} />
 
@@ -419,7 +428,7 @@ const styles = StyleSheet.create({
   watermark: { color: colors.border, fontSize: 11, fontWeight: '700', textAlign: 'right', padding: 6 },
   below: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   strip: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
-  wand: { position: 'absolute', right: spacing.lg, bottom: spacing.md },
+  wand: { position: 'absolute', right: spacing.lg, bottom: spacing.md, flexDirection: 'row', gap: spacing.md },
   dailyBar: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, backgroundColor: colors.tray },
   dailyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },

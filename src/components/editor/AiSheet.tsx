@@ -3,61 +3,90 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { creditCost, CREDITS, generateCards, imageCredits, TEST_BALANCE, useAiJob } from '../../lib/aiGenerate';
+import { aiBusy, cardsNeedingImage, CREDITS, generateImages, generateWords, imageCredits, TEST_BALANCE, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardIcon } from '../CardIcon';
 import { Button, Field, Sheet } from '../ui';
 
 const COUNTS = [5, 8, 10, 12, 15, 20];
 
-/**
- * AI generation on one page: 1. theme (the list's title to start with), 2. how many
- * cards, 3. images or not, then the total cost, and "Générer" once everything is
- * filled in and the player can afford it. Then the progress of the generation.
- */
-export function AiSheet({ visible, onClose, listId, title }: { visible: boolean; onClose: () => void; listId: string; title: string }) {
-  const [theme, setTheme] = useState(title);
-  const [count, setCount] = useState(10);
-  const [images, setImages] = useState(true);
-  const job = useAiJob((s) => (s.job?.listId === listId ? s.job : null));
-  const running = job && job.phase !== 'done' && job.phase !== 'error';
-  // Each opening starts the questions again, unless a generation is under way.
-  const [showJob, setShowJob] = useState(false);
+type Props = { visible: boolean; onClose: () => void; listId: string };
 
+/**
+ * Shows the questions on each opening, or the generation of this kind when one is
+ * under way. Returns whether to show the generation, and a way to switch to it.
+ */
+function useJobView(visible: boolean, listId: string, kind: 'words' | 'images', onOpen?: () => void) {
+  const job = useAiJob((s) => (s.job?.listId === listId && s.job.kind === kind ? s.job : null));
+  const running = job?.phase === 'working';
+  // Another generation of this list (only one at a time).
+  const busy = useAiJob((s) => aiBusy(s.job, listId)) && !running;
+  const [showJob, setShowJob] = useState(false);
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
     if (visible) {
       setShowJob(Boolean(running));
-      setTheme(title);
+      onOpen?.();
     }
   }
+  return { job, running, busy, showJob: showJob && job ? job : null, setShowJob };
+}
 
-  const cost = creditCost(count, images);
-  const perImage = (n: number) => (imageCredits(n) / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
-  // The price of one image drops with the number of cards: show what a few more would give.
-  const nudge = count < 20 ? Math.min(20, count < 10 ? 10 : count + 5) : null;
-  const start = () => {
-    setShowJob(true);
-    generateCards(listId, theme.trim(), count, images);
-  };
-
+function Balance({ cost }: { cost: number }) {
   // No credits yet: a test balance, nothing is taken.
   const balance = TEST_BALANCE;
-  const affordable = cost <= balance;
-  const ready = theme.trim().length > 0 && affordable;
+  return (
+    <>
+      <View style={[styles.recap, styles.recapTotal]}>
+        <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
+        <Text style={[styles.recapValue, { fontSize: 18 }, cost > balance && { color: colors.danger }]}>{cost} crédits</Text>
+      </View>
+      <View style={styles.recap}>
+        <Text style={styles.recapText}>Votre solde</Text>
+        <Text style={styles.recapValue}>{balance} crédits</Text>
+      </View>
+      <Text style={styles.hint}>Phase de test : solde fictif, rien n’est décompté.</Text>
+    </>
+  );
+}
+
+function Footer({ label, cost, ready, busy, onPress }: { label: string; cost: number; ready: boolean; busy: boolean; onPress: () => void }) {
+  const affordable = cost <= TEST_BALANCE;
+  return (
+    <View style={styles.footer}>
+      {busy ? <Text style={styles.short}>Une génération est déjà en cours pour cette liste.</Text> : null}
+      {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {cost - TEST_BALANCE} crédits.</Text> : null}
+      <Button label={`${label} · ${cost} crédits`} icon="sparkles" disabled={!ready || busy || !affordable} onPress={onPress} />
+    </View>
+  );
+}
+
+/**
+ * First step, the words: 1. theme (the list's title to start with), 2. how many cards,
+ * then the cost. The list takes the theme as its title. The images come after, once
+ * the player has checked the words (see `AiImagesSheet`).
+ */
+export function AiWordsSheet({ visible, onClose, listId, title }: Props & { title: string }) {
+  const [theme, setTheme] = useState(title);
+  const [count, setCount] = useState(10);
+  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'words', () => setTheme(title));
+  const cost = wordCredits(count);
+  const start = () => {
+    setShowJob(true);
+    generateWords(listId, theme.trim(), count);
+  };
 
   if (showJob && job) {
-    const iconsTotal = job.cards;
-    const progress = iconsTotal ? (job.icons + job.failed) / iconsTotal : 0;
     return (
       <Sheet
         visible={visible}
         onClose={onClose}
-        title="Génération"
-        footer={<Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />}
+        title="Génération des cartes"
+        footer={<Button label={running ? 'Continuer en arrière-plan' : 'Vérifier les cartes'} onPress={onClose} />}
       >
-        {job.phase === 'words' ? (
+        {job.phase === 'working' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.statusText}>L’IA imagine vos cartes…</Text>
@@ -75,23 +104,9 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
                 {job.cards} carte{job.cards > 1 ? 's' : ''} ajoutée{job.cards > 1 ? 's' : ''} à la liste
               </Text>
             </View>
-            {job.images ? (
-              <View style={{ gap: spacing.sm }}>
-                <View style={styles.status}>
-                  {job.phase === 'icons' ? <ActivityIndicator color={colors.primary} /> : <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />}
-                  <Text style={styles.statusText}>
-                    Images : {job.icons} / {iconsTotal}
-                    {job.failed ? ` · ${job.failed} sans image` : ''}
-                  </Text>
-                </View>
-                <View style={styles.bar}>
-                  <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
-                </View>
-                {job.phase === 'icons' ? (
-                  <Text style={styles.hint}>Toutes les images sont dessinées ensemble, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
-                ) : null}
-              </View>
-            ) : null}
+            <Text style={styles.hint}>
+              Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, la baguette aux images les illustrera toutes.
+            </Text>
           </View>
         )}
       </Sheet>
@@ -102,20 +117,16 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
     <Sheet
       visible={visible}
       onClose={onClose}
-      title="Générer avec l’IA"
-      footer={
-        <View style={styles.footer}>
-          {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {cost - balance} crédits.</Text> : null}
-          <Button label={`Générer · ${cost} crédits`} icon="sparkles" disabled={!ready} onPress={start} />
-        </View>
-      }
+      title="Générer les cartes"
+      footer={<Footer label="Générer" cost={cost} ready={theme.trim().length > 0} busy={busy} onPress={start} />}
     >
       <View style={styles.section}>
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionNumber}>1</Text>
           <Text style={styles.sectionTitle}>Thème de la liste</Text>
         </View>
-        <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={80} returnKeyType="done" />
+        <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={60} returnKeyType="done" />
+        <Text style={styles.hint}>La liste prendra ce thème pour titre.</Text>
       </View>
 
       <View style={styles.section}>
@@ -153,56 +164,111 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
         </View>
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionNumber}>3</Text>
-          <Text style={styles.sectionTitle}>Génération d’images</Text>
-        </View>
-        <Clickable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: images }}
-          onPress={() => setImages(!images)}
-          style={[styles.check, images && styles.checkOn]}
-        >
-          <Ionicons name={images ? 'checkbox' : 'square-outline'} size={26} color={images ? colors.primary : colors.textMuted} />
-          <Text style={[styles.checkTitle, { flex: 1 }]}>Générer les images liées aux cartes</Text>
-          <CardIcon id="camera" size={40} />
-        </Clickable>
-      </View>
-
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionNumber}>4</Text>
+          <Text style={styles.sectionNumber}>3</Text>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
         <View style={styles.recap}>
           <Text style={styles.recapText}>
             {count} mot{count > 1 ? 's' : ''} × {CREDITS.word} crédit
           </Text>
-          <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
+          <Text style={styles.recapValue}>{cost}</Text>
         </View>
-        {images ? (
-          <View style={styles.recap}>
-            <Text style={styles.recapText}>
-              {count} image{count > 1 ? 's' : ''} · {perImage(count)} crédits l’image
+        <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
+        <Balance cost={cost} />
+      </View>
+    </Sheet>
+  );
+}
+
+/**
+ * Second step, the images: every card of the list still without a picture (generated,
+ * edited or added by hand), all drawn together on one sheet, then the cost.
+ */
+export function AiImagesSheet({ visible, onClose, listId }: Props) {
+  const list = useTierStore((s) => s.lists[listId]);
+  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'images');
+  const cards = list ? cardsNeedingImage(list) : [];
+  const n = cards.length;
+  const cost = imageCredits(n);
+  const start = () => {
+    setShowJob(true);
+    generateImages(listId);
+  };
+
+  if (showJob && job) {
+    const progress = job.cards ? (job.icons + job.failed) / job.cards : 1;
+    return (
+      <Sheet
+        visible={visible}
+        onClose={onClose}
+        title="Génération des images"
+        footer={<Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />}
+      >
+        <View style={{ gap: spacing.sm }}>
+          <View style={styles.status}>
+            {running ? <ActivityIndicator color={colors.primary} /> : <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />}
+            <Text style={styles.statusText}>
+              Images : {job.icons} / {job.cards}
+              {job.failed ? ` · ${job.failed} sans image` : ''}
             </Text>
-            <Text style={styles.recapValue}>{imageCredits(count)}</Text>
           </View>
-        ) : null}
-        {images && nudge ? (
-          <Text style={styles.hint}>
-            Plus il y a d’images, moins chacune coûte : avec {nudge} cartes, l’image revient à {perImage(nudge)} crédits.
-          </Text>
-        ) : null}
-        <View style={[styles.recap, styles.recapTotal]}>
-          <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
-          <Text style={[styles.recapValue, { fontSize: 18 }, !affordable && { color: colors.danger }]}>{cost} crédits</Text>
+          <View style={styles.bar}>
+            <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
+          </View>
+          {running ? (
+            <Text style={styles.hint}>Toutes les images sont dessinées ensemble, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
+          ) : null}
+        </View>
+      </Sheet>
+    );
+  }
+
+  const perImage = n ? (cost / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0';
+  return (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title="Générer les images"
+      footer={<Footer label="Dessiner" cost={cost} ready={n > 0} busy={busy} onPress={start} />}
+    >
+      <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionNumber}>1</Text>
+            <Text style={styles.sectionTitle}>Cartes à illustrer</Text>
+          </View>
+          <CardIcon id="camera" size={40} />
+        </View>
+        {n ? (
+          <View style={styles.labels}>
+            {cards.map((c) => (
+              <View key={c.id} style={styles.label}>
+                <Text style={styles.labelText} numberOfLines={1}>
+                  {c.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.hint}>Toutes les cartes de la liste ont déjà une image.</Text>
+        )}
+        {n ? <Text style={styles.hint}>Les cartes qui ont déjà une image ou une photo la gardent.</Text> : null}
+      </View>
+
+      <View style={styles.total}>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionNumber}>2</Text>
+          <Text style={styles.sectionTitle}>Total</Text>
         </View>
         <View style={styles.recap}>
-          <Text style={styles.recapText}>Votre solde</Text>
-          <Text style={styles.recapValue}>{balance} crédits</Text>
+          <Text style={styles.recapText}>
+            {n} image{n > 1 ? 's' : ''} · {perImage} crédits l’image
+          </Text>
+          <Text style={styles.recapValue}>{cost}</Text>
         </View>
-        <Text style={styles.hint}>Phase de test : solde fictif, rien n’est décompté.</Text>
+        <Balance cost={cost} />
       </View>
     </Sheet>
   );
@@ -260,7 +326,9 @@ const styles = StyleSheet.create({
   },
   checkOn: { borderColor: colors.primary, backgroundColor: 'rgba(124, 92, 255, 0.1)' },
   checkTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  previews: { gap: 2 },
+  labels: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  label: { maxWidth: '100%', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 14, backgroundColor: colors.surfaceAlt },
+  labelText: { color: colors.text, fontSize: 14, fontWeight: '600' },
   recap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   recapTotal: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
   recapText: { color: colors.textMuted, fontSize: 14 },

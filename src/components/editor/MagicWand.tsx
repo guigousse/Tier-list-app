@@ -9,12 +9,18 @@ import { Clickable } from '../Clickable';
 const SIZE = 58;
 const RAINBOW = ['#FF5F6D', '#FFB347', '#FFE66B', '#7BE495', '#5AB8FF', '#9B7CFF', '#FF7FD1'] as const;
 
+const KINDS = {
+  words: { glyph: 'text', label: 'Générer des cartes avec l’IA' },
+  images: { glyph: 'image', label: 'Générer les images des cartes avec l’IA' },
+} as const;
+
 /**
- * Floating button that opens AI generation: a rainbow disc with a wand, a light
- * sweep running across it now and then, and a soft breathing halo. `busy`: icons
- * still being drawn, the wand spins slowly.
+ * Floating button that opens an AI generation: a rainbow disc with a wand passing in
+ * front of what it makes (a letter for the words, a picture for the images), a light
+ * sweep running across it now and then, and a soft breathing halo. `busy`: still
+ * generating, the disc spins slowly.
  */
-export function MagicWand({ onPress, busy = false }: { onPress: () => void; busy?: boolean }) {
+export function MagicWand({ kind, onPress, busy = false }: { kind: keyof typeof KINDS; onPress: () => void; busy?: boolean }) {
   const sweep = useSharedValue(0);
   const breath = useSharedValue(0);
   const spin = useSharedValue(0);
@@ -37,7 +43,7 @@ export function MagicWand({ onPress, busy = false }: { onPress: () => void; busy
       </Animated.View>
       <Clickable
         accessibilityRole="button"
-        accessibilityLabel="Générer des cartes avec l’IA"
+        accessibilityLabel={KINDS[kind].label}
         onPress={onPress}
         style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.93 }] }]}
       >
@@ -47,8 +53,9 @@ export function MagicWand({ onPress, busy = false }: { onPress: () => void; busy
         <View style={styles.clip} pointerEvents="none">
           <Animated.View style={[styles.sweep, sweepStyle]} />
         </View>
-        <Ionicons name="color-wand" size={28} color="#FFFFFF" style={styles.icon} />
-        <Ionicons name="sparkles" size={13} color="#FFFFFF" style={styles.spark} />
+        <Ionicons name={KINDS[kind].glyph} size={26} color="rgba(255,255,255,0.92)" style={[styles.icon, styles.glyph]} />
+        <Ionicons name="color-wand" size={24} color="#FFFFFF" style={[styles.icon, styles.wandIcon]} />
+        <Ionicons name="sparkles" size={12} color="#FFFFFF" style={styles.spark} />
       </Clickable>
     </View>
   );
@@ -76,5 +83,8 @@ const styles = StyleSheet.create({
   clip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: SIZE / 2 },
   sweep: { position: 'absolute', top: -SIZE / 2, width: SIZE * 0.35, height: SIZE * 2, backgroundColor: 'rgba(255,255,255,0.55)' },
   icon: { textShadowColor: 'rgba(60,20,90,0.45)', textShadowRadius: 4, textShadowOffset: { width: 0, height: 1 } },
-  spark: { position: 'absolute', top: 9, right: 10 },
+  // The glyph a little up and right, the wand across its lower left corner.
+  glyph: { position: 'absolute', top: 11, right: 11 },
+  wandIcon: { position: 'absolute', bottom: 9, left: 9, textShadowColor: 'rgba(60,20,90,0.7)', textShadowRadius: 5 },
+  spark: { position: 'absolute', top: 7, left: 13 },
 });

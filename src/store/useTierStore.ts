@@ -373,7 +373,10 @@ export const useTierStore = create<State>()(
             if ('imageName' in patch && patch.imageName !== card.imageName) {
               deleteCardImage(card.imageName);
             }
-            return { cards: { ...l.cards, [cardId]: { ...card, ...patch } } };
+            const next = { ...card, ...patch };
+            // A renamed card no longer matches the object the AI picked for it.
+            if (patch.label !== undefined && patch.label !== card.label && !('aiConcept' in patch)) delete next.aiConcept;
+            return { cards: { ...l.cards, [cardId]: next } };
           }),
 
         deleteCard: (listId, cardId) =>

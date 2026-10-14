@@ -1,15 +1,18 @@
 import { create } from 'zustand';
 
 import { CARD_COLORS } from '../constants/theme';
+import type { Card, TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
 import { cacheAiIcon } from './aiIconFiles';
 import { aiIcons, aiWords } from './api';
 import { cardIconFor } from './cardIcons';
+import { splitEmoji } from './emoji';
 
 /**
- * AI generation of a tier list's cards: the words come first (cards added at once),
- * then, if asked, their icons one by one as they're drawn. Runs outside the screen,
- * so the player can close the window while the icons keep coming.
+ * AI generation of a tier list's cards, in two steps: the words first (cards added at
+ * once, the list named after the theme), then, once the player has checked them, the
+ * images of the cards that still have none. Runs outside the screen, so the player
+ * can close the window while the images keep coming.
  */
 
 /**
@@ -28,21 +31,27 @@ export function imageCredits(count: number): number {
 /** Balance shown while there are no real credits yet (nothing is taken). */
 export const TEST_BALANCE = 200;
 
-export function creditCost(count: number, images: boolean): number {
-  return count * CREDITS.word + (images ? imageCredits(count) : 0);
+export function wordCredits(count: number): number {
+  return count * CREDITS.word;
 }
 
 export type AiJob = {
   listId: string;
-  phase: 'words' | 'icons' | 'done' | 'error';
-  /** Cards added, and icons received so far. */
+  kind: 'words' | 'images';
+  phase: 'working' | 'done' | 'error';
+  /** Cards added (words), or cards to illustrate (images). */
   cards: number;
+  /** Icons received so far. */
   icons: number;
   /** Icons that couldn't be drawn (the card keeps its emoji). */
   failed: number;
-  images: boolean;
   error?: string;
 };
+
+/** A generation is under way for this list (only one at a time). */
+export function aiBusy(job: AiJob | null, listId: string): boolean {
+  return job?.listId === listId && job.phase === 'working';
+}
 
 export const useAiJob = create<{ job: AiJob | null }>()(() => ({ job: null }));
 
@@ -60,36 +69,43 @@ export function aiError(e: unknown): string {
   return 'Pas de connexion : réessayez dans un instant.';
 }
 
-export async function generateCards(listId: string, theme: string, count: number, images: boolean): Promise<void> {
+export async function generateWords(listId: string, theme: string, count: number): Promise<void> {
   const store = useTierStore.getState();
   const list = store.lists[listId];
   if (!list) return;
-  useAiJob.setState({ job: { listId, phase: 'words', cards: 0, icons: 0, failed: 0, images } });
-
-  let added: { id: string; label: string; concept: string }[];
+  useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0 } });
   try {
     const existing = Object.values(list.cards).map((c) => c.label);
     const { cards } = await aiWords(store.deviceId, theme, count, existing);
     const start = Object.keys(list.cards).length;
-    added = cards.map((c, i) => ({
-      id: store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: CARD_COLORS[(start + i) % 7] }),
-      label: c.label,
-      concept: c.concept,
-    }));
-    patch({ cards: added.length, phase: images ? 'icons' : 'done' });
+    cards.forEach((c, i) =>
+      store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: CARD_COLORS[(start + i) % 7], aiConcept: c.concept || undefined }),
+    );
+    // The theme asked is the best title the list can have.
+    store.renameList(listId, theme);
+    patch({ cards: cards.length, phase: 'done' });
   } catch (e) {
     patch({ phase: 'error', error: aiError(e) });
-    return;
   }
-  if (!images) return;
+}
 
-  // Cards with an icon already drawn in the app don't need one; the others are drawn
-  // together on one sheet, so they all share the same style.
-  const queue = added.filter((c) => !cardIconFor(c.label));
-  patch({ icons: added.length - queue.length });
+/** Cards still without a picture: no photo, no AI icon, no icon drawn in the app. */
+export function cardsNeedingImage(list: TierList): Card[] {
+  return Object.values(list.cards).filter((c) => !c.imageName && !c.iconUrl && !c.iconSvg && !cardIconFor(splitEmoji(c.label).text));
+}
+
+export async function generateImages(listId: string): Promise<void> {
+  const store = useTierStore.getState();
+  const list = store.lists[listId];
+  if (!list) return;
+  // All drawn together on one sheet, so they all share the same style.
+  const queue = cardsNeedingImage(list);
+  useAiJob.setState({ job: { listId, kind: 'images', phase: 'working', cards: queue.length, icons: 0, failed: 0 } });
   if (queue.length) {
     try {
-      const { icons } = await aiIcons(store.deviceId, queue.map(({ label, concept }) => ({ label, concept })));
+      // A card without a concept (added by hand, or renamed): the server draws its label.
+      const asked = queue.map((c) => ({ label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' }));
+      const { icons } = await aiIcons(store.deviceId, asked);
       queue.forEach((card, i) => {
         const url = icons[i]?.url;
         if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });

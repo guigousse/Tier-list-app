@@ -16,6 +16,8 @@ export type Card = {
   iconSvg?: string;
   /** Icon drawn by the AI in a sheet (public PNG URL; a copy is kept on the device). */
   iconUrl?: string;
+  /** What the AI would draw for this card, given with its words; forgotten when the label changes. */
+  aiConcept?: string;
 };
 
 /** Where a card lives: a tier id, or the unranked tray at the bottom. */
