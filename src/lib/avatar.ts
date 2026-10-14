@@ -37,6 +37,7 @@ export const SKINS: Skin[] = [
   { id: 'emoji', label: 'Emoji', fill: '#FFCC4D', shade: '#EDA634' },
   { id: 'alien', label: 'Alien', fill: '#9FE07F', shade: '#77BF5B', unlock: { streak: 14 } },
   { id: 'smurf', label: 'Bleu', fill: '#8DBBFF', shade: '#6A98E6', unlock: { completed: 25 } },
+  { id: 'robot', label: 'Robot', fill: '#C3CCDA', shade: '#98A3B5', unlock: { completed: 50 } },
 ];
 
 export const HAIR_STYLES: Item[] = [
@@ -63,6 +64,8 @@ export const HAIR_COLORS: HairColor[] = [
   { id: 'pink', label: 'Rose', fill: '#FF86B6', unlock: { streak: 7 } },
   { id: 'blue', label: 'Bleu', fill: '#4C8DFF', unlock: { completed: 10 } },
   { id: 'purple', label: 'Violet', fill: '#9466FF', unlock: { streak: 30 } },
+  { id: 'green', label: 'Vert', fill: '#3FBF7F', unlock: { completed: 3 } },
+  { id: 'flame', label: 'Flamme', fill: '#FF6A2B', unlock: { streak: 3 } },
 ];
 
 export const EYE_SHAPES: Item[] = [
@@ -82,6 +85,7 @@ export const EYE_COLORS: EyeColor[] = [
   { id: 'grey', label: 'Gris', fill: '#7D8B97' },
   { id: 'violet', label: 'Violet', fill: '#8B5CF6', unlock: { streak: 14 } },
   { id: 'gold', label: 'Or', fill: '#E0A21B', unlock: { completed: 25 } },
+  { id: 'ruby', label: 'Rubis', fill: '#E0303A', unlock: { streak: 21 } },
 ];
 
 export const BROWS: Item[] = [
@@ -120,6 +124,10 @@ export const HATS: Item[] = [
   { id: 'crown', label: 'Couronne', unlock: { streak: 7 } },
   { id: 'headphones', label: 'Casque', unlock: { completed: 10 } },
   { id: 'wizard', label: 'Sorcier', unlock: { streak: 30 } },
+  { id: 'party', label: 'Chapeau de fête', unlock: { completed: 1 } },
+  { id: 'tophat', label: 'Haut-de-forme', unlock: { completed: 40 } },
+  { id: 'halo', label: 'Auréole', unlock: { completed: 75 } },
+  { id: 'horns', label: 'Cornes', unlock: { streak: 50 } },
 ];
 
 export const GLASSES: Item[] = [
@@ -128,6 +136,7 @@ export const GLASSES: Item[] = [
   { id: 'square', label: 'Carrées' },
   { id: 'sun', label: 'Soleil', unlock: { completed: 5 } },
   { id: 'heart', label: 'Cœur', unlock: { streak: 14 } },
+  { id: 'star', label: 'Étoiles', unlock: { completed: 15 } },
 ];
 
 export const BACKGROUNDS: Background[] = [
@@ -140,6 +149,9 @@ export const BACKGROUNDS: Background[] = [
   { id: 'rainbow', label: 'Arc-en-ciel', stops: ['#FF7F7F', '#FFD36E', '#7FE3A0', '#7FB8FF', '#B98BFF'], shirt: '#FFFFFF', unlock: { streak: 7 } },
   { id: 'gold', label: 'Or', stops: ['#FFE9A6', '#E2A72E'], shirt: '#2D3047', unlock: { completed: 25 } },
   { id: 'galaxy', label: 'Galaxie', stops: ['#4B2C8F', '#0F0B26'], shirt: '#FF86B6', stars: true, unlock: { streak: 30 } },
+  { id: 'ember', label: 'Braise', stops: ['#FFB36B', '#E2462B'], shirt: '#2D3047', unlock: { streak: 1 } },
+  { id: 'inferno', label: 'Volcan', stops: ['#FFD36E', '#FF5A1F', '#4A0D0D'], shirt: '#FFD36E', stars: true, unlock: { streak: 100 } },
+  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, unlock: { completed: 100 } },
 ];
 
 export type AvatarConfig = {
@@ -250,10 +262,10 @@ export function isUnlocked(item: { unlock?: Unlock }, progress: Progress): boole
   return progress.completed >= item.unlock.completed;
 }
 
-/** "Série de 7 jours" / "10 listes complétées". */
+/** "Flamme de 7 jours" / "10 listes publiques". */
 export function unlockLabel(unlock: Unlock): string {
-  if ('streak' in unlock) return `Série de ${unlock.streak} jours`;
-  return `${unlock.completed} listes complétées`;
+  if ('streak' in unlock) return `Flamme de ${unlock.streak} jour${unlock.streak > 1 ? 's' : ''}`;
+  return `${unlock.completed} liste${unlock.completed > 1 ? 's' : ''} publique${unlock.completed > 1 ? 's' : ''}`;
 }
 
 // ——— Drawing (viewBox 0 0 120 120) ———
@@ -424,9 +436,40 @@ function hat(id: string): string {
 <path fill="#FFD166" d="M66 25 l1.5 3 3.3 .4 -2.4 2.3 .6 3.3 -3 -1.6 -3 1.6 .6 -3.3 -2.4 -2.3 3.3 -.4 z"/>
 <circle fill="#FFD166" cx="56" cy="34" r="1.5"/><circle fill="#FFD166" cx="71" cy="39" r="1.2"/>
 <ellipse fill="#4529B8" stroke="#3B24A8" stroke-width="1" cx="60" cy="47" rx="31" ry="5"/></g>`;
+    case 'party':
+      return `<path fill="#FF5F8F" stroke="#C92F60" stroke-width="1.2" stroke-linejoin="round" d="M45 41 L60 10 L75 41 C66 44 54 44 45 41 Z"/>
+<path fill="#FFFFFF" opacity=".2" d="M58 15 L50 37 C52 38 54 38.5 55 38.6 Z"/>
+<circle fill="#FFD166" cx="56" cy="30" r="2.2"/><circle fill="#7FE3A0" cx="63.5" cy="23" r="1.8"/><circle fill="#7FB8FF" cx="64" cy="35.5" r="2.1"/><circle fill="#FFD166" cx="52" cy="38.5" r="1.5"/><circle fill="#7FB8FF" cx="59.5" cy="19" r="1.3"/>
+<circle fill="#FFD166" stroke="#E0A21B" stroke-width="1" cx="60" cy="10" r="4.2"/><circle fill="#FFFFFF" opacity=".6" cx="58.6" cy="8.6" r="1.3"/>`;
+    case 'tophat':
+      return `<rect fill="#2D3047" stroke="#14161F" stroke-width="1.2" x="45" y="12" width="30" height="30" rx="2.5"/>
+<rect fill="#E84D5B" x="45.6" y="32" width="28.8" height="5.5"/>
+<path fill="#FFFFFF" opacity=".16" d="M48.5 15 L52.5 15 L52.5 31 L48.5 31 Z"/>
+<ellipse fill="#2D3047" stroke="#14161F" stroke-width="1.2" cx="60" cy="42.5" rx="25" ry="5"/>
+<path fill="none" stroke="#FFFFFF" stroke-width="1" opacity=".18" d="M38 41.5 C48 39.5 72 39.5 82 41.5"/>`;
+    case 'halo':
+      return `<ellipse fill="none" stroke="#FFE08A" stroke-width="8" opacity=".35" cx="60" cy="18" rx="22" ry="6"/>
+<ellipse fill="none" stroke="#FFC93C" stroke-width="3.4" cx="60" cy="18" rx="20" ry="5"/>
+<ellipse fill="none" stroke="#FFF4C2" stroke-width="1" cx="60" cy="17.2" rx="18" ry="4"/>`;
+    case 'horns': {
+      const horn = 'M43 42 C38 35 35.5 26 37.5 15 C42 23 47.5 29 52.5 34.5 C49 36 45.5 38.5 43 42 Z';
+      const shine = 'M40 20 C40.5 26 42.5 31 45.5 35 C42.5 32 40 27 40 20 Z';
+      return `<g fill="#E8394D" stroke="#9E1F2E" stroke-width="1.2" stroke-linejoin="round"><path d="${horn}"/><path d="${mirror(horn)}"/></g>
+<g fill="#FFFFFF" opacity=".35"><path d="${shine}"/><path d="${mirror(shine)}"/></g>`;
+    }
     default:
       return '';
   }
+}
+
+/** A five-pointed star centred on (cx, cy). */
+function starPath(cx: number, cy: number, outer: number, inner: number): string {
+  const points = Array.from({ length: 10 }, (_, k) => {
+    const r = k % 2 ? inner : outer;
+    const a = -Math.PI / 2 + (Math.PI * k) / 5;
+    return `${(cx + Math.cos(a) * r).toFixed(2)} ${(cy + Math.sin(a) * r).toFixed(2)}`;
+  });
+  return `M${points.join(' L')} Z`;
 }
 
 function glasses(id: string): string {
@@ -452,6 +495,11 @@ function glasses(id: string): string {
 <path d="M71 69 C65 65 61 61 61 57 C61 54 63 52 66 52 C68 52 70 53 71 55 C72 53 74 52 76 52 C79 52 81 54 81 57 C81 61 77 65 71 69 Z"/></g>
 <path stroke="#C92F60" stroke-width="2" fill="none" d="M58 58 C59 57 61 57 62 58"/>
 <path fill="#FFFFFF" opacity=".5" d="M42.5 55.5 C43.5 54 45.5 54 46.5 55 C45 55.5 44 56.5 43.5 57.5 Z M64.5 55.5 C65.5 54 67.5 54 68.5 55 C67 55.5 66 56.5 65.5 57.5 Z"/>`;
+    case 'star':
+      return `<g fill="#FFC93C" stroke="#C98A10" stroke-width="1.3" stroke-linejoin="round"><path d="${starPath(49, 61.5, 10, 4.6)}"/><path d="${starPath(71, 61.5, 10, 4.6)}"/></g>
+<g fill="#3A3F5C" opacity=".85"><circle cx="49" cy="62.3" r="3.6"/><circle cx="71" cy="62.3" r="3.6"/></g>
+<path stroke="#C98A10" stroke-width="2" fill="none" stroke-linecap="round" d="M57.5 60 C59 58.6 61 58.6 62.5 60"/>
+<g fill="#FFFFFF" opacity=".55"><circle cx="47.6" cy="61" r="1"/><circle cx="69.6" cy="61" r="1"/></g>`;
     default:
       return '';
   }

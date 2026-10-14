@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Avatar } from '../components/Avatar';
 import { DailyCard } from '../components/DailyCard';
 import { PopularList } from '../components/PopularList';
 import { ListRow } from '../components/ListRow';
@@ -16,7 +17,7 @@ import { useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
 
-function Tile({ icon, title, badge = 0, onPress }: { icon: IconName; title: string; badge?: number; onPress: () => void }) {
+function Tile({ icon, title, badge = 0, onPress, picture }: { icon: IconName; title: string; badge?: number; onPress: () => void; picture?: React.ReactNode }) {
   const { isCompact } = useResponsive();
   return (
     <Clickable
@@ -25,7 +26,7 @@ function Tile({ icon, title, badge = 0, onPress }: { icon: IconName; title: stri
       onPress={onPress}
       style={({ pressed }) => [styles.tile, isCompact && styles.tileCompact, pressed && { opacity: 0.8 }]}
     >
-      <Ionicons name={icon} size={26} color={colors.primary} />
+      {picture ?? <Ionicons name={icon} size={26} color={colors.primary} />}
       <Text numberOfLines={2} style={[styles.tileTitle, isCompact && styles.tileTitleCompact]}>
         {title}
       </Text>
@@ -49,8 +50,9 @@ export default function Home() {
 
   const popular = usePopularTemplates();
   const unread = useUnreadMail();
+  const profile = useTierStore((s) => s.profile);
 
-  // Lists received from friends: the badge on Social is up to date when coming back here.
+  // Lists received from friends: the badge on Profil is up to date when coming back here.
   useFocusEffect(
     useCallback(() => {
       useMail.getState().refresh();
@@ -99,7 +101,13 @@ export default function Home() {
       <View style={styles.tiles}>
         <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
         <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
-        <Tile icon="people-outline" title="Social" badge={unread} onPress={() => router.push('/social')} />
+        <Tile
+          icon="person-circle-outline"
+          title="Profil"
+          badge={unread}
+          onPress={() => router.push('/social')}
+          picture={profile ? <Avatar avatar={profile.avatar} seed={profile.id} size={28} /> : undefined}
+        />
       </View>
 
       <View style={{ gap: spacing.md }}>

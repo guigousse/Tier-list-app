@@ -107,3 +107,12 @@ export function mailAgreement(a: number[], b: number[], tiers: number): number {
   const sum = pairs.reduce((s, [x, y]) => s + 1 - Math.abs(x - y) / span, 0);
   return Math.round((sum / pairs.length) * 100);
 }
+
+/**
+ * Lists whose final comparison the player saw: received ones they ranked then opened,
+ * sent ones whose friend's ranking they opened. Shown in the archive.
+ */
+export function isArchived(m: Mail, received: boolean, viewed: string[]): boolean {
+  if (m.status !== 'ranked') return false;
+  return received ? viewed.includes(m.id) : m.seen;
+}

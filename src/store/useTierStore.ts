@@ -51,6 +51,8 @@ type State = {
   favoriteTemplates: string[];
   /** This player's social profile, once created. */
   profile: Profile | null;
+  /** Received tier lists whose final comparison the player opened (they go to the archive). */
+  viewedMail: string[];
 
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
@@ -90,6 +92,7 @@ type State = {
   markVoteSent: (listId: string) => void;
   toggleTemplateFavorite: (key: string) => boolean;
   setProfile: (profile: Profile | null) => void;
+  markMailViewed: (mailId: string) => void;
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -138,6 +141,7 @@ type Persisted = {
   deviceId?: string;
   favoriteTemplates?: string[];
   profile?: Profile | null;
+  viewedMail?: string[];
 };
 
 /** Upgrades data saved by an older version of the app (see `version` below). */
@@ -175,6 +179,7 @@ export const useTierStore = create<State>()(
         deviceId: newId(),
         favoriteTemplates: [],
         profile: null,
+        viewedMail: [],
 
         createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
           const now = Date.now();
@@ -476,6 +481,12 @@ export const useTierStore = create<State>()(
 
         setProfile: (profile) => set({ profile }),
 
+        markMailViewed: (mailId) =>
+          set((state) =>
+            // Mail older than 90 days is gone from the server: the last 300 ids are plenty.
+            state.viewedMail.includes(mailId) ? state : { viewedMail: [...state.viewedMail, mailId].slice(-300) },
+          ),
+
         clearAll: () => {
           Object.values(get().lists).forEach((l) =>
             Object.values(l.cards).forEach((c) => deleteCardImage(c.imageName)),
@@ -501,6 +512,7 @@ export const useTierStore = create<State>()(
         deviceId: state.deviceId,
         favoriteTemplates: state.favoriteTemplates,
         profile: state.profile,
+        viewedMail: state.viewedMail,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
@@ -510,6 +522,7 @@ export const useTierStore = create<State>()(
           deviceId: p.deviceId ?? current.deviceId,
           favoriteTemplates: p.favoriteTemplates ?? current.favoriteTemplates,
           profile: p.profile ?? current.profile,
+          viewedMail: p.viewedMail ?? current.viewedMail,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
       },

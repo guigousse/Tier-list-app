@@ -45,6 +45,11 @@ export default function MailComparison() {
     if (sent?.status === 'ranked' && !sent.seen) useMail.getState().markSeen(sent.id);
   }, [sent]);
 
+  // Both rankings of a received list seen: it can go to the archive.
+  useEffect(() => {
+    if (received?.status === 'ranked' && received.recipientRanks) useTierStore.getState().markMailViewed(received.id);
+  }, [received]);
+
   if (!mail || !profile) {
     return (
       <View style={styles.center}>

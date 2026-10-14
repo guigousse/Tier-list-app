@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,12 +8,15 @@ import { Avatar } from '../components/Avatar';
 import { MailBox } from '../components/MailBox';
 import { Clickable } from '../components/Clickable';
 import { ProfileForm } from '../components/ProfileForm';
+import { ProfileRewards } from '../components/profile/ProfileRewards';
+import { ProfileStats } from '../components/profile/ProfileStats';
 import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
+import { completedCount, dailyStreak } from '../lib/streak';
 import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 
@@ -32,7 +35,8 @@ function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?
           <Text style={styles.rowTag}> #{player.tag}</Text>
         </Text>
         <Text style={styles.rowMeta}>
-          {player.completed} liste{player.completed > 1 ? 's' : ''} complétée{player.completed > 1 ? 's' : ''}
+          {player.completed} liste{player.completed > 1 ? 's' : ''} complétée
+          {player.completed > 1 ? 's' : ''}
         </Text>
       </View>
       {right ?? (onPress ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null)}
@@ -40,7 +44,16 @@ function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?
   );
 }
 
-/** Friends: the player's profile, adding friends, requests, and the friends list. */
+type Tab = 'friends' | 'challenges' | 'rewards' | 'stats';
+
+function initialTab(param: string | undefined): Tab {
+  if (param === 'lists' || param === 'challenges') return 'challenges';
+  if (param === 'friends' || param === 'rewards' || param === 'stats') return param;
+  // Lists waiting to be ranked: open on them.
+  return useMail.getState().inbox.some(isToRank) ? 'challenges' : 'friends';
+}
+
+/** The player's profile: friends, challenges (tier lists sent between friends), rewards and statistics. */
 export default function Social() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
@@ -52,11 +65,13 @@ export default function Social() {
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [editing, setEditing] = useState(false);
   const params = useLocalSearchParams<{ tab?: string }>();
-  // Lists waiting to be ranked: open on them.
-  const [tab, setTab] = useState<'friends' | 'lists'>(() =>
-    params.tab === 'lists' || useMail.getState().inbox.some(isToRank) ? 'lists' : 'friends',
-  );
+  const [tab, setTab] = useState<Tab>(() => initialTab(params.tab));
   const unread = useUnreadMail();
+  const lists = useTierStore((s) => s.lists);
+  const numbers = useMemo(() => {
+    const all = Object.values(lists);
+    return { completed: completedCount(all), streak: dailyStreak(all) };
+  }, [lists]);
 
   const load = useCallback(async () => {
     const secret = useTierStore.getState().profile?.secret;
@@ -81,7 +96,17 @@ export default function Social() {
 
   if (!profile) {
     return (
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[column, { padding: gutter, gap: spacing.lg, paddingBottom: insets.bottom + spacing.xl }]}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          column,
+          {
+            padding: gutter,
+            gap: spacing.lg,
+            paddingBottom: insets.bottom + spacing.xl,
+          },
+        ]}
+      >
         <Text style={styles.intro}>Créez votre profil de joueur pour ajouter des amis et comparer vos classements.</Text>
         <ProfileForm onSaved={load} />
       </ScrollView>
@@ -93,7 +118,10 @@ export default function Social() {
   const add = async () => {
     const parsed = parseFriendCode(code);
     if (!parsed) {
-      setMessage({ text: 'Saisissez le pseudo et le numéro, par exemple Guigou#1234.', ok: false });
+      setMessage({
+        text: 'Saisissez le pseudo et le numéro, par exemple Guigou#1234.',
+        ok: false,
+      });
       return;
     }
     try {
@@ -126,13 +154,20 @@ export default function Social() {
   const cancel = (p: PublicProfile) =>
     Alert.alert('Annuler la demande ?', `${friendCode(p)} ne verra plus votre demande.`, [
       { text: 'Non', style: 'cancel' },
-      { text: 'Annuler la demande', style: 'destructive', onPress: () => removeFriend(profile.secret, p.id).then(load, () => {}) },
+      {
+        text: 'Annuler la demande',
+        style: 'destructive',
+        onPress: () => removeFriend(profile.secret, p.id).then(load, () => {}),
+      },
     ]);
 
   const unblock = (p: PublicProfile) =>
     Alert.alert('Débloquer ce joueur ?', `${friendCode(p)} pourra de nouveau vous envoyer une demande d’ami.`, [
       { text: 'Annuler', style: 'cancel' },
-      { text: 'Débloquer', onPress: () => unblockPlayer(profile.secret, p.id).then(load, (e) => Alert.alert('Oups', socialError(e))) },
+      {
+        text: 'Débloquer',
+        onPress: () => unblockPlayer(profile.secret, p.id).then(load, (e) => Alert.alert('Oups', socialError(e))),
+      },
     ]);
 
   return (
@@ -148,7 +183,14 @@ export default function Social() {
           tintColor={colors.textMuted}
         />
       }
-      contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}
+      contentContainerStyle={[
+        column,
+        {
+          padding: gutter,
+          gap: spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl,
+        },
+      ]}
     >
       <View style={styles.me}>
         <Avatar avatar={profile.avatar} seed={profile.id} size={64} />
@@ -157,9 +199,24 @@ export default function Social() {
             {profile.pseudo}
             <Text style={styles.rowTag}> #{profile.tag}</Text>
           </Text>
-          <Text style={styles.rowMeta}>
-            {data ? `${data.me.completed} liste${data.me.completed > 1 ? 's' : ''} complétée${data.me.completed > 1 ? 's' : ''}` : 'Votre code ami : ' + myCode}
-          </Text>
+          <View style={styles.chips}>
+            <View style={[styles.chip, numbers.streak > 0 && styles.chipFlame]}>
+              <Text style={styles.chipText}>🔥 {numbers.streak}</Text>
+            </View>
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>
+                ✅ {numbers.completed} liste{numbers.completed > 1 ? 's' : ''}
+              </Text>
+            </View>
+            {data ? (
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>
+                  🤝 {data.friends.length} ami
+                  {data.friends.length > 1 ? 's' : ''}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         <IconButton icon="create-outline" label="Modifier le profil" onPress={() => setEditing(true)} />
       </View>
@@ -173,17 +230,18 @@ export default function Social() {
           variant="secondary"
           icon="paper-plane-outline"
           label="Inviter"
-          onPress={() =>
-            shareUrl('Tiercraft', `Ajoute-moi en ami sur Tiercraft : ${myCode}`, `https://${SHARE_HOST}`)
-          }
+          onPress={() => shareUrl('Tiercraft', `Ajoute-moi en ami sur Tiercraft : ${myCode}`, `https://${SHARE_HOST}`)}
         />
       </View>
 
       <View style={styles.tabs} accessibilityRole="tablist">
         {(
           [
-            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0 },
-            { key: 'lists', label: 'Listes', badge: unread },
+            // Widths in proportion to the labels, so "Récompenses" fits on a phone.
+            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0, grow: 1 },
+            { key: 'challenges', label: 'Défis', badge: unread, grow: 1.1 },
+            { key: 'rewards', label: 'Récompenses', badge: 0, grow: 1.6 },
+            { key: 'stats', label: 'Stats', badge: 0, grow: 0.9 },
           ] as const
         ).map((t) => (
           <Clickable
@@ -192,9 +250,11 @@ export default function Social() {
             accessibilityState={{ selected: tab === t.key }}
             accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
             onPress={() => setTab(t.key)}
-            style={[styles.tab, tab === t.key && styles.tabSelected]}
+            style={[styles.tab, { flex: t.grow }, tab === t.key && styles.tabSelected]}
           >
-            <Text style={[styles.tabText, tab === t.key && { color: colors.text }]}>{t.label}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.tabText, tab === t.key && { color: colors.text }]}>
+              {t.label}
+            </Text>
             {t.badge ? (
               <View style={styles.tabBadge}>
                 <Text style={styles.tabBadgeText}>{t.badge > 9 ? '9+' : t.badge}</Text>
@@ -204,8 +264,12 @@ export default function Social() {
         ))}
       </View>
 
-      {tab === 'lists' ? (
+      {tab === 'challenges' ? (
         <MailBox />
+      ) : tab === 'rewards' ? (
+        <ProfileRewards />
+      ) : tab === 'stats' ? (
+        <ProfileStats />
       ) : (
         <>
           <View style={{ gap: spacing.sm }}>
@@ -261,7 +325,16 @@ export default function Social() {
                   <Text style={styles.intro}>Ajoutez un ami avec son code, ou envoyez-lui le vôtre : {myCode}</Text>
                 ) : (
                   data.friends.map((p) => (
-                    <PlayerRow key={p.id} player={p} onPress={() => router.push({ pathname: '/friend/[id]', params: { id: p.id } })} />
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/friend/[id]',
+                          params: { id: p.id },
+                        })
+                      }
+                    />
                   ))
                 )}
               </View>
@@ -270,7 +343,11 @@ export default function Social() {
                 <View style={{ gap: spacing.sm }}>
                   <SectionTitle>Demandes envoyées</SectionTitle>
                   {data.outgoing.map((p) => (
-                    <PlayerRow key={p.id} player={p} right={<IconButton icon="close" label="Annuler la demande" color={colors.textMuted} onPress={() => cancel(p)} />} />
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      right={<IconButton icon="close" label="Annuler la demande" color={colors.textMuted} onPress={() => cancel(p)} />}
+                    />
                   ))}
                 </View>
               ) : null}
@@ -279,7 +356,11 @@ export default function Social() {
                 <View style={{ gap: spacing.sm }}>
                   <SectionTitle>Joueurs bloqués</SectionTitle>
                   {data.blocked.map((p) => (
-                    <PlayerRow key={p.id} player={p} right={<Button variant="secondary" label="Débloquer" onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />} />
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      right={<Button variant="secondary" label="Débloquer" onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />}
+                    />
                   ))}
                 </View>
               ) : null}
@@ -319,7 +400,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   message: { fontSize: 14, lineHeight: 19 },
-  warning: { color: colors.danger, fontSize: 14, lineHeight: 19, marginTop: -spacing.md },
+  warning: {
+    color: colors.danger,
+    fontSize: 14,
+    lineHeight: 19,
+    marginTop: -spacing.md,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -335,10 +421,48 @@ const styles = StyleSheet.create({
   rowTag: { color: colors.textMuted, fontWeight: '500' },
   rowMeta: { color: colors.textMuted, fontSize: 13 },
   respond: { flexDirection: 'row', gap: spacing.xs },
-  tabs: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.lg, padding: 4, gap: 4, marginTop: -spacing.sm },
-  tab: { flex: 1, flexDirection: 'row', gap: 6, minHeight: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 4,
+    gap: 4,
+    marginTop: -spacing.sm,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  chip: {
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipFlame: {
+    borderColor: 'rgba(255, 122, 31, 0.6)',
+    backgroundColor: 'rgba(255, 122, 31, 0.14)',
+  },
+  chipText: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 4,
+    minHeight: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tabSelected: { backgroundColor: colors.surfaceAlt },
-  tabText: { color: colors.textMuted, fontSize: 15, fontWeight: '700' },
-  tabBadge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: '#FF3B4E', alignItems: 'center', justifyContent: 'center' },
+  tabText: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
+  tabBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    backgroundColor: '#FF3B4E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tabBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 });
