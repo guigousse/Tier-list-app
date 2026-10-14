@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { creditCost, CREDITS, generateCards, useAiJob } from '../../lib/aiGenerate';
+import { creditCost, CREDITS, generateCards, TEST_BALANCE, useAiJob } from '../../lib/aiGenerate';
 import { Clickable } from '../Clickable';
 import { CardIcon } from '../CardIcon';
 import { Button, Field, Sheet } from '../ui';
@@ -11,12 +11,11 @@ import { Button, Field, Sheet } from '../ui';
 const COUNTS = [5, 8, 10, 12, 15, 20];
 
 /**
- * AI generation, step by step: 1. theme (the list's title to start with), 2. how
- * many cards, 3. images or not. The credit cost follows the choices; then the
- * progress of the generation.
+ * AI generation on one page: 1. theme (the list's title to start with), 2. how many
+ * cards, 3. images or not, then the total cost, and "Générer" once everything is
+ * filled in and the player can afford it. Then the progress of the generation.
  */
 export function AiSheet({ visible, onClose, listId, title }: { visible: boolean; onClose: () => void; listId: string; title: string }) {
-  const [step, setStep] = useState(0);
   const [theme, setTheme] = useState(title);
   const [count, setCount] = useState(10);
   const [images, setImages] = useState(true);
@@ -30,7 +29,6 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
     setWasVisible(visible);
     if (visible) {
       setShowJob(Boolean(running));
-      setStep(0);
       setTheme(title);
     }
   }
@@ -41,10 +39,14 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
     generateCards(listId, theme.trim(), count, images);
   };
 
+  // No credits yet: a test balance, nothing is taken.
+  const balance = TEST_BALANCE;
+  const affordable = cost <= balance;
+  const ready = theme.trim().length > 0 && affordable;
   const credits = (
-    <View style={styles.credits} accessibilityLabel={`${cost} crédits`}>
+    <View style={styles.credits} accessibilityLabel={`Solde : ${balance} crédits`}>
       <Ionicons name="sparkles" size={13} color="#FFD84A" />
-      <Text style={styles.creditsText}>{cost}</Text>
+      <Text style={styles.creditsText}>{balance}</Text>
     </View>
   );
 
@@ -52,7 +54,12 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
     const iconsTotal = job.cards;
     const progress = iconsTotal ? (job.icons + job.failed) / iconsTotal : 0;
     return (
-      <Sheet visible={visible} onClose={onClose} title="Génération" footer={<Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />}>
+      <Sheet
+        visible={visible}
+        onClose={onClose}
+        title="Génération"
+        footer={<Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />}
+      >
         {job.phase === 'words' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
@@ -83,7 +90,9 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
                 <View style={styles.bar}>
                   <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
                 </View>
-                {job.phase === 'icons' ? <Text style={styles.hint}>Les images arrivent une par une : vous pouvez fermer, elles continuent d’arriver.</Text> : null}
+                {job.phase === 'icons' ? (
+                  <Text style={styles.hint}>Les images arrivent une par une : vous pouvez fermer, elles continuent d’arriver.</Text>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -92,7 +101,6 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
     );
   }
 
-  const last = step === 2;
   return (
     <Sheet
       visible={visible}
@@ -101,92 +109,102 @@ export function AiSheet({ visible, onClose, listId, title }: { visible: boolean;
       headerRight={credits}
       footer={
         <View style={styles.footer}>
-          {step > 0 ? <Button variant="secondary" label="Retour" icon="arrow-back" onPress={() => setStep(step - 1)} style={{ flex: 1 }} /> : null}
-          <Button
-            label={last ? 'Générer' : 'Suivant'}
-            icon={last ? 'sparkles' : 'arrow-forward'}
-            disabled={step === 0 && !theme.trim()}
-            onPress={() => (last ? start() : setStep(step + 1))}
-            style={{ flex: 2 }}
-          />
+          {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {cost - balance} crédits.</Text> : null}
+          <Button label={`Générer · ${cost} crédits`} icon="sparkles" disabled={!ready} onPress={start} />
         </View>
       }
     >
-      <View style={styles.steps}>
-        {['Thème', 'Cartes', 'Images'].map((label, i) => (
-          <View key={label} style={[styles.stepDot, i <= step && styles.stepDotOn]}>
-            <Text style={[styles.stepText, i <= step && { color: colors.text }]}>
-              {i + 1}. {label}
-            </Text>
-          </View>
-        ))}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          <Text style={styles.sectionNumber}>1 </Text>Thème de la liste
+        </Text>
+        <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={80} returnKeyType="done" />
       </View>
 
-      {step === 0 ? (
-        <View style={{ gap: spacing.sm }}>
-          <Text style={styles.question}>Sur quel thème ?</Text>
-          <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={80} autoFocus returnKeyType="next" onSubmitEditing={() => theme.trim() && setStep(1)} />
-        </View>
-      ) : step === 1 ? (
-        <View style={{ gap: spacing.md }}>
-          <Text style={styles.question}>Combien de cartes ?</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>2 </Text>Nombre de cartes
+          </Text>
           <View style={styles.stepper}>
-            <Clickable accessibilityRole="button" accessibilityLabel="Une carte de moins" onPress={() => setCount(Math.max(3, count - 1))} style={styles.stepperButton}>
-              <Ionicons name="remove" size={24} color={colors.text} />
+            <Clickable
+              accessibilityRole="button"
+              accessibilityLabel="Une carte de moins"
+              onPress={() => setCount(Math.max(3, count - 1))}
+              style={styles.stepperButton}
+            >
+              <Ionicons name="remove" size={20} color={colors.text} />
             </Clickable>
             <Text style={styles.count}>{count}</Text>
-            <Clickable accessibilityRole="button" accessibilityLabel="Une carte de plus" onPress={() => setCount(Math.min(20, count + 1))} style={styles.stepperButton}>
-              <Ionicons name="add" size={24} color={colors.text} />
+            <Clickable
+              accessibilityRole="button"
+              accessibilityLabel="Une carte de plus"
+              onPress={() => setCount(Math.min(20, count + 1))}
+              style={styles.stepperButton}
+            >
+              <Ionicons name="add" size={20} color={colors.text} />
             </Clickable>
           </View>
-          <View style={styles.chips}>
-            {COUNTS.map((n) => (
-              <Clickable key={n} accessibilityRole="button" onPress={() => setCount(n)} style={[styles.chip, n === count && styles.chipOn]}>
-                <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n}</Text>
-              </Clickable>
-            ))}
-          </View>
         </View>
-      ) : (
-        <View style={{ gap: spacing.md }}>
-          <Text style={styles.question}>Avec des images ?</Text>
-          <Clickable
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: images }}
-            onPress={() => setImages(!images)}
-            style={[styles.check, images && styles.checkOn]}
-          >
-            <Ionicons name={images ? 'checkbox' : 'square-outline'} size={26} color={images ? colors.primary : colors.textMuted} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.checkTitle}>Générer aussi les images des cartes</Text>
-              <Text style={styles.hint}>Des icônes dessinées dans le style de Tiercraft. Elles arrivent après les mots, une par une.</Text>
-            </View>
-            <View style={styles.previews}>
-              <CardIcon id="croissant" size={30} />
-              <CardIcon id="gamepad" size={30} />
-            </View>
-          </Clickable>
+        <View style={styles.chips}>
+          {COUNTS.map((n) => (
+            <Clickable key={n} accessibilityRole="button" onPress={() => setCount(n)} style={[styles.chip, n === count && styles.chipOn]}>
+              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n}</Text>
+            </Clickable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          <Text style={styles.sectionNumber}>3 </Text>Génération d’images
+        </Text>
+        <Clickable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: images }}
+          onPress={() => setImages(!images)}
+          style={[styles.check, images && styles.checkOn]}
+        >
+          <Ionicons name={images ? 'checkbox' : 'square-outline'} size={26} color={images ? colors.primary : colors.textMuted} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.checkTitle}>Générer aussi les images des cartes</Text>
+            <Text style={styles.hint}>Des icônes dans le style de Tiercraft, qui arrivent après les mots, une par une.</Text>
+          </View>
+          <View style={styles.previews}>
+            <CardIcon id="croissant" size={30} />
+            <CardIcon id="gamepad" size={30} />
+          </View>
+        </Clickable>
+      </View>
+
+      <View style={styles.total}>
+        <Text style={styles.sectionTitle}>
+          <Text style={styles.sectionNumber}>4 </Text>Total
+        </Text>
+        <View style={styles.recap}>
+          <Text style={styles.recapText}>
+            {count} mot{count > 1 ? 's' : ''} × {CREDITS.word} crédit
+          </Text>
+          <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
+        </View>
+        {images ? (
           <View style={styles.recap}>
             <Text style={styles.recapText}>
-              {count} mot{count > 1 ? 's' : ''} × {CREDITS.word} crédit
+              {count} image{count > 1 ? 's' : ''} × {CREDITS.image} crédits
             </Text>
-            <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
+            <Text style={styles.recapValue}>{count * CREDITS.image}</Text>
           </View>
-          {images ? (
-            <View style={styles.recap}>
-              <Text style={styles.recapText}>
-                {count} image{count > 1 ? 's' : ''} × {CREDITS.image} crédits
-              </Text>
-              <Text style={styles.recapValue}>{count * CREDITS.image}</Text>
-            </View>
-          ) : null}
-          <View style={[styles.recap, styles.recapTotal]}>
-            <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Total</Text>
-            <Text style={[styles.recapValue, { fontSize: 18 }]}>{cost} crédits</Text>
-          </View>
-          <Text style={styles.hint}>Pendant la phase de test, rien n’est décompté.</Text>
+        ) : null}
+        <View style={[styles.recap, styles.recapTotal]}>
+          <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
+          <Text style={[styles.recapValue, { fontSize: 18 }, !affordable && { color: colors.danger }]}>{cost} crédits</Text>
         </View>
-      )}
+        <View style={styles.recap}>
+          <Text style={styles.recapText}>Votre solde</Text>
+          <Text style={styles.recapValue}>{balance} crédits</Text>
+        </View>
+        <Text style={styles.hint}>Phase de test : solde fictif, rien n’est décompté.</Text>
+      </View>
     </Sheet>
   );
 }
@@ -204,19 +222,42 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 216, 74, 0.5)',
   },
   creditsText: { color: '#FFD84A', fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  section: { gap: spacing.sm, paddingBottom: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  sectionNumber: { color: colors.primary, fontWeight: '900' },
+  total: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  short: { color: colors.danger, fontSize: 13, textAlign: 'center' },
   steps: { flexDirection: 'row', gap: 6 },
-  stepDot: { flex: 1, paddingVertical: 6, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt, alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  stepDot: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
   stepDotOn: { borderBottomColor: colors.primary },
   stepText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   question: { color: colors.text, fontSize: 18, fontWeight: '800' },
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xl },
-  stepperButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-  count: { color: colors.text, fontSize: 44, fontWeight: '900', minWidth: 70, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  stepperButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  count: { color: colors.text, fontSize: 26, fontWeight: '900', minWidth: 40, textAlign: 'center', fontVariant: ['tabular-nums'] },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'center' },
   chip: { minWidth: 46, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.surfaceAlt, alignItems: 'center' },
   chipOn: { backgroundColor: colors.primary },
   chipText: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  check: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  check: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   checkOn: { borderColor: colors.primary, backgroundColor: 'rgba(124, 92, 255, 0.1)' },
   checkTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
   previews: { gap: 2 },
@@ -225,7 +266,7 @@ const styles = StyleSheet.create({
   recapText: { color: colors.textMuted, fontSize: 14 },
   recapValue: { color: colors.text, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
   hint: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
-  footer: { flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.sm },
+  footer: { gap: spacing.xs, paddingTop: spacing.sm },
   status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusText: { color: colors.text, fontSize: 16, fontWeight: '700' },
   error: { color: colors.danger, fontSize: 15, lineHeight: 21 },

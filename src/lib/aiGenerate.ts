@@ -14,6 +14,9 @@ import { cardIconFor } from './cardIcons';
 /** Credits a generation would cost (to calibrate with the real AI costs). */
 export const CREDITS = { word: 1, image: 5 };
 
+/** Balance shown while there are no real credits yet (nothing is taken). */
+export const TEST_BALANCE = 200;
+
 export function creditCost(count: number, images: boolean): number {
   return count * CREDITS.word + (images ? count * CREDITS.image : 0);
 }
