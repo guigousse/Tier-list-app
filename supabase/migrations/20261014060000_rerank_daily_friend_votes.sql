@@ -23,7 +23,7 @@ begin
   end if;
   insert into public.daily_votes (day, device_id, ranks)
   values (submit_daily_vote.day, submit_daily_vote.device_id, ranks)
-  on conflict (day, device_id) do update set ranks = excluded.ranks;
+  on conflict on constraint daily_votes_pkey do update set ranks = excluded.ranks;
   return true;
 end;
 $$;
