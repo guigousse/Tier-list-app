@@ -7,6 +7,7 @@ import { popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
 import { blockPlayer, createProfile, deleteProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
 import { newId } from './id';
 import { saveIdentity } from './identity';
+import { syncPushToken } from './push';
 
 const AVATAR_COLORS = ['#7C5CFF', '#FF7F7F', '#FFBF7F', '#4CC9C0', '#5AA9FF', '#B45CFF', '#2EAD6B', '#FF7FB0'];
 
@@ -58,6 +59,8 @@ export async function saveProfile(pseudo: string, avatar: string): Promise<void>
   const saved = await createProfile(deviceId, secret, pseudo, avatar);
   setProfile({ id: saved.id, secret, pseudo: saved.pseudo, tag: saved.tag, avatar: saved.avatar });
   await saveIdentity();
+  // Notifications about friends, now that there is a profile.
+  syncPushToken();
 }
 
 /** Agreement between two rankings of the same cards, from 0 to 100 (same tier everywhere: 100). */

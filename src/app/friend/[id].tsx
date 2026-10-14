@@ -62,7 +62,8 @@ function Comparison({ template, mine, theirs, name }: { template: Template; mine
 
 /** A friend's profile: their completed tier lists, compared with the player's rankings. */
 export default function Friend() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `key`: a list to show compared right away (from a notification).
+  const { id, key } = useLocalSearchParams<{ id: string; key?: string }>();
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const profile = useTierStore((s) => s.profile);
@@ -72,7 +73,7 @@ export default function Friend() {
   const pastDailies = useCatalog((s) => s.pastDailies);
   const [data, setData] = useState<{ profile: PublicProfile; votes: FriendVote[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(key ?? null);
 
   useEffect(() => {
     if (!profile || !id) return;

@@ -56,7 +56,18 @@
       ],
       "expo-font",
       "expo-asset",
-      ["expo-secure-store", { "faceIDPermission": false }]
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ]
     ],
     "extra": {
       "eas": {

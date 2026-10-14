@@ -237,3 +237,8 @@ export function reportMail(secret: string, mail: string): Promise<void> {
 export function markMailSeen(secret: string, mail: string): Promise<void> {
   return rpc<void>('mark_mail_seen', { secret, mail });
 }
+
+/** Registers this install's Expo push token on the profile (null: no more notifications). */
+export function setPushToken(secret: string, token: string | null): Promise<void> {
+  return rpc<void>('set_push_token', { secret, token });
+}

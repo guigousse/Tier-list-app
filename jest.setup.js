@@ -13,3 +13,9 @@ jest.mock('expo-file-system', () => ({
   },
   Paths: { document: '/' },
 }));
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: () => {},
+  getPermissionsAsync: async () => ({ granted: false, canAskAgain: false }),
+  requestPermissionsAsync: async () => ({ granted: false }),
+  getExpoPushTokenAsync: async () => ({ data: '' }),
+}));

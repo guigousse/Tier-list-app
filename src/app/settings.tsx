@@ -10,6 +10,8 @@ import { Button, Chip } from '../components/ui';
 import { BROC_APP_STORE_URL } from '../constants/legal';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
+import * as Notifications from 'expo-notifications';
+import { syncPushToken } from '../lib/push';
 import { setDailyReminder } from '../lib/reminders';
 import { deleteMyProfile, friendCode, socialError } from '../lib/social';
 import { SHARE_HOST } from '../lib/share';
@@ -137,6 +139,25 @@ export default function Settings() {
           </View>
         ) : null}
       </View>
+
+      {profile ? (
+        <View style={styles.group}>
+          <Text style={styles.groupTitle}>Amis</Text>
+          <Row label="Notifications des amis" hint="Listes reçues, réponses à vos listes, et quand un ami classe une liste que vous avez classée">
+            <Switch
+              value={settings.friendNotifications}
+              onValueChange={async (on) => {
+                updateSettings({ friendNotifications: on });
+                if (on && !(await Notifications.getPermissionsAsync()).granted && !(await Notifications.requestPermissionsAsync()).granted) {
+                  Alert.alert('Notifications désactivées', 'Autorisez les notifications de Tiercraft dans les réglages de votre téléphone.');
+                }
+                syncPushToken();
+              }}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </Row>
+        </View>
+      ) : null}
 
       <View style={styles.group}>
         <Text style={styles.groupTitle}>À propos</Text>

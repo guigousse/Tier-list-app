@@ -21,6 +21,8 @@ export type Settings = {
   /** Daily local notification announcing the daily tier list, at `reminderHour`:00. */
   dailyReminder: boolean;
   reminderHour: number;
+  /** Push notifications about friends: lists received, lists ranked, friends' rankings. */
+  friendNotifications: boolean;
   /** Whether the reminder was already offered (after the first daily validation). */
   reminderAsked: boolean;
   /** Whether the welcome screens were seen. */
@@ -95,6 +97,7 @@ const DEFAULT_SETTINGS: Settings = {
   sounds: true,
   dailyReminder: false,
   reminderHour: 18,
+  friendNotifications: true,
   reminderAsked: false,
   onboarded: false,
   cardSize: 'medium',

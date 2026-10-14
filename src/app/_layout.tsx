@@ -1,13 +1,15 @@
 import { DarkTheme, SplashScreen, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Alert, AppState } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { Alert, AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
+import { onPushReceived, openPush, syncPushToken } from '../lib/push';
 import { useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated } from '../store/useTierStore';
@@ -42,7 +44,32 @@ export default function RootLayout() {
       );
     }
     // Profile and device id kept in the Keychain (back after a reinstall).
-    restoreIdentity().then(() => syncDailyVotes());
+    restoreIdentity().then(() => {
+      syncDailyVotes();
+      // Notifications about friends: this install's push token on the profile.
+      syncPushToken();
+    });
+  }, [hydrated]);
+
+  // Notifications about friends: a tap opens the comparison; one arriving while the
+  // app is open refreshes the inbox.
+  useEffect(() => {
+    if (!hydrated || Platform.OS === 'web') return;
+    const launch = Notifications.getLastNotificationResponse();
+    if (launch) {
+      Notifications.clearLastNotificationResponse();
+      // The app was opened by the tap: let the navigator mount first.
+      setTimeout(() => openPush(launch.notification.request.content.data), 300);
+    }
+    const tapped = Notifications.addNotificationResponseReceivedListener((r) => {
+      Notifications.clearLastNotificationResponse();
+      openPush(r.notification.request.content.data);
+    });
+    const received = Notifications.addNotificationReceivedListener((n) => onPushReceived(n.request.content.data));
+    return () => {
+      tapped.remove();
+      received.remove();
+    };
   }, [hydrated]);
 
   // Fetch the latest online templates and daily tier list (cached for offline use)
