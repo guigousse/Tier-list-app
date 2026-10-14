@@ -244,33 +244,48 @@ export default function Social() {
         />
       </View>
 
-      <View style={styles.tabs} accessibilityRole="tablist">
-        {(
-          [
-            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0, grow: 1 },
-            { key: 'challenges', label: 'Défis', badge: unread, grow: 1 },
-            // Wider: the longest label, often with a badge.
-            { key: 'rewards', label: 'Récompenses', badge: pendingBadges, grow: 1.5 },
-          ] as const
-        ).map((t) => (
-          <Clickable
-            key={t.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === t.key }}
-            accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
-            onPress={() => changeTab(t.key)}
-            style={[styles.tab, { flex: t.grow }, tab === t.key && styles.tabSelected]}
-          >
-            <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.tabText, tab === t.key && { color: colors.text }]}>
-              {t.label}
-            </Text>
-            {t.badge ? (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{t.badge > 9 ? '9+' : t.badge}</Text>
-              </View>
-            ) : null}
-          </Clickable>
-        ))}
+      <View style={styles.tabRow}>
+        <View style={styles.tabs} accessibilityRole="tablist">
+          {(
+            [
+              { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0 },
+              { key: 'challenges', label: 'Défis', badge: unread },
+            ] as const
+          ).map((t) => (
+            <Clickable
+              key={t.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === t.key }}
+              accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
+              onPress={() => changeTab(t.key)}
+              style={[styles.tab, tab === t.key && styles.tabSelected]}
+            >
+              <Text numberOfLines={1} style={[styles.tabText, tab === t.key && { color: colors.text }]}>
+                {t.label}
+              </Text>
+              {t.badge ? (
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{t.badge > 9 ? '9+' : t.badge}</Text>
+                </View>
+              ) : null}
+            </Clickable>
+          ))}
+        </View>
+        {/* Rewards: apart, a gift. */}
+        <Clickable
+          accessibilityRole="button"
+          accessibilityState={{ selected: tab === 'rewards' }}
+          accessibilityLabel={pendingBadges ? `Récompenses, ${pendingBadges} badge${pendingBadges > 1 ? 's' : ''} à choisir` : 'Récompenses'}
+          onPress={() => changeTab('rewards')}
+          style={[styles.gift, tab === 'rewards' && styles.giftSelected]}
+        >
+          <Ionicons name={tab === 'rewards' ? 'gift' : 'gift-outline'} size={24} color={tab === 'rewards' ? colors.primaryText : colors.primary} />
+          {pendingBadges ? (
+            <View style={[styles.tabBadge, styles.giftBadge]}>
+              <Text style={styles.tabBadgeText}>{pendingBadges > 9 ? '9+' : pendingBadges}</Text>
+            </View>
+          ) : null}
+        </Clickable>
       </View>
 
       {tab === 'challenges' ? (
@@ -428,13 +443,23 @@ const styles = StyleSheet.create({
   rowTag: { color: colors.textMuted, fontWeight: '500' },
   rowMeta: { color: colors.textMuted, fontSize: 13 },
   respond: { flexDirection: 'row', gap: spacing.xs },
+  tabRow: { flexDirection: 'row', gap: spacing.sm, marginTop: -spacing.sm },
+  gift: {
+    width: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  giftSelected: { backgroundColor: colors.primary },
+  giftBadge: { position: 'absolute', top: -5, right: -5, borderWidth: 2, borderColor: colors.background },
   tabs: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: 4,
     gap: 4,
-    marginTop: -spacing.sm,
   },
   tab: {
     flex: 1,
