@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
+import { MailBox } from '../components/MailBox';
 import { Clickable } from '../components/Clickable';
 import { ProfileForm } from '../components/ProfileForm';
 import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
@@ -13,6 +14,7 @@ import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, un
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
+import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 
 function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?: () => void; right?: React.ReactNode }) {
@@ -49,6 +51,12 @@ export default function Social() {
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [editing, setEditing] = useState(false);
+  const params = useLocalSearchParams<{ tab?: string }>();
+  // Lists waiting to be ranked: open on them.
+  const [tab, setTab] = useState<'friends' | 'lists'>(() =>
+    params.tab === 'lists' || useMail.getState().inbox.some(isToRank) ? 'lists' : 'friends',
+  );
+  const unread = useUnreadMail();
 
   const load = useCallback(async () => {
     const secret = useTierStore.getState().profile?.secret;
@@ -67,6 +75,7 @@ export default function Social() {
   useFocusEffect(
     useCallback(() => {
       load();
+      useMail.getState().refresh();
     }, [load]),
   );
 
@@ -129,7 +138,16 @@ export default function Social() {
   return (
     <ScrollView
       keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={loading && Boolean(data)} onRefresh={load} tintColor={colors.textMuted} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={loading && Boolean(data)}
+          onRefresh={() => {
+            load();
+            useMail.getState().refresh();
+          }}
+          tintColor={colors.textMuted}
+        />
+      }
       contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}
     >
       <View style={styles.me}>
@@ -161,81 +179,112 @@ export default function Social() {
         />
       </View>
 
-      <View style={{ gap: spacing.sm }}>
-        <SectionTitle>Ajouter un ami</SectionTitle>
-        <View style={styles.addRow}>
-          <TextInput
-            value={code}
-            onChangeText={(t) => {
-              setCode(t);
-              setMessage(null);
-            }}
-            placeholder="Pseudo#1234"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="send"
-            onSubmitEditing={add}
-            style={styles.input}
-          />
-          <Button icon="person-add-outline" label="Ajouter" onPress={add} disabled={!code.trim()} style={{ paddingHorizontal: spacing.md }} />
-        </View>
-        {message ? <Text style={[styles.message, { color: message.ok ? '#2EAD6B' : colors.danger }]}>{message.text}</Text> : null}
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {(
+          [
+            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0 },
+            { key: 'lists', label: 'Listes', badge: unread },
+          ] as const
+        ).map((t) => (
+          <Clickable
+            key={t.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === t.key }}
+            accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
+            onPress={() => setTab(t.key)}
+            style={[styles.tab, tab === t.key && styles.tabSelected]}
+          >
+            <Text style={[styles.tabText, tab === t.key && { color: colors.text }]}>{t.label}</Text>
+            {t.badge ? (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>{t.badge > 9 ? '9+' : t.badge}</Text>
+              </View>
+            ) : null}
+          </Clickable>
+        ))}
       </View>
 
-      {offline && !data ? (
-        <Text style={styles.intro}>Pas de connexion : vos amis s’afficheront dès que vous serez en ligne.</Text>
-      ) : !data ? (
-        <ActivityIndicator color={colors.primary} />
+      {tab === 'lists' ? (
+        <MailBox />
       ) : (
         <>
-          {data.incoming.length > 0 ? (
-            <View style={{ gap: spacing.sm }}>
-              <SectionTitle>Demandes reçues</SectionTitle>
-              {data.incoming.map((p) => (
-                <PlayerRow
-                  key={p.id}
-                  player={p}
-                  right={
-                    <View style={styles.respond}>
-                      <IconButton icon="flag-outline" label="Signaler ou bloquer" color={colors.textMuted} onPress={() => confirmReport(p, load)} />
-                      <IconButton icon="close" label="Refuser" color={colors.textMuted} onPress={() => respond(p.id, false)} />
-                      <IconButton icon="checkmark" label="Accepter" color="#2EAD6B" onPress={() => respond(p.id, true)} />
-                    </View>
-                  }
-                />
-              ))}
-            </View>
-          ) : null}
-
           <View style={{ gap: spacing.sm }}>
-            <SectionTitle>Amis{data.friends.length ? ` (${data.friends.length})` : ''}</SectionTitle>
-            {data.friends.length === 0 ? (
-              <Text style={styles.intro}>Ajoutez un ami avec son code, ou envoyez-lui le vôtre : {myCode}</Text>
-            ) : (
-              data.friends.map((p) => (
-                <PlayerRow key={p.id} player={p} onPress={() => router.push({ pathname: '/friend/[id]', params: { id: p.id } })} />
-              ))
-            )}
+            <SectionTitle>Ajouter un ami</SectionTitle>
+            <View style={styles.addRow}>
+              <TextInput
+                value={code}
+                onChangeText={(t) => {
+                  setCode(t);
+                  setMessage(null);
+                }}
+                placeholder="Pseudo#1234"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="send"
+                onSubmitEditing={add}
+                style={styles.input}
+              />
+              <Button icon="person-add-outline" label="Ajouter" onPress={add} disabled={!code.trim()} style={{ paddingHorizontal: spacing.md }} />
+            </View>
+            {message ? <Text style={[styles.message, { color: message.ok ? '#2EAD6B' : colors.danger }]}>{message.text}</Text> : null}
           </View>
 
-          {data.outgoing.length > 0 ? (
-            <View style={{ gap: spacing.sm }}>
-              <SectionTitle>Demandes envoyées</SectionTitle>
-              {data.outgoing.map((p) => (
-                <PlayerRow key={p.id} player={p} right={<IconButton icon="close" label="Annuler la demande" color={colors.textMuted} onPress={() => cancel(p)} />} />
-              ))}
-            </View>
-          ) : null}
+          {offline && !data ? (
+            <Text style={styles.intro}>Pas de connexion : vos amis s’afficheront dès que vous serez en ligne.</Text>
+          ) : !data ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <>
+              {data.incoming.length > 0 ? (
+                <View style={{ gap: spacing.sm }}>
+                  <SectionTitle>Demandes reçues</SectionTitle>
+                  {data.incoming.map((p) => (
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      right={
+                        <View style={styles.respond}>
+                          <IconButton icon="flag-outline" label="Signaler ou bloquer" color={colors.textMuted} onPress={() => confirmReport(p, load)} />
+                          <IconButton icon="close" label="Refuser" color={colors.textMuted} onPress={() => respond(p.id, false)} />
+                          <IconButton icon="checkmark" label="Accepter" color="#2EAD6B" onPress={() => respond(p.id, true)} />
+                        </View>
+                      }
+                    />
+                  ))}
+                </View>
+              ) : null}
 
-          {data.blocked?.length ? (
-            <View style={{ gap: spacing.sm }}>
-              <SectionTitle>Joueurs bloqués</SectionTitle>
-              {data.blocked.map((p) => (
-                <PlayerRow key={p.id} player={p} right={<Button variant="secondary" label="Débloquer" onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />} />
-              ))}
-            </View>
-          ) : null}
+              <View style={{ gap: spacing.sm }}>
+                <SectionTitle>Amis{data.friends.length ? ` (${data.friends.length})` : ''}</SectionTitle>
+                {data.friends.length === 0 ? (
+                  <Text style={styles.intro}>Ajoutez un ami avec son code, ou envoyez-lui le vôtre : {myCode}</Text>
+                ) : (
+                  data.friends.map((p) => (
+                    <PlayerRow key={p.id} player={p} onPress={() => router.push({ pathname: '/friend/[id]', params: { id: p.id } })} />
+                  ))
+                )}
+              </View>
+
+              {data.outgoing.length > 0 ? (
+                <View style={{ gap: spacing.sm }}>
+                  <SectionTitle>Demandes envoyées</SectionTitle>
+                  {data.outgoing.map((p) => (
+                    <PlayerRow key={p.id} player={p} right={<IconButton icon="close" label="Annuler la demande" color={colors.textMuted} onPress={() => cancel(p)} />} />
+                  ))}
+                </View>
+              ) : null}
+
+              {data.blocked?.length ? (
+                <View style={{ gap: spacing.sm }}>
+                  <SectionTitle>Joueurs bloqués</SectionTitle>
+                  {data.blocked.map((p) => (
+                    <PlayerRow key={p.id} player={p} right={<Button variant="secondary" label="Débloquer" onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />} />
+                  ))}
+                </View>
+              ) : null}
+            </>
+          )}
         </>
       )}
 
@@ -286,4 +335,10 @@ const styles = StyleSheet.create({
   rowTag: { color: colors.textMuted, fontWeight: '500' },
   rowMeta: { color: colors.textMuted, fontSize: 13 },
   respond: { flexDirection: 'row', gap: spacing.xs },
+  tabs: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.lg, padding: 4, gap: 4, marginTop: -spacing.sm },
+  tab: { flex: 1, flexDirection: 'row', gap: 6, minHeight: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  tabSelected: { backgroundColor: colors.surfaceAlt },
+  tabText: { color: colors.textMuted, fontSize: 15, fontWeight: '700' },
+  tabBadge: { minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: '#FF3B4E', alignItems: 'center', justifyContent: 'center' },
+  tabBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 });

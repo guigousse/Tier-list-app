@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useId, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
@@ -7,11 +7,10 @@ import { avatarColor } from '../lib/social';
 
 /** An avatar drawn from its settings (used by the avatar editor for live previews), or a close-up of it. */
 export const AvatarDrawing = memo(function AvatarDrawing({ config, size, zoom }: { config: AvatarConfig; size: number; zoom?: AvatarZoom }) {
-  const xml = useMemo(() => {
-    // Ids unique to the look: on the web every avatar's gradient lives in the same page.
-    const uid = Object.values(config).join('') + (zoom ? `${zoom.x}${zoom.y}${zoom.size}` : '');
-    return avatarSvg(config, uid, zoom);
-  }, [config, zoom]);
+  // Gradient ids unique to this drawing: on the web, every avatar of every screen
+  // (hidden ones included) lives in the same page.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const xml = useMemo(() => avatarSvg(config, uid, zoom), [config, uid, zoom]);
   return <SvgXml xml={xml} width={size} height={size} />;
 });
 

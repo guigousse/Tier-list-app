@@ -39,6 +39,8 @@ export function socialError(e: unknown): string {
   if (message.includes('cannot add yourself')) return 'C’est votre propre code !';
   if (message.includes('player blocked')) return 'Vous avez bloqué ce joueur : débloquez-le d’abord, en bas de cette page.';
   if (message.includes('unknown profile')) return 'Votre profil n’existe plus en ligne.';
+  if (message.includes('content refused')) return 'Cette liste contient un mot ou des coordonnées refusés : modifiez-la pour la partager.';
+  if (message.includes('mail not found')) return 'Cette liste n’est plus disponible.';
   if (message.includes('too many requests')) return 'Trop d’essais : réessayez dans un moment.';
   return 'Pas de connexion : réessayez dans un instant.';
 }

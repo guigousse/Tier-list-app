@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,14 +12,16 @@ import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
 import { usePopularTemplates } from '../store/useCatalog';
+import { useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
 
-function Tile({ icon, title, onPress }: { icon: IconName; title: string; onPress: () => void }) {
+function Tile({ icon, title, badge = 0, onPress }: { icon: IconName; title: string; badge?: number; onPress: () => void }) {
   const { isCompact } = useResponsive();
   return (
     <Clickable
       accessibilityRole="button"
+      accessibilityLabel={badge > 0 ? `${title}, ${badge} nouveauté${badge > 1 ? 's' : ''}` : title}
       onPress={onPress}
       style={({ pressed }) => [styles.tile, isCompact && styles.tileCompact, pressed && { opacity: 0.8 }]}
     >
@@ -27,6 +29,11 @@ function Tile({ icon, title, onPress }: { icon: IconName; title: string; onPress
       <Text numberOfLines={2} style={[styles.tileTitle, isCompact && styles.tileTitleCompact]}>
         {title}
       </Text>
+      {badge > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      ) : null}
     </Clickable>
   );
 }
@@ -41,6 +48,14 @@ export default function Home() {
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
   const popular = usePopularTemplates();
+  const unread = useUnreadMail();
+
+  // Lists received from friends: the badge on Social is up to date when coming back here.
+  useFocusEffect(
+    useCallback(() => {
+      useMail.getState().refresh();
+    }, []),
+  );
 
   const open = (id: string) => router.push({ pathname: '/editor/[id]', params: { id } });
 
@@ -84,7 +99,7 @@ export default function Home() {
       <View style={styles.tiles}>
         <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
         <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
-        <Tile icon="people-outline" title="Social" onPress={() => router.push('/social')} />
+        <Tile icon="people-outline" title="Social" badge={unread} onPress={() => router.push('/social')} />
       </View>
 
       <View style={{ gap: spacing.md }}>
@@ -130,6 +145,21 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   tileCompact: { padding: spacing.sm },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    backgroundColor: '#FF3B4E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
+  badgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800', fontVariant: ['tabular-nums'] },
   tileTitleCompact: { fontSize: 14 },
   tileTitle: { color: colors.text, fontSize: 15, fontWeight: '700', textAlign: 'center' },
   historyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingVertical: spacing.xs },

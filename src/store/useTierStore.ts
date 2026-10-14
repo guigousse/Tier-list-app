@@ -53,6 +53,10 @@ type State = {
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
   importList: (shared: SharedList) => string;
+  /** The tier list a friend sent, to rank (created the first time). */
+  receiveMail: (mail: { id: string; from: string; list: SharedList }) => string;
+  /** Marks a received list as ranked and sent back. */
+  markMailAnswered: (listId: string) => void;
   deleteList: (id: string) => void;
   duplicateList: (id: string) => string | undefined;
   renameList: (id: string, title: string) => void;
@@ -230,6 +234,18 @@ export const useTierStore = create<State>()(
           set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
           return list.id;
         },
+
+        receiveMail: ({ id, from, list: shared }) => {
+          const existing = Object.values(get().lists).find((l) => l.mail?.id === id);
+          if (existing) return existing.id;
+          // Cards to rank: the sender's ranking isn't shown.
+          const listId = get().importList({ ...shared, code: `mail:${id}`, cards: shared.cards.map((c) => ({ ...c, tier: -1 })) });
+          // importList creates the cards in the order sent.
+          patchList(listId, (l) => ({ mail: { id, from, cardIds: [...l.pool] } }));
+          return listId;
+        },
+
+        markMailAnswered: (listId) => patchList(listId, (l) => (l.mail ? { mail: { ...l.mail, answeredAt: Date.now() } } : {})),
 
         deleteList: (id) => {
           const list = get().lists[id];

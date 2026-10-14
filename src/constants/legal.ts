@@ -32,6 +32,7 @@ export const PRIVACY: LegalSection[] = [
       'Quand vous validez la tier list du jour ou une liste populaire : votre classement et l’identifiant aléatoire de l’app, pour calculer le classement moyen et éviter les votes en double.',
       'Quand vous ajoutez une liste populaire en favori : la liste concernée et l’identifiant aléatoire, pour le compteur de favoris.',
       'Si vous créez un profil de joueur : votre pseudo, son numéro et votre avatar, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes populaires, jamais vos listes personnelles).',
+      'Quand vous envoyez une tier list à des amis : son titre, ses rangs et le nom de ses cartes (jamais les photos), votre classement et celui de vos amis, pour les comparer. Seuls vous et les amis destinataires la voient ; elle est conservée 90 jours.',
       'À chaque échange avec le serveur : votre adresse IP, conservée moins de 24 heures, pour limiter les abus.',
     ],
   },
@@ -61,7 +62,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Durée de conservation',
     paragraphs: [
-      'Les tier lists partagées sont supprimées si personne ne les a ouvertes depuis 6 mois. Les votes sont conservés pour les statistiques. Les adresses IP sont supprimées après 24 heures. Un profil est conservé tant que vous ne demandez pas sa suppression.',
+      'Les tier lists partagées sont supprimées si personne ne les a ouvertes depuis 6 mois. Les tier lists envoyées à des amis ne sont plus affichées après 90 jours. Les votes sont conservés pour les statistiques. Les adresses IP sont supprimées après 24 heures. Un profil est conservé tant que vous ne demandez pas sa suppression.',
     ],
   },
   {
@@ -94,7 +95,7 @@ export const LEGAL_NOTICE: LegalSection[] = [
   {
     title: 'Contenus des joueurs',
     paragraphs: [
-      'Les pseudos et tier lists partagées sont publiés sous la responsabilité de leurs auteurs. Les pseudos sont filtrés et les avatars choisis dans une liste fixe. Un joueur peut être signalé ou bloqué depuis son profil ou sa demande d’ami : il ne peut alors plus vous contacter, et après plusieurs signalements son profil est masqué.',
+      'Les pseudos et tier lists partagées sont publiés sous la responsabilité de leurs auteurs. Les pseudos sont filtrés et les avatars choisis dans une liste fixe. Un joueur peut être signalé ou bloqué depuis son profil, sa demande d’ami ou une liste qu’il vous envoie : il ne peut alors plus vous contacter, et après plusieurs signalements son profil est masqué.',
     ],
   },
   {

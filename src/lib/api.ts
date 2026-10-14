@@ -182,3 +182,46 @@ export type FriendVote = { key: string; ranks: number[]; at: string };
 export function fetchFriendLists(secret: string, friend: string): Promise<{ profile: PublicProfile; votes: FriendVote[] }> {
   return rpc('get_friend_lists', { secret, friend });
 }
+
+// ——— Tier lists sent between friends ———
+
+/** A tier list sent to or by the player, as the server returns it (payload not checked yet). */
+type MailRow = {
+  id: string;
+  payload: unknown;
+  status: 'sent' | 'ranked';
+  sent_at: string;
+  answered_at: string | null;
+  /** Sender's tier per card (-1 unranked); for a received list, only once it's ranked. */
+  sender_ranks: number[] | null;
+  recipient_ranks: number[] | null;
+};
+export type InboxRow = MailRow & { from: PublicProfile };
+export type OutboxRow = MailRow & { to: PublicProfile; seen: boolean };
+
+/** Sends `list` (without photos, its ranking kept apart) to friends; returns how many got it. */
+export function sendList(secret: string, recipients: string[], list: TierList): Promise<number> {
+  return rpc<number>('send_list', { secret, recipients, payload: toPayload(list) });
+}
+
+export function fetchMail(secret: string): Promise<{ inbox: InboxRow[]; outbox: OutboxRow[] }> {
+  return rpc('get_mail', { secret });
+}
+
+/** The player's ranking of a received list: tier index per card, in the list's order. */
+export function answerMail(secret: string, mail: string, ranks: number[]): Promise<void> {
+  return rpc<void>('answer_mail', { secret, mail, ranks });
+}
+
+export function ignoreMail(secret: string, mail: string): Promise<void> {
+  return rpc<void>('ignore_mail', { secret, mail });
+}
+
+/** Reports a received list: its sender is reported and blocked. */
+export function reportMail(secret: string, mail: string): Promise<void> {
+  return rpc<void>('report_mail', { secret, mail });
+}
+
+export function markMailSeen(secret: string, mail: string): Promise<void> {
+  return rpc<void>('mark_mail_seen', { secret, mail });
+}

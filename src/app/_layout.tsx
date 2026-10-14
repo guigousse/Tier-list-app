@@ -9,6 +9,7 @@ import { colors } from '../constants/theme';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
 import { useCatalog } from '../store/useCatalog';
+import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated } from '../store/useTierStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -50,6 +51,7 @@ export default function RootLayout() {
     const sync = () => {
       useCatalog.getState().refresh();
       syncDailyVotes();
+      useMail.getState().refresh();
     };
     sync();
     const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());
@@ -80,6 +82,7 @@ export default function RootLayout() {
             <Stack.Screen name="social" options={{ title: 'Social' }} />
             <Stack.Screen name="legal/[doc]" options={{ title: '' }} />
             <Stack.Screen name="friend/[id]" options={{ title: '' }} />
+            <Stack.Screen name="mail/[id]" options={{ title: '' }} />
             <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
             <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />

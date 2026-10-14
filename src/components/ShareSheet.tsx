@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { createShareCode } from '../lib/api';
 import { codeLink, copyText, offlineLink, shareUrl } from '../lib/share';
+import { socialError } from '../lib/social';
 import type { TierList } from '../store/types';
+import { SendToFriends } from './SendToFriends';
 import { Button, Sheet } from './ui';
 
 /** Codes already created this session, per list version, so reopening the sheet doesn't create new ones. */
@@ -20,8 +22,10 @@ type Props = {
 /** Shares a tier list with a short code (stored online), or an offline link as a fallback. */
 export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
   const key = list ? `${list.id}:${list.updatedAt}` : '';
-  const [state, setState] = useState<{ key: string; code?: string; error?: boolean }>({ key: '' });
+  const [state, setState] = useState<{ key: string; code?: string; error?: string }>({ key: '' });
   const [attempt, setAttempt] = useState(0);
+  // Sending to friends happens in the same sheet.
+  const [toFriends, setToFriends] = useState(false);
 
   useEffect(() => {
     if (!visible || !list || codes.has(key)) return;
@@ -31,7 +35,7 @@ export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
         codes.set(key, code);
         if (!cancelled) setState({ key, code });
       })
-      .catch(() => !cancelled && setState({ key, error: true }));
+      .catch((e) => !cancelled && setState({ key, error: e instanceof Error && e.message.includes('content refused') ? socialError(e) : 'offline' }));
     return () => {
       cancelled = true;
     };
@@ -48,8 +52,35 @@ export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
     setTimeout(fn, 350);
   };
 
+  const close = () => {
+    setToFriends(false);
+    onClose();
+  };
+
+  if (toFriends) {
+    return (
+      <Sheet visible={visible} onClose={close} title="Envoyer à des amis">
+        <SendToFriends
+          list={list}
+          onSent={(count) => {
+            close();
+            // After the sheet is gone: iOS can't show an alert while it animates out.
+            setTimeout(() => Alert.alert(
+              count > 0 ? 'Envoyée !' : 'Pas envoyée',
+              count > 0
+                ? `« ${list.title} » est envoyée à ${count > 1 ? `${count} amis` : 'votre ami'}. Vous verrez leur classement dans Social.`
+                : 'Vous avez déjà envoyé beaucoup de listes à ces amis aujourd’hui : réessayez demain.',
+            ), 400);
+          }}
+        />
+        <Button variant="ghost" icon="chevron-back" label="Autres façons de partager" onPress={() => setToFriends(false)} />
+      </Sheet>
+    );
+  }
+
   return (
-    <Sheet visible={visible} onClose={onClose} title="Partager">
+    <Sheet visible={visible} onClose={close} title="Partager">
+      <Button icon="people" label="Envoyer à des amis" onPress={() => setToFriends(true)} />
       {code ? (
         <>
           <View style={styles.codeBox}>
@@ -64,6 +95,11 @@ export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
             <Button style={styles.flex} icon="paper-plane-outline" label="Envoyer…" onPress={later(() => shareUrl(list.title, intro(code), codeLink(code)))} />
           </View>
         </>
+      ) : error && error !== 'offline' ? (
+        <View style={styles.codeBox}>
+          <Text style={styles.errorTitle}>Partage refusé</Text>
+          <Text style={styles.hint}>{error}</Text>
+        </View>
       ) : error ? (
         <View style={styles.codeBox}>
           <Text style={styles.errorTitle}>Pas de connexion</Text>

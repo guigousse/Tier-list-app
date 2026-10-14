@@ -18,8 +18,11 @@ import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
 import { colors, spacing } from '../../constants/theme';
+import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
+import { socialError } from '../../lib/social';
 import { useCatalog } from '../../store/useCatalog';
+import { useMail } from '../../store/useMail';
 import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
@@ -56,7 +59,7 @@ export default function EditorScreen() {
       cardSize={cardSize(settings.cardSize)}
       showLabels={settings.showCardLabels}
       haptics={settings.haptics}
-      locked={Boolean(list.daily?.validatedAt)}
+      locked={Boolean(list.daily?.validatedAt || list.mail?.answeredAt)}
       onMove={onMove}
     >
       <Editor list={list} />
@@ -87,12 +90,15 @@ function Editor({ list }: { list: TierList }) {
       : (list.tiers.find((t) => list.placement[t.id]?.includes(editingCard.id))?.id ?? POOL)
     : null;
 
-  // Daily and popular tier lists have fixed tiers and cards: only the ranking changes.
+  // Daily, popular and received tier lists have fixed tiers and cards: only the ranking changes.
   const daily = list.daily;
   const popular = list.popular;
-  const fixed = Boolean(daily || popular);
-  // The daily ranking is frozen once validated; a popular one can change and be validated again.
-  const validated = Boolean(daily?.validatedAt);
+  const mail = list.mail;
+  const fixed = Boolean(daily || popular || mail);
+  // The daily ranking is frozen once validated, and a received list's once sent back;
+  // a popular one can change and be validated again.
+  const validated = Boolean(daily?.validatedAt || mail?.answeredAt);
+  const [sending, setSending] = useState(false);
   const popularRanks = popular ? rankingOf(list, popular.cardIds) : null;
   const popularUpToDate = Boolean(popularRanks && popular?.validatedRanks?.join() === popularRanks.join());
 
@@ -144,8 +150,33 @@ function Editor({ list }: { list: TierList }) {
       { text: 'Réinitialiser', style: 'destructive', onPress: () => store.resetPlacement(list.id) },
     ]);
 
+  const showComparison = () => mail && router.push({ pathname: '/mail/[id]', params: { id: mail.id } });
+
+  // A received list: the ranking goes back to the friend, then both are compared.
+  const sendRanking = async () => {
+    const secret = useTierStore.getState().profile?.secret;
+    const ranks = mail ? rankingOf(list, mail.cardIds) : null;
+    if (!mail || !secret || !ranks) return;
+    setSending(true);
+    try {
+      await answerMail(secret, mail.id, ranks);
+      store.markMailAnswered(list.id);
+      await useMail.getState().refresh();
+      showComparison();
+    } catch (e) {
+      Alert.alert('Oups', socialError(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
   const confirmValidate = () =>
-    Alert.alert(
+    mail
+      ? Alert.alert('Envoyer votre classement ?', `${mail.from} le verra, et vous découvrirez le sien. Vous ne pourrez plus le modifier.`, [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Envoyer', onPress: sendRanking },
+        ])
+      : Alert.alert(
       'Valider votre classement ?',
       daily
         ? 'Il sera figé et ajouté à votre historique. Vous découvrirez ensuite le classement moyen des joueurs.'
@@ -185,7 +216,8 @@ function Editor({ list }: { list: TierList }) {
   const menuActions: MenuAction[] = fixed
     ? [
         { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
-        ...(validated || popular?.validatedAt ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
+        ...(mail?.answeredAt ? [{ label: 'Voir la comparaison', icon: 'git-compare-outline', onPress: showComparison } as const] : []),
+        ...(!mail && (validated || popular?.validatedAt) ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
         ...(validated ? [] : [{ label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset } as const]),
         { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ]
@@ -260,7 +292,12 @@ function Editor({ list }: { list: TierList }) {
         </AnimatedScrollView>
       </View>
 
-      {validated ? (
+      {validated && mail ? (
+        <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+          <Text style={styles.dailyText}>Classement envoyé à {mail.from}</Text>
+          <Button label="Voir la comparaison" icon="git-compare-outline" onPress={showComparison} />
+        </View>
+      ) : validated ? (
         <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
           <Text style={styles.dailyText}>
             Classement validé le {new Date(daily!.validatedAt!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
@@ -283,11 +320,12 @@ function Editor({ list }: { list: TierList }) {
             </View>
           ) : fixed ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              {mail ? <Text style={styles.dailyText}>Liste envoyée par {mail.from}</Text> : null}
               <Button
-                label={popular?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
-                icon="checkmark-done"
+                label={mail ? (sending ? 'Envoi…' : `Envoyer mon classement à ${mail.from}`) : popular?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
+                icon={mail ? 'paper-plane' : 'checkmark-done'}
                 onPress={confirmValidate}
-                disabled={list.pool.length > 0}
+                disabled={list.pool.length > 0 || sending}
               />
               {list.pool.length > 0 ? <Text style={styles.dailyText}>Classez toutes les cartes pour valider.</Text> : null}
             </View>

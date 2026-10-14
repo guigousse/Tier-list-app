@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,8 +15,8 @@ type Lookup = { code: string; status: 'loading' | 'found' | 'missing' | 'offline
 
 /**
  * Adds a tier list received from someone else. Opened by a shared link
- * (…/s/CODE, or an offline …/import?d=… link), which adds it right away, or
- * from the app to type a code / paste a link by hand.
+ * (…/s/CODE, or an offline …/import?d=… link), or from the app to type a code /
+ * paste a link by hand. The list is shown first: it's only added once confirmed.
  */
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
@@ -51,14 +51,6 @@ export default function ImportScreen() {
     const id = useTierStore.getState().importList(shared);
     router.replace({ pathname: '/editor/[id]', params: { id } });
   };
-
-  // A link was opened: add the tier list without asking and show it.
-  const autoAdded = useRef(false);
-  useEffect(() => {
-    if (!fromLink || !shared || autoAdded.current) return;
-    autoAdded.current = true;
-    add();
-  });
 
   const ranked = shared ? shared.cards.filter((card) => card.tier >= 0).length : 0;
 
@@ -97,6 +89,9 @@ export default function ImportScreen() {
                 </View>
               ))}
             </View>
+            <Text numberOfLines={4} style={styles.cards}>
+              {shared.cards.map((card) => card.label || 'Carte').join(' · ')}
+            </Text>
             <Text style={styles.hint}>Les photos des cartes ne sont pas transmises, seuls leurs noms et couleurs le sont.</Text>
           </View>
         ) : current?.status === 'loading' ? (
@@ -139,6 +134,7 @@ const styles = StyleSheet.create({
   tiers: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs },
   tier: { minWidth: 36, maxWidth: 120, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, alignItems: 'center' },
   tierLabel: { fontSize: 13, fontWeight: '800' },
+  cards: { color: colors.text, fontSize: 14, lineHeight: 20, marginTop: spacing.xs },
   hint: { color: colors.textMuted, fontSize: 12, marginTop: spacing.xs },
   error: { color: colors.danger, fontSize: 15, textAlign: 'center' },
   footer: { paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },

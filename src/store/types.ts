@@ -45,6 +45,18 @@ export type PopularInfo = {
   voteSent?: boolean;
 };
 
+/** Set on a tier list a friend sent: fixed tiers and cards, ranked once and sent back. */
+export type MailInfo = {
+  /** Id of the mail on the server. */
+  id: string;
+  /** Pseudo of the friend who sent it. */
+  from: string;
+  /** Card ids in the order of the sent cards, to send the ranking back. */
+  cardIds: string[];
+  /** When the player sent their ranking back; it can't change afterwards. */
+  answeredAt?: number;
+};
+
 export type TierList = {
   id: string;
   title: string;
@@ -60,6 +72,7 @@ export type TierList = {
   /** Set on the daily tier list: fixed S→D tiers and cards, ranking frozen once validated. */
   daily?: DailyInfo;
   popular?: PopularInfo;
+  mail?: MailInfo;
   /** Share code this list was imported from, so opening the same link twice doesn't duplicate it. */
   importedFrom?: string;
   createdAt: number;
