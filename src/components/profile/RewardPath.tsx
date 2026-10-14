@@ -17,9 +17,10 @@ const ROW = 112;
 const NODE = 52;
 const TOP = NODE / 2 + 8;
 const PREVIEW = 62;
-const BADGE = 56;
+const BADGE = 70;
 /** Width of a badge with its label under it. */
-const BADGE_LABEL = 96;
+const BADGE_LABEL = 116;
+const VS = 34;
 
 type Point = { x: number; y: number };
 
@@ -159,6 +160,12 @@ export function RewardPath({
     opacity: 0.12 + breath.value * 0.3,
   }));
 
+  // Stickers waiting for a choice wiggle, each its own way; VS beats.
+  const wiggleLeft = useAnimatedStyle(() => ({ transform: [{ rotate: `${(breath.value * 2 - 1) * 7}deg` }] }));
+  const wiggleRight = useAnimatedStyle(() => ({ transform: [{ rotate: `${(1 - breath.value * 2) * 7}deg` }] }));
+  const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.92 + breath.value * 0.14 }], opacity: 0.35 + breath.value * 0.5 }));
+  const vsStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + breath.value * 0.15 }] }));
+
   const nextIndex = rows.findIndex((r) => r.at > value);
   // A badge to choose first, else the next step.
   const pick = rows.findIndex((r) => r.fork && value >= r.at && chosen(r) === -1);
@@ -176,13 +183,13 @@ export function RewardPath({
         `Au palier ${fork.at}, choisissez votre camp : ${fork.options[0].label} ou ${fork.options[1].label}. L’autre badge sera perdu pour toujours !`,
       );
     } else if (choice === -1) {
-      Alert.alert(`${badge.emoji} ${badge.label} ?`, `Le badge ${other.emoji} ${other.label} sera perdu pour toujours. Pas de retour en arrière !`, [
+      Alert.alert(`${badge.label} ?`, `Le badge ${other.label} sera perdu pour toujours. Pas de retour en arrière !`, [
         { text: 'Réfléchir encore', style: 'cancel' },
         { text: `Choisir ${badge.label}`, onPress: () => onChoose?.(fork, badge) },
       ]);
     } else {
       Alert.alert(
-        choice === side ? `${badge.emoji} ${badge.label}` : `${badge.emoji} ${badge.label} : perdu`,
+        choice === side ? badge.label : `${badge.label} : perdu`,
         choice === side
           ? 'Votre camp est choisi ! Affichez ce badge sur votre profil depuis « Mes badges ».'
           : `Vous avez choisi ${other.label}. Pas de regrets ?`,
@@ -223,41 +230,49 @@ export function RewardPath({
             if (fork) {
               const choice = chosen(row);
               const toPick = reached && choice === -1;
-              // Between the two badges, clear of their halos.
-              const gap = row.xs[1] - row.xs[0] - BADGE - 20;
               return (
                 <View key={`fork-${fork.id}`} style={StyleSheet.absoluteFill} pointerEvents="box-none">
-                  <View style={[styles.question, { top: row.y - 30, left: row.xs[0] + BADGE / 2 + 10, width: gap }]}>
-                    <Text style={[styles.questionAt, toPick && { color: t.node }]}>{toPick ? 'Choisissez !' : `Palier ${row.at}`}</Text>
-                    <Text numberOfLines={3} style={styles.questionText}>
-                      {fork.question}
-                    </Text>
-                  </View>
-                  {fork.options.map((badge, side) => (
-                    <Clickable
-                      key={badge.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${badge.label}, ${choice === side ? 'choisi' : choice !== -1 ? 'perdu' : reached ? 'à choisir' : `palier ${row.at}`}`}
-                      onPress={() => tapBadge(fork, badge, side, choice)}
-                      style={[styles.badgeWrap, { top: row.y - BADGE / 2, left: row.xs[side] - BADGE_LABEL / 2 }]}
-                    >
-                      <View style={styles.badgeCircle}>
-                        {toPick ? <Animated.View pointerEvents="none" style={[styles.badgeHalo, { backgroundColor: badge.colors[0] }, pulseStyle]} /> : null}
-                        <BadgeIcon badge={badge} size={BADGE} state={!reached ? 'locked' : choice !== -1 && choice !== side ? 'lost' : undefined} />
-                        {choice === side ? (
-                          <View style={[styles.check, { backgroundColor: t.node }]}>
-                            <Ionicons name="checkmark" size={13} color="#FFFFFF" />
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text
-                        numberOfLines={2}
-                        style={[styles.badgeLabel, choice !== -1 && choice !== side && { opacity: 0.4, textDecorationLine: 'line-through' }]}
+                  {/* Between the two stickers: the question, VS, and the step. */}
+                  <Text numberOfLines={2} style={[styles.question, { top: row.y - 62, left: width / 2 - 60 }]}>
+                    {fork.question}
+                  </Text>
+                  <Animated.View style={[styles.vs, { top: row.y - VS / 2, left: width / 2 - VS / 2 }, toPick && styles.vsLive, toPick && vsStyle]}>
+                    <Text style={styles.vsText}>VS</Text>
+                  </Animated.View>
+                  <Text style={[styles.forkAt, { top: row.y + VS / 2 + 6, left: width / 2 - 60 }, toPick && { color: t.node }]}>
+                    {toPick ? 'À vous de choisir !' : choice !== -1 ? 'Camp choisi' : `Palier ${row.at}`}
+                  </Text>
+
+                  {fork.options.map((badge, side) => {
+                    const mine = choice === side;
+                    const lost = choice !== -1 && !mine;
+                    return (
+                      <Clickable
+                        key={badge.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${badge.label}, ${mine ? 'choisi' : lost ? 'perdu' : reached ? 'à choisir' : `palier ${row.at}`}`}
+                        onPress={() => tapBadge(fork, badge, side, choice)}
+                        style={[styles.badgeWrap, { top: row.y - BADGE / 2, left: row.xs[side] - BADGE_LABEL / 2 }]}
                       >
-                        {badge.label}
-                      </Text>
-                    </Clickable>
-                  ))}
+                        <View style={styles.badgeCircle}>
+                          {toPick ? (
+                            <Animated.View pointerEvents="none" style={[styles.badgeHalo, styles.badgeRing, { borderColor: badge.glow }, ringStyle]} />
+                          ) : mine ? (
+                            <View pointerEvents="none" style={[styles.badgeHalo, { backgroundColor: badge.glow, opacity: 0.16 }]} />
+                          ) : null}
+                          <Animated.View style={toPick ? (side === 0 ? wiggleLeft : wiggleRight) : mine ? { transform: [{ scale: 1.06 }] } : null}>
+                            <BadgeIcon badge={badge} size={BADGE} state={!reached ? 'locked' : lost ? 'lost' : undefined} />
+                          </Animated.View>
+                        </View>
+                        <View style={[styles.badgeLabelPill, mine && { backgroundColor: t.node, borderColor: t.from }, lost && { opacity: 0.45 }]}>
+                          {mine ? <Ionicons name="checkmark" size={12} color="#FFFFFF" /> : null}
+                          <Text numberOfLines={1} style={[styles.badgeLabel, mine && { color: '#FFFFFF' }, lost && { textDecorationLine: 'line-through' }]}>
+                            {badge.label}
+                          </Text>
+                        </View>
+                      </Clickable>
+                    );
+                  })}
                 </View>
               );
             }
@@ -393,25 +408,47 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   previewLocked: { opacity: 0.55 },
-  question: { position: 'absolute', height: 60, alignItems: 'center', justifyContent: 'center' },
-  questionAt: { color: colors.textMuted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  questionText: { color: colors.text, fontSize: 11.5, fontWeight: '700', textAlign: 'center' },
-  badgeWrap: { position: 'absolute', width: BADGE_LABEL, alignItems: 'center', gap: 4 },
-  badgeCircle: { width: BADGE, height: BADGE, alignItems: 'center', justifyContent: 'center' },
-  badgeHalo: { position: 'absolute', width: BADGE + 16, height: BADGE + 16, borderRadius: (BADGE + 16) / 2 },
-  check: {
+  question: { position: 'absolute', width: 120, color: colors.text, fontSize: 12, fontWeight: '800', textAlign: 'center' },
+  forkAt: {
     position: 'absolute',
-    right: -3,
-    bottom: -3,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 120,
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  vs: {
+    position: 'absolute',
+    width: VS,
+    height: VS,
+    borderRadius: VS / 2,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeLabel: { color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  vsLive: { backgroundColor: '#FF5A1F', borderColor: '#FFC24B' },
+  vsText: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', fontStyle: 'italic', letterSpacing: -0.5 },
+  badgeWrap: { position: 'absolute', width: BADGE_LABEL, alignItems: 'center', gap: 2 },
+  badgeCircle: { width: BADGE, height: BADGE, alignItems: 'center', justifyContent: 'center' },
+  badgeHalo: { position: 'absolute', width: BADGE + 14, height: BADGE + 14, borderRadius: (BADGE + 14) / 2 },
+  badgeRing: { borderWidth: 3, borderStyle: 'dashed' },
+  badgeLabelPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    maxWidth: BADGE_LABEL,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  badgeLabel: { flexShrink: 1, color: colors.text, fontSize: 12, fontWeight: '700' },
   lock: {
     position: 'absolute',
     right: -3,

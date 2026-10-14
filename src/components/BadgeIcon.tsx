@@ -1,61 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { memo, useId, useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 
 import { colors } from '../constants/theme';
 import type { Badge } from '../lib/badges';
+import { stickerSvg } from '../lib/stickers';
 import { Avatar } from './Avatar';
 
 /**
- * A badge: its emoji on a dark disc set in a shiny ring of its colours.
- * `state`: `locked` (not reached), `lost` (the other side was chosen).
+ * A badge: its sticker, die-cut with a white border.
+ * `state`: `locked` (not reached yet), `lost` (the other side was chosen).
  */
 export const BadgeIcon = memo(function BadgeIcon({ badge, size, state }: { badge: Badge; size: number; state?: 'locked' | 'lost' }) {
-  const ring = Math.max(2, Math.round(size * 0.09));
-  const dim = state !== undefined;
+  // Gradient ids unique to this sticker: on the web every sticker shares the page.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const xml = useMemo(() => stickerSvg(badge.id, uid), [badge.id, uid]);
+  const chip = Math.max(16, Math.round(size * 0.34));
   return (
-    <View style={{ width: size, height: size, opacity: state === 'lost' ? 0.35 : 1 }}>
-      <LinearGradient
-        colors={dim ? ['#4A505E', '#2C313C'] : badge.colors}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
-        style={[styles.ring, { borderRadius: size / 2, padding: ring }]}
-      >
-        <View style={[styles.disc, { borderRadius: size / 2 }]}>
-          <Text style={{ fontSize: size * 0.5, opacity: dim ? 0.45 : 1 }}>{badge.emoji}</Text>
-          {/* Shine on the top left, like a medal. */}
-          {!dim ? <View pointerEvents="none" style={[styles.shine, { width: size * 0.3, height: size * 0.16, top: size * 0.12, left: size * 0.18 }]} /> : null}
-        </View>
-      </LinearGradient>
-      {state === 'lost' ? (
-        <View style={[styles.cross, { width: size * 0.42, height: size * 0.42, borderRadius: size }]}>
-          <Ionicons name="close" size={size * 0.3} color="#FFFFFF" />
-        </View>
-      ) : state === 'locked' ? (
-        <View style={[styles.cross, { width: size * 0.4, height: size * 0.4, borderRadius: size, backgroundColor: '#2D3047' }]}>
-          <Ionicons name="lock-closed" size={size * 0.2} color="#FFFFFF" />
+    <View style={{ width: size, height: size }}>
+      <View style={{ opacity: state === 'lost' ? 0.3 : state === 'locked' ? 0.45 : 1 }}>
+        <SvgXml xml={xml} width={size} height={size} />
+      </View>
+      {state ? (
+        <View style={[styles.chip, { width: chip, height: chip, borderRadius: chip / 2 }, state === 'lost' ? { backgroundColor: colors.danger } : null]}>
+          <Ionicons name={state === 'lost' ? 'close' : 'lock-closed'} size={chip * (state === 'lost' ? 0.7 : 0.5)} color="#FFFFFF" />
         </View>
       ) : null}
     </View>
   );
 });
 
-/** An avatar with up to 3 badges pinned along its lower edge. */
+/** An avatar with up to 3 badges stuck along its lower edge. */
 export function AvatarWithBadges({ avatar, seed, size, badges }: { avatar: string; seed: string; size: number; badges: Badge[] }) {
-  const pin = Math.round(size * 0.36);
-  // Spread along the bottom arc of the avatar: left, middle (lower), right.
-  const spots = badges.length === 1 ? [0] : badges.length === 2 ? [-0.55, 0.55] : [-0.95, 0, 0.95];
+  const pin = Math.round(size * 0.42);
+  // Along the bottom arc of the avatar, slightly tilted like stickers stuck by hand.
+  const spots = badges.length === 1 ? [0] : badges.length === 2 ? [-0.5, 0.5] : [-0.85, 0, 0.85];
+  const tilts = [-12, 6, 14];
   return (
-    <View style={{ width: size, height: size + (badges.length ? pin * 0.35 : 0) }}>
+    <View style={{ width: size, height: size + (badges.length ? pin * 0.3 : 0) }}>
       <Avatar avatar={avatar} seed={seed} size={size} />
       {badges.slice(0, 3).map((b, i) => {
-        const a = spots[i] * 0.75;
+        const a = spots[i] * 0.8;
         const r = size / 2;
-        const x = r + Math.sin(a) * r - pin / 2;
-        const y = r + Math.cos(a) * r - pin / 2 + pin * 0.1;
         return (
-          <View key={b.id} style={[styles.pin, { left: x, top: y, borderRadius: pin }]} accessibilityLabel={b.label}>
+          <View
+            key={b.id}
+            accessibilityLabel={b.label}
+            style={[styles.pin, { left: r + Math.sin(a) * r - pin / 2, top: r + Math.cos(a) * r - pin / 2, transform: [{ rotate: `${tilts[i]}deg` }] }]}
+          >
             <BadgeIcon badge={b} size={pin} />
           </View>
         );
@@ -65,18 +58,15 @@ export function AvatarWithBadges({ avatar, seed, size, badges }: { avatar: strin
 }
 
 const styles = StyleSheet.create({
-  ring: { flex: 1 },
-  disc: { flex: 1, backgroundColor: '#1B1E26', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  shine: { position: 'absolute', borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', transform: [{ rotate: '-30deg' }] },
-  cross: {
+  chip: {
     position: 'absolute',
-    right: -2,
-    bottom: -2,
-    backgroundColor: colors.danger,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#2D3047',
     borderWidth: 2,
     borderColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pin: { position: 'absolute', borderWidth: 2, borderColor: colors.background, backgroundColor: colors.background },
+  pin: { position: 'absolute' },
 });
