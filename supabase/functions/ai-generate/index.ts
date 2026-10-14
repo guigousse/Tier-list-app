@@ -1,13 +1,13 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
 //   { action: "words", deviceId, theme, count, existing } -> { cards: [{ label, emoji, concept }] }
 //   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }  (SVG, older app versions)
-//   { action: "icons", deviceId, cards: [{ label, concept }] } -> { icons: [{ concept, url }] }  (one Gemini sheet)
+//   { action: "icons", deviceId, cards: [{ label, concept }], theme? } -> { icons: [{ concept, url }] }  (one Gemini sheet)
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
 // by every player. Per-device and global daily quotas (ai_allow) bound the bill.
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 
-import { normalizeConcept, uniqueConcepts } from "./concepts.ts";
+import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 import { drawSheet, SheetError } from "./iconSheet.ts";
 import { fillSheet } from "./sheet.ts";
 
@@ -56,7 +56,8 @@ On te donne un thème et un nombre de cartes. Propose des cartes :
 - sans doublon entre elles ni avec les cartes déjà présentes.
 Pour chaque carte, donne aussi un emoji qui la représente, et un « concept » : un nom anglais simple en kebab-case (ex. "pizza", "hiking-boot", "rubber-duck") désignant l'objet à dessiner comme icône. Pour une idée difficile à dessiner, choisis un objet qui la symbolise (« Balade » -> "hiking-boot", « Grasse matinée » -> "bed"). Pour une marque, une personne ou une œuvre, choisis un objet générique évocateur, jamais un logo ni un visage réel.
 Pour une couleur, une matière ou une notion purement visuelle, le concept montre la chose elle-même, pas un objet qui en a la couleur : une tache de peinture de cette teinte (« Kaki » -> "khaki-paint-splash", « Turquoise » -> "turquoise-paint-splash").
-Concepts : au singulier, sans mot inutile (« pizza » et non « pizza-slice »). Si un concept de la bibliothèque déjà dessinée désigne exactement le même objet, reprends-le tel quel : son icône est gratuite. Sinon, crée un concept assez précis pour que l'icône distingue la carte des autres de la liste (« camembert-box » plutôt que « cheese » dans une liste de fromages). Deux cartes de la liste n'ont jamais le même concept.
+Un mot à plusieurs sens se lit dans le sens du thème, et son concept le dit sans ambiguïté, jamais le mot nu : « Rose » vaut "pink-paint-splash" parmi des couleurs et "rose-flower" parmi des fleurs ; « Orange » vaut "orange-paint-splash" ou "orange-fruit" ; « Avocat » vaut "avocado" ou "lawyer-gavel".
+Concepts : au singulier, sans mot inutile (« pizza » et non « pizza-slice »). Si un concept de la bibliothèque déjà dessinée désigne exactement le même objet, dans le même sens, reprends-le tel quel : son icône est gratuite. Sinon, crée un concept assez précis pour que l'icône distingue la carte des autres de la liste (« camembert-box » plutôt que « cheese » dans une liste de fromages). Deux cartes de la liste n'ont jamais le même concept.
 Si le thème est haineux, sexuel ou violent envers des personnes, renvoie une liste vide.`;
 
 const WORDS_SCHEMA = {
@@ -75,6 +76,24 @@ const WORDS_SCHEMA = {
   required: ["cards"],
   additionalProperties: false,
 };
+
+const CONCEPTS_SYSTEM = `Tu choisis les icônes des cartes d'une tier list. On te donne le thème de la liste et des noms de cartes, dans l'ordre.
+Pour chaque carte, donne un « concept » : un nom anglais simple en kebab-case, au singulier, désignant l'objet à dessiner, lu dans le sens du thème.
+Un mot à plusieurs sens est dit sans ambiguïté : « Rose » parmi des couleurs -> "pink-paint-splash", parmi des fleurs -> "rose-flower". Une couleur ou une matière se montre en tache de peinture de la teinte, pas en objet de cette couleur. Une idée difficile à dessiner prend un objet qui la symbolise ; une marque, une personne ou une œuvre, un objet générique évocateur, jamais un logo ni un visage.
+Si un concept de la bibliothèque déjà dessinée désigne le même objet dans le même sens, reprends-le tel quel.`;
+
+const CONCEPTS_SCHEMA = {
+  type: "object",
+  properties: { concepts: { type: "array", items: { type: "string" } } },
+  required: ["concepts"],
+  additionalProperties: false,
+};
+
+/** The library's newest concepts, shown to the AI so it reuses them. */
+async function libraryHint() {
+  const { data } = await db.from("card_icons").select("concept").order("created_at", { ascending: false }).limit(LIBRARY_HINT);
+  return (data ?? []).map((r: { concept: string }) => r.concept).join(", ") || "vide";
+}
 
 const ICON_SYSTEM = `Tu dessines des icônes vectorielles SVG pour les cartes d'une application de tier lists.
 Style imposé, identique aux exemples :
@@ -173,8 +192,7 @@ Deno.serve(async (req) => {
       if (!theme) return json({ error: "theme" }, 400);
       const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
       if (!allowed) return json({ error: "quota" }, 429);
-      const { data: library } = await db.from("card_icons").select("concept").order("created_at", { ascending: false }).limit(LIBRARY_HINT);
-      const drawn = (library ?? []).map((r: { concept: string }) => r.concept).join(", ") || "vide";
+      const drawn = await libraryHint();
       const result = await ask(
         WORDS_MODEL,
         "low",
@@ -222,11 +240,37 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "icons") {
-      const asked = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c: { label?: unknown; concept?: unknown }) => ({
+      const theme = String(body.theme ?? "").trim().slice(0, 80);
+      let asked = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c: { label?: unknown; concept?: unknown }) => ({
         label: String(c?.label ?? "").trim().slice(0, 40),
-        concept: normalizeConcept(String(c?.concept || c?.label || "")),
-      })).filter((c: { concept: string }) => c.concept);
+        concept: normalizeConcept(String(c?.concept ?? "")),
+        theme: theme || undefined,
+      })).filter((c: { label: string; concept: string }) => c.label || c.concept);
       if (asked.length === 0) return json({ error: "bad request" }, 400);
+      // Cards without a concept (added by hand, renamed): read in the theme's sense, or
+      // "Rose" would get whichever rose the library drew first, flower or colour.
+      const bare = asked.filter((c: { concept: string }) => !c.concept);
+      let proposed: string[] = [];
+      if (bare.length && theme) {
+        // A Claude call: bounded like the words, so the endpoint can't run it for free.
+        const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
+        if (!allowed) return json({ error: "quota" }, 429);
+        try {
+          const result = await ask(
+            WORDS_MODEL,
+            "low",
+            CONCEPTS_SYSTEM,
+            `Thème : ${theme}\nCartes : ${bare.map((c: { label: string }) => c.label).join(" | ")}\nBibliothèque déjà dessinée : ${await libraryHint()}`,
+            CONCEPTS_SCHEMA,
+            2000,
+          );
+          proposed = ((result.concepts ?? []) as unknown[]).map(String);
+        } catch (e) {
+          // The card's own name still makes a drawing: not worth failing the sheet.
+          console.error("concepts", e);
+        }
+      }
+      asked = withConcepts(asked, proposed);
       const concepts = [...new Set(asked.map((c: { concept: string }) => c.concept))];
       // Already drawn as a picture for someone: free and instant. (An SVG-only concept
       // is drawn again: the sheet style must stay the same across a list.)

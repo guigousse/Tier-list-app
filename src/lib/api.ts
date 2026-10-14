@@ -97,8 +97,12 @@ export function aiWords(deviceId: string, theme: string, count: number, existing
  * The icons of a list's cards, all at once: from the shared library, the others drawn
  * together on one sheet (about 30 s). `url` is null for an icon that came out empty.
  */
-export function aiIcons(deviceId: string, cards: { label: string; concept: string }[]): Promise<{ icons: { concept: string; url: string | null }[] }> {
-  return aiCall({ action: 'icons', deviceId, cards }, 240_000);
+export function aiIcons(
+  deviceId: string,
+  cards: { label: string; concept: string }[],
+  theme: string,
+): Promise<{ icons: { concept: string; url: string | null }[] }> {
+  return aiCall({ action: 'icons', deviceId, cards, theme }, 240_000);
 }
 
 /** Hidden theme tags and trend scores of the popular tier lists. */

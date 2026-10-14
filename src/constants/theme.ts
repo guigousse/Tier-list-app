@@ -37,8 +37,11 @@ export const PALETTE = [
   '#5E35B1', '#D81B60', '#6D4C41', '#757575', '#37474F', '#1A1A1A',
 ];
 
+/** Background of generated cards: the icons are drawn to read on a dark neutral. */
+export const ANTHRACITE = '#2B2F3A';
+
 export const CARD_COLORS = [
-  '#2B2F3A', '#3D4454', '#5B3A7A', '#7A3A4E', '#7A5A2E', '#2E6A4F',
+  ANTHRACITE, '#3D4454', '#5B3A7A', '#7A3A4E', '#7A5A2E', '#2E6A4F',
   '#2E5A7A', '#1E88E5', '#E53935', '#FB8C00', '#43A047', '#FFFFFF',
 ];
 

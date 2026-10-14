@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/concepts.test.ts
-import { normalizeConcept, uniqueConcepts } from "./concepts.ts";
+import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -68,4 +68,25 @@ Deno.test("le concept renvoyé est déjà sous sa forme finale", () => {
 
 Deno.test("sans concept, le nom de la carte sert de concept", () => {
   same(uniqueConcepts([{ label: "Grasse matinée", concept: "" }]), ["grasse-matinee"]);
+});
+
+Deno.test("une carte sans concept prend celui proposé d'après le thème, les autres gardent le leur", () => {
+  same(
+    withConcepts(
+      [{ label: "Rose", concept: "" }, { label: "Kaki", concept: "khaki-paint-splash" }, { label: "Orange", concept: "" }],
+      ["pink-paint-splashes", "orange-paint-splash"],
+    ),
+    [
+      { label: "Rose", concept: "pink-paint-splash" },
+      { label: "Kaki", concept: "khaki-paint-splash" },
+      { label: "Orange", concept: "orange-paint-splash" },
+    ],
+  );
+});
+
+Deno.test("sans proposition, le nom de la carte sert de concept, sans doublon dans la liste", () => {
+  same(
+    withConcepts([{ label: "Rose", concept: "" }, { label: "Pivoine", concept: "rose" }], []).map((c) => c.concept),
+    ["rose", "rose-pivoine"],
+  );
 });

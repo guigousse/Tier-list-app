@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { CARD_COLORS, colors, spacing } from '../../constants/theme';
+import { cardPreview } from '../../lib/cardPreview';
 import { deleteCardImage, downloadCardImage, pickCardImage } from '../../lib/images';
 import { findImages, searchTerm, type WikiImage } from '../../lib/wikimedia';
 import { POOL, type Card, type Tier, type Zone } from '../../store/types';
@@ -29,6 +30,8 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [imageName, setImageName] = useState<string | undefined>();
   const [imageCredit, setImageCredit] = useState<string | undefined>();
+  /** The player took the card's AI image off: the image wand can draw it again. */
+  const [iconRemoved, setIconRemoved] = useState(false);
   const [bulk, setBulk] = useState(false);
   const [bulkText, setBulkText] = useState('');
   /** Pictures picked during this session of the sheet, not saved yet. */
@@ -49,6 +52,7 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
       setColor(card?.color ?? CARD_COLORS[0]);
       setImageName(card?.imageName);
       setImageCredit(card?.imageCredit);
+      setIconRemoved(false);
       setBulk(false);
       setBulkText('');
       setWeb(null);
@@ -112,7 +116,14 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
     }
   };
 
-  const draft = (): CardDraft => ({ label: label.trim(), color, imageName, imageCredit: imageName ? imageCredit : undefined });
+  const draft = (): CardDraft => ({
+    label: label.trim(),
+    color,
+    imageName,
+    imageCredit: imageName ? imageCredit : undefined,
+    // Its concept goes too: kept, the library would hand back the very same picture.
+    ...(iconRemoved ? { iconUrl: undefined, iconSvg: undefined, aiConcept: undefined } : {}),
+  });
 
   const saveSingle = (keepOpen: boolean) => {
     const d = draft();
@@ -157,7 +168,10 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
     );
   };
 
-  const preview: Card = { id: 'preview', label: label || '?', color, imageName };
+  const preview = cardPreview(card, { label, color, imageName, iconRemoved });
+  const hasImage = !!(preview.imageName || preview.iconUrl || preview.iconSvg);
+  // An illustrated card is shown large, the way it is seen when placed.
+  const previewSize = card && hasImage ? 150 : 92;
 
   const footer = card ? (
     <Button label="Enregistrer" icon="checkmark" onPress={() => saveSingle(false)} />
@@ -191,9 +205,9 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
         />
       ) : (
         <>
-          <View style={styles.previewRow}>
-            <CardView card={preview} size={92} />
-            <View style={{ flex: 1 }}>
+          <View style={[styles.previewRow, previewSize > 92 && styles.previewColumn]}>
+            <CardView card={preview} size={previewSize} />
+            <View style={previewSize > 92 ? styles.stretch : { flex: 1 }}>
               <Field
                 label="Nom"
                 value={label}
@@ -267,14 +281,17 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
                 </View>
               </View>
             ) : null}
-            {imageName ? (
+            {hasImage ? (
               <Button
                 variant="ghost"
                 icon="close-circle-outline"
                 label="Retirer l'image"
                 onPress={() => {
-                  setImageName(undefined);
-                  setImageCredit(undefined);
+                  // The photo first: under it, the AI image shows again.
+                  if (imageName) {
+                    setImageName(undefined);
+                    setImageCredit(undefined);
+                  } else setIconRemoved(true);
                 }}
               />
             ) : null}
@@ -303,4 +320,6 @@ const styles = StyleSheet.create({
   credit: { color: colors.text, fontSize: 13, fontWeight: '600' },
   creditSource: { color: colors.textMuted, fontSize: 12 },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  previewColumn: { flexDirection: 'column', gap: spacing.md },
+  stretch: { alignSelf: 'stretch' },
 });

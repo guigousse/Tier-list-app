@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { CARD_COLORS } from '../constants/theme';
+import { ANTHRACITE } from '../constants/theme';
 import type { Card, TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
 import { cacheAiIcon } from './aiIconFiles';
@@ -77,10 +77,7 @@ export async function generateWords(listId: string, theme: string, count: number
   try {
     const existing = Object.values(list.cards).map((c) => c.label);
     const { cards } = await aiWords(store.deviceId, theme, count, existing);
-    const start = Object.keys(list.cards).length;
-    cards.forEach((c, i) =>
-      store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: CARD_COLORS[(start + i) % 7], aiConcept: c.concept || undefined }),
-    );
+    cards.forEach((c) => store.addCard(listId, { label: `${c.emoji} ${c.label}`.trim(), color: ANTHRACITE, aiConcept: c.concept || undefined }));
     // The theme asked is the best title the list can have.
     store.renameList(listId, theme);
     patch({ cards: cards.length, phase: 'done' });
@@ -109,7 +106,8 @@ export async function generateImages(listId: string, cardIds: string[]): Promise
   try {
     // A card without a concept (added by hand, or renamed): the server draws its label.
     const asked = queue.map((c) => ({ label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' }));
-    const { icons } = await aiIcons(store.deviceId, asked);
+    // The theme gives a homonym its sense: "Rose" is a colour in a list of colours.
+    const { icons } = await aiIcons(store.deviceId, asked, list.title);
     queue.forEach((card, i) => {
       const url = icons[i]?.url;
       if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });

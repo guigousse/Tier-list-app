@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/sheet.test.ts
-import { cellObject, clearBackground, fillSheet, gridFor, KEY } from "./sheet.ts";
+import { cellObject, clearBackground, fillSheet, gridFor, KEY, sheetPrompt } from "./sheet.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -165,4 +165,10 @@ Deno.test("au-delà de 12, la planche se remplit jusqu'au bout de sa grille", ()
 Deno.test("la liste d'attente ne redessine pas une carte déjà demandée, et rien à dessiner ne coûte rien", () => {
   same(fillSheet([c("a")], [c("a"), c("b")]).map((x) => x.concept), ["a", "b"]);
   same(fillSheet([], [c("a"), c("b")]), []);
+});
+
+Deno.test("le thème de la liste accompagne chaque carte demandée, pour lever les homonymes", () => {
+  const text = sheetPrompt([{ label: "Rose", concept: "pink-paint-splash", theme: "Couleurs" }, { label: "Tulipe", concept: "tulip" }], 2, 1);
+  if (!text.includes('for a card named "Rose" in a list about "Couleurs"')) throw new Error(text);
+  if (!text.includes('for a card named "Tulipe")')) throw new Error(text);
 });

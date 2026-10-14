@@ -48,3 +48,15 @@ export function uniqueConcepts(cards: { label: string; concept: string }[]): str
     return key;
   });
 }
+
+/**
+ * Concepts for cards that came without one (added by hand, renamed): those the AI
+ * proposed from the list's theme, else the card's name. "Rose" alone would land on
+ * whichever rose was drawn first, flower or colour.
+ */
+export function withConcepts<T extends { label: string; concept: string }>(cards: T[], proposed: string[]): T[] {
+  let next = 0;
+  const filled = cards.map((c) => (c.concept ? c : { ...c, concept: proposed[next++] ?? "" }));
+  const keys = uniqueConcepts(filled);
+  return filled.map((c, i) => ({ ...c, concept: keys[i] }));
+}

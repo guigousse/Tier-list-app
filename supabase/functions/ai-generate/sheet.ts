@@ -168,3 +168,20 @@ export function fillSheet<T extends { concept: string }>(missing: T[], wishlist:
   const extra = wishlist.filter((w) => !taken.has(w.concept) && taken.add(w.concept));
   return [...asked, ...extra.slice(0, cells - asked.length)];
 }
+
+/** What Gemini is asked; the style comes from the reference picture sent with it. */
+export function sheetPrompt(cards: { label: string; concept: string; theme?: string }[], cols: number, rows: number) {
+  // The list's theme settles a homonym the concept alone might not: a "Rose" among colours.
+  const list = cards
+    .map((c, i) => `${i + 1}. ${c.concept.replace(/-/g, " ")} (for a card named "${c.label}"${c.theme ? ` in a list about "${c.theme}"` : ""})`)
+    .join("\n");
+  const empty = cols * rows > cards.length ? `\nThe remaining ${cols * rows - cards.length} cell(s) at the end stay plain magenta.` : "";
+  return [
+    "The attached image shows the art style to copy exactly (not its objects): cozy cartoon sticker icons with bold rounded dark-brown outlines (#2A1B14), flat vivid colors, one darker shade and one soft light highlight per main shape, simple shapes that stay readable at 55 pixels.",
+    `Draw one single image: a grid of ${cols} columns by ${rows} rows of equal square cells, on a flat uniform pure magenta background (#FF00FF) that fills the whole picture, including the space between the icons. The cells are invisible: only magenta between the icons.`,
+    "Each cell holds exactly one icon, centered, about 70% of the cell size, with magenta space all around it. Each icon stands directly on the magenta background: no tile, card, square or frame behind it. The icons use any colors except magenta and pink.",
+    "The picture contains only drawings: text, letters, numbers and logos are left out.",
+    "Row by row, left to right, the cells contain:",
+    list + empty,
+  ].join("\n");
+}

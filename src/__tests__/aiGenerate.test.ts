@@ -1,4 +1,5 @@
 import { cardsNeedingImage, generateImages, generateWords, imageCredits, MIN_IMAGES, useAiJob, wordCredits } from '../lib/aiGenerate';
+import { ANTHRACITE } from '../constants/theme';
 import { aiIcons, aiWords } from '../lib/api';
 import { useTierStore } from '../store/useTierStore';
 
@@ -49,6 +50,13 @@ describe('AI generation', () => {
     expect(useAiJob.getState().job).toMatchObject({ kind: 'words', phase: 'done', cards: 2 });
   });
 
+  it('gives the generated cards the anthracite background, under which every icon reads', async () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S'] });
+    words.mockResolvedValue({ cards: ['Rouge', 'Vert', 'Bleu'].map((label) => ({ label, emoji: '', concept: label })) });
+    await generateWords(id, 'Couleurs', 3);
+    expect(Object.values(store().lists[id].cards).map((c) => c.color)).toEqual([ANTHRACITE, ANTHRACITE, ANTHRACITE]);
+  });
+
   it('keeps the title when the theme is refused', async () => {
     const id = store().createList({ title: 'Ma liste', tierLabels: ['S'] });
     words.mockRejectedValue(new Error('theme refused'));
@@ -88,6 +96,8 @@ describe('AI generation', () => {
     await generateImages(id, cardsNeedingImage(store().lists[id]).map((c) => c.id));
 
     expect(icons).toHaveBeenCalledTimes(1);
+    // The list's theme tells which sense a homonym has (a pink "Rose" among colours).
+    expect(icons.mock.calls[0][2]).toBe('Fromages');
     // A renamed card loses its concept: the server draws its label.
     expect(icons.mock.calls[0][1]).toEqual([
       { label: 'Brie', concept: 'brie' },
