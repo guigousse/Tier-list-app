@@ -1,6 +1,6 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
 //   { action: "words", deviceId, theme, count, existing } -> { cards: [{ label, emoji, concept }] }
-//   { action: "tiers", deviceId, theme, current, tone }  -> { labels }  (one name per tier, best first)
+//   { action: "tiers", deviceId, theme, current, tone, cards? } -> { labels }  (one name per tier, best first)
 //   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }  (SVG, older app versions)
 //   { action: "icons", deviceId, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }] }  (one Gemini sheet)
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
@@ -82,9 +82,11 @@ const WORDS_SCHEMA = {
 };
 
 const TIERS_SYSTEM = `Tu nommes les rangs d'une tier list de l'application Tiercraft : les joueurs y classent des cartes du meilleur rang au moins bon.
-On te donne le thème, le ton voulu et les noms actuels des rangs, dans l'ordre. Donne un nouveau nom pour chaque rang, dans le même ordre, du meilleur au moins bon :
-- en français, très court : 1 ou 2 mots, 14 caractères au plus, pour tenir dans une colonne étroite ;
-- liés au thème, et qui disent clairement la gradation : on comprend lequel est meilleur sans voir la position ;
+On te donne le thème, le ton voulu, les noms actuels des rangs dans l'ordre, et quelques cartes de la liste. Donne un nouveau nom pour chaque rang, dans le même ordre, du meilleur au moins bon :
+- tous tirés de l'univers du thème : son vocabulaire, ses objets, ses expressions, ce que les cartes en montrent. Jamais un simple jugement qui irait à n'importe quelle liste (« Excellent », « Moyen », « Nul ») : même sérieux, le nom parle du thème (pour des fromages : « Grand cru », « Bien affiné », « Trop jeune ») ;
+- une même image filée du meilleur au moins bon, pour que la série soit cohérente ;
+- qui disent clairement la gradation : on comprend lequel est meilleur sans voir la position ;
+- en français, très courts : 1 ou 2 mots, 14 caractères au plus, aucun mot de plus de 10 lettres, pour tenir dans une colonne étroite ;
 - tous différents, sans numéro, sans guillemets, sans emoji ;
 - jamais grossiers ni blessants envers des personnes.
 Si le thème est haineux, sexuel ou violent envers des personnes, renvoie une liste vide.`;
@@ -246,6 +248,7 @@ Deno.serve(async (req) => {
       const theme = String(body.theme ?? "").trim().slice(0, 80);
       const tone = String(body.tone ?? "") as Tone;
       const current = (Array.isArray(body.current) ? body.current : []).map((l) => String(l).slice(0, 50)).slice(0, 12);
+      const cards = (Array.isArray(body.cards) ? body.cards : []).map((l) => String(l).slice(0, 40)).slice(0, 12);
       if (!theme || !(tone in TONES) || current.length === 0) return json({ error: "bad request" }, 400);
       const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
       if (!allowed) return json({ error: "quota" }, 429);
@@ -253,7 +256,7 @@ Deno.serve(async (req) => {
         WORDS_MODEL,
         "low",
         TIERS_SYSTEM,
-        `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}`,
+        `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}\nQuelques cartes de la liste : ${cards.join(", ") || "aucune"}`,
         TIERS_SCHEMA,
         1000,
       );

@@ -93,9 +93,15 @@ export function aiWords(deviceId: string, theme: string, count: number, existing
   return aiCall({ action: 'words', deviceId, theme, count, existing }, 90_000);
 }
 
-/** New tier names for the theme, in `tone`, best tier first, as many as `current`. */
-export function aiTiers(deviceId: string, theme: string, current: string[], tone: 'humour' | 'serieux' | 'fantaisiste'): Promise<{ labels: string[] }> {
-  return aiCall({ action: 'tiers', deviceId, theme, current, tone }, 60_000);
+/** New tier names for the theme, in `tone`, best tier first, as many as `current`; `cards`: a few, for context. */
+export function aiTiers(
+  deviceId: string,
+  theme: string,
+  current: string[],
+  tone: 'humour' | 'serieux' | 'fantaisiste',
+  cards: string[],
+): Promise<{ labels: string[] }> {
+  return aiCall({ action: 'tiers', deviceId, theme, current, tone, cards }, 60_000);
 }
 
 /**

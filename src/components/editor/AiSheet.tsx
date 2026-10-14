@@ -2,16 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../constants/theme';
-import { aiBusy, CREDITS, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, TEST_BALANCE, textCredits, type TierTone, useAiJob } from '../../lib/aiGenerate';
+import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
+import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, imageCredits, MIN_IMAGES, TEST_BALANCE, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
 import { Button, Field, Sheet } from '../ui';
 
 const COUNTS = [5, 8, 10, 12, 15, 20];
-const TONES: { tone: TierTone | null; label: string }[] = [
-  { tone: null, label: 'Garder' },
+const TONES: { tone: TierTone; label: string }[] = [
   { tone: 'humour', label: 'Humour' },
   { tone: 'serieux', label: 'Sérieux' },
   { tone: 'fantaisiste', label: 'Fantaisiste' },
@@ -19,13 +18,13 @@ const TONES: { tone: TierTone | null; label: string }[] = [
 
 type Props = { visible: boolean; onClose: () => void; listId: string };
 type Panel = { title: string; footer: ReactNode; body: ReactNode };
-type Mode = 'words' | 'images';
+type Mode = 'words' | 'images' | 'tiers';
 
 /**
  * Shows the questions on each opening, or the generation of this kind when one is
  * under way. Returns whether to show the generation, and a way to switch to it.
  */
-function useJobView(visible: boolean, listId: string, kind: 'words' | 'images', onOpen?: () => void) {
+function useJobView(visible: boolean, listId: string, kind: Mode, onOpen?: () => void) {
   const job = useAiJob((s) => (s.job?.listId === listId && s.job.kind === kind ? s.job : null));
   const running = job?.phase === 'working';
   // Another generation of this list (only one at a time).
@@ -73,36 +72,32 @@ function Footer({ label, cost, ready, busy, onPress, note }: { label: string; co
 }
 
 /**
- * The text: 1. theme (the list's title to start with), 2. how many cards (or none),
- * 3. the tiers renamed in a tone (or kept), then the cost. The list takes the theme as
- * its title. The images come after, once the player has checked the words.
+ * The cards: 1. theme (the list's title to start with), 2. how many cards, then the
+ * cost. The list takes the theme as its title. The images come after, once the player
+ * has checked the words.
  */
 function useWordsPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
-  const tierCount = useTierStore((s) => s.lists[listId]?.tiers.length ?? 0);
   const [theme, setTheme] = useState(title);
   const [count, setCount] = useState(10);
-  const [tone, setTone] = useState<TierTone | null>(null);
   const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'words', () => setTheme(title));
-  const renamed = tone ? tierCount : 0;
-  const cost = textCredits(count, renamed);
+  const cost = wordCredits(count);
   const start = () => {
     setShowJob(true);
-    generateWords(listId, theme.trim(), count, tone ?? undefined);
+    generateWords(listId, theme.trim(), count);
   };
 
   if (showJob && job) {
     return {
-      title: 'Génération du texte',
+      title: 'Génération des cartes',
       footer: <Button label={running ? 'Continuer en arrière-plan' : 'Vérifier les cartes'} onPress={onClose} />,
       body:
         job.phase === 'working' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.statusText}>L’IA écrit vos {count ? 'cartes' : 'rangs'}…</Text>
+            <Text style={styles.statusText}>L’IA imagine vos cartes…</Text>
           </View>
         ) : job.phase === 'error' ? (
           <View style={{ gap: spacing.md }}>
-            {job.cards || job.tiers ? <Text style={styles.statusText}>{doneText(job.cards, job.tiers ?? 0)}</Text> : null}
             <Text style={styles.error}>{job.error}</Text>
             <Button variant="secondary" label="Modifier ma demande" icon="arrow-back" onPress={() => setShowJob(false)} />
           </View>
@@ -110,7 +105,9 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
           <View style={{ gap: spacing.md }}>
             <View style={styles.status}>
               <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />
-              <Text style={styles.statusText}>{doneText(job.cards, job.tiers ?? 0)}</Text>
+              <Text style={styles.statusText}>
+                {job.cards} carte{job.cards > 1 ? 's' : ''} ajoutée{job.cards > 1 ? 's' : ''} à la liste
+              </Text>
             </View>
             <Text style={styles.hint}>
               Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, l’onglet Images les illustrera.
@@ -121,8 +118,8 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
   }
 
   return {
-    title: 'Générer le texte',
-    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0 && cost > 0} busy={busy} onPress={start} />,
+    title: 'Générer les cartes',
+    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0} busy={busy} onPress={start} />,
     body: (
       <>
       <View style={styles.section}>
@@ -142,7 +139,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Clickable
               accessibilityRole="button"
               accessibilityLabel="Une carte de moins"
-              onPress={() => setCount(count <= 3 ? 0 : count - 1)}
+              onPress={() => setCount(Math.max(3, count - 1))}
               style={styles.stepperButton}
             >
               <Ionicons name="remove" size={20} color={colors.text} />
@@ -151,7 +148,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Clickable
               accessibilityRole="button"
               accessibilityLabel="Une carte de plus"
-              onPress={() => setCount(count === 0 ? 3 : Math.min(20, count + 1))}
+              onPress={() => setCount(Math.min(20, count + 1))}
               style={styles.stepperButton}
             >
               <Ionicons name="add" size={20} color={colors.text} />
@@ -159,59 +156,25 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
           </View>
         </View>
         <View style={styles.chips}>
-          {[0, ...COUNTS].map((n) => (
+          {COUNTS.map((n) => (
             <Clickable key={n} accessibilityRole="button" onPress={() => setCount(n)} style={[styles.chip, n === count && styles.chipOn]}>
-              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n || 'Aucune'}</Text>
+              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n}</Text>
             </Clickable>
           ))}
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>Noms des rangs</Text>
-        </View>
-        <View style={styles.chips}>
-          {TONES.map((t) => (
-            <Clickable
-              key={t.label}
-              accessibilityRole="button"
-              accessibilityState={{ selected: t.tone === tone }}
-              onPress={() => setTone(t.tone)}
-              style={[styles.chip, t.tone === tone && styles.chipOn]}
-            >
-              <Text style={[styles.chipText, t.tone === tone && { color: colors.primaryText }]}>{t.label}</Text>
-            </Clickable>
-          ))}
-        </View>
-        <Text style={styles.hint}>
-          {tone
-            ? `Les ${tierCount} rangs reçoivent un nom court dans ce ton, du meilleur au moins bon, d’après le thème.`
-            : 'Choisissez un ton pour renommer les rangs d’après le thème.'}
-        </Text>
       </View>
 
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
-        {count ? (
-          <View style={styles.recap}>
-            <Text style={styles.recapText}>
-              {count} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
-            </Text>
-            <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
-          </View>
-        ) : null}
-        {renamed ? (
-          <View style={styles.recap}>
-            <Text style={styles.recapText}>
-              {renamed} rang{renamed > 1 ? 's' : ''} × {CREDITS.tier} crédit
-            </Text>
-            <Text style={styles.recapValue}>{renamed * CREDITS.tier}</Text>
-          </View>
-        ) : null}
-        {count ? <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text> : null}
+        <View style={styles.recap}>
+          <Text style={styles.recapText}>
+            {count} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
+          </Text>
+          <Text style={styles.recapValue}>{cost}</Text>
+        </View>
+        <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
         <Balance cost={cost} />
       </View>
       </>
@@ -219,11 +182,113 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
   };
 }
 
-function doneText(cards: number, tiers: number): string {
-  const parts = [];
-  if (cards) parts.push(`${cards} carte${cards > 1 ? 's' : ''} ajoutée${cards > 1 ? 's' : ''}`);
-  if (tiers) parts.push(`${tiers} rang${tiers > 1 ? 's' : ''} renommé${tiers > 1 ? 's' : ''}`);
-  return parts.join(' · ') || 'Rien n’a changé';
+/**
+ * The tiers: new names in a tone, tied to the theme (the list's title to start with)
+ * and to its cards, best tier first. 1 credit per tier; the title and cards stay.
+ */
+function useTiersPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
+  const tiers = useTierStore((s) => s.lists[listId]?.tiers) ?? [];
+  const [theme, setTheme] = useState(title);
+  const [tone, setTone] = useState<TierTone>('humour');
+  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'tiers', () => setTheme(title));
+  const cost = tierCredits(tiers.length);
+  const start = () => {
+    setShowJob(true);
+    generateTiers(listId, theme.trim(), tone);
+  };
+
+  if (showJob && job) {
+    return {
+      title: 'Noms des rangs',
+      footer: <Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />,
+      body:
+        job.phase === 'working' ? (
+          <View style={styles.status}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={styles.statusText}>L’IA baptise vos rangs…</Text>
+          </View>
+        ) : job.phase === 'error' ? (
+          <View style={{ gap: spacing.md }}>
+            <Text style={styles.error}>{job.error}</Text>
+            <Button variant="secondary" label="Modifier ma demande" icon="arrow-back" onPress={() => setShowJob(false)} />
+          </View>
+        ) : (
+          <View style={{ gap: spacing.md }}>
+            <View style={styles.status}>
+              <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />
+              <Text style={styles.statusText}>
+                {job.tiers} rang{(job.tiers ?? 0) > 1 ? 's' : ''} renommé{(job.tiers ?? 0) > 1 ? 's' : ''}
+              </Text>
+            </View>
+            <View style={styles.tierPreview}>
+              {tiers.map((t) => (
+                <View key={t.id} style={[styles.tierChip, { backgroundColor: t.color }]}>
+                  <Text style={[styles.tierChipText, { color: readableTextColor(t.color) }]}>{t.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.hint}>Un nom ne vous plaît pas ? Touchez le rang pour le modifier, ou relancez dans un autre ton.</Text>
+            <Button variant="secondary" label="Essayer un autre ton" icon="refresh" onPress={() => setShowJob(false)} />
+          </View>
+        ),
+    };
+  }
+
+  return {
+    title: 'Renommer les rangs',
+    footer: <Footer label="Renommer" cost={cost} ready={theme.trim().length > 0 && tiers.length > 0} busy={busy} onPress={start} />,
+    body: (
+      <>
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Thème de la liste</Text>
+          </View>
+          <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={60} returnKeyType="done" />
+          <Text style={styles.hint}>Les noms s’inspirent du thème et des cartes de la liste, du meilleur rang au moins bon.</Text>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Ton</Text>
+          </View>
+          <View style={styles.chips}>
+            {TONES.map((t) => (
+              <Clickable
+                key={t.tone}
+                accessibilityRole="button"
+                accessibilityState={{ selected: t.tone === tone }}
+                onPress={() => setTone(t.tone)}
+                style={[styles.chip, t.tone === tone && styles.chipOn]}
+              >
+                <Text style={[styles.chipText, t.tone === tone && { color: colors.primaryText }]}>{t.label}</Text>
+              </Clickable>
+            ))}
+          </View>
+          <View style={styles.tierPreview}>
+            {tiers.map((t) => (
+              <View key={t.id} style={[styles.tierChip, { backgroundColor: t.color }]}>
+                <Text style={[styles.tierChipText, { color: readableTextColor(t.color) }]}>{t.label}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.hint}>Des noms courts, d’un ou deux mots. Le titre et les cartes ne changent pas.</Text>
+        </View>
+
+        <View style={styles.total}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Total</Text>
+          </View>
+          <View style={styles.recap}>
+            <Text style={styles.recapText}>
+              {tiers.length} rang{tiers.length > 1 ? 's' : ''} × {CREDITS.tier} crédit
+            </Text>
+            <Text style={styles.recapValue}>{cost}</Text>
+          </View>
+          <Balance cost={cost} />
+        </View>
+      </>
+    ),
+  };
 }
 
 /**
@@ -351,8 +416,8 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
 }
 
 /**
- * The single AI window, opened by the wand: a text tab (generate cards) and an images
- * tab (draw or redraw them). Opens on the generation under way, else on the images
+ * The single AI window, opened by the wand: a text tab (generate cards), an images tab
+ * (draw or redraw them) and a tiers tab (rename them in a tone). Opens on the generation under way, else on the images
  * when cards are waiting for one, else on the text.
  */
 export function AiSheet({ visible, onClose, listId, title }: Props & { title: string }) {
@@ -367,10 +432,12 @@ export function AiSheet({ visible, onClose, listId, title }: Props & { title: st
   // Both panels follow the window, not the tab: switching tabs keeps what was chosen.
   const words = useWordsPanel({ visible, onClose, listId, title });
   const images = useImagesPanel({ visible, onClose, listId });
-  const panel = mode === 'words' ? words : images;
-  const tabs: { mode: Mode; label: string; icon: 'text' | 'image' }[] = [
+  const tiers = useTiersPanel({ visible, onClose, listId, title });
+  const panel = mode === 'words' ? words : mode === 'images' ? images : tiers;
+  const tabs: { mode: Mode; label: string; icon: 'text' | 'image' | 'reorder-four' }[] = [
     { mode: 'words', label: 'Texte', icon: 'text' },
     { mode: 'images', label: 'Images', icon: 'image' },
+    { mode: 'tiers', label: 'Rangs', icon: 'reorder-four' },
   ];
   return (
     <Sheet visible={visible} onClose={onClose} title={panel.title} footer={panel.footer}>
@@ -404,6 +471,9 @@ const styles = StyleSheet.create({
   tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: radius.md },
   tabOn: { backgroundColor: colors.primary },
   tabText: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  tierPreview: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tierChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm },
+  tierChipText: { fontSize: 13, fontWeight: '800' },
   credits: {
     flexDirection: 'row',
     alignItems: 'center',
