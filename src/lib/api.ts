@@ -1,4 +1,5 @@
 import type { TierList } from '../store/types';
+import type { TierTone } from './aiGenerate';
 import { parsePayload, toPayload, type SharedList } from './share';
 import type { Discovery } from './discover';
 
@@ -98,7 +99,7 @@ export function aiTiers(
   deviceId: string,
   theme: string,
   current: string[],
-  tone: 'humour' | 'serieux' | 'fantaisiste',
+  tone: TierTone,
   cards: string[],
 ): Promise<{ labels: string[] }> {
   return aiCall({ action: 'tiers', deviceId, theme, current, tone, cards }, 60_000);

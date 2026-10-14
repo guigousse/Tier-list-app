@@ -14,6 +14,8 @@ const TONES: { tone: TierTone; label: string }[] = [
   { tone: 'humour', label: 'Humour' },
   { tone: 'serieux', label: 'Sérieux' },
   { tone: 'fantaisiste', label: 'Fantaisiste' },
+  { tone: 'enfantin', label: 'Enfantin' },
+  { tone: 'vulgaire', label: 'Vulgaire' },
 ];
 
 type Props = { visible: boolean; onClose: () => void; listId: string };

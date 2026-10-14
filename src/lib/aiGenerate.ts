@@ -41,7 +41,7 @@ export function tierCredits(count: number): number {
 }
 
 /** Tone of the tier names: the server knows each one's instructions. */
-export type TierTone = 'humour' | 'serieux' | 'fantaisiste';
+export type TierTone = 'humour' | 'serieux' | 'fantaisiste' | 'enfantin' | 'vulgaire';
 
 export type AiJob = {
   listId: string;

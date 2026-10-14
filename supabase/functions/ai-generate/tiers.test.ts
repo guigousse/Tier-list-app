@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/tiers.test.ts
-import { cleanTierLabels, TIER_LABEL_MAX } from "./tiers.ts";
+import { cleanTierLabels, TIER_LABEL_MAX, TONES } from "./tiers.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -19,4 +19,8 @@ Deno.test("un nom manquant, vide ou trop long garde l'ancien", () => {
 
 Deno.test("deux rangs ne portent jamais le même nom", () => {
   same(cleanTierLabels(["Top", "top", "Bof"], ["S", "A", "B"]), ["Top", "A", "Bof"]);
+});
+
+Deno.test("cinq tons au choix, dont enfantin et vulgaire", () => {
+  same(Object.keys(TONES), ["humour", "serieux", "fantaisiste", "enfantin", "vulgaire"]);
 });

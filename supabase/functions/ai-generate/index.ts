@@ -88,7 +88,7 @@ On te donne le thème, le ton voulu, les noms actuels des rangs dans l'ordre, et
 - qui disent clairement la gradation : on comprend lequel est meilleur sans voir la position ;
 - en français, très courts : 1 ou 2 mots, 14 caractères au plus, aucun mot de plus de 10 lettres, pour tenir dans une colonne étroite ;
 - tous différents, sans numéro, sans guillemets, sans emoji ;
-- jamais grossiers ni blessants envers des personnes.
+- jamais blessants envers des personnes ou des groupes ; grossiers seulement si le ton le demande, et alors sans rien de sexuel ni de haineux.
 Si le thème est haineux, sexuel ou violent envers des personnes, renvoie une liste vide.`;
 
 const TIERS_SCHEMA = {

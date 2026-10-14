@@ -8,6 +8,10 @@ export const TONES = {
   humour: "drôle et complice : jeux de mots, clins d'œil au thème, exagération bon enfant",
   serieux: "sobre et clair : des appréciations nettes, sans effet ni plaisanterie",
   fantaisiste: "imaginaire et poétique : vocabulaire de conte, de légende ou de fantasy",
+  enfantin: "comme le dirait un enfant de six ans : mots simples, onomatopées, enthousiasme, « miam », « beurk », « trop bien »",
+  // Crude, never hurtful: the names are shared and shown to friends.
+  vulgaire:
+    "familier et grossier : argot et gros mots de tous les jours (« de la balle », « bof », « daubé », « à chier »), mais jamais d'insulte envers des personnes ou des groupes, rien de sexuel ni de haineux",
 } as const;
 
 export type Tone = keyof typeof TONES;
