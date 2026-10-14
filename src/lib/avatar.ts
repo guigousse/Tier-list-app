@@ -662,9 +662,10 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8,
 <rect width="120" height="130" fill="${url('bg')}"/>
 <circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}
 ${h.back}
-<path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
-<path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88.5 49.5 93.5 C54 98.5 66 98.5 70.5 93.5 C69 88.5 68.5 83 69 76 Z"/>
+<path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88 48.5 92 C47.5 93.6 46 95 44 96.5 L44 106 L76 106 L76 96.5 C74 95 72.5 93.6 71.5 92 C69 88 68.5 83 69 76 Z"/>
 <path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>
+<path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
+<path fill="none" stroke="${darker(bg.shirt, 0.18)}" stroke-width="1.6" stroke-linecap="round" d="M47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5"/>
 ${b.behind}
 <g stroke="${skinLine}" stroke-width=".8" stroke-opacity=".55">
 <ellipse fill="${skin.fill}" cx="${earL}" cy="62" rx="5.2" ry="6.8"/>
