@@ -1,4 +1,4 @@
-import { cardsNeedingImage, generateImages, generateWords, imageCredits, MIN_IMAGES, useAiJob, wordCredits } from '../lib/aiGenerate';
+import { cardsNeedingImage, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, useAiJob, wordCredits } from '../lib/aiGenerate';
 import { ANTHRACITE } from '../constants/theme';
 import { aiIcons, aiWords } from '../lib/api';
 import { useTierStore } from '../store/useTierStore';
@@ -133,5 +133,50 @@ describe('AI generation', () => {
     await generateImages(id, Object.keys(store().lists[id].cards));
     expect(Object.keys(store().lists[id].cards)).toHaveLength(3);
     expect(useAiJob.getState().job).toMatchObject({ kind: 'images', phase: 'done', failed: 3 });
+  });
+
+  it('offers every card but the photos: the bare ones to draw, the illustrated ones to redraw', () => {
+    const id = store().createList({ title: 'Couleurs', tierLabels: ['S'], cardLabels: ['Rouge', 'Vert'] });
+    const [rouge, vert] = Object.values(store().lists[id].cards);
+    store().updateCard(id, vert.id, { iconUrl: 'https://x/vert.png' });
+    store().addCard(id, { label: 'Ma photo', color: '#000', imageName: 'p.jpg' });
+    const { toDraw, toRedraw } = imageChoices(store().lists[id]);
+    expect(toDraw.map((c) => c.id)).toEqual([rouge.id]);
+    expect(toRedraw.map((c) => c.id)).toEqual([vert.id]);
+  });
+
+  it('redraws the illustrated cards picked: a new image, read again in the theme', async () => {
+    const id = store().createList({ title: 'Couleurs', tierLabels: ['S'], cardLabels: ['Rouge', 'Vert', 'Rose'] });
+    const [rouge, vert, rose] = Object.values(store().lists[id].cards);
+    store().updateCard(id, rose.id, { iconUrl: 'https://x/flamingo.png', aiConcept: 'flamingo' });
+    icons.mockResolvedValue({
+      icons: [
+        { concept: 'red-paint-splash', url: 'https://x/red.png' },
+        { concept: 'green-paint-splash', url: 'https://x/green.png' },
+        { concept: 'pink-paint-splash', url: 'https://x/pink.png' },
+      ],
+    });
+
+    await generateImages(id, [rouge.id, vert.id, rose.id]);
+
+    expect(icons.mock.calls[0][1]).toEqual([
+      { label: 'Rouge', concept: '' },
+      { label: 'Vert', concept: '' },
+      // Its concept may be what was wrong (a flamingo for a colour): read again.
+      { label: 'Rose', concept: '', redraw: true },
+    ]);
+    const after = store().lists[id].cards;
+    expect(after[rose.id].iconUrl).toBe('https://x/pink.png');
+    // The concept drawn is kept: the next redraw starts from it.
+    expect(after[rose.id].aiConcept).toBe('pink-paint-splash');
+  });
+
+  it('never redraws a photo, even when asked', async () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['A', 'B', 'C'] });
+    const photo = store().addCard(id, { label: 'Photo', color: '#000', imageName: 'p.jpg' });
+    icons.mockResolvedValue({ icons: [{ url: 'https://x/1.png' }, { url: 'https://x/2.png' }, { url: 'https://x/3.png' }] });
+    await generateImages(id, Object.keys(store().lists[id].cards));
+    expect(icons.mock.calls[0][1].map((c: { label: string }) => c.label)).toEqual(['A', 'B', 'C']);
+    expect(photo).toBeDefined();
   });
 });

@@ -1,15 +1,17 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
 //   { action: "words", deviceId, theme, count, existing } -> { cards: [{ label, emoji, concept }] }
 //   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }  (SVG, older app versions)
-//   { action: "icons", deviceId, cards: [{ label, concept }], theme? } -> { icons: [{ concept, url }] }  (one Gemini sheet)
+//   { action: "icons", deviceId, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }] }  (one Gemini sheet)
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
-// by every player. Per-device and global daily quotas (ai_allow) bound the bill.
+// by every player; a redrawn concept keeps its first image and adds the new one to
+// card_icon_images, the history of every picture drawn. Per-device and global daily
+// quotas (ai_allow) bound the bill.
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 
 import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 import { drawSheet, SheetError } from "./iconSheet.ts";
-import { fillSheet } from "./sheet.ts";
+import { cardsToDraw, fillSheet } from "./sheet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
 const WORDS_MODEL = "claude-opus-5-5";
@@ -241,10 +243,11 @@ Deno.serve(async (req) => {
 
     if (body.action === "icons") {
       const theme = String(body.theme ?? "").trim().slice(0, 80);
-      let asked = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c: { label?: unknown; concept?: unknown }) => ({
+      let asked = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c: { label?: unknown; concept?: unknown; redraw?: unknown }) => ({
         label: String(c?.label ?? "").trim().slice(0, 40),
         concept: normalizeConcept(String(c?.concept ?? "")),
         theme: theme || undefined,
+        redraw: c?.redraw === true,
       })).filter((c: { label: string; concept: string }) => c.label || c.concept);
       if (asked.length === 0) return json({ error: "bad request" }, 400);
       // Cards without a concept (added by hand, renamed): read in the theme's sense, or
@@ -276,7 +279,8 @@ Deno.serve(async (req) => {
       // is drawn again: the sheet style must stay the same across a list.)
       const { data: known } = await db.from("card_icons").select("concept, image").in("concept", concepts).not("image", "is", null);
       const urls = new Map<string, string>((known ?? []).map((k: { concept: string; image: string }) => [k.concept, k.image]));
-      const missing = asked.filter((c: { concept: string }, i: number) => !urls.has(c.concept) && asked.findIndex((x: { concept: string }) => x.concept === c.concept) === i);
+      const alreadyDrawn = new Set(urls.keys());
+      const missing = cardsToDraw(asked, alreadyDrawn);
       if (missing.length) {
         const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "icon" });
         if (!allowed) return json({ error: "quota" }, 429);
@@ -298,7 +302,11 @@ Deno.serve(async (req) => {
           urls.set(card.concept, image);
         }));
         if (drawn.length) {
-          await db.from("card_icons").upsert(drawn, { onConflict: "concept" });
+          // A redrawn concept keeps its library image (other players' lists use it); the
+          // new one is added beside it, and goes to the card that asked for it.
+          const fresh = drawn.filter((d) => !alreadyDrawn.has(d.concept));
+          if (fresh.length) await db.from("card_icons").upsert(fresh, { onConflict: "concept" });
+          await db.from("card_icon_images").insert(drawn);
           await db.from("icon_wishlist").delete().in("concept", drawn.map((d) => d.concept));
         }
       }

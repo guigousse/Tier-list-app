@@ -17,7 +17,7 @@ import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
-import { AiImagesSheet, AiWordsSheet } from '../../components/editor/AiSheet';
+import { AiSheet } from '../../components/editor/AiSheet';
 import { MagicWand } from '../../components/editor/MagicWand';
 import { aiBusy, useAiJob } from '../../lib/aiGenerate';
 import { colors, spacing } from '../../constants/theme';
@@ -79,7 +79,7 @@ function Editor({ list }: { list: TierList }) {
 
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [cardSheet, setCardSheet] = useState<{ cardId: string | null } | null>(null);
-  const [aiOpen, setAiOpen] = useState<'words' | 'images' | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const aiRunning = useAiJob((s) => (aiBusy(s.job, list.id) ? s.job!.kind : null));
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -300,11 +300,7 @@ function Editor({ list }: { list: TierList }) {
         {/* AI generation: personal lists only (daily and popular cards are fixed). */}
         {fixed ? null : (
           <View style={styles.wand} pointerEvents="box-none">
-            {/* The images come once there are cards to illustrate, checked by the player. */}
-            {total > 0 && aiRunning !== 'words' ? (
-              <MagicWand kind="images" onPress={() => setAiOpen('images')} busy={aiRunning === 'images'} />
-            ) : null}
-            <MagicWand kind="words" onPress={() => setAiOpen('words')} busy={aiRunning === 'words'} />
+            <MagicWand kind="all" onPress={() => setAiOpen(true)} busy={aiRunning !== null} />
           </View>
         )}
       </View>
@@ -387,8 +383,7 @@ function Editor({ list }: { list: TierList }) {
 
       {fixed ? null : (
         <>
-          <AiWordsSheet visible={aiOpen === 'words'} onClose={() => setAiOpen(null)} listId={list.id} title={list.title} />
-          <AiImagesSheet visible={aiOpen === 'images'} onClose={() => setAiOpen(null)} listId={list.id} />
+          <AiSheet visible={aiOpen} onClose={() => setAiOpen(false)} listId={list.id} title={list.title} />
         </>
       )}
 

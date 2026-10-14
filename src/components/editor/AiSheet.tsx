@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { aiBusy, cardsNeedingImage, CREDITS, generateImages, generateWords, imageCredits, MIN_IMAGES, TEST_BALANCE, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { aiBusy, CREDITS, generateImages, generateWords, imageChoices, imageCredits, MIN_IMAGES, TEST_BALANCE, useAiJob, wordCredits } from '../../lib/aiGenerate';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
@@ -12,6 +12,8 @@ import { Button, Field, Sheet } from '../ui';
 const COUNTS = [5, 8, 10, 12, 15, 20];
 
 type Props = { visible: boolean; onClose: () => void; listId: string };
+type Panel = { title: string; footer: ReactNode; body: ReactNode };
+type Mode = 'words' | 'images';
 
 /**
  * Shows the questions on each opening, or the generation of this kind when one is
@@ -65,11 +67,11 @@ function Footer({ label, cost, ready, busy, onPress, note }: { label: string; co
 }
 
 /**
- * First step, the words: 1. theme (the list's title to start with), 2. how many cards,
- * then the cost. The list takes the theme as its title. The images come after, once
- * the player has checked the words (see `AiImagesSheet`).
+ * The words: 1. theme (the list's title to start with), 2. how many cards, then the
+ * cost. The list takes the theme as its title. The images come after, once the player
+ * has checked the words (the images tab).
  */
-export function AiWordsSheet({ visible, onClose, listId, title }: Props & { title: string }) {
+function useWordsPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
   const [theme, setTheme] = useState(title);
   const [count, setCount] = useState(10);
   const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'words', () => setTheme(title));
@@ -80,14 +82,11 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
   };
 
   if (showJob && job) {
-    return (
-      <Sheet
-        visible={visible}
-        onClose={onClose}
-        title="Génération des cartes"
-        footer={<Button label={running ? 'Continuer en arrière-plan' : 'Vérifier les cartes'} onPress={onClose} />}
-      >
-        {job.phase === 'working' ? (
+    return {
+      title: 'Génération des cartes',
+      footer: <Button label={running ? 'Continuer en arrière-plan' : 'Vérifier les cartes'} onPress={onClose} />,
+      body:
+        job.phase === 'working' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.statusText}>L’IA imagine vos cartes…</Text>
@@ -106,21 +105,18 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
               </Text>
             </View>
             <Text style={styles.hint}>
-              Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, la baguette aux images les illustrera toutes.
+              Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, l’onglet Images les illustrera.
             </Text>
           </View>
-        )}
-      </Sheet>
-    );
+        ),
+    };
   }
 
-  return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      title="Générer les cartes"
-      footer={<Footer label="Générer" cost={cost} ready={theme.trim().length > 0} busy={busy} onPress={start} />}
-    >
+  return {
+    title: 'Générer les cartes',
+    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0} busy={busy} onPress={start} />,
+    body: (
+      <>
       <View style={styles.section}>
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>Thème de la liste</Text>
@@ -176,25 +172,30 @@ export function AiWordsSheet({ visible, onClose, listId, title }: Props & { titl
         <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
         <Balance cost={cost} />
       </View>
-    </Sheet>
-  );
+      </>
+    ),
+  };
 }
 
 /**
- * Second step, the images: the cards of the list still without a picture (generated,
- * edited or added by hand), all selected to start with; the player leaves out the ones
- * they want, at least `MIN_IMAGES` stay. They're all drawn together on one sheet.
+ * The images: every card but the photos. Those without a picture (generated, edited or
+ * added by hand) start selected; the illustrated ones start aside, picked to be drawn
+ * again (a new image joins the library beside the old one). At least `MIN_IMAGES`, all
+ * drawn together on one sheet.
  */
-export function AiImagesSheet({ visible, onClose, listId }: Props) {
+function useImagesPanel({ visible, onClose, listId }: Props): Panel {
   const list = useTierStore((s) => s.lists[listId]);
-  // The cards left out rather than the ones kept: a card added meanwhile starts selected.
-  const [left, setLeft] = useState<string[]>([]);
-  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'images', () => setLeft([]));
-  const cards = list ? cardsNeedingImage(list) : [];
-  const selected = cards.filter((c) => !left.includes(c.id));
+  // Bare cards left out, illustrated cards picked: a card added meanwhile starts right.
+  const [toggled, setToggled] = useState<string[]>([]);
+  const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'images', () => setToggled([]));
+  const { toDraw, toRedraw } = list ? imageChoices(list) : { toDraw: [], toRedraw: [] };
+  const cards = [...toDraw, ...toRedraw];
+  const isOn = (id: string) => toDraw.some((c) => c.id === id) !== toggled.includes(id);
+  const selected = cards.filter((c) => isOn(c.id));
   const n = selected.length;
+  const redrawn = selected.filter((c) => toRedraw.includes(c)).length;
   const cost = imageCredits(n);
-  const toggle = (id: string) => setLeft(left.includes(id) ? left.filter((x) => x !== id) : [...left, id]);
+  const toggle = (id: string) => setToggled(toggled.includes(id) ? toggled.filter((x) => x !== id) : [...toggled, id]);
   const start = () => {
     setShowJob(true);
     generateImages(listId, selected.map((c) => c.id));
@@ -202,13 +203,10 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
 
   if (showJob && job) {
     const progress = job.cards ? (job.icons + job.failed) / job.cards : 1;
-    return (
-      <Sheet
-        visible={visible}
-        onClose={onClose}
-        title="Génération des images"
-        footer={<Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />}
-      >
+    return {
+      title: 'Génération des images',
+      footer: <Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />,
+      body: (
         <View style={{ gap: spacing.sm }}>
           <View style={styles.status}>
             {running ? <ActivityIndicator color={colors.primary} /> : <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />}
@@ -224,40 +222,40 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
             <Text style={styles.hint}>Toutes les images sont dessinées ensemble, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
           ) : null}
         </View>
-      </Sheet>
-    );
+      ),
+    };
   }
 
   const perImage = n ? (cost / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0';
   const allOn = n === cards.length;
   const note =
     cards.length < MIN_IMAGES
-      ? `Il faut au moins ${MIN_IMAGES} cartes sans image pour lancer une génération.`
+      ? `Il faut au moins ${MIN_IMAGES} cartes pour lancer une génération.`
       : n < MIN_IMAGES
         ? `Sélectionnez au moins ${MIN_IMAGES} cartes.`
         : undefined;
-  return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      title="Générer les images"
-      footer={<Footer label="Dessiner" cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />}
-    >
+  // Everything on, or back to the start: the bare cards on, the illustrated ones aside.
+  const selectAll = () => setToggled(allOn ? [] : toRedraw.map((c) => c.id));
+  return {
+    title: 'Générer les images',
+    footer: <Footer label="Dessiner" cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />,
+    body: (
+      <>
       <View style={styles.section}>
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>
             Cartes à illustrer · {n} / {cards.length}
           </Text>
           {cards.length ? (
-            <Clickable accessibilityRole="button" onPress={() => setLeft(allOn ? cards.map((c) => c.id) : [])}>
-              <Text style={styles.link}>{allOn ? 'Tout désélectionner' : 'Tout sélectionner'}</Text>
+            <Clickable accessibilityRole="button" onPress={selectAll}>
+              <Text style={styles.link}>{allOn ? 'Réinitialiser' : 'Tout sélectionner'}</Text>
             </Clickable>
           ) : null}
         </View>
         {cards.length ? (
           <View style={styles.grid}>
             {cards.map((c) => {
-              const on = !left.includes(c.id);
+              const on = isOn(c.id);
               return (
                 <Clickable
                   key={c.id}
@@ -276,9 +274,13 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
             })}
           </View>
         ) : (
-          <Text style={styles.hint}>Toutes les cartes de la liste ont déjà une image.</Text>
+          <Text style={styles.hint}>Ajoutez d’abord des cartes à la liste.</Text>
         )}
-        {cards.length ? <Text style={styles.hint}>Touchez une carte pour la retirer ou la remettre. Celles qui ont déjà une image ou une photo la gardent.</Text> : null}
+        {cards.length ? (
+          <Text style={styles.hint}>
+            Les cartes sans image sont cochées. Touchez une carte déjà illustrée pour la redessiner : une nouvelle image s’ajoute à la bibliothèque, l’ancienne y reste. Les photos ne sont pas proposées.
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.total}>
@@ -287,12 +289,61 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
         </View>
         <View style={styles.recap}>
           <Text style={styles.recapText}>
-            {n} image{n > 1 ? 's' : ''} · {perImage} crédits l’image
+            {n} image{n > 1 ? 's' : ''}
+            {redrawn ? ` dont ${redrawn} redessinée${redrawn > 1 ? 's' : ''}` : ''} · {perImage} crédits l’image
           </Text>
           <Text style={styles.recapValue}>{cost}</Text>
         </View>
         <Balance cost={cost} />
       </View>
+      </>
+    ),
+  };
+}
+
+/**
+ * The single AI window, opened by the wand: a text tab (generate cards) and an images
+ * tab (draw or redraw them). Opens on the generation under way, else on the images
+ * when cards are waiting for one, else on the text.
+ */
+export function AiSheet({ visible, onClose, listId, title }: Props & { title: string }) {
+  const list = useTierStore((s) => s.lists[listId]);
+  const running = useAiJob((s) => (aiBusy(s.job, listId) ? s.job!.kind : null));
+  const [mode, setMode] = useState<Mode>('words');
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) setMode(running ?? (list && imageChoices(list).toDraw.length > 0 ? 'images' : 'words'));
+  }
+  // Both panels follow the window, not the tab: switching tabs keeps what was chosen.
+  const words = useWordsPanel({ visible, onClose, listId, title });
+  const images = useImagesPanel({ visible, onClose, listId });
+  const panel = mode === 'words' ? words : images;
+  const tabs: { mode: Mode; label: string; icon: 'text' | 'image' }[] = [
+    { mode: 'words', label: 'Texte', icon: 'text' },
+    { mode: 'images', label: 'Images', icon: 'image' },
+  ];
+  return (
+    <Sheet visible={visible} onClose={onClose} title={panel.title} footer={panel.footer}>
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {tabs.map((t) => {
+          const on = t.mode === mode;
+          return (
+            <Clickable
+              key={t.mode}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              onPress={() => setMode(t.mode)}
+              style={[styles.tab, on && styles.tabOn]}
+            >
+              <Ionicons name={t.icon} size={18} color={on ? colors.primaryText : colors.text} />
+              <Text style={[styles.tabText, on && { color: colors.primaryText }]}>{t.label}</Text>
+              {running === t.mode ? <ActivityIndicator size="small" color={on ? colors.primaryText : colors.primary} /> : null}
+            </Clickable>
+          );
+        })}
+      </View>
+      {panel.body}
     </Sheet>
   );
 }
@@ -300,6 +351,10 @@ export function AiImagesSheet({ visible, onClose, listId }: Props) {
 const PICK_SIZE = 72;
 
 const styles = StyleSheet.create({
+  tabs: { flexDirection: 'row', gap: spacing.sm, padding: 4, borderRadius: radius.lg, backgroundColor: colors.surfaceAlt },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: radius.md },
+  tabOn: { backgroundColor: colors.primary },
+  tabText: { color: colors.text, fontSize: 15, fontWeight: '800' },
   credits: {
     flexDirection: 'row',
     alignItems: 'center',

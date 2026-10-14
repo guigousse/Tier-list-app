@@ -10,15 +10,13 @@ const SIZE = 58;
 const RAINBOW = ['#FF5F6D', '#FFB347', '#FFE66B', '#7BE495', '#5AB8FF', '#9B7CFF', '#FF7FD1'] as const;
 
 const KINDS = {
-  words: { glyph: 'text', label: 'Générer des cartes avec l’IA' },
-  images: { glyph: 'image', label: 'Générer les images des cartes avec l’IA' },
+  all: { glyph: 'albums', label: 'Générer avec l’IA : cartes et images' },
 } as const;
 
 /**
- * Floating button that opens an AI generation: a rainbow disc with a wand passing in
- * front of what it makes (a letter for the words, a picture for the images), a light
- * sweep running across it now and then, and a soft breathing halo. `busy`: still
- * generating, the disc spins slowly.
+ * Floating button that opens the AI window: a rainbow disc with a wand passing in
+ * front of the cards it makes, a light sweep running across it now and then, and a
+ * soft breathing halo. `busy`: still generating, the disc spins slowly.
  */
 export function MagicWand({ kind, onPress, busy = false }: { kind: keyof typeof KINDS; onPress: () => void; busy?: boolean }) {
   const sweep = useSharedValue(0);

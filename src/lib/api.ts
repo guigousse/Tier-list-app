@@ -99,7 +99,7 @@ export function aiWords(deviceId: string, theme: string, count: number, existing
  */
 export function aiIcons(
   deviceId: string,
-  cards: { label: string; concept: string }[],
+  cards: { label: string; concept: string; redraw?: boolean }[],
   theme: string,
 ): Promise<{ icons: { concept: string; url: string | null }[] }> {
   return aiCall({ action: 'icons', deviceId, cards, theme }, 240_000);

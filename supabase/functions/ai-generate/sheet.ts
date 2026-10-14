@@ -185,3 +185,16 @@ export function sheetPrompt(cards: { label: string; concept: string; theme?: str
     list + empty,
   ].join("\n");
 }
+
+/**
+ * The cards a request has to draw: those whose concept isn't in the library yet, and
+ * those the player asked to redraw (a new image joins the old one). Each concept once.
+ */
+export function cardsToDraw<T extends { concept: string; redraw?: boolean }>(asked: T[], drawn: Set<string>): T[] {
+  const seen = new Set<string>();
+  return asked.filter((c) => {
+    if (seen.has(c.concept)) return false;
+    seen.add(c.concept);
+    return c.redraw || !drawn.has(c.concept);
+  });
+}

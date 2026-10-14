@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/sheet.test.ts
-import { cellObject, clearBackground, fillSheet, gridFor, KEY, sheetPrompt } from "./sheet.ts";
+import { cardsToDraw, cellObject, clearBackground, fillSheet, gridFor, KEY, sheetPrompt } from "./sheet.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -171,4 +171,18 @@ Deno.test("le thème de la liste accompagne chaque carte demandée, pour lever l
   const text = sheetPrompt([{ label: "Rose", concept: "pink-paint-splash", theme: "Couleurs" }, { label: "Tulipe", concept: "tulip" }], 2, 1);
   if (!text.includes('for a card named "Rose" in a list about "Couleurs"')) throw new Error(text);
   if (!text.includes('for a card named "Tulipe")')) throw new Error(text);
+});
+
+Deno.test("une icône déjà dessinée est reprise, sauf si le joueur demande à la redessiner", () => {
+  const drawn = new Set(["pizza", "rose-flower"]);
+  const plan = cardsToDraw(
+    [
+      { label: "Pizza", concept: "pizza" },
+      { label: "Tulipe", concept: "tulip" },
+      { label: "Rose", concept: "rose-flower", redraw: true },
+      { label: "Tulipe bis", concept: "tulip" },
+    ],
+    drawn,
+  );
+  same(plan.map((c) => c.label), ["Tulipe", "Rose"]);
 });

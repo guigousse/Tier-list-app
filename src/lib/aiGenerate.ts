@@ -91,28 +91,49 @@ export function cardsNeedingImage(list: TierList): Card[] {
   return Object.values(list.cards).filter((c) => !c.imageName && !c.iconUrl && !c.iconSvg && !cardIconFor(splitEmoji(c.label).text));
 }
 
+/**
+ * What the images tab offers: the cards without a picture, to draw (selected to start
+ * with), and the illustrated ones, to redraw if the player picks them. Photos are the
+ * player's own: never offered.
+ */
+export function imageChoices(list: TierList): { toDraw: Card[]; toRedraw: Card[] } {
+  const toDraw = cardsNeedingImage(list);
+  const toRedraw = Object.values(list.cards).filter((c) => !c.imageName && !toDraw.includes(c));
+  return { toDraw, toRedraw };
+}
+
 /** Fewest images a generation draws: below that, a sheet costs more than it brings. */
 export const MIN_IMAGES = 3;
 
-/** Draws the selected cards that still need an image (at least `MIN_IMAGES`). */
+/** Draws the selected cards (at least `MIN_IMAGES`): bare ones, and illustrated ones again. */
 export async function generateImages(listId: string, cardIds: string[]): Promise<void> {
   const store = useTierStore.getState();
   const list = store.lists[listId];
   if (!list) return;
   // All drawn together on one sheet, so they all share the same style.
-  const queue = cardsNeedingImage(list).filter((c) => cardIds.includes(c.id));
+  const { toDraw, toRedraw } = imageChoices(list);
+  const redraw = new Set(toRedraw.map((c) => c.id));
+  const queue = [...toDraw, ...toRedraw].filter((c) => cardIds.includes(c.id));
+  // In the list's order, as the player sees them.
+  const order = Object.keys(list.cards);
+  queue.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   if (queue.length < MIN_IMAGES) return;
   useAiJob.setState({ job: { listId, kind: 'images', phase: 'working', cards: queue.length, icons: 0, failed: 0 } });
   try {
     // A card without a concept (added by hand, or renamed): the server draws its label.
-    const asked = queue.map((c) => ({ label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' }));
+    // A redrawn card is read again in the theme: its concept may be what was wrong (a
+    // flamingo for the colour pink). The server adds the new image beside the old one.
+    const asked = queue.map((c) =>
+      redraw.has(c.id) ? { label: splitEmoji(c.label).text, concept: '', redraw: true } : { label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' },
+    );
     // The theme gives a homonym its sense: "Rose" is a colour in a list of colours.
     const { icons } = await aiIcons(store.deviceId, asked, list.title);
     queue.forEach((card, i) => {
       const url = icons[i]?.url;
+      const concept = icons[i]?.concept;
       if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });
       // The card may have been deleted meanwhile.
-      if (useTierStore.getState().lists[listId]?.cards[card.id]) useTierStore.getState().updateCard(listId, card.id, { iconUrl: url });
+      if (useTierStore.getState().lists[listId]?.cards[card.id]) useTierStore.getState().updateCard(listId, card.id, concept ? { iconUrl: url, aiConcept: concept } : { iconUrl: url });
       cacheAiIcon(url);
       patch({ icons: (useAiJob.getState().job?.icons ?? 0) + 1 });
     });
