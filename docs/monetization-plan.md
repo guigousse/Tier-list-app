@@ -60,6 +60,11 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   ≈ 2.6 c€, 20 cards ≈ 15.8 c€. The margin comes from reuse (a reused icon is paid
   by the player, free for us) and from the icons free cells draw ahead: at 30 %
   reuse an image costs ≈ 0.7 c€ for ≈ 0.8–1.2 c€ earned. Watch the reuse rate.
+- Same scale for the other AI tabs (2026-10-14): a card whose word is replaced costs
+  1 credit, like a new card; renaming the tiers costs **1 credit per tier** (one Opus
+  call, effort low, ≈ 1 c€ whatever the tier count); a redrawn image counts as an
+  image. Cards added by hand or renamed are read in the theme before drawing (one
+  extra Opus call, ≈ 1 c€, not charged).
 - Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
 
 ## Implementation notes
