@@ -1,0 +1,118 @@
+// Cutting an icon sheet: the image model draws every icon of a list on one picture
+// (one call instead of one per card), on a flat magenta background, which is then
+// removed here. Magenta rather than green, as in Broc: food is often green
+// (cucumber, spinach, herbs) but almost never pure magenta.
+// Works on raw RGBA pixels, so it is tested without any image library.
+
+export const KEY = [255, 0, 255];
+
+/** Background if this close to the key and connected to the sheet's edge. */
+const LOOSE = 110;
+/** Background anywhere, even enclosed (a donut's hole): only near-exact key colour. */
+const TIGHT = 60;
+
+type Pixels = Uint8ClampedArray | Uint8Array;
+
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+
+/** Square cells, in a layout whose aspect ratio the image model accepts (1:1, 3:2, 4:3, 5:4). */
+export function gridFor(n: number) {
+  const cols = Math.ceil(Math.sqrt(n));
+  const rows = Math.ceil(n / cols);
+  const d = gcd(cols, rows);
+  return { cols, rows, aspect: `${cols / d}:${rows / d}` };
+}
+
+function distance(px: Pixels, i: number) {
+  const r = px[i] - KEY[0], g = px[i + 1] - KEY[1], b = px[i + 2] - KEY[2];
+  return Math.sqrt(r * r + g * g + b * b);
+}
+
+/** Makes the background transparent, in place. */
+export function clearBackground(px: Pixels, w: number, h: number) {
+  const n = w * h;
+  const clear = new Uint8Array(n);
+  // Flood from the edges: a pink inside the object is never reached by it.
+  const stack: number[] = [];
+  for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+  for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+  while (stack.length) {
+    const p = stack.pop()!;
+    if (clear[p] || distance(px, p * 4) >= LOOSE) continue;
+    clear[p] = 1;
+    const x = p % w, y = (p - x) / w;
+    if (x > 0) stack.push(p - 1);
+    if (x < w - 1) stack.push(p + 1);
+    if (y > 0) stack.push(p - w);
+    if (y < h - 1) stack.push(p + w);
+  }
+  for (let p = 0; p < n; p++) if (!clear[p] && distance(px, p * 4) < TIGHT) clear[p] = 1;
+  for (let p = 0; p < n; p++) if (clear[p]) px[p * 4 + 3] = 0;
+
+  // Despill: edge pixels blended with the magenta keep a pink fringe; red and blue
+  // are brought back down to the green level, which magenta lacks.
+  for (let p = 0; p < n; p++) {
+    if (clear[p]) continue;
+    const x = p % w, y = (p - x) / w;
+    const edge = (x > 0 && clear[p - 1]) || (x < w - 1 && clear[p + 1]) || (y > 0 && clear[p - w]) || (y < h - 1 && clear[p + w]);
+    if (!edge) continue;
+    const i = p * 4;
+    const spill = Math.min(px[i], px[i + 2]) - px[i + 1];
+    if (spill > 0) {
+      px[i] -= spill;
+      px[i + 2] -= spill;
+    }
+  }
+}
+
+/**
+ * Bounding box of the drawing in one cell (index row by row), ignoring specks;
+ * null when the cell is empty, so the card keeps its emoji.
+ */
+export function cellObject(px: Pixels, w: number, h: number, grid: { cols: number; rows: number }, index: number) {
+  const col = index % grid.cols, row = Math.floor(index / grid.cols);
+  const x0 = Math.floor((col * w) / grid.cols), x1 = Math.floor(((col + 1) * w) / grid.cols);
+  const y0 = Math.floor((row * h) / grid.rows), y1 = Math.floor(((row + 1) * h) / grid.rows);
+  const cw = x1 - x0, ch = y1 - y0;
+  const label = new Int32Array(cw * ch);
+  const parts: { size: number; minX: number; minY: number; maxX: number; maxY: number }[] = [];
+  const solid = (x: number, y: number) => px[(y * w + x) * 4 + 3] > 16;
+
+  for (let sy = 0; sy < ch; sy++) {
+    for (let sx = 0; sx < cw; sx++) {
+      if (label[sy * cw + sx] || !solid(x0 + sx, y0 + sy)) continue;
+      const part = { size: 0, minX: sx, minY: sy, maxX: sx, maxY: sy };
+      parts.push(part);
+      const stack = [sy * cw + sx];
+      label[sy * cw + sx] = parts.length;
+      while (stack.length) {
+        const q = stack.pop()!;
+        const qx = q % cw, qy = (q - qx) / cw;
+        part.size++;
+        part.minX = Math.min(part.minX, qx);
+        part.maxX = Math.max(part.maxX, qx);
+        part.minY = Math.min(part.minY, qy);
+        part.maxY = Math.max(part.maxY, qy);
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = qx + dx, ny = qy + dy;
+            if (nx < 0 || ny < 0 || nx >= cw || ny >= ch) continue;
+            const k = ny * cw + nx;
+            if (label[k] || !solid(x0 + nx, y0 + ny)) continue;
+            label[k] = parts.length;
+            stack.push(k);
+          }
+        }
+      }
+    }
+  }
+
+  const largest = Math.max(0, ...parts.map((p) => p.size));
+  // An object smaller than 0.5 % of its cell is noise, not a drawing.
+  if (largest < cw * ch * 0.005) return null;
+  // Pieces of the same drawing (chopsticks beside a sushi) stay; specks go.
+  const kept = parts.filter((p) => p.size >= largest * 0.02);
+  const minX = Math.min(...kept.map((p) => p.minX)), maxX = Math.max(...kept.map((p) => p.maxX));
+  const minY = Math.min(...kept.map((p) => p.minY)), maxY = Math.max(...kept.map((p) => p.maxY));
+  return { x: x0 + minX, y: y0 + minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
