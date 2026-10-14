@@ -3,16 +3,19 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
 import { decodeAvatar, DEFAULT_AVATAR, isAvatarCode } from '../../lib/avatar';
+import { chooseBadge, FORKS, pendingForks } from '../../lib/badges';
 import { trackState, type Track } from '../../lib/rewards';
 import { bestStreak, completedCount, dailyStreak } from '../../lib/streak';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
+import { MyBadges } from './MyBadges';
 import { RewardPath } from './RewardPath';
 
 /** The two reward paths: public tier lists completed (green) and the daily flame (orange). */
 export function ProfileRewards({ onCurrent }: { onCurrent?: (fromBottom: number) => void }) {
   const lists = useTierStore((s) => s.lists);
   const avatarCode = useTierStore((s) => s.profile?.avatar);
+  const choices = useTierStore((s) => s.badgeChoices);
   const [track, setTrack] = useState<Track>('lists');
 
   const progress = useMemo(() => {
@@ -27,19 +30,27 @@ export function ProfileRewards({ onCurrent }: { onCurrent?: (fromBottom: number)
   const state = trackState(track, progress);
   const flame = track === 'flame';
 
-  const left = state.next ? state.next.at - state.value : 0;
+  // On the lists path, forks are steps too.
+  const nextAt = flame
+    ? state.next?.at
+    : [...state.steps.map((m) => m.at), ...FORKS.map((f) => f.at)].filter((at) => at > state.value).sort((a, b) => a - b)[0];
+  const pending = flame ? 0 : pendingForks(progress.completed, choices).length;
+  const left = nextAt !== undefined ? nextAt - state.value : 0;
   const summary = flame
     ? state.value === 0
       ? `Flamme éteinte · record ${progress.bestStreak} jour${progress.bestStreak > 1 ? 's' : ''}. Jouez la tier list du jour pour la rallumer !`
       : state.next
         ? `Encore ${left} jour${left > 1 ? 's' : ''} pour le palier ${state.next.at} · record ${progress.bestStreak}`
         : 'Tous les paliers atteints : légendaire !'
-    : state.next
-      ? `Encore ${left} liste${left > 1 ? 's' : ''} publique${left > 1 ? 's' : ''} pour le palier ${state.next.at}`
-      : 'Tous les paliers atteints : légendaire !';
+    : pending > 0
+      ? `${pending > 1 ? `${pending} badges vous attendent` : 'Un badge vous attend'} : choisissez votre camp !`
+      : nextAt !== undefined
+        ? `Encore ${left} liste${left > 1 ? 's' : ''} publique${left > 1 ? 's' : ''} pour le palier ${nextAt}`
+        : 'Tous les paliers atteints : légendaire !';
 
   return (
     <View style={{ gap: spacing.lg }}>
+      <MyBadges />
       <View style={styles.switch} accessibilityRole="tablist">
         {(
           [
@@ -65,7 +76,7 @@ export function ProfileRewards({ onCurrent }: { onCurrent?: (fromBottom: number)
         {flame ? (
           <Text style={styles.hint}>Si la flamme s’éteint, le chemin repart de zéro, mais vos récompenses restent à vous.</Text>
         ) : (
-          <Text style={styles.hint}>Tier lists du jour et listes populaires validées.</Text>
+          <Text style={styles.hint}>Tier lists du jour et listes populaires validées. Aux bifurcations, choisissez votre camp : l’autre badge est perdu !</Text>
         )}
       </View>
 
@@ -79,6 +90,9 @@ export function ProfileRewards({ onCurrent }: { onCurrent?: (fromBottom: number)
         avatar={avatar}
         unit={flame ? 'jour' : 'liste'}
         onCurrent={onCurrent}
+        forks={flame ? [] : FORKS}
+        choices={choices}
+        onChoose={chooseBadge}
       />
     </View>
   );

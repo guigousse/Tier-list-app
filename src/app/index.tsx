@@ -13,6 +13,7 @@ import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
 import { usePopularTemplates } from '../store/useCatalog';
+import { usePendingBadges } from '../lib/badges';
 import { useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
@@ -50,6 +51,7 @@ export default function Home() {
 
   const popular = usePopularTemplates();
   const unread = useUnreadMail();
+  const pendingBadges = usePendingBadges();
   const profile = useTierStore((s) => s.profile);
 
   // Lists received from friends: the badge on Profil is up to date when coming back here.
@@ -104,7 +106,7 @@ export default function Home() {
         <Tile
           icon="person-circle-outline"
           title="Profil"
-          badge={unread}
+          badge={unread + pendingBadges}
           onPress={() => router.push('/social')}
           picture={profile ? <Avatar avatar={profile.avatar} seed={profile.id} size={28} /> : undefined}
         />

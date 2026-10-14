@@ -6,6 +6,7 @@ import type { TierList } from '../store/types';
 import { popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
 import { blockPlayer, createProfile, deleteProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
 import { newId } from './id';
+import { syncBadges } from './badges';
 import { saveIdentity } from './identity';
 import { syncPushToken } from './push';
 
@@ -61,6 +62,8 @@ export async function saveProfile(pseudo: string, avatar: string): Promise<void>
   await saveIdentity();
   // Notifications about friends, now that there is a profile.
   syncPushToken();
+  // Badges chosen before the profile existed.
+  syncBadges();
 }
 
 /** Agreement between two rankings of the same cards, from 0 to 100 (same tier everywhere: 100). */

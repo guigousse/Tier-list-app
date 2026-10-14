@@ -121,7 +121,16 @@ export async function fetchPastDailies(before = today()): Promise<DailyList[]> {
  * Public part of a player profile. `completed`: tier lists they ranked (popular and daily).
  * `hidden`: masked after several reports.
  */
-export type PublicProfile = { id: string; pseudo: string; tag: number; avatar: string; completed: number; hidden?: boolean };
+export type PublicProfile = {
+  id: string;
+  pseudo: string;
+  tag: number;
+  avatar: string;
+  completed: number;
+  hidden?: boolean;
+  /** Badges the player shows on their profile (absent before badges existed). */
+  badges?: string[];
+};
 
 export function createProfile(deviceId: string, secret: string, pseudo: string, avatar: string): Promise<PublicProfile> {
   return rpc<PublicProfile>('create_profile', { device_id: deviceId, secret, pseudo, avatar });
@@ -129,6 +138,11 @@ export function createProfile(deviceId: string, secret: string, pseudo: string, 
 
 export function updateProfile(secret: string, pseudo: string, avatar: string): Promise<PublicProfile> {
   return rpc<PublicProfile>('update_profile', { secret, pseudo, avatar });
+}
+
+/** The badges shown on the player's profile, up to 3. */
+export function setBadges(secret: string, badges: string[]): Promise<void> {
+  return rpc<void>('set_badges', { secret, badges });
 }
 
 export type Friends = {

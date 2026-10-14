@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { colors, radius, spacing } from '../../constants/theme';
 import type { AvatarConfig } from '../../lib/avatar';
 import { PART_LABELS, stretchFill, withReward, type Milestone } from '../../lib/rewards';
+import type { Badge, Fork } from '../../lib/badges';
 import { AvatarDrawing } from '../Avatar';
+import { BadgeIcon } from '../BadgeIcon';
 import { Clickable } from '../Clickable';
 import { Sheet } from '../ui';
 
@@ -15,6 +17,9 @@ const ROW = 112;
 const NODE = 52;
 const TOP = NODE / 2 + 8;
 const PREVIEW = 62;
+const BADGE = 56;
+/** Width of a badge with its label under it. */
+const BADGE_LABEL = 96;
 
 type Point = { x: number; y: number };
 
@@ -41,13 +46,27 @@ const THEMES = {
   orange: { from: '#FFC24B', to: '#FF5A1F', node: '#FF7A1F' },
 };
 
+type Row = {
+  at: number;
+  y: number;
+  /** One point, or two for a fork (its two badges, in order). */
+  xs: number[];
+  step?: Milestone;
+  fork?: Fork;
+};
+
 /**
- * A reward path: numbered circles linked by a winding road that fills up with the
- * player's progress, each with a preview of the avatar item it unlocks. `glow`: the
- * filled road and the circles reached glow like embers.
+ * A reward path, going up: numbered circles linked by a winding road that fills up
+ * with the player's progress, each with a preview of the avatar item it unlocks.
+ * At forks the road splits towards two badges: the player picks one side, which
+ * gives up the other for good. `glow`: the filled road and the circles reached glow
+ * like embers.
  */
 export function RewardPath({
   steps,
+  forks = [],
+  choices = {},
+  onChoose,
   value,
   won,
   theme,
@@ -57,6 +76,10 @@ export function RewardPath({
   onCurrent,
 }: {
   steps: Milestone[];
+  forks?: Fork[];
+  /** Badge chosen at each fork (fork id → badge id). */
+  choices?: Record<string, string>;
+  onChoose?: (fork: Fork, badge: Badge) => void;
   /** Where the road is filled up to. */
   value: number;
   /** Rewards up to this step are the player's (can be above `value` for the flame). */
@@ -73,43 +96,99 @@ export function RewardPath({
   const [open, setOpen] = useState<Milestone | null>(null);
   const t = THEMES[theme];
 
-  const height = TOP * 2 + steps.length * ROW;
-  // A start point (0) at the bottom, then every step going up, winding left and right.
-  const nodes = useMemo(() => {
+  const height = TOP * 2 + (steps.length + forks.length) * ROW;
+  // A start point (0) at the bottom, then every step and fork going up; steps wind left and right.
+  const rows = useMemo<Row[]>(() => {
     const amplitude = Math.min(90, width * 0.22);
-    return [0, ...steps.map((s) => s.at)].map((at, i) => ({
-      at,
-      x: width / 2 + Math.sin((i * Math.PI) / 2) * amplitude,
+    const entries = [...steps.map((step) => ({ at: step.at, step, fork: undefined })), ...forks.map((fork) => ({ at: fork.at, step: undefined, fork }))].sort(
+      (a, b) => a.at - b.at,
+    );
+    let turn = 0;
+    return [{ at: 0, step: undefined, fork: undefined }, ...entries].map((e, i) => ({
+      ...e,
       y: height - TOP - i * ROW,
+      xs: e.fork ? [width * 0.24, width * 0.76] : [width / 2 + Math.sin((turn++ * Math.PI) / 2) * amplitude],
     }));
-  }, [steps, width, height]);
+  }, [steps, forks, width, height]);
 
-  const road = nodes.slice(1).map((b, i) => stretch(nodes[i], b));
-  const roadD = road.map((c) => partial(c, 1)).join(' ');
-  const filledD = road
-    .map((c, i) => ({ c, f: stretchFill(value, nodes[i].at, nodes[i + 1].at) }))
-    .filter(({ f }) => f > 0)
-    .map(({ c, f }) => partial(c, f))
+  /** Index of the badge chosen at a fork row, if any. */
+  const chosen = (row: Row) => (row.fork && choices[row.fork.id] ? row.fork.options.findIndex((o) => o.id === choices[row.fork!.id]) : -1);
+
+  // Stretches of road: every point of a row to every point of the next (a fork's
+  // two sides go on side by side if two forks follow each other).
+  const stretches = rows.slice(1).flatMap((b, i) => {
+    const a = rows[i];
+    const pairs: [number, number][] =
+      a.xs.length === 2 && b.xs.length === 2
+        ? [
+            [0, 0],
+            [1, 1],
+          ]
+        : a.xs.flatMap((_, p) => b.xs.map((__, q): [number, number] => [p, q]));
+    return pairs.map(([p, q]) => {
+      const lost = (chosen(a) !== -1 && chosen(a) !== p) || (chosen(b) !== -1 && chosen(b) !== q);
+      return {
+        curve: stretch({ x: a.xs[p], y: a.y }, { x: b.xs[q], y: b.y }),
+        lost,
+        fill: lost ? 0 : stretchFill(value, a.at, b.at),
+      };
+    });
+  });
+  const roadD = stretches
+    .filter((s) => !s.lost)
+    .map((s) => partial(s.curve, 1))
+    .join(' ');
+  const lostD = stretches
+    .filter((s) => s.lost)
+    .map((s) => partial(s.curve, 1))
+    .join(' ');
+  const filledD = stretches
+    .filter((s) => s.fill > 0)
+    .map((s) => partial(s.curve, s.fill))
     .join(' ');
 
-  // Embers: the glow breathes.
+  // Embers (flame path) and badges waiting to be chosen: the glow breathes.
   const breath = useSharedValue(0);
+  const waiting = rows.some((r) => r.fork && value >= r.at && chosen(r) === -1);
   useEffect(() => {
-    if (glow) breath.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }), -1, true);
-  }, [glow, breath]);
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: 0.35 + breath.value * 0.55,
-  }));
+    if (glow || waiting) breath.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }), -1, true);
+  }, [glow, waiting, breath]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: 0.35 + breath.value * 0.55 }));
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + breath.value * 0.1 }],
     opacity: 0.12 + breath.value * 0.3,
   }));
 
-  const nextIndex = nodes.findIndex((n) => n.at > value);
-  const focus = nextIndex === -1 ? nodes.length - 1 : nextIndex;
+  const nextIndex = rows.findIndex((r) => r.at > value);
+  // A badge to choose first, else the next step.
+  const pick = rows.findIndex((r) => r.fork && value >= r.at && chosen(r) === -1);
+  const focus = pick !== -1 ? pick : nextIndex === -1 ? rows.length - 1 : nextIndex;
+  const focusY = rows[focus]?.y ?? 0;
   useEffect(() => {
-    if (width > 0) onCurrent?.(height - nodes[focus].y);
-  }, [width, height, nodes, focus, onCurrent]);
+    if (width > 0) onCurrent?.(height - focusY);
+  }, [width, height, focusY, onCurrent]);
+
+  const tapBadge = (fork: Fork, badge: Badge, side: number, choice: number) => {
+    const other = fork.options[1 - side];
+    if (value < fork.at) {
+      Alert.alert(
+        fork.question,
+        `Au palier ${fork.at}, choisissez votre camp : ${fork.options[0].label} ou ${fork.options[1].label}. L’autre badge sera perdu pour toujours !`,
+      );
+    } else if (choice === -1) {
+      Alert.alert(`${badge.emoji} ${badge.label} ?`, `Le badge ${other.emoji} ${other.label} sera perdu pour toujours. Pas de retour en arrière !`, [
+        { text: 'Réfléchir encore', style: 'cancel' },
+        { text: `Choisir ${badge.label}`, onPress: () => onChoose?.(fork, badge) },
+      ]);
+    } else {
+      Alert.alert(
+        choice === side ? `${badge.emoji} ${badge.label}` : `${badge.emoji} ${badge.label} : perdu`,
+        choice === side
+          ? 'Votre camp est choisi ! Affichez ce badge sur votre profil depuis « Mes badges ».'
+          : `Vous avez choisi ${other.label}. Pas de regrets ?`,
+      );
+    }
+  };
 
   return (
     <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
@@ -122,6 +201,9 @@ export function RewardPath({
                 <Stop offset="1" stopColor={t.to} />
               </LinearGradient>
             </Defs>
+            {lostD ? (
+              <Path d={lostD} stroke={colors.surfaceAlt} strokeOpacity={0.45} strokeWidth={5} strokeDasharray="4 8" strokeLinecap="round" fill="none" />
+            ) : null}
             <Path d={roadD} stroke={colors.surfaceAlt} strokeWidth={8} strokeLinecap="round" fill="none" />
             <Path d={roadD} stroke={colors.border} strokeWidth={1.5} strokeDasharray="1.5 8" strokeLinecap="round" fill="none" />
             {filledD ? <Path d={filledD} stroke={`url(#fill-${theme})`} strokeWidth={8} strokeLinecap="round" fill="none" /> : null}
@@ -135,18 +217,62 @@ export function RewardPath({
             </Animated.View>
           ) : null}
 
-          {nodes.map((n, i) => {
-            const reached = value >= n.at;
-            const step = i > 0 ? steps[i - 1] : null;
+          {rows.map((row, i) => {
+            const reached = value >= row.at;
+            const fork = row.fork;
+            if (fork) {
+              const choice = chosen(row);
+              const toPick = reached && choice === -1;
+              // Between the two badges, clear of their halos.
+              const gap = row.xs[1] - row.xs[0] - BADGE - 20;
+              return (
+                <View key={`fork-${fork.id}`} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                  <View style={[styles.question, { top: row.y - 30, left: row.xs[0] + BADGE / 2 + 10, width: gap }]}>
+                    <Text style={[styles.questionAt, toPick && { color: t.node }]}>{toPick ? 'Choisissez !' : `Palier ${row.at}`}</Text>
+                    <Text numberOfLines={3} style={styles.questionText}>
+                      {fork.question}
+                    </Text>
+                  </View>
+                  {fork.options.map((badge, side) => (
+                    <Clickable
+                      key={badge.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${badge.label}, ${choice === side ? 'choisi' : choice !== -1 ? 'perdu' : reached ? 'à choisir' : `palier ${row.at}`}`}
+                      onPress={() => tapBadge(fork, badge, side, choice)}
+                      style={[styles.badgeWrap, { top: row.y - BADGE / 2, left: row.xs[side] - BADGE_LABEL / 2 }]}
+                    >
+                      <View style={styles.badgeCircle}>
+                        {toPick ? <Animated.View pointerEvents="none" style={[styles.badgeHalo, { backgroundColor: badge.colors[0] }, pulseStyle]} /> : null}
+                        <BadgeIcon badge={badge} size={BADGE} state={!reached ? 'locked' : choice !== -1 && choice !== side ? 'lost' : undefined} />
+                        {choice === side ? (
+                          <View style={[styles.check, { backgroundColor: t.node }]}>
+                            <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text
+                        numberOfLines={2}
+                        style={[styles.badgeLabel, choice !== -1 && choice !== side && { opacity: 0.4, textDecorationLine: 'line-through' }]}
+                      >
+                        {badge.label}
+                      </Text>
+                    </Clickable>
+                  ))}
+                </View>
+              );
+            }
+
+            const x = row.xs[0];
+            const step = row.step ?? null;
             const owned = step ? won >= step.at : false;
-            const left = n.x <= width / 2;
+            const left = x <= width / 2;
             const current = i === nextIndex;
             // The preview sits on the roomier side of the circle.
-            const room = left ? width - n.x - NODE / 2 - spacing.md : n.x - NODE / 2 - spacing.md;
+            const room = left ? width - x - NODE / 2 - spacing.md : x - NODE / 2 - spacing.md;
             const previewWidth = Math.min(170, room);
             return (
-              <View key={n.at} style={StyleSheet.absoluteFill} pointerEvents="box-none">
-                <View style={[styles.nodeWrap, { top: n.y - NODE / 2, left: n.x - NODE / 2 }]}>
+              <View key={row.at} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                <View style={[styles.nodeWrap, { top: row.y - NODE / 2, left: x - NODE / 2 }]}>
                   {glow && reached && i > 0 ? <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: t.node }, pulseStyle]} /> : null}
                   <View
                     style={[styles.node, reached ? { backgroundColor: t.node, borderColor: t.from } : current ? { borderColor: t.node, borderWidth: 3 } : null]}
@@ -154,7 +280,7 @@ export function RewardPath({
                     {i === 0 ? (
                       <Ionicons name={theme === 'orange' ? 'flame' : 'flag'} size={22} color={reached ? '#FFFFFF' : colors.textMuted} />
                     ) : (
-                      <Text style={[styles.nodeText, reached && { color: '#FFFFFF' }, n.at >= 100 && { fontSize: 15 }]}>{n.at}</Text>
+                      <Text style={[styles.nodeText, reached && { color: '#FFFFFF' }, row.at >= 100 && { fontSize: 15 }]}>{row.at}</Text>
                     )}
                   </View>
                 </View>
@@ -162,12 +288,12 @@ export function RewardPath({
                 {step ? (
                   <Clickable
                     accessibilityRole="button"
-                    accessibilityLabel={`${n.at} ${unit}${n.at > 1 ? 's' : ''} : ${step.rewards.map((r) => r.label).join(', ')}${owned ? ', obtenu' : ', à débloquer'}`}
+                    accessibilityLabel={`${row.at} ${unit}${row.at > 1 ? 's' : ''} : ${step.rewards.map((r) => r.label).join(', ')}${owned ? ', obtenu' : ', à débloquer'}`}
                     onPress={() => setOpen(step)}
                     style={({ pressed }) => [
                       styles.preview,
-                      { top: n.y - PREVIEW / 2, width: previewWidth },
-                      left ? { left: n.x + NODE / 2 + spacing.md } : { left: n.x - NODE / 2 - spacing.md - previewWidth },
+                      { top: row.y - PREVIEW / 2, width: previewWidth },
+                      left ? { left: x + NODE / 2 + spacing.md } : { left: x - NODE / 2 - spacing.md - previewWidth },
                       !owned && styles.previewLocked,
                       pressed && { opacity: 0.8 },
                     ]}
@@ -267,6 +393,25 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   previewLocked: { opacity: 0.55 },
+  question: { position: 'absolute', height: 60, alignItems: 'center', justifyContent: 'center' },
+  questionAt: { color: colors.textMuted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  questionText: { color: colors.text, fontSize: 11.5, fontWeight: '700', textAlign: 'center' },
+  badgeWrap: { position: 'absolute', width: BADGE_LABEL, alignItems: 'center', gap: 4 },
+  badgeCircle: { width: BADGE, height: BADGE, alignItems: 'center', justifyContent: 'center' },
+  badgeHalo: { position: 'absolute', width: BADGE + 16, height: BADGE + 16, borderRadius: (BADGE + 16) / 2 },
+  check: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeLabel: { color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   lock: {
     position: 'absolute',
     right: -3,

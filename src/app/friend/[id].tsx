@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Avatar } from '../../components/Avatar';
+import { AvatarWithBadges } from '../../components/BadgeIcon';
 import { Clickable } from '../../components/Clickable';
 import { IconButton } from '../../components/ui';
 import type { Template } from '../../constants/presets';
 import { colors, radius, spacing, TIER_COLORS } from '../../constants/theme';
 import { fetchFriendLists, removeFriend, type FriendVote, type PublicProfile } from '../../lib/api';
 import { openPopular } from '../../lib/create';
+import { knownBadges } from '../../lib/badges';
 import { splitEmoji } from '../../lib/emoji';
 import { useResponsive } from '../../lib/layout';
 import { agreement, confirmReport, friendCode, myRanks, socialError, voteTemplate } from '../../lib/social';
@@ -125,7 +126,7 @@ export default function Friend() {
       ) : (
         <>
           <View style={styles.header}>
-            <Avatar avatar={data.profile.avatar} seed={data.profile.id} size={88} />
+            <AvatarWithBadges avatar={data.profile.avatar} seed={data.profile.id} size={88} badges={knownBadges(data.profile.badges)} />
             <Text style={styles.name}>
               {data.profile.pseudo}
               <Text style={styles.tag}> #{data.profile.tag}</Text>

@@ -53,6 +53,10 @@ type State = {
   profile: Profile | null;
   /** Received tier lists whose final comparison the player opened (they go to the archive). */
   viewedMail: string[];
+  /** Badge chosen at each fork of the reward path (fork id → badge id), for good. */
+  badgeChoices: Record<string, string>;
+  /** Badges shown on the profile, up to 3. */
+  shownBadges: string[];
 
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
@@ -142,6 +146,8 @@ type Persisted = {
   favoriteTemplates?: string[];
   profile?: Profile | null;
   viewedMail?: string[];
+  badgeChoices?: Record<string, string>;
+  shownBadges?: string[];
 };
 
 /** Upgrades data saved by an older version of the app (see `version` below). */
@@ -180,6 +186,8 @@ export const useTierStore = create<State>()(
         favoriteTemplates: [],
         profile: null,
         viewedMail: [],
+        badgeChoices: {},
+        shownBadges: [],
 
         createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
           const now = Date.now();
@@ -513,6 +521,8 @@ export const useTierStore = create<State>()(
         favoriteTemplates: state.favoriteTemplates,
         profile: state.profile,
         viewedMail: state.viewedMail,
+        badgeChoices: state.badgeChoices,
+        shownBadges: state.shownBadges,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
@@ -523,6 +533,8 @@ export const useTierStore = create<State>()(
           favoriteTemplates: p.favoriteTemplates ?? current.favoriteTemplates,
           profile: p.profile ?? current.profile,
           viewedMail: p.viewedMail ?? current.viewedMail,
+          badgeChoices: p.badgeChoices ?? current.badgeChoices,
+          shownBadges: p.shownBadges ?? current.shownBadges,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
       },

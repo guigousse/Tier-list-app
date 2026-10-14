@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
+import { AvatarWithBadges } from '../components/BadgeIcon';
 import { MailBox } from '../components/MailBox';
 import { Clickable } from '../components/Clickable';
 import { ProfileForm } from '../components/ProfileForm';
@@ -14,6 +15,7 @@ import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
+import { knownBadges, usePendingBadges } from '../lib/badges';
 import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
 import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
@@ -65,6 +67,8 @@ export default function Social() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<Tab>(() => initialTab(params.tab));
   const unread = useUnreadMail();
+  const pendingBadges = usePendingBadges();
+  const shownBadges = useTierStore((s) => s.shownBadges);
   // Reward paths go up from the bottom of the page: scrolled to where the player stands.
   const scroll = useRef<ScrollView>(null);
   const sizes = useRef({ content: 0, view: 0, fromBottom: null as number | null });
@@ -214,7 +218,7 @@ export default function Social() {
       ]}
     >
       <View style={styles.me}>
-        <Avatar avatar={profile.avatar} seed={profile.id} size={64} />
+        <AvatarWithBadges avatar={profile.avatar} seed={profile.id} size={64} badges={knownBadges(shownBadges)} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text numberOfLines={1} style={styles.meName}>
             {profile.pseudo}
@@ -243,9 +247,10 @@ export default function Social() {
       <View style={styles.tabs} accessibilityRole="tablist">
         {(
           [
-            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0 },
-            { key: 'challenges', label: 'Défis', badge: unread },
-            { key: 'rewards', label: 'Récompenses', badge: 0 },
+            { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0, grow: 1 },
+            { key: 'challenges', label: 'Défis', badge: unread, grow: 1 },
+            // Wider: the longest label, often with a badge.
+            { key: 'rewards', label: 'Récompenses', badge: pendingBadges, grow: 1.5 },
           ] as const
         ).map((t) => (
           <Clickable
@@ -254,7 +259,7 @@ export default function Social() {
             accessibilityState={{ selected: tab === t.key }}
             accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
             onPress={() => changeTab(t.key)}
-            style={[styles.tab, tab === t.key && styles.tabSelected]}
+            style={[styles.tab, { flex: t.grow }, tab === t.key && styles.tabSelected]}
           >
             <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.tabText, tab === t.key && { color: colors.text }]}>
               {t.label}

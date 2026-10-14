@@ -1,3 +1,5 @@
+import { chooseBadge, FORKS, knownBadges, pendingForks } from '../lib/badges';
+import { useTierStore } from '../store/useTierStore';
 import { isArchived, type Mail } from '../store/useMail';
 import { milestones, stretchFill, trackState } from '../lib/rewards';
 
@@ -34,5 +36,28 @@ describe('challenge archive', () => {
   it('archives sent challenges once the friend’s ranking was seen', () => {
     expect(isArchived(mail({ seen: false }), false, [])).toBe(false);
     expect(isArchived(mail({ seen: true }), false, [])).toBe(true);
+  });
+});
+
+describe('badges', () => {
+  beforeEach(() => useTierStore.setState({ badgeChoices: {}, shownBadges: [], profile: null }));
+
+  it('offers each fork once reached, between two badges found by id', () => {
+    expect(pendingForks(1, {}).length).toBe(0);
+    expect(pendingForks(12, {}).map((f) => f.id)).toEqual(['food', 'pet', 'pastry']);
+    expect(pendingForks(12, { food: 'pizza' }).map((f) => f.id)).toEqual(['pet', 'pastry']);
+    expect(new Set(FORKS.flatMap((f) => f.options.map((b) => b.id))).size).toBe(FORKS.length * 2);
+    expect(knownBadges(['pizza', 'from-a-newer-app']).map((b) => b.id)).toEqual(['pizza']);
+  });
+
+  it('keeps the first side chosen for good and pins up to 3 badges', () => {
+    const [food, pet, pastry, holiday] = FORKS;
+    chooseBadge(food, food.options[0]);
+    chooseBadge(food, food.options[1]);
+    expect(useTierStore.getState().badgeChoices.food).toBe('pizza');
+    chooseBadge(pet, pet.options[1]);
+    chooseBadge(pastry, pastry.options[1]);
+    chooseBadge(holiday, holiday.options[0]);
+    expect(useTierStore.getState().shownBadges).toEqual(['pizza', 'cat', 'chocolatine']);
   });
 });
