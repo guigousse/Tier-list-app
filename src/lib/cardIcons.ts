@@ -117,16 +117,21 @@ export const CARD_ICONS: Record<string, Icon> = {
 <rect fill="#FFE9A8" ${line(1.8)} x="42" y="30" width="16" height="10" rx="2.5"/>
 <path fill="#FFFFFF" opacity=".7" d="M44 32 H52 V34 H44 Z"/>`,
   },
-  sleep: {
-    silhouette: `<path d="M10 50 C10 34 22 32 50 32 C78 32 90 34 90 50 C90 66 78 70 50 70 C22 70 10 66 10 50 Z"/><path fill="none" stroke-width="12" d="M58 12 H70 L58 24 H70 M76 4 H84 L76 12 H84"/>`,
+  bed: {
+    silhouette: `<rect x="6" y="28" width="14" height="60" rx="4"/><rect x="10" y="48" width="84" height="32" rx="6"/><path fill="none" stroke-width="12" d="M62 12 H72 L62 22 H72 M78 4 H86 L78 12 H86"/>`,
     art: `
-<path fill="#EAF2FF" ${line()} d="M10 50 C10 34 22 32 50 32 C78 32 90 34 90 50 C90 66 78 70 50 70 C22 70 10 66 10 50 Z"/>
-<path fill="#C9D9F2" d="M14 58 C22 66 40 67 50 67 C64 67 80 66 87 58 C84 64 72 68 50 68 C30 68 18 65 14 58 Z"/>
-<path fill="none" stroke="#9FB6DA" stroke-width="1.8" stroke-linecap="round" d="M20 40 C24 44 24 56 20 60 M80 40 C76 44 76 56 80 60"/>
-<path fill="#7C5CFF" ${line(2)} d="M28 46 C28 40 46 40 48 46 C50 40 72 40 72 46 C72 54 60 56 50 52 C40 56 28 54 28 46 Z"/>
-<path fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" d="M34 48 C36 50 40 50 42 48 M58 48 C60 50 64 50 66 48"/>
-<path fill="none" stroke="${OL}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" d="M58 12 H70 L58 24 H70 M76 4 H84 L76 12 H84"/>
-<path fill="none" stroke="#7C5CFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M58 12 H70 L58 24 H70 M76 4 H84 L76 12 H84"/>`,
+<path fill="none" stroke="${OL}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="M62 12 H72 L62 22 H72 M78 4 H86 L78 12 H86"/>
+<path fill="none" stroke="#9E8CFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M62 12 H72 L62 22 H72 M78 4 H86 L78 12 H86"/>
+<g fill="#7A4520" ${line()}><rect x="12" y="76" width="6" height="12" rx="2"/><rect x="84" y="76" width="6" height="12" rx="2"/></g>
+<rect fill="#A0612F" ${line()} x="8" y="66" width="86" height="12" rx="4"/>
+<rect fill="#FFFFFF" ${line()} x="14" y="54" width="78" height="14" rx="5"/>
+<rect fill="#B5733A" ${line()} x="6" y="28" width="14" height="52" rx="4"/>
+<path fill="#D08A4A" d="M9 32 H12 V74 H9 Z"/>
+<ellipse fill="#FFFFFF" ${line()} cx="31" cy="50" rx="11" ry="6.5"/>
+<path fill="#5B8DEF" ${line()} d="M42 46 C56 42 80 42 92 48 V66 C92 68 91 69 89 69 H44 C42 62 40 54 42 46 Z"/>
+<path fill="#3F6FD1" d="M44 64 C60 66 78 66 92 62 V66 C92 68 91 69 89 69 H44 Z"/>
+<path fill="#FFFFFF" opacity=".35" d="M46 48 C58 45 74 45 86 48 C74 47 60 48 48 52 Z"/>
+<path fill="#E9EEF5" ${line(1.8)} d="M42 46 C46 46 50 50 50 56 C46 52 42 50 40 49 Z"/>`,
   },
   'hiking-boot': {
     silhouette: `<path d="M24 12 H52 L56 50 C70 52 86 58 90 70 V86 H12 V72 C14 60 18 50 20 40 Z"/>`,
@@ -230,7 +235,9 @@ export const CARD_ICON_FOR: Record<string, string> = {
   gaufre: 'gaufre',
   beignet: 'beignet',
   pancake: 'pancake',
-  'grasse matinée': 'sleep',
+  'grasse matinée': 'bed',
+  dormir: 'bed',
+  sieste: 'bed',
   brunch: 'croissant',
   balade: 'hiking-boot',
   film: 'clapperboard',
@@ -242,21 +249,17 @@ export const CARD_ICON_FOR: Record<string, string> = {
   bain: 'duck',
 };
 
-/**
- * SVG markup of a card icon, with a light rim around it. `coin`: on a round
- * token instead (like a coin).
- */
-export function cardIconSvg(id: string, coin = false): string {
+/** Icon of a card from its label (emoji and case ignored), if one is drawn. */
+export function cardIconFor(label: string): string | undefined {
+  return CARD_ICON_FOR[label.trim().toLowerCase()];
+}
+
+/** SVG markup of a card icon: the drawing with a soft shadow under it. */
+export function cardIconSvg(id: string): string {
   const icon = CARD_ICONS[id];
   if (!icon) return '';
-  if (coin) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-<circle cx="50" cy="50" r="48" fill="#262A34"/><circle cx="50" cy="50" r="48" fill="none" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="2.5"/><circle cx="50" cy="50" r="43" fill="none" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="1.5"/>
-<g transform="translate(16 16) scale(.68)">${icon.art}</g>
-</svg>`;
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 -3 106 106">
-<g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">${icon.silhouette}</g>
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 104 106">
+<g opacity=".22" transform="translate(0 3)" fill="#000000" stroke="#000000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${icon.silhouette}</g>
 ${icon.art}
 </svg>`;
 }

@@ -1,9 +1,11 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { readableTextColor } from '../constants/theme';
+import { cardIconFor } from '../lib/cardIcons';
 import { splitEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
 import type { Card } from '../store/types';
+import { CardIcon } from './CardIcon';
 
 type Props = {
   card: Card;
@@ -15,6 +17,8 @@ export function CardView({ card, size, showLabel = true }: Props) {
   const uri = imageUri(card.imageName);
   const fg = readableTextColor(card.color);
   const { emoji, text } = splitEmoji(card.label);
+  // A drawn icon for this card's name, when there's no photo.
+  const icon = uri ? undefined : cardIconFor(text || card.label);
 
   return (
     <View style={[styles.card, { width: size, height: size, backgroundColor: card.color }]}>
@@ -29,9 +33,9 @@ export function CardView({ card, size, showLabel = true }: Props) {
             </View>
           ) : null}
         </>
-      ) : emoji ? (
+      ) : icon || emoji ? (
         <>
-          <Text style={{ fontSize: size * 0.42 }}>{emoji}</Text>
+          {icon ? <CardIcon id={icon} size={size * (showLabel && text ? 0.62 : 0.78)} /> : <Text style={{ fontSize: size * 0.42 }}>{emoji}</Text>}
           {showLabel && text ? (
             <Text numberOfLines={1} style={[styles.small, { color: fg }]}>
               {text}
