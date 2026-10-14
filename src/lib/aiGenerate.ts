@@ -11,8 +11,11 @@ import { cardIconFor } from './cardIcons';
  * so the player can close the window while the icons keep coming.
  */
 
-/** Credits a generation would cost (to calibrate with the real AI costs). */
-export const CREDITS = { word: 1, image: 5 };
+/**
+ * Credits a generation costs. Scale from docs/monetization-plan.md: a new icon costs
+ * ~40 times a card name to draw, and 100 credits are meant to sell for 1.99 €.
+ */
+export const CREDITS = { word: 1, image: 8 };
 
 /** Balance shown while there are no real credits yet (nothing is taken). */
 export const TEST_BALANCE = 200;

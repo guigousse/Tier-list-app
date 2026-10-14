@@ -19,9 +19,9 @@ beforeEach(() => {
 });
 
 describe('AI generation', () => {
-  it('costs 1 credit per word and 5 more per image', () => {
+  it('costs 1 credit per card and 8 more per image', () => {
     expect(creditCost(10, false)).toBe(10);
-    expect(creditCost(10, true)).toBe(60);
+    expect(creditCost(10, true)).toBe(90);
   });
 
   it('adds the words first, then gives each card its icon', async () => {
