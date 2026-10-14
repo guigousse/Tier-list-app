@@ -69,7 +69,7 @@ export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
               count > 0 ? 'Envoyée !' : 'Pas envoyée',
               count > 0
                 ? `« ${list.title} » est envoyée à ${count > 1 ? `${count} amis` : 'votre ami'}. Vous verrez leur classement dans Social.`
-                : 'Vous avez déjà envoyé beaucoup de listes à ces amis aujourd’hui : réessayez demain.',
+                : 'Rien n’a été envoyé : ces amis l’ont déjà reçue, ou vous leur avez envoyé beaucoup de listes aujourd’hui.',
             ), 400);
           }}
         />

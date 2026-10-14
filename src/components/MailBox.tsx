@@ -17,7 +17,7 @@ function MailRow({ mail, received }: { mail: Mail; received: boolean }) {
   const fresh = !received && ranked && !mail.seen;
   const when = relativeTime(Date.parse(mail.sentAt));
   const subtitle = received
-    ? `De ${mail.friend.pseudo} · ${when}`
+    ? `De ${mail.friend.pseudo} · ${mail.auto ? 'déjà classée' : when}`
     : ranked
       ? `${mail.friend.pseudo} l’a classée`
       : `À ${mail.friend.pseudo} · en attente`;

@@ -9,7 +9,7 @@ import { Button } from '../../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
 import { splitEmoji } from '../../lib/emoji';
 import { useResponsive } from '../../lib/layout';
-import { openReceived } from '../../lib/mail';
+import { confirmRerank, openReceived } from '../../lib/mail';
 import { mailAgreement, useMail } from '../../store/useMail';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -90,11 +90,21 @@ export default function MailComparison() {
       </View>
 
       {done ? (
-        <Text style={styles.summary}>
-          {same === list.cards.length
-            ? 'Exactement le même classement !'
-            : `Même rang pour ${same} carte${same > 1 ? 's' : ''} sur ${list.cards.length}.`}
-        </Text>
+        <View style={{ gap: spacing.sm }}>
+          <Text style={styles.summary}>
+            {same === list.cards.length
+              ? 'Exactement le même classement !'
+              : `Même rang pour ${same} carte${same > 1 ? 's' : ''} sur ${list.cards.length}.`}
+          </Text>
+          {mail.auto ? (
+            <Text style={styles.note}>
+              {received
+                ? 'Vous aviez déjà classé cette liste : votre classement a été repris.'
+                : `${friend.pseudo} avait déjà classé cette liste : son classement a été repris.`}
+            </Text>
+          ) : null}
+          {received ? <Button variant="ghost" icon="refresh" label="Reclasser" onPress={() => confirmRerank(mail)} /> : null}
+        </View>
       ) : received ? (
         <View style={{ gap: spacing.md }}>
           <Text style={styles.summary}>Classez cette liste pour découvrir le classement de {friend.pseudo}.</Text>
@@ -146,6 +156,7 @@ const styles = StyleSheet.create({
   scoreValue: { color: colors.text, fontSize: 36, fontWeight: '800', fontVariant: ['tabular-nums'] },
   scoreLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   summary: { color: colors.textMuted, fontSize: 15, textAlign: 'center', lineHeight: 21 },
+  note: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18, fontStyle: 'italic' },
   table: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   headLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' },

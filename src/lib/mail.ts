@@ -3,13 +3,34 @@ import { Alert } from 'react-native';
 
 import { useMail, type Mail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
-import { ignoreMail, reportMail } from './api';
+import { ignoreMail, reportMail, rerankMail } from './api';
 import { socialError } from './social';
 
 /** Opens a received list to rank (copied into the player's lists the first time). */
-export function openReceived(mail: Mail): void {
-  const id = useTierStore.getState().receiveMail({ id: mail.id, from: mail.friend.pseudo, list: mail.list });
+export function openReceived(mail: Mail, again = false): void {
+  const id = useTierStore.getState().receiveMail({ id: mail.id, from: mail.friend.pseudo, list: mail.list }, again);
   router.push({ pathname: '/editor/[id]', params: { id } });
+}
+
+/** Ranks a received list again: back to rank, the friend waits for the new ranking. */
+export function confirmRerank(mail: Mail): void {
+  const secret = useTierStore.getState().profile?.secret;
+  if (!secret) return;
+  Alert.alert('Reclasser cette liste ?', `${mail.friend.pseudo} verra votre nouveau classement une fois envoyé.`, [
+    { text: 'Annuler', style: 'cancel' },
+    {
+      text: 'Reclasser',
+      onPress: () =>
+        rerankMail(secret, mail.id).then(
+          async () => {
+            await useMail.getState().refresh();
+            router.back();
+            openReceived({ ...mail, status: 'sent' }, true);
+          },
+          (e) => Alert.alert('Oups', socialError(e)),
+        ),
+    },
+  ]);
 }
 
 /** Opens a list sent or received: to rank, or both rankings side by side. */

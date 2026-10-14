@@ -53,8 +53,8 @@ type State = {
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
   importList: (shared: SharedList) => string;
-  /** The tier list a friend sent, to rank (created the first time). */
-  receiveMail: (mail: { id: string; from: string; list: SharedList }) => string;
+  /** The tier list a friend sent, to rank (created the first time; `again`: to rank it once more). */
+  receiveMail: (mail: { id: string; from: string; list: SharedList }, again?: boolean) => string;
   /** Marks a received list as ranked and sent back. */
   markMailAnswered: (listId: string) => void;
   deleteList: (id: string) => void;
@@ -235,9 +235,13 @@ export const useTierStore = create<State>()(
           return list.id;
         },
 
-        receiveMail: ({ id, from, list: shared }) => {
+        receiveMail: ({ id, from, list: shared }, again) => {
           const existing = Object.values(get().lists).find((l) => l.mail?.id === id);
-          if (existing) return existing.id;
+          if (existing) {
+            // Ranked again: the earlier ranking stays in place, to adjust.
+            if (again) patchList(existing.id, (l) => ({ mail: { ...l.mail!, answeredAt: undefined } }));
+            return existing.id;
+          }
           // Cards to rank: the sender's ranking isn't shown.
           const listId = get().importList({ ...shared, code: `mail:${id}`, cards: shared.cards.map((c) => ({ ...c, tier: -1 })) });
           // importList creates the cards in the order sent.

@@ -195,6 +195,8 @@ type MailRow = {
   /** Sender's tier per card (-1 unranked); for a received list, only once it's ranked. */
   sender_ranks: number[] | null;
   recipient_ranks: number[] | null;
+  /** Answered at once with the friend's earlier ranking of the same list. */
+  auto: boolean;
 };
 export type InboxRow = MailRow & { from: PublicProfile };
 export type OutboxRow = MailRow & { to: PublicProfile; seen: boolean };
@@ -202,6 +204,16 @@ export type OutboxRow = MailRow & { to: PublicProfile; seen: boolean };
 /** Sends `list` (without photos, its ranking kept apart) to friends; returns how many got it. */
 export function sendList(secret: string, recipients: string[], list: TierList): Promise<number> {
   return rpc<number>('send_list', { secret, recipients, payload: toPayload(list) });
+}
+
+/** Friends the player already sent the same list to, and where it stands. */
+export function mailSentTo(secret: string, list: TierList): Promise<{ friend: string; mail: string; status: 'sent' | 'ranked' }[]> {
+  return rpc('mail_sent_to', { secret, payload: toPayload(list) });
+}
+
+/** Ranks a received list again: it's back to rank, and the friend waits for the new ranking. */
+export function rerankMail(secret: string, mail: string): Promise<void> {
+  return rpc<void>('rerank_mail', { secret, mail });
 }
 
 export function fetchMail(secret: string): Promise<{ inbox: InboxRow[]; outbox: OutboxRow[] }> {

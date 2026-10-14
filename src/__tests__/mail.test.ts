@@ -46,6 +46,18 @@ describe('tier lists sent between friends', () => {
     expect(useTierStore.getState().lists[id].mail!.answeredAt).toBeDefined();
   });
 
+  it('opens a ranked list again to rank it once more, with its ranking in place', () => {
+    const store = useTierStore.getState();
+    const id = store.receiveMail({ id: 'm3', from: 'Lucas', list: shared });
+    const list = useTierStore.getState().lists[id];
+    store.moveCard(id, list.mail!.cardIds[0], list.tiers[0].id, 0);
+    store.markMailAnswered(id);
+    expect(store.receiveMail({ id: 'm3', from: 'Lucas', list: shared }, true)).toBe(id);
+    const again = useTierStore.getState().lists[id];
+    expect(again.mail!.answeredAt).toBeUndefined();
+    expect(again.placement[again.tiers[0].id]).toEqual([list.mail!.cardIds[0]]);
+  });
+
   it('measures agreement on any number of tiers', () => {
     expect(mailAgreement([0, 1, 2], [0, 1, 2], 3)).toBe(100);
     expect(mailAgreement([0, 0], [2, 2], 3)).toBe(0);

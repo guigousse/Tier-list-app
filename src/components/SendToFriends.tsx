@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
-import { fetchFriends, sendList, type PublicProfile } from '../lib/api';
+import { fetchFriends, mailSentTo, sendList, type PublicProfile } from '../lib/api';
 import { socialError } from '../lib/social';
 import type { TierList } from '../store/types';
 import { useMail } from '../store/useMail';
@@ -22,16 +22,23 @@ type Props = {
 export function SendToFriends({ list, onSent }: Props) {
   const secret = useTierStore((s) => s.profile?.secret);
   const [friends, setFriends] = useState<PublicProfile[] | null>(null);
+  // Friends who already got this very list: where it stands with them.
+  const [already, setAlready] = useState<Map<string, 'sent' | 'ranked'>>(new Map());
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!secret) return;
-    fetchFriends(secret).then(
-      (data) => setFriends(data.friends.filter((f) => !f.hidden)),
+    Promise.all([fetchFriends(secret), mailSentTo(secret, list).catch(() => [])]).then(
+      ([data, sent]) => {
+        setAlready(new Map(sent.map((m) => [m.friend, m.status])));
+        setFriends(data.friends.filter((f) => !f.hidden));
+      },
       (e) => setError(socialError(e)),
     );
+    // The list as it is when the sheet opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secret]);
 
   const cards = Object.keys(list.cards).length;
@@ -84,21 +91,30 @@ export function SendToFriends({ list, onSent }: Props) {
         <View style={{ gap: spacing.xs }}>
           {(friends ?? []).map((f) => {
             const on = chosen.has(f.id);
+            const sent = already.get(f.id);
             return (
               <Clickable
                 key={f.id}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: on }}
-                accessibilityLabel={`${f.pseudo} #${f.tag}`}
+                accessibilityState={{ checked: on, disabled: Boolean(sent) }}
+                accessibilityLabel={`${f.pseudo} #${f.tag}${sent ? ', déjà envoyée' : ''}`}
+                disabled={Boolean(sent)}
                 onPress={() => toggle(f.id)}
-                style={({ pressed }) => [styles.row, on && styles.rowOn, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [styles.row, on && styles.rowOn, sent && { opacity: 0.6 }, pressed && { opacity: 0.85 }]}
               >
                 <Avatar avatar={f.avatar} seed={f.id} size={40} />
-                <Text numberOfLines={1} style={styles.name}>
-                  {f.pseudo}
-                  <Text style={styles.tag}> #{f.tag}</Text>
-                </Text>
-                <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? colors.primary : colors.textMuted} />
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={styles.name}>
+                    {f.pseudo}
+                    <Text style={styles.tag}> #{f.tag}</Text>
+                  </Text>
+                  {sent ? <Text style={styles.already}>{sent === 'ranked' ? 'Déjà envoyée · classée' : 'Déjà envoyée · en attente'}</Text> : null}
+                </View>
+                {sent ? (
+                  <Ionicons name="checkmark-done" size={22} color={colors.textMuted} />
+                ) : (
+                  <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? colors.primary : colors.textMuted} />
+                )}
               </Clickable>
             );
           })}
@@ -129,7 +145,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   rowOn: { borderColor: colors.primary },
-  name: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '700' },
+  name: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  already: { color: colors.textMuted, fontSize: 13 },
   tag: { color: colors.textMuted, fontWeight: '500' },
   error: { color: colors.danger, fontSize: 14, textAlign: 'center' },
 });

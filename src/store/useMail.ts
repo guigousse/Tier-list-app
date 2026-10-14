@@ -18,6 +18,8 @@ export type Mail = {
   recipientRanks: number[] | null;
   /** Sent lists: whether the player saw the friend's ranking. */
   seen: boolean;
+  /** Answered at once with the recipient's earlier ranking of the same list. */
+  auto: boolean;
 };
 
 type MailState = {
@@ -54,7 +56,17 @@ export const useMail = create<MailState>()((set, get) => ({
         ): Mail | null => {
           const list = parsePayload(row.payload, `mail:${row.id}`);
           return list
-            ? { id: row.id, friend, list, status: row.status, sentAt: row.sent_at, senderRanks: row.sender_ranks, recipientRanks: row.recipient_ranks, seen }
+            ? {
+                id: row.id,
+                friend,
+                list,
+                status: row.status,
+                sentAt: row.sent_at,
+                senderRanks: row.sender_ranks,
+                recipientRanks: row.recipient_ranks,
+                seen,
+                auto: Boolean(row.auto),
+              }
             : null;
         };
         set({
