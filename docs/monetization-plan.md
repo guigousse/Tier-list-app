@@ -5,10 +5,9 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 
 ## AI services
 
-1. **Word list**: a tier list title → 10–15 cards. **1 credit.** AI cost < 0.01 €.
-2. **Icons** for the cards (vector, see `docs/card-icons-pipeline.md`). **5 credits**
-   (option: "up to 5", only new icons cost; reused library icons are free).
-   AI cost 0.05–0.30 € per set of ~12 new icons, falling as the shared library grows.
+1. **Word list**: a tier list title → 3–20 cards, priced per card. AI cost ≈ 0.01 € per list.
+2. **Icons** for the cards (vector, see `docs/card-icons-pipeline.md`), priced per image.
+   Reused library icons cost nothing to produce. Measured costs below.
 
 ## Credits
 
@@ -30,17 +29,30 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 - Can **propose tier lists to be made public** (moderation queue, the owner approves).
 - Cheap extras: exclusive "+" badge and avatar items, creator name on published lists, no ads.
 
-## Economics (simulation)
+## Measured AI costs (2026-10-14, Claude Opus 5.5 kept for quality)
+
+- Card names: 12 names ≈ 1.06 ¢ $ (≈ 0.09 ¢ $ per card), 4–5 s. Sonnet 5.5 is half the
+  price but put hummus in "Greek dishes"; Haiku 5.5 is 40× cheaper but gives vaguer
+  concepts (`spinach` instead of `spinach-pie`), which spoils the icon drawn from them.
+- New icon: ≈ 3.6 ¢ $ on average (2.6–5.0 ¢ $), ≈ 13 s. Sonnet 5.5 is 1.5 ¢ $ but
+  visibly less detailed. A reused library icon costs nothing.
+- So a 10-card illustrated list ≈ 37 ¢ $, 98 % of it for icons.
+
+## Economics (simulation, measured costs)
 
 - Net per sale ≈ price / 1.2 (VAT) × 0.85 (Apple, Small Business Program).
 - Fixed costs ≈ 31 €/month (Supabase Pro + Apple developer account).
-- The cost of a credit decides everything: with icons at 0.15 € and 40 % reuse, a credit
-  costs ≈ 0.014 € and the model loses money as players grow (free credits dominate).
-- **Targets**: icon set < 0.08 € (cheaper model, draw only missing concepts, pre-fill the
-  library with common icons) and high reuse → credit ≈ 0.004–0.006 €, profitable from
-  ~1,000 monthly active players (≈ +680 €/month at 10,000 with a realistic mix).
-- Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus or
-  make icons 6 credits.
+- Net revenue is only ≈ 0.07 € per active player per month, so **free credits decide
+  everything**: a free illustrated list (≈ 0.23 € of AI) given to every new player
+  sinks the model.
+- The app's current scale (1 credit per card, 5 per image) with the old packs
+  (25 credits for 1.99 €) is profitable but makes an illustrated list cost 4.78 €.
+- **Proposed scale**: 1 credit per card, **8 per image**, **100 credits for 1.99 €**
+  (other packs on the same scale), **5 free credits a week** (cap 10), **20 welcome
+  credits**, Tiercraft+ 70 credits a week. An illustrated 10-card list = 90 credits
+  ≈ 1.79 €, 82 % margin on bought credits; profitable from ≈ 860 monthly active
+  players, ≈ +340 €/month at 10,000 (≈ +490 € once 60 % of icons are reused).
+- Safety valve: if monthly AI cost > ~30 % of net revenue, lower the free credits first.
 
 ## Implementation notes
 
