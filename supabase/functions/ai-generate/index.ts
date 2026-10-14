@@ -138,7 +138,7 @@ export function sanitize(svg: string): string | null {
       continue;
     }
     const kept: string[] = [];
-    for (const a of attrs.matchAll(/([a-zA-Z:-]+)\s*=\s*"([^"]*)"/g)) {
+    for (const a of attrs.matchAll(/([a-zA-Z][a-zA-Z0-9:-]*)\s*=\s*"([^"]*)"/g)) {
       const name = a[1].toLowerCase();
       const value = a[2];
       // Only references inside the drawing itself (url(#id)), nothing external.
