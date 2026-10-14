@@ -305,7 +305,7 @@ function hair(style: string, paint: string, strands: string, shine: string, fill
       return {
         back:
           curls([...ring, [60, 50, 31]]) +
-          ring.map(([x, y]) => `<path ${strands} d="M${x - 3} ${y + 1} C${x - 2} ${y - 3} ${x + 3} ${y - 3} ${x + 2.5} ${y + 1.5}"/>`).join('') + `<circle ${shine} cx="46" cy="27" r="5"/><circle ${shine} cx="36" cy="36" r="3"/>`,
+          ring.map(([x, y]) => `<path ${strands} d="M${x - 3} ${y + 1} C${x - 2} ${y - 3} ${x + 3} ${y - 3} ${x + 2.5} ${y + 1.5}"/>`).join('') + gloss('M40 32 C44 26 51 22.5 58 21.5 C52 24 46 28 42 34 Z'),
         front: p('M35.5 58 C35.5 44 45.5 36 60 36 C74.5 36 84.5 44 84.5 58 C80.5 51 75.5 48 71.5 47 C63.5 49 56.5 49 48.5 47 C44.5 48 39.5 51 35.5 58 Z'),
       };
     }
