@@ -23,11 +23,11 @@ describe('AI generation', () => {
   it('costs 1 credit per card, and images cost less each the more there are', () => {
     expect(creditCost(10, false)).toBe(10);
     // One drawing sheet for the whole list: a fixed part, then a little per image.
-    expect(imageCredits(3)).toBe(21);
-    expect(imageCredits(10)).toBe(42);
-    expect(imageCredits(20)).toBe(72);
+    expect(imageCredits(3)).toBe(5);
+    expect(imageCredits(10)).toBe(12);
+    expect(imageCredits(20)).toBe(22);
     expect(imageCredits(3) / 3).toBeGreaterThan(imageCredits(10) / 10);
-    expect(creditCost(10, true)).toBe(52);
+    expect(creditCost(10, true)).toBe(22);
   });
 
   it('adds the words first, then gives each card its icon', async () => {

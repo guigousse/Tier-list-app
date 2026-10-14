@@ -53,12 +53,13 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   sinks the model. Hence no free weekly credits, only a welcome bonus.
 - The app's current scale (1 credit per card, 5 per image) with the old packs
   (25 credits for 1.99 €) is profitable but makes an illustrated list cost 4.78 €.
-- **Adopted scale** (2026-10-14): 1 credit per card; images **12 credits per list plus
-  3 per image** (degressive: 7 per image for 3 cards, 4.2 for 10, 3.6 for 20), because
-  all the icons of a list are drawn on one Gemini 3 Pro Image sheet (~0.134 $ whatever
-  the number of icons, free cells draw wishlist concepts ahead). 100 credits for
-  1.99 €, 20 welcome credits, no weekly gift, Tiercraft+ 70 credits a week. An
-  illustrated 10-card list = 52 credits ≈ 1.03 €.
+- **Adopted scale** (2026-10-14, revised): **1 credit ≈ 1 cent** (200 credits for
+  1.99 €); 1 credit per card; images **2 credits per list plus 1 per image**
+  (3 images = 5 credits, 10 = 12, 20 = 22). A sheet costs ≈ 12 c€ and a credit nets
+  ≈ 0.71 c€: with every icon to draw, a 3-card list loses ≈ 6.6 c€, 10 cards earn
+  ≈ 2.6 c€, 20 cards ≈ 15.8 c€. The margin comes from reuse (a reused icon is paid
+  by the player, free for us) and from the icons free cells draw ahead: at 30 %
+  reuse an image costs ≈ 0.7 c€ for ≈ 0.8–1.2 c€ earned. Watch the reuse rate.
 - Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
 
 ## Implementation notes

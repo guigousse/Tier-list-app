@@ -13,12 +13,13 @@ import { cardIconFor } from './cardIcons';
  */
 
 /**
- * Credits a generation costs (docs/monetization-plan.md; 100 credits are meant to sell
- * for 1.99 €). All the images of a list are drawn on one sheet, whose price hardly
- * depends on how many icons it holds: images cost a fixed part plus a little each,
- * so the more cards get one, the cheaper each image.
+ * Credits a generation costs (docs/monetization-plan.md; 1 credit ≈ 1 cent, 200 credits
+ * for 1.99 €). All the images of a list are drawn on one sheet (≈ 12 c€ whatever its
+ * size): images cost a fixed part plus a little each, so the more cards get one, the
+ * cheaper each image. Small lists lose a little, made up by the icons their free
+ * cells draw ahead and by every reused icon.
  */
-export const CREDITS = { word: 1, sheet: 12, image: 3 };
+export const CREDITS = { word: 1, sheet: 2, image: 1 };
 
 export function imageCredits(count: number): number {
   return count > 0 ? CREDITS.sheet + count * CREDITS.image : 0;
