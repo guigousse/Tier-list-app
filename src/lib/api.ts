@@ -327,6 +327,11 @@ export function answerMail(secret: string, mail: string, ranks: number[]): Promi
   return rpc<void>('answer_mail', { secret, mail, ranks });
 }
 
+/** The player's current ranking of a list they sent (tier index per card, -1 unranked). */
+export function setSenderRanks(secret: string, mail: string, ranks: number[]): Promise<void> {
+  return rpc<void>('set_sender_ranks', { secret, mail, ranks });
+}
+
 export function ignoreMail(secret: string, mail: string): Promise<void> {
   return rpc<void>('ignore_mail', { secret, mail });
 }

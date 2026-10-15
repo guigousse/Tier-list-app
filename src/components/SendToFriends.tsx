@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, mailSentTo, sendList, type PublicProfile } from '../lib/api';
+import { isSameList } from '../lib/sentRanks';
 import { socialError } from '../lib/social';
 import type { TierList } from '../store/types';
 import { useMail } from '../store/useMail';
@@ -32,7 +33,10 @@ export function SendToFriends({ list, onSent }: Props) {
     if (!secret) return;
     Promise.all([fetchFriends(secret), mailSentTo(secret, list).catch(() => [])]).then(
       ([data, sent]) => {
-        setAlready(new Map(sent.map((m) => [m.friend, m.status])));
+        // The server only knows the list in the card order it was sent in; a list ranked
+        // differently since is found again among the sent ones.
+        const local = useMail.getState().outbox.filter((m) => isSameList(list, m.list));
+        setAlready(new Map([...local.map((m) => [m.friend.id, m.status] as const), ...sent.map((m) => [m.friend, m.status] as const)]));
         setFriends(data.friends.filter((f) => !f.hidden));
       },
       (e) => setError(socialError(e)),

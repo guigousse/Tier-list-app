@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { colors, radius, readableTextColor, spacing } from '../../constants/them
 import { splitEmoji } from '../../lib/emoji';
 import { useResponsive } from '../../lib/layout';
 import { confirmRerank, openReceived } from '../../lib/mail';
+import { isSameList } from '../../lib/sentRanks';
 import { mailAgreement, useMail } from '../../store/useMail';
 import { useTierStore } from '../../store/useTierStore';
 
@@ -36,9 +37,10 @@ export default function MailComparison() {
   const loaded = useMail((s) => s.loaded);
   const mail = received ?? sent;
 
+  // Always fetched again: the friend may have ranked it, or the sender changed their ranking.
   useEffect(() => {
-    if (!mail) useMail.getState().refresh();
-  }, [mail]);
+    useMail.getState().refresh();
+  }, [id]);
 
   // The friend's ranking of a list the player sent: now seen.
   useEffect(() => {
@@ -64,6 +66,9 @@ export default function MailComparison() {
   const done = mail.status === 'ranked' && mine && theirs;
   const score = done ? mailAgreement(mine, theirs, list.tiers.length) : null;
   const same = done ? list.cards.filter((_, i) => mine[i] >= 0 && mine[i] === theirs[i]).length : 0;
+  // A list the player sent before ranking it themselves: their copy, to rank it.
+  const unranked = (ranks: number[] | null) => !ranks || ranks.some((r) => r < 0);
+  const ownCopy = sent && unranked(mine) ? Object.values(useTierStore.getState().lists).find((l) => !l.mail && isSameList(l, list)) : undefined;
 
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
@@ -108,6 +113,7 @@ export default function MailComparison() {
                 : `${friend.pseudo} avait déjà classé cette liste : son classement a été repris.`}
             </Text>
           ) : null}
+          {received && unranked(theirs) ? <Text style={styles.note}>{friend.pseudo} n’a pas encore classé toutes les cartes de sa liste.</Text> : null}
           {received ? <Button variant="ghost" icon="refresh" label="Reclasser" onPress={() => confirmRerank(mail)} /> : null}
         </View>
       ) : received ? (
@@ -118,6 +124,12 @@ export default function MailComparison() {
       ) : (
         <Text style={styles.summary}>{friend.pseudo} n’a pas encore classé cette liste.</Text>
       )}
+      {ownCopy ? (
+        <View style={{ gap: spacing.sm }}>
+          <Text style={styles.note}>Vous n’avez pas classé toutes les cartes : {friend.pseudo} comparera avec votre classement dès qu’il sera rempli.</Text>
+          <Button icon="reorder-four-outline" label="Classer ma liste" onPress={() => router.push({ pathname: '/editor/[id]', params: { id: ownCopy.id } })} />
+        </View>
+      ) : null}
 
       <View style={styles.table}>
         <View style={styles.head}>

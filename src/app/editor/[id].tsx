@@ -25,6 +25,7 @@ import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
 import { TierStrip } from '../../components/TierStrip';
 import { socialError } from '../../lib/social';
+import { syncSentRanks } from '../../lib/sentRanks';
 import { useCatalog } from '../../store/useCatalog';
 import { useMail } from '../../store/useMail';
 import { playClick } from '../../lib/sound';
@@ -37,7 +38,8 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
 
 export default function EditorScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `edit`: a list just created opens in edit mode, to name it and add its cards.
+  const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
   const list = useTierStore((s) => (id ? s.lists[id] : undefined));
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
@@ -66,12 +68,12 @@ export default function EditorScreen() {
       locked={Boolean(list.mail?.answeredAt)}
       onMove={onMove}
     >
-      <Editor list={list} />
+      <Editor list={list} startEditing={edit === '1'} />
     </DragProvider>
   );
 }
 
-function Editor({ list }: { list: TierList }) {
+function Editor({ list, startEditing }: { list: TierList; startEditing: boolean }) {
   const insets = useSafeAreaInsets();
   const store = useTierStore.getState();
   const { scrollRef, viewportRef, onScrollLayout, onContentSize } = useDragContext();
@@ -101,6 +103,10 @@ function Editor({ list }: { list: TierList }) {
   const popular = list.popular;
   const mail = list.mail;
   const fixed = Boolean(daily || popular || mail);
+  // The player's own lists have two modes: editing (title, tiers, cards) and ranking
+  // (only placing the cards), where they land once saved. An empty list has nothing to rank.
+  const [editing, setEditing] = useState(() => !fixed && (startEditing || Object.keys(list.cards).length === 0));
+  const editable = !fixed && editing;
   // A received list's ranking is frozen once sent back; daily and popular ones can
   // change and be validated again.
   const validated = Boolean(mail?.answeredAt);
@@ -118,11 +124,11 @@ function Editor({ list }: { list: TierList }) {
   const openCard = useCallback(
     (card: Card) => {
       playClick();
-      // Cards of daily and popular tier lists can't be edited: only offer to place them.
-      if (fixed) setFocusId(card.id);
-      else setCardSheet({ cardId: card.id });
+      // Outside edit mode, cards can't be edited: only offer to place them.
+      if (editable) setCardSheet({ cardId: card.id });
+      else setFocusId(card.id);
     },
-    [fixed],
+    [editable],
   );
   const focusCard = focusId ? (list.cards[focusId] ?? null) : null;
   const focusZone: Zone | null = focusCard
@@ -133,6 +139,22 @@ function Editor({ list }: { list: TierList }) {
   const openTier = useCallback((tier: { id: string }) => setEditingTierId(tier.id), []);
 
   const createCards = (drafts: CardDraft[]) => drafts.forEach((d) => store.addCard(list.id, d));
+
+  // Friends who got this list compare with the player's ranking as it is now.
+  useEffect(() => {
+    if (fixed) return;
+    const timer = setTimeout(() => syncSentRanks(list.id), 1500);
+    return () => clearTimeout(timer);
+  }, [fixed, list.id, list.placement, list.pool]);
+  // Leaving right after a move: sent without waiting.
+  useEffect(() => () => void (!fixed && syncSentRanks(list.id)), [fixed, list.id]);
+
+  const save = () => {
+    playClick();
+    setEditing(false);
+    setCardSheet(null);
+    setEditingTierId(null);
+  };
 
   const exportImage = async () => {
     if (exporting) return;
@@ -228,8 +250,12 @@ function Editor({ list }: { list: TierList }) {
         { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ]
     : [
-        { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
-        { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+        ...(editable
+          ? ([
+              { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
+              { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+            ] as const)
+          : ([{ label: 'Modifier la liste', icon: 'create-outline', onPress: () => setEditing(true) }] as const)),
         { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
         { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         {
@@ -242,7 +268,7 @@ function Editor({ list }: { list: TierList }) {
           icon: 'copy-outline',
           onPress: () => {
             const copy = store.duplicateList(list.id);
-            if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy } });
+            if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy, edit: '1' } });
           },
         },
         { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
@@ -255,8 +281,8 @@ function Editor({ list }: { list: TierList }) {
         <IconButton icon="chevron-back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
         <Clickable
           accessibilityRole="button"
-          accessibilityHint={fixed ? undefined : 'Renommer'}
-          disabled={fixed}
+          accessibilityHint={editable ? 'Renommer' : undefined}
+          disabled={!editable}
           style={styles.titleWrap}
           onPress={() => {
             setTitle(list.title);
@@ -266,8 +292,9 @@ function Editor({ list }: { list: TierList }) {
           <Text numberOfLines={1} style={styles.title}>
             {list.title}
           </Text>
-          {fixed ? null : <Ionicons name="pencil" size={14} color={colors.textMuted} />}
+          {editable ? <Ionicons name="pencil" size={14} color={colors.textMuted} /> : null}
         </Clickable>
+        {fixed || editing ? null : <IconButton icon="create-outline" label="Modifier la liste" onPress={() => setEditing(true)} />}
         <IconButton icon="share-outline" label="Partager" onPress={fixed ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
@@ -285,20 +312,20 @@ function Editor({ list }: { list: TierList }) {
                 key={tier.id}
                 tier={tier}
                 cards={cardsOf(list.placement[tier.id])}
-                onPressTier={fixed ? undefined : openTier}
+                onPressTier={editable ? openTier : undefined}
                 onPressCard={validated ? noop : openCard}
               />
             ))}
             <Text style={styles.watermark}>Tiercraft</Text>
           </View>
-          {fixed ? null : (
+          {!editable ? null : (
             <View style={styles.below}>
               <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
             </View>
           )}
         </AnimatedScrollView>
-        {/* AI generation: personal lists only (daily and popular cards are fixed). */}
-        {fixed ? null : (
+        {/* AI generation: personal lists being edited only (daily and popular cards are fixed). */}
+        {!editable ? null : (
           <View style={styles.wand} pointerEvents="box-none">
             <MagicWand onPress={() => setAiOpen(true)} busy={aiRunning !== null} />
           </View>
@@ -313,13 +340,19 @@ function Editor({ list }: { list: TierList }) {
       ) : (
         <>
           <Tray
-            bottomInset={!fixed}
+            bottomInset={!fixed && !editing}
             cards={cardsOf(list.pool)}
             total={total}
-            onAdd={fixed ? undefined : () => setCardSheet({ cardId: null })}
+            onAdd={editable ? () => setCardSheet({ cardId: null }) : undefined}
             onPressCard={openCard}
           />
-          {upToDate ? (
+          {editable ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Text style={styles.dailyText}>Mode édition · titre, rangs et cartes</Text>
+              <Button label="Enregistrer" icon="checkmark" onPress={save} disabled={total === 0} />
+              {total === 0 ? <Text style={styles.dailyText}>Ajoutez des cartes pour enregistrer la liste.</Text> : null}
+            </View>
+          ) : upToDate ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
               <Text style={styles.dailyText}>✓ Classement validé · déplacez des cartes pour le modifier</Text>
               <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />

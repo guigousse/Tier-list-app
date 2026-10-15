@@ -9,7 +9,7 @@ import { recordTemplateView } from './api';
 
 /**
  * Creates a tier list (classic S → D tiers, or the template's) and opens it in the
- * editor, where its title, tiers and cards can be customised right away.
+ * editor in edit mode, where its title, tiers and cards can be customised right away.
  */
 export function createAndOpen(template?: Template): void {
   const store = useTierStore.getState();
@@ -20,7 +20,7 @@ export function createAndOpen(template?: Template): void {
     cardRanks: template?.ranks,
     emoji: template?.emoji,
   });
-  router.push({ pathname: '/editor/[id]', params: { id } });
+  router.push({ pathname: '/editor/[id]', params: { id, edit: '1' } });
   if (template?.appStoreIds) attachAppIcons(id, template).catch(() => {});
 }
 
