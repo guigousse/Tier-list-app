@@ -29,9 +29,11 @@ type ButtonProps = {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Shown after the label, such as a price. */
+  after?: ReactNode;
 };
 
-export function Button({ label, onPress, icon, variant = 'primary', disabled, style }: ButtonProps) {
+export function Button({ label, onPress, icon, variant = 'primary', disabled, style, after }: ButtonProps) {
   const bg =
     variant === 'primary' ? colors.primary : variant === 'danger' ? colors.danger : variant === 'secondary' ? colors.surfaceAlt : 'transparent';
   const fg = variant === 'ghost' ? colors.textMuted : colors.text;
@@ -53,6 +55,7 @@ export function Button({ label, onPress, icon, variant = 'primary', disabled, st
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.buttonLabel, { color: fg, flexShrink: 1 }]}>
         {label}
       </Text>
+      {after}
     </Pressable>
   );
 }

@@ -8,6 +8,7 @@ import { openWallet, useCredits } from '../../lib/credits';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
+import { EnergyAmount } from '../Energy';
 import { Button, Field, Sheet } from '../ui';
 
 const COUNTS = [5, 8, 10, 12, 15, 20];
@@ -55,11 +56,11 @@ function Balance({ cost }: { cost: number }) {
     <>
       <View style={[styles.recap, styles.recapTotal]}>
         <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
-        <Text style={[styles.recapValue, { fontSize: 18 }, short(cost, balance) && { color: colors.danger }]}>{credits(cost)}</Text>
+        <EnergyAmount amount={cost} size={18} style={[styles.recapValue, { fontSize: 18 }, short(cost, balance) && { color: colors.danger }]} />
       </View>
       <View style={styles.recap}>
         <Text style={styles.recapText}>Votre solde</Text>
-        <Text style={styles.recapValue}>{balance === null ? '…' : credits(balance)}</Text>
+        <EnergyAmount amount={balance} style={styles.recapValue} />
       </View>
       <Text style={styles.hint}>Seul ce qui est livré est décompté : une génération ratée ne coûte rien.</Text>
     </>
@@ -74,7 +75,13 @@ function Footer({ label, cost, ready, busy, onPress, note }: { label: string; co
       {note ? <Text style={styles.short}>{note}</Text> : null}
       {busy ? <Text style={styles.short}>Une génération est déjà en cours pour cette liste.</Text> : null}
       {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {credits(cost - (balance ?? 0))}.</Text> : null}
-      <Button label={`${label} · ${credits(cost)}`} icon="sparkles" disabled={!ready || busy || !affordable} onPress={onPress} />
+      <Button
+        label={`${label} ·`}
+        icon="sparkles"
+        after={<EnergyAmount amount={cost} size={18} style={styles.buttonCost} />}
+        disabled={!ready || busy || !affordable}
+        onPress={onPress}
+      />
     </View>
   );
 }
@@ -224,7 +231,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Text style={styles.recapText}>
               {count} nouvelle{count > 1 ? 's' : ''} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
             </Text>
-            <Text style={styles.recapValue}>{count * CREDITS.word}</Text>
+            <EnergyAmount amount={count * CREDITS.word} size={14} style={styles.recapValue} />
           </View>
         ) : null}
         {replace.length ? (
@@ -232,7 +239,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Text style={styles.recapText}>
               {replace.length} carte{replace.length > 1 ? 's' : ''} remplacée{replace.length > 1 ? 's' : ''} × {CREDITS.word} crédit
             </Text>
-            <Text style={styles.recapValue}>{replace.length * CREDITS.word}</Text>
+            <EnergyAmount amount={replace.length * CREDITS.word} size={14} style={styles.recapValue} />
           </View>
         ) : null}
         <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
@@ -350,7 +357,7 @@ function useTiersPanel({ visible, onClose, listId, title }: Props & { title: str
             <Text style={styles.recapText}>
               {tiers.length} rang{tiers.length > 1 ? 's' : ''} × {CREDITS.tier} crédit
             </Text>
-            <Text style={styles.recapValue}>{cost}</Text>
+            <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
           </View>
           <Balance cost={cost} />
         </View>
@@ -475,7 +482,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
             {n} image{n > 1 ? 's' : ''}
             {redrawn ? ` dont ${redrawn} redessinée${redrawn > 1 ? 's' : ''}` : ''} · {perImage} crédits l’image
           </Text>
-          <Text style={styles.recapValue}>{cost}</Text>
+          <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
         </View>
         <Balance cost={cost} />
       </View>
@@ -620,6 +627,7 @@ const styles = StyleSheet.create({
   recapTotal: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
   recapText: { color: colors.textMuted, fontSize: 14 },
   recapValue: { color: colors.text, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  buttonCost: { color: colors.primaryText, fontSize: 16 },
   hint: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   footer: { gap: spacing.xs, paddingTop: spacing.sm },
   status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

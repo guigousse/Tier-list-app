@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AvatarWithBadges } from '../components/BadgeIcon';
 import { DailyCard } from '../components/DailyCard';
+import { EnergyPill } from '../components/Energy';
 import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
@@ -51,7 +52,6 @@ export default function Home() {
   const lists = useTierStore((s) => s.lists);
   // Daily and popular tier lists live in their own sections.
   const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular), [lists]);
-  const validatedDaily = useMemo(() => Object.values(lists).filter((l) => l.daily?.validatedAt).length, [lists]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
   const popular = usePopularTemplates();
@@ -95,9 +95,7 @@ export default function Home() {
             Tiercraft
           </Text>
           <View style={styles.headerIcons}>
-            {validatedDaily > 0 ? (
-              <IconButton icon="time-outline" label={`Historique des tier lists du jour (${validatedDaily})`} onPress={() => router.push('/history')} />
-            ) : null}
+            <EnergyPill />
             <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
           </View>
         </View>
