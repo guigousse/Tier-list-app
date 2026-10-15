@@ -129,6 +129,69 @@ Deno.test("une rangée d'icônes larges n'est pas prise pour un trait de grille"
   same(alpha(px, w, 40, 15), 255);
 });
 
+/** A white tile with rounded corners, as Gemini lays behind each icon despite the prompt. */
+function roundedTile(px: Uint8ClampedArray, w: number, x0: number, y0: number, x1: number, y1: number, r: number, rgb = [255, 255, 255]) {
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const dx = Math.max(x0 + r - x - 0.5, x - (x1 - r) + 0.5, 0), dy = Math.max(y0 + r - y - 0.5, y - (y1 - r) + 0.5, 0);
+      if (dx * dx + dy * dy <= r * r) px.set([rgb[0], rgb[1], rgb[2], 255], (y * w + x) * 4);
+    }
+  }
+}
+
+/** Planche « fêtes bizarres » : 4 × 2 tuiles blanches presque jointives, une icône cernée dans chacune. */
+function tiledSheet() {
+  const w = 200, h = 100, px = sheet(w, h);
+  for (let i = 0; i < 8; i++) {
+    const x = (i % 4) * 50, y = Math.floor(i / 4) * 50;
+    roundedTile(px, w, x + 1, y + 1, x + 49, y + 49, 8, [255, 200, 255]); // liseré anticrénelé sur le magenta
+    roundedTile(px, w, x + 2, y + 2, x + 48, y + 48, 7);
+    paint(px, w, x + 15, y + 15, x + 35, y + 35, [42, 27, 20]); // contour
+    paint(px, w, x + 17, y + 17, x + 33, y + 33, [220, 60, 40]); // tomate
+  }
+  return { w, h, px };
+}
+
+Deno.test("des tuiles blanches jointives ne sont pas prises pour une grille : les icônes restent", () => {
+  const { w, h, px } = tiledSheet();
+  clearBackground(px, w, h, { cols: 4, rows: 2 });
+  for (let i = 0; i < 8; i++) {
+    const x = (i % 4) * 50, y = Math.floor(i / 4) * 50;
+    same(cellObject(px, w, h, { cols: 4, rows: 2 }, i), { x: x + 15, y: y + 15, w: 20, h: 20 });
+  }
+});
+
+Deno.test("des tuiles jointives d'une autre couleur restent, mais leurs icônes ne sont plus effacées", () => {
+  const w = 200, h = 100, px = sheet(w, h);
+  for (let i = 0; i < 8; i++) {
+    const x = (i % 4) * 50, y = Math.floor(i / 4) * 50;
+    roundedTile(px, w, x + 2, y + 2, x + 48, y + 48, 7, [190, 220, 250]);
+    paint(px, w, x + 15, y + 15, x + 35, y + 35, [42, 27, 20]);
+  }
+  clearBackground(px, w, h, { cols: 4, rows: 2 });
+  same(alpha(px, w, 25, 25), 255);
+  same(cellObject(px, w, h, { cols: 4, rows: 2 }, 0), { x: 2, y: 2, w: 46, h: 46 });
+});
+
+Deno.test("la tuile blanche posée derrière l'icône part avec le fond, le blanc cerné de l'icône reste", () => {
+  const { w, h, px } = tiledSheet();
+  paint(px, w, 70, 20, 75, 25, [255, 255, 255]); // reflet blanc dans la tomate de la case 1
+  clearBackground(px, w, h, { cols: 4, rows: 2 });
+  same(alpha(px, w, 25, 6), 0); // tuile, au-dessus de l'icône
+  same(alpha(px, w, 6, 25), 0); // tuile, à gauche
+  same(alpha(px, w, 25, 25), 255);
+  same(alpha(px, w, 72, 22), 255);
+});
+
+Deno.test("une icône blanche cernée, posée sans tuile, reste dessinée", () => {
+  const w = 60, h = 30, px = sheet(w, h);
+  paint(px, w, 6, 4, 24, 26, [42, 27, 20]);
+  paint(px, w, 8, 6, 22, 24, [250, 250, 248]); // brie
+  clearBackground(px, w, h, { cols: 2, rows: 1 });
+  same(alpha(px, w, 15, 15), 255);
+  same(cellObject(px, w, h, { cols: 2, rows: 1 }, 0), { x: 6, y: 4, w: 18, h: 22 });
+});
+
 Deno.test("chaque case donne la boîte de son objet, sans les miettes ni la case voisine", () => {
   const w = 60, h = 30, px = sheet(w, h);
   paint(px, w, 5, 5, 25, 25, [200, 50, 50]); // case 0

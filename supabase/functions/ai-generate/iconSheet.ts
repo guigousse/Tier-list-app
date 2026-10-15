@@ -35,7 +35,7 @@ export async function drawSheet(cards: { label: string; concept: string; theme?:
     throw new SheetError("no image");
   }
   const sheet = await Image.decode(Uint8Array.from(atob(part.inlineData.data), (c) => c.charCodeAt(0)));
-  clearBackground(sheet.bitmap, sheet.width, sheet.height);
+  clearBackground(sheet.bitmap, sheet.width, sheet.height, grid);
   const tiles: (Uint8Array | null)[] = [];
   for (let i = 0; i < cards.length; i++) {
     const box = cellObject(sheet.bitmap, sheet.width, sheet.height, grid, i);

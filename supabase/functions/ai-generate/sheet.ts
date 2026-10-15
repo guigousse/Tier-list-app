@@ -43,8 +43,34 @@ function distance(px: Pixels, i: number) {
   return Math.sqrt(r * r + g * g + b * b);
 }
 
+/**
+ * Near-white, or near-white blended with the key on an antialiased rim: the tile the
+ * model sometimes lays behind every icon (pure white on the "fêtes bizarres" sheet).
+ */
+function tileWhite(px: Pixels, i: number) {
+  const r = px[i], g = px[i + 1], b = px[i + 2];
+  const lo = Math.min(r, g, b), hi = Math.max(r, g, b);
+  return (lo >= 200 && hi - lo <= 40) || (r >= 200 && b >= 200 && g >= 150 && Math.abs(r - b) < 30);
+}
+
+/** Rows (or columns) solid across the sheet, but only in bands a few pixels thick. */
+function lineBands(solid: boolean[], maxThickness: number) {
+  const lines: number[] = [];
+  for (let a = 0; a < solid.length; ) {
+    if (!solid[a]) {
+      a++;
+      continue;
+    }
+    let b = a;
+    while (b < solid.length && solid[b]) b++;
+    if (b - a <= maxThickness) for (let k = a; k < b; k++) lines.push(k);
+    a = b;
+  }
+  return lines;
+}
+
 /** Makes the background transparent, in place. */
-export function clearBackground(px: Pixels, w: number, h: number) {
+export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols: number; rows: number }) {
   const n = w * h;
   const clear = new Uint8Array(n);
   // Flood from the edges and from every near-exact key pixel: a grid the model drew
@@ -64,18 +90,52 @@ export function clearBackground(px: Pixels, w: number, h: number) {
     if (y > 0) stack.push(p - w);
     if (y < h - 1) stack.push(p + w);
   }
-  // Grid lines: rows or columns solid across almost the whole sheet. Icons never
-  // are, each one keeps a magenta margin in its cell.
-  for (let y = 0; y < h; y++) {
+  // White tile behind each icon: flooded in from the background, it stops at the
+  // icon's dark outline, so the white inside a drawing stays. Only a region spanning
+  // most of a cell is a tile; a small white thing touching the magenta is a drawing.
+  if (grid) {
+    const cw = w / grid.cols, ch = h / grid.rows;
+    const seen = new Uint8Array(n);
+    for (let s = 0; s < n; s++) {
+      if (seen[s] || clear[s] || !tileWhite(px, s * 4)) continue;
+      const sx = s % w, sy = (s - sx) / w;
+      const touches = (sx > 0 && clear[s - 1]) || (sx < w - 1 && clear[s + 1]) || (sy > 0 && clear[s - w]) || (sy < h - 1 && clear[s + w]);
+      if (!touches) continue;
+      const region: number[] = [];
+      let minX = sx, maxX = sx, minY = sy, maxY = sy;
+      seen[s] = 1;
+      const queue = [s];
+      while (queue.length) {
+        const p = queue.pop()!;
+        region.push(p);
+        const x = p % w, y = (p - x) / w;
+        minX = Math.min(minX, x), maxX = Math.max(maxX, x), minY = Math.min(minY, y), maxY = Math.max(maxY, y);
+        for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
+          if (q < 0 || seen[q] || clear[q] || !tileWhite(px, q * 4)) continue;
+          seen[q] = 1;
+          queue.push(q);
+        }
+      }
+      if (maxX - minX + 1 >= cw * 0.6 && maxY - minY + 1 >= ch * 0.6) for (const p of region) clear[p] = 1;
+    }
+  }
+
+  // Grid lines: rows or columns solid across almost the whole sheet, a few pixels
+  // thick. Icons never are, each one keeps a magenta margin in its cell. Without the
+  // thickness bound, tiles laid nearly edge to edge passed for a grid and every row
+  // through them was wiped, icons included: only the tiles' rounded tops survived.
+  const rowSolid = Array.from({ length: h }, (_, y) => {
     let solid = 0;
     for (let x = 0; x < w; x++) solid += clear[y * w + x] ? 0 : 1;
-    if (solid >= w * 0.85) for (let x = 0; x < w; x++) clear[y * w + x] = 1;
-  }
-  for (let x = 0; x < w; x++) {
+    return solid >= w * 0.85;
+  });
+  const colSolid = Array.from({ length: w }, (_, x) => {
     let solid = 0;
     for (let y = 0; y < h; y++) solid += clear[y * w + x] ? 0 : 1;
-    if (solid >= h * 0.85) for (let y = 0; y < h; y++) clear[y * w + x] = 1;
-  }
+    return solid >= h * 0.85;
+  });
+  for (const y of lineBands(rowSolid, Math.max(3, h * 0.02))) for (let x = 0; x < w; x++) clear[y * w + x] = 1;
+  for (const x of lineBands(colSolid, Math.max(3, w * 0.02))) for (let y = 0; y < h; y++) clear[y * w + x] = 1;
   for (let p = 0; p < n; p++) if (clear[p]) px[p * 4 + 3] = 0;
 
   // Despill: edge pixels blended with the magenta keep a pink fringe; red and blue
