@@ -25,7 +25,7 @@ import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
 import { TierStrip } from '../../components/TierStrip';
 import { socialError } from '../../lib/social';
-import { syncSentRanks } from '../../lib/sentRanks';
+import { sentRanksState, validateSentRanks } from '../../lib/sentRanks';
 import { useCatalog } from '../../store/useCatalog';
 import { useMail } from '../../store/useMail';
 import { playClick } from '../../lib/sound';
@@ -140,14 +140,23 @@ function Editor({ list, startEditing }: { list: TierList; startEditing: boolean 
 
   const createCards = (drafts: CardDraft[]) => drafts.forEach((d) => store.addCard(list.id, d));
 
-  // Friends who got this list compare with the player's ranking as it is now.
+  // A list sent to friends: they compare with the ranking the player validates.
+  const outbox = useMail((s) => s.outbox);
+  const sentState = sentRanksState(list, outbox);
   useEffect(() => {
-    if (fixed) return;
-    const timer = setTimeout(() => syncSentRanks(list.id), 1500);
-    return () => clearTimeout(timer);
-  }, [fixed, list.id, list.placement, list.pool]);
-  // Leaving right after a move: sent without waiting.
-  useEffect(() => () => void (!fixed && syncSentRanks(list.id)), [fixed, list.id]);
+    if (!fixed && !useMail.getState().loaded) useMail.getState().refresh();
+  }, [fixed]);
+
+  const validateOwn = async () => {
+    setSending(true);
+    try {
+      await validateSentRanks(list.id);
+    } catch (e) {
+      Alert.alert('Oups', socialError(e));
+    } finally {
+      setSending(false);
+    }
+  };
 
   const save = () => {
     playClick();
@@ -340,7 +349,7 @@ function Editor({ list, startEditing }: { list: TierList; startEditing: boolean 
       ) : (
         <>
           <Tray
-            bottomInset={!fixed && !editing}
+            bottomInset={!fixed && !editing && sentState === 'none'}
             cards={cardsOf(list.pool)}
             total={total}
             onAdd={editable ? () => setCardSheet({ cardId: null }) : undefined}
@@ -351,6 +360,22 @@ function Editor({ list, startEditing }: { list: TierList; startEditing: boolean 
               <Text style={styles.dailyText}>Mode édition · titre, rangs et cartes</Text>
               <Button label="Enregistrer" icon="checkmark" onPress={save} disabled={total === 0} />
               {total === 0 ? <Text style={styles.dailyText}>Ajoutez des cartes pour enregistrer la liste.</Text> : null}
+            </View>
+          ) : !fixed && sentState === 'sent' ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Text style={styles.dailyText}>✓ Classement envoyé à vos amis · déplacez des cartes pour le modifier</Text>
+            </View>
+          ) : !fixed && sentState === 'pending' ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Button
+                label={sending ? 'Envoi…' : 'Valider mon classement'}
+                icon="checkmark-done"
+                onPress={validateOwn}
+                disabled={list.pool.length > 0 || sending}
+              />
+              <Text style={styles.dailyText}>
+                {list.pool.length > 0 ? 'Classez toutes les cartes pour valider.' : 'Vos amis compareront avec ce classement.'}
+              </Text>
             </View>
           ) : upToDate ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>

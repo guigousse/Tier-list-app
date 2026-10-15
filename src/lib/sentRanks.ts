@@ -1,5 +1,5 @@
 import type { TierList } from '../store/types';
-import { useMail } from '../store/useMail';
+import { useMail, type Mail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { setSenderRanks } from './api';
 import type { SharedList } from './share';
@@ -31,26 +31,39 @@ export function ranksForMail(list: TierList, shared: SharedList): number[] {
   return shared.cards.map((c) => byLabel.get(c.label)?.shift() ?? -1);
 }
 
+/** Mails of `outbox` that are `list`, sent by the player. */
+export function sentMails(list: TierList, outbox: Mail[]): Mail[] {
+  if (list.daily || list.popular || list.mail) return [];
+  return outbox.filter((m) => isSameList(list, m.list));
+}
+
 /**
- * The player's own ranking of a list they sent to friends, as it is now: the friends
- * compare with this one, not with the (often empty) ranking it had when it was sent.
+ * Where the player's ranking of a list they sent stands: `none` (not sent to anyone),
+ * `pending` (friends compare with an older one, waiting for a validation) or `sent`.
  */
-export async function syncSentRanks(listId: string): Promise<void> {
+export function sentRanksState(list: TierList, outbox: Mail[]): 'none' | 'pending' | 'sent' {
+  const mails = sentMails(list, outbox);
+  if (mails.length === 0) return 'none';
+  // Sent before being ranked: still to validate, even if nothing moved since.
+  const done = (m: Mail) => m.senderRanks?.every((r) => r >= 0) && ranksForMail(list, m.list).join() === m.senderRanks.join();
+  return mails.every(done) ? 'sent' : 'pending';
+}
+
+/**
+ * Sends the player's validated ranking of a list they sent to friends: they compare
+ * with this one, not with the (often empty) ranking it had when it was sent. Only on
+ * validation, never at each move.
+ */
+export async function validateSentRanks(listId: string): Promise<void> {
   const secret = useTierStore.getState().profile?.secret;
-  if (!secret) return;
-  if (!useMail.getState().loaded) await useMail.getState().refresh();
   const list = useTierStore.getState().lists[listId];
-  if (!list || list.daily || list.popular || list.mail) return;
-  const changed = useMail
-    .getState()
-    .outbox.filter((m) => isSameList(list, m.list))
+  if (!secret || !list) return;
+  const changed = sentMails(list, useMail.getState().outbox)
     .map((m) => ({ mail: m, ranks: ranksForMail(list, m.list) }))
     .filter(({ mail, ranks }) => ranks.join() !== mail.senderRanks?.join());
-  if (changed.length === 0) return;
   try {
     await Promise.all(changed.map(({ mail, ranks }) => setSenderRanks(secret, mail.id, ranks)));
-  } catch {
-    // Offline: sent again at the next change or the next opening.
+  } finally {
+    await useMail.getState().refresh();
   }
-  await useMail.getState().refresh();
 }

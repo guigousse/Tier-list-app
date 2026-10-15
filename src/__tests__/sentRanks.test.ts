@@ -1,4 +1,5 @@
-import { isSameList, ranksForMail } from '../lib/sentRanks';
+import { isSameList, ranksForMail, sentRanksState } from '../lib/sentRanks';
+import type { Mail } from '../store/useMail';
 import type { SharedList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
@@ -41,5 +42,23 @@ describe('lists sent to friends', () => {
     const [first] = store().lists[id].pool;
     store().moveCard(id, first, store().lists[id].tiers[1].id);
     expect(ranksForMail(store().lists[id], sent('T', ['S', 'A'], ['x', 'x'])).sort()).toEqual([-1, 1]);
+  });
+});
+
+describe('validating the ranking of a sent list', () => {
+  const mail = (list: SharedList, senderRanks: number[]) => ({ id: 'm', list, senderRanks }) as unknown as Mail;
+
+  it('has nothing to validate when the list was never sent', () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['x'] });
+    expect(sentRanksState(store().lists[id], [mail(sent('Autre', ['S'], ['x']), [-1])])).toBe('none');
+  });
+
+  it('waits for a validation once the ranking differs from the one friends have', () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['x'] });
+    const outbox = [mail(sent('T', ['S'], ['x']), [-1])];
+    expect(sentRanksState(store().lists[id], outbox)).toBe('pending');
+    store().moveCard(id, store().lists[id].pool[0], store().lists[id].tiers[0].id);
+    expect(sentRanksState(store().lists[id], outbox)).toBe('pending');
+    expect(sentRanksState(store().lists[id], [mail(sent('T', ['S'], ['x']), [0])])).toBe('sent');
   });
 });

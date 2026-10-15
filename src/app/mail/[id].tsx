@@ -126,7 +126,7 @@ export default function MailComparison() {
       )}
       {ownCopy ? (
         <View style={{ gap: spacing.sm }}>
-          <Text style={styles.note}>Vous n’avez pas classé toutes les cartes : {friend.pseudo} comparera avec votre classement dès qu’il sera rempli.</Text>
+          <Text style={styles.note}>Vous n’avez pas classé toutes les cartes : {friend.pseudo} comparera avec votre classement dès que vous l’aurez validé.</Text>
           <Button icon="reorder-four-outline" label="Classer ma liste" onPress={() => router.push({ pathname: '/editor/[id]', params: { id: ownCopy.id } })} />
         </View>
       ) : null}
