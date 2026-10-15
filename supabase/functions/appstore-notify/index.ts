@@ -5,6 +5,7 @@
 //   REFUND               Apple refunded anyway: the pack is taken back, the spent part
 //                        as a debt (wallet_refund)
 //   REFUND_REVERSED      Apple cancels the refund: the pack is given back
+//   TEST                 asked for through the App Store Server API, to check the URL
 // Apple sends a notification again until it gets a 200, so each branch can run twice.
 // Secrets: APPSTORE_IAP_KEY (the .p8 of an In-App Purchase key), APPSTORE_IAP_KEY_ID,
 // APPSTORE_ISSUER_ID; without them refunds are still taken back, only the answer to
@@ -34,7 +35,9 @@ Deno.serve(async (req) => {
     return done(400);
   }
 
-  if (n.type === "REFUND") {
+  if (n.type === "TEST") {
+    console.log("test notification", n.environment);
+  } else if (n.type === "REFUND") {
     const { data, error } = await db.rpc("wallet_refund", { transaction_id: n.transactionId });
     if (error) return console.error("refund", error.message), done(500);
     console.log("refund", n.transactionId, JSON.stringify(data));

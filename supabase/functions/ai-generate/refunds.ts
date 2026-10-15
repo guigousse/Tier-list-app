@@ -13,8 +13,9 @@ export async function readNotification(signedPayload: string, opts: AppleJwsOpti
   const payload = await verifyAppleJws(signedPayload, opts);
   const data = (payload.data ?? {}) as Record<string, unknown>;
   if (data.bundleId !== opts.bundleId) throw new Error("app does not match");
-  // The transaction inside is signed on its own: checked the same way.
-  const tx = await verifyAppleJws(String(data.signedTransactionInfo ?? ""), opts);
+  // The transaction inside is signed on its own: checked the same way. Some notifications
+  // (TEST, sent on request through the App Store Server API) carry none.
+  const tx = data.signedTransactionInfo ? await verifyAppleJws(String(data.signedTransactionInfo), opts) : { bundleId: opts.bundleId };
   if (tx.bundleId !== opts.bundleId) throw new Error("app does not match");
   return {
     type: String(payload.notificationType ?? ""),

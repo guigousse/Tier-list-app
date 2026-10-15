@@ -35,6 +35,12 @@ Deno.test("une notification d'Apple dit quel achat elle concerne, vérifiée jus
   same(await readNotification(payload, opts), { type: "REFUND", environment: "Production", transactionId: "2000000999", productId: "tiercraft.energy.1750" });
 });
 
+Deno.test("la notification de test d'Apple, sans transaction, est acceptée", async () => {
+  const c = await chain();
+  const payload = await signed(c, { notificationType: "TEST", notificationUUID: "uuid-2", data: { bundleId: BUNDLE, environment: "Sandbox", appAppleId: 6822017061 } });
+  same(await readNotification(payload, { bundleId: BUNDLE, rootFingerprint: c.rootFingerprint, at }), { type: "TEST", environment: "Sandbox", transactionId: "", productId: "" });
+});
+
 Deno.test("une notification d'une autre app ou mal signée est refusée", async () => {
   const other = await notification("REFUND", { bundleId: "com.autre.app" });
   await refused(readNotification(other.payload, other.opts), "app");
