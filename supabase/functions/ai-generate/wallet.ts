@@ -5,14 +5,18 @@ import { charge, type Paid } from "./pricing.ts";
 /** The database's functions, as supabase-js calls them (db.rpc). */
 export type Rpc = (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
 
-/** "credits": not enough of them; "wallet": no wallet for this secret. */
+/**
+ * "credits": not enough of them; "wallet": no wallet for this secret; "blocked": refunded
+ * twice after spending its energy (wallet_refund), no more generations.
+ */
 export class WalletError extends Error {
-  constructor(public code: "credits" | "wallet") {
+  constructor(public code: "credits" | "wallet" | "blocked") {
     super(code);
   }
 }
 
-const reason = (message: string) => (message.includes("credits") ? "credits" : message.includes("wallet") ? "wallet" : null);
+const reason = (message: string) =>
+  message.includes("credits") ? "credits" : message.includes("blocked") ? "blocked" : message.includes("wallet") ? "wallet" : null;
 
 /**
  * Runs a generation that delivers at most `max` items: holds their price first (so an

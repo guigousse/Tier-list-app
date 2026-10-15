@@ -82,5 +82,9 @@ export async function walletForRequest(): Promise<string> {
 
 /** The message for a generation refused for lack of credits, or null for another error. */
 export function creditsError(e: unknown): string | null {
-  return e instanceof Error && e.message === 'credits' ? 'Pas assez de crédits pour cette génération.' : null;
+  if (!(e instanceof Error)) return null;
+  if (e.message === 'credits') return 'Pas assez de crédits pour cette génération.';
+  // The server stops a wallet refunded twice after spending its energy (wallet_hold).
+  if (e.message === 'blocked') return 'Génération IA suspendue après des remboursements d’achats : contactez le support.';
+  return null;
 }

@@ -125,8 +125,21 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   The app finishes the transaction only after the server answered, so a purchase made
   offline is credited at the next launch. Sandbox transactions are accepted (TestFlight
   and Apple's review buy in the sandbox).
-- Still to do: refunds (App Store Server Notifications to take back refunded packs),
-  Android (Play Billing and Play Integrity).
+- **Remboursements** (`refunds.ts`, fonction `appstore-notify`, migration
+  `*_credit_refunds.sql`) : Apple envoie ses notifications serveur V2 à
+  `https://mefhdtpyhtvplpfleyhi.supabase.co/functions/v1/appstore-notify`, vérifiées
+  jusqu'à la racine comme les achats.
+  - `CONSUMPTION_REQUEST` (le joueur demande un remboursement) : on répond à Apple la
+    part du pack déjà dépensée (lue sur le solde) et notre préférence — rien dépensé :
+    remboursement complet ; en partie : au prorata ; tout dépensé : refus. Le joueur y
+    consent sous les packs. Demande les secrets `APPSTORE_IAP_KEY` (contenu du .p8 d'une
+    clé « Achats intégrés »), `APPSTORE_IAP_KEY_ID` et `APPSTORE_ISSUER_ID` ; sans eux la
+    demande est ignorée.
+  - `REFUND` : l'énergie restante du pack est reprise, la part déjà dépensée devient une
+    dette que le prochain achat rembourse en premier (`wallet_refund`, une seule fois par
+    transaction). Deux remboursements après usage bloquent la génération IA du
+    porte-monnaie (erreur `blocked`, 403). `REFUND_REVERSED` rend le pack, dette d'abord.
+- Still to do: Android (Play Billing and Play Integrity).
 
 ## Implementation notes
 

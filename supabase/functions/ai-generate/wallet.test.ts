@@ -71,3 +71,18 @@ Deno.test("plus livré que réservé ne coûte pas plus que la réserve", async 
   const out = await paid(db.rpc, "secret", "tiers", 3, async () => ({ delivered: 7, value: null }));
   same(out.charged, 3);
 });
+
+Deno.test("un porte-monnaie bloqué après des remboursements le dit, sans appeler l'IA", async () => {
+  const rpc: Rpc = async () => ({ data: null, error: { message: "blocked" } });
+  let ran = false;
+  try {
+    await paid(rpc, "secret", "words", 5, async () => {
+      ran = true;
+      return { delivered: 5, value: null };
+    });
+  } catch (e) {
+    same([e instanceof WalletError && e.code, ran], ["blocked", false]);
+    return;
+  }
+  throw new Error("aurait dû être refusé");
+});

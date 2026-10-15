@@ -68,4 +68,8 @@ describe('credits wallet', () => {
     expect(creditsError(new Error('credits'))).toContain('crédits');
     expect(creditsError(new Error('other'))).toBeNull();
   });
+
+  it('says why generation stopped after refunds of spent energy', () => {
+    expect(creditsError(new Error('blocked'))).toBe('Génération IA suspendue après des remboursements d’achats : contactez le support.');
+  });
 });

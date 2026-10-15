@@ -133,7 +133,7 @@ export default function Store() {
 
         <Text style={styles.note}>
           {Platform.OS === 'ios'
-            ? `Paiement par l’App Store. L’énergie ne périme pas et reste après une réinstallation de l’app. Une liste de 10 cartes écrites et illustrées en coûte ${LIST}.`
+            ? `Paiement par l’App Store. L’énergie ne périme pas et reste après une réinstallation de l’app. Une liste de 10 cartes écrites et illustrées en coûte ${LIST}.\n\nEn achetant, vous acceptez que l’usage de votre énergie soit communiqué à Apple en cas de demande de remboursement.`
             : 'Les packs d’énergie s’achètent pour le moment depuis l’app iPhone.'}
         </Text>
       </ScrollView>

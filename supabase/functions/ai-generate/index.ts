@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
 
     return json({ error: "bad request" }, 400);
   } catch (e) {
-    if (e instanceof WalletError) return json({ error: e.code }, e.code === "credits" ? 402 : 401);
+    if (e instanceof WalletError) return json({ error: e.code }, e.code === "credits" ? 402 : e.code === "blocked" ? 403 : 401);
     if (e instanceof QuotaError) return json({ error: "quota" }, 429);
     if (e instanceof SheetError) return json({ error: e.message === "busy" ? "busy" : "icon failed" }, e.message === "busy" ? 503 : 502);
     if (e instanceof Anthropic.RateLimitError) return json({ error: "busy" }, 503);
