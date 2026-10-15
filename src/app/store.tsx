@@ -1,14 +1,23 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Clickable } from '../components/Clickable';
-import { ENERGY, EnergyAmount, EnergyIcon } from '../components/Energy';
+import { ENERGY, EnergyAmount } from '../components/Energy';
 import { colors, radius, spacing } from '../constants/theme';
 import { imageCredits } from '../lib/aiGenerate';
 import { openWallet, useCredits } from '../lib/credits';
 import { useResponsive } from '../lib/layout';
 import { bonusPercent, buy, openShop, PACKS, type Pack, useShop } from '../lib/shop';
+
+/** Pack pictures (Gemini sheet in the card icons' style, keyed like them): 1 to 5 bolts. */
+const PACK_ART = [
+  require('../../assets/energy/pack-1.png'),
+  require('../../assets/energy/pack-2.png'),
+  require('../../assets/energy/pack-3.png'),
+  require('../../assets/energy/pack-4.png'),
+  require('../../assets/energy/pack-5.png'),
+];
 
 /** What a full list costs: 10 cards written and illustrated, a yardstick for the packs. */
 const LIST = 10 + imageCredits(10);
@@ -62,14 +71,8 @@ function PackRow({ pack, rank, price, busy, disabled }: { pack: Pack; rank: numb
           <Text style={styles.tagText}>{pack.tag}</Text>
         </View>
       ) : null}
-      {/* One more bolt per pack: the size of the pile says the size of the pack. */}
-      <View style={styles.bolts}>
-        {Array.from({ length: Math.min(rank + 1, 3) }, (_, k) => (
-          <View key={k} style={{ marginLeft: k ? -10 : 0 }}>
-            <EnergyIcon size={30 - k * 2} />
-          </View>
-        ))}
-      </View>
+      {/* Drawn in the icons' style: one more bolt per pack, and hotter, up to the fireball. */}
+      <Image source={PACK_ART[rank]} style={[styles.art, { transform: [{ scale: 0.86 + rank * 0.06 }] }]} accessibilityIgnoresInvertColors />
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={styles.credits}>{pack.credits.toLocaleString('fr-FR')}</Text>
         <Text style={styles.detail}>
@@ -110,7 +113,7 @@ const styles = StyleSheet.create({
   packTagged: { borderColor: ENERGY, marginTop: spacing.sm },
   tag: { position: 'absolute', top: -11, left: spacing.lg, backgroundColor: ENERGY, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   tagText: { color: '#2A1B00', fontSize: 12, fontWeight: '800' },
-  bolts: { flexDirection: 'row', width: 64, justifyContent: 'center' },
+  art: { width: 76, height: 76 },
   credits: { color: ENERGY, fontSize: 24, fontWeight: '800', fontVariant: ['tabular-nums'] },
   detail: { color: colors.textMuted, fontSize: 13 },
   bonus: { color: '#7BE495', fontSize: 13, fontWeight: '700' },
