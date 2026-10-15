@@ -18,7 +18,7 @@ import { splitEmoji } from './emoji';
 
 /**
  * Credits a generation costs (docs/monetization-plan.md; 1 credit ≈ 1 cent). All the
- * images of a list are drawn on one sheet (≈ 12 c€ whatever its size): images cost a
+ * images of a list are drawn on one sheet (≈ 6 c€ whatever its size): images cost a
  * fixed part plus a little each, so the more cards get one, the cheaper each image.
  * Measured, a 5-card illustrated list pays for itself even with no icon reused.
  */

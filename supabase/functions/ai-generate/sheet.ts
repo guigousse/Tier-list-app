@@ -233,7 +233,7 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
 
 /** A sheet below this many cells costs as much as one this size: it is never drawn smaller. */
 const MIN_CELLS = 12;
-/** Gemini draws 20 icons readably on one 2K picture (5 × 4 cells of ~480 px). */
+/** Gemini draws 20 icons readably on one 1K picture (5 × 4 cells of ~230 px). */
 const MAX_CELLS = 20;
 
 /**

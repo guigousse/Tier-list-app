@@ -10,7 +10,7 @@ import { ecKey, signedBy } from "./certs.ts";
 /**
  * The packs (docs/monetization-plan.md): a 0.99 € way in, then more credits per euro the
  * bigger the pack. Net of 20 % VAT and Apple's 15 %, even the biggest leaves ≈ 0.81 c€ a
- * credit, above the ≈ 0.73 c€ a credit costs us at worst in normal use (10 new images).
+ * credit, above the ≈ 0.65 c€ a credit costs us at worst in normal use (3 new images).
  */
 export const PACKS: Record<string, { credits: number; price: number }> = {
   "tiercraft.energy.60": { credits: 60, price: 0.99 },

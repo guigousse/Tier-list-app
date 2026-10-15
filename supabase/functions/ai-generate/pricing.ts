@@ -13,7 +13,7 @@ export type Paid = "words" | "tiers" | "images";
 
 /**
  * Price of what was delivered: cards written, tiers renamed, images received. A sheet
- * costs the same for 3 icons or 20 (≈ 12 c€ at Gemini), so images pay a fixed part
+ * costs the same for 3 icons or 20 (≈ 6 c€ at Gemini), so images pay a fixed part
  * plus a little each: measured, a 5-card illustrated list pays for itself even when no
  * icon was in the library yet. Nothing delivered, nothing to pay, fixed part included.
  */

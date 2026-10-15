@@ -21,21 +21,22 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 
   | Price | Credits | c/credit incl. VAT | Net c€/credit | Bonus vs 0.99 € | Margin at worst cost |
   |---|---|---|---|---|---|
-  | 0.99 € | 60 | 1.65 | 1.17 | — (way in) | +61 % |
-  | 2.99 € | 200 | 1.50 | 1.06 | +10 % | +46 % |
-  | 4.99 € | 360 | 1.39 | 0.98 | +19 % ("Le plus choisi") | +35 % |
-  | 9.99 € | 800 | 1.25 | 0.89 | +32 % | +22 % |
-  | 19.99 € | 1750 | 1.14 | 0.81 | +44 % ("Meilleur prix") | +11 % |
+  | 0.99 € | 60 | 1.65 | 1.17 | — (way in) | +80 % |
+  | 2.99 € | 200 | 1.50 | 1.06 | +10 % | +63 % |
+  | 4.99 € | 360 | 1.39 | 0.98 | +19 % ("Le plus choisi") | +51 % |
+  | 9.99 € | 800 | 1.25 | 0.89 | +32 % | +37 % |
+  | 19.99 € | 1750 | 1.14 | 0.81 | +44 % ("Meilleur prix") | +25 % |
 
-  Net = price / 1.2 (VAT) × 0.85 (Small Business Program). "Worst cost" = 0.73 c€ a
-  credit: 10 new images on cards without a concept (sheet 12.1 c€ + concept call 1 c€
-  for 18 credits). A full 10-card list (words, images, tiers: 33 credits, ≈ 14 c€) costs
-  0.42 c€ a credit, where even the biggest pack earns +92 %. Only image requests of
-  fewer than ~8 new icons lose money, whatever the pack (3 images: 1.19 c€ a credit).
+  Net = price / 1.2 (VAT) × 0.85 (Small Business Program). "Worst cost" = 0.65 c€ a
+  credit: the smallest image request, 3 new images on cards without a concept (sheet
+  6.1 c€ + concept call 1 c€ for 11 credits), since the sheets moved to Gemini 3.1 Flash
+  (2026-10-15; with 3 Pro, at 12.1 c€ a sheet, requests under ~8 icons lost money).
+  10 new images cost 0.39 c€ a credit; a full 10-card list (words, images, tiers:
+  33 credits, ≈ 8 c€) 0.25 c€, where even the biggest pack earns +230 %.
   A pack is ≈ 2 / 7 / 12 / 28 / 62 illustrated lists of 10 cards (28 credits each).
   The 0.99 € pack is the way in, 4.99 € the one the eye lands on, 19.99 € the anchor.
   Without the Small Business Program (30 % to Apple) every net figure is × 0.82: the
-  19.99 € pack would sit at 0.67 c€, under the worst cost, so stay enrolled.
+  19.99 € pack would sit at 0.67 c€, barely above the worst cost, so stay enrolled.
 
 ## Tiercraft+ (auto-renewable subscription)
 
@@ -52,12 +53,17 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 - New icon: ≈ 3.6 ¢ $ on average (2.6–5.0 ¢ $), ≈ 13 s. Sonnet 5.5 is 1.5 ¢ $ but
   visibly less detailed. A reused library icon costs nothing.
 - **Chosen instead: Gemini sheets** (comparison https://claude.ai/artifact/5spNptA4YyHoPDWYPXnSjF).
-  One picture for a whole list, cut on the server (`supabase/functions/ai-generate/sheet.ts`):
-  Gemini 3 Pro Image 2K ≈ 0.134 $ per sheet, i.e. ≈ 1.1–1.4 ¢ $ per icon on a full
-  sheet, ≈ 25 s; richer drawings than the SVG and one consistent style. Flash Image
-  is 0.039 $ per sheet but uneven. A 1K and a 2K picture cost the same: sheets are
-  never drawn smaller, their free cells draw concepts from `icon_wishlist`.
-- So a 10-card illustrated list ≈ 37 ¢ $, 98 % of it for icons.
+  One picture for a whole list, cut on the server (`supabase/functions/ai-generate/sheet.ts`);
+  richer drawings than the SVG and one consistent style. A sheet costs the same for
+  3 icons or 20: sheets are never drawn smaller, their free cells draw concepts from
+  `icon_wishlist`.
+- **Model: Gemini 3.1 Flash Image at 1K** (2026-10-15, comparison
+  https://claude.ai/artifact/XAACTS95F2xuWbSUropWqw): ≈ 6.8 ¢ $ (≈ 6.1 c€) per sheet,
+  ≈ 10 s. Same prompt and cutting as before on Greek dishes and presidents, 12 and 20
+  cells: same style, faces as recognizable. It replaced Gemini 3 Pro Image 2K
+  (≈ 13.9 ¢ $ with its thinking, ≈ 21 s). Flash 3.1 at 2K (10.1 ¢ $) showed no gain and
+  white sticker rims; Gemini 2.5 Flash Image (3.9 ¢ $) loses the style and the faces.
+- So a 10-card illustrated list ≈ 9 ¢ $, ≈ 85 % of it for icons.
 
 ## Economics (simulation, measured costs)
 
@@ -70,13 +76,12 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   (25 credits for 1.99 €) is profitable but makes an illustrated list cost 4.78 €.
 - **Adopted scale** (2026-10-15, the sweet spot): **1 credit ≈ 1 cent** (200 credits
   for 1.99 €); 1 credit per card; images **8 credits per sheet plus 1 per image**
-  (3 images = 11 credits, 10 = 18, 20 = 28). A sheet costs ≈ 12.1 c€ and a credit nets
-  ≈ 0.71 c€: with every icon to draw, images alone pay for the sheet from 10 of them
-  (18 credits ≈ 12.7 c€), and a 5-card list with its words and images breaks even.
-  Small requests lose a little (3 images ≈ −4.3 c€), 20 images earn ≈ +7.7 c€. The
-  margin comes from reuse (a reused icon is paid by the player, free for us) and from
-  the icons free cells draw ahead. The earlier 2 + 1 lost money below ~15 images.
-  Watch the reuse rate.
+  (3 images = 11 credits, 10 = 18, 20 = 28). A credit nets ≈ 0.71 c€. With 3 Pro
+  sheets (≈ 12.1 c€) images paid for the sheet only from 10 of them and 3 images lost
+  ≈ 4.3 c€; with Flash 3.1 sheets (≈ 6.1 c€, since 2026-10-15) every request earns,
+  even 3 images with their concept call (≈ +0.7 c€), and 20 images ≈ +12.8 c€. Reuse
+  (a reused icon is paid by the player, free for us) and the icons free cells draw
+  ahead add to that margin. The scale was kept as is.
 - Same scale for the other AI tabs (2026-10-14): a card whose word is replaced costs
   1 credit, like a new card; renaming the tiers costs **1 credit per tier** (one Opus
   call, effort low, ≈ 1 c€ whatever the tier count); a redrawn image counts as an
