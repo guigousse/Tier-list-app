@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useId } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { useCredits } from '../lib/credits';
+import { Clickable } from './Clickable';
 
 /** The gold of the credits, the same everywhere they are shown. */
 export const ENERGY = '#FFD84A';
@@ -46,19 +48,40 @@ export function EnergyAmount({ amount, size = 16, style }: { amount: number | nu
 
 /**
  * The player's balance in a gold pill, as long as the number needs: it grows with
- * each digit instead of having a set width.
+ * each digit instead of having a set width. With `onPress`, a "+" ends it: the whole
+ * pill opens the shop, not only the small sign, which alone would be a hard target.
  */
-export function EnergyPill() {
+export function EnergyPill({ onPress }: { onPress?: () => void }) {
   const balance = useCredits((s) => s.balance);
-  return (
-    <View
-      accessible
-      accessibilityLabel={balance === null ? 'Solde de crédits en cours de chargement' : `Solde : ${balance} crédit${balance > 1 ? 's' : ''}`}
-      style={styles.pill}
-    >
+  const label = balance === null ? 'Solde de crédits en cours de chargement' : `Solde : ${balance} crédit${balance > 1 ? 's' : ''}`;
+  const content = (
+    <>
       <EnergyIcon size={18} />
       <Text style={styles.pillText}>{balance === null ? '…' : balance}</Text>
-    </View>
+      {onPress ? (
+        <View style={styles.plus}>
+          <Ionicons name="add" size={16} color="#2A1B00" />
+        </View>
+      ) : null}
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View accessible accessibilityLabel={label} style={styles.pill}>
+        {content}
+      </View>
+    );
+  }
+  return (
+    <Clickable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. Acheter de l’énergie`}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.pill, styles.pillWithPlus, pressed && { opacity: 0.8 }]}
+    >
+      {content}
+    </Clickable>
   );
 }
 
@@ -77,5 +100,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 216, 74, 0.5)',
   },
+  // The "+" sits in the pill's round end: the padding shrinks so it keeps the same margin.
+  pillWithPlus: { paddingRight: 4 },
+  plus: { width: 24, height: 24, borderRadius: 12, backgroundColor: ENERGY, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
   pillText: { color: ENERGY, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
 });

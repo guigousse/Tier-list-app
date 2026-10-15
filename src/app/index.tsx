@@ -95,7 +95,7 @@ export default function Home() {
             Tiercraft
           </Text>
           <View style={styles.headerIcons}>
-            <EnergyPill />
+            <EnergyPill onPress={() => router.push('/store')} />
             <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
           </View>
         </View>

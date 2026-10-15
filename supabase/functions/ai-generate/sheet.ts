@@ -251,11 +251,21 @@ export function fillSheet<T extends { concept: string }>(missing: T[], wishlist:
   return [...asked, ...extra.slice(0, cells - asked.length)];
 }
 
+/**
+ * A famous person, drawn as a caricature bust rather than an object that stands for them
+ * (Obama was a basketball). Gemini draws presidents this way; it may refuse some
+ * faces, hence drawWithFallback.
+ */
+export const isBust = (concept: string) => concept.startsWith("bust-");
+
 /** What Gemini is asked; the style comes from the reference picture sent with it. */
 export function sheetPrompt(cards: { label: string; concept: string; theme?: string }[], cols: number, rows: number) {
   // The list's theme settles a homonym the concept alone might not: a "Rose" among colours.
   const list = cards
-    .map((c, i) => `${i + 1}. ${c.concept.replace(/-/g, " ")} (for a card named "${c.label}"${c.theme ? ` in a list about "${c.theme}"` : ""})`)
+    .map((c, i) => {
+      const what = isBust(c.concept) ? `a friendly caricature bust (head and shoulders) of ${c.label}, recognizable by face, hairstyle and clothing` : c.concept.replace(/-/g, " ");
+      return `${i + 1}. ${what} (for a card named "${c.label}"${c.theme ? ` in a list about "${c.theme}"` : ""})`;
+    })
     .join("\n");
   const empty = cols * rows > cards.length ? `\nThe remaining ${cols * rows - cards.length} cell(s) at the end stay plain magenta.` : "";
   return [
@@ -297,5 +307,26 @@ export function copyRegion(
   for (let y = 0; y < box.h; y++) {
     const from = ((box.y + y) * srcW + box.x) * 4;
     dst.set(src.subarray(from, from + box.w * 4), ((dy + y) * dstW + dx) * 4);
+  }
+}
+
+/**
+ * Draws a sheet, and when Gemini refuses it (no picture: it turns down some real faces,
+ * and one refused face loses the whole sheet), draws it again without the busts: the
+ * other cards get their picture, the busts none, and are not charged. A refusal costs
+ * nothing at Gemini. Tiles come back in the plan's order.
+ */
+export async function drawWithFallback<T extends { concept: string }>(
+  plan: T[],
+  draw: (cards: T[]) => Promise<(Uint8Array | null)[]>,
+): Promise<(Uint8Array | null)[]> {
+  try {
+    return await draw(plan);
+  } catch (e) {
+    const others = plan.filter((c) => !isBust(c.concept));
+    if (!(e instanceof Error) || e.message !== "no image" || others.length === plan.length || others.length === 0) throw e;
+    const tiles = await draw(others);
+    let next = 0;
+    return plan.map((c) => (isBust(c.concept) ? null : tiles[next++] ?? null));
   }
 }

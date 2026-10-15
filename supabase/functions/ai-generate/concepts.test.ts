@@ -90,3 +90,8 @@ Deno.test("sans proposition, le nom de la carte sert de concept, sans doublon da
     ["rose", "rose-pivoine"],
   );
 });
+
+Deno.test("le nom d'une personne en buste n'est pas mis au singulier", () => {
+  same(normalizeConcept("bust-John-Adams"), "bust-john-adams");
+  same(normalizeConcept("bust-james-madison"), "bust-james-madison");
+});

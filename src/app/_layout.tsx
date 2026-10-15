@@ -124,6 +124,7 @@ export default function RootLayout() {
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />
             <Stack.Screen name="results/[id]" options={{ title: 'Résultats' }} />
             <Stack.Screen name="history" options={{ title: 'Historique' }} />
+            <Stack.Screen name="store" options={{ title: 'Énergie' }} />
             <Stack.Screen
               name="welcome"
               options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}

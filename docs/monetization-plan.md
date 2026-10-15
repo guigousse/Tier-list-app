@@ -15,14 +15,27 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 - **No free weekly credits** (decided 2026-10-14): they were the main cost.
 - **Welcome bonus**, the only free credits: **30** (a 10-card illustrated list is 28),
   once per wallet and per App Attest key.
-- **Packs** (consumable in-app purchases):
+- **Packs** (consumable in-app purchases, decided 2026-10-15; products
+  `tiercraft.energy.<credits>` in App Store Connect, same list in
+  `supabase/functions/ai-generate/purchase.ts` and `src/lib/shop.ts`):
 
-  | Price | Credits |
-  |---|---|
-  | 0.99 € | 10 |
-  | 1.99 € | 25 (highlighted) |
-  | 4.99 € | 70 |
-  | 9.99 € | 160 (best price) |
+  | Price | Credits | c/credit incl. VAT | Net c€/credit | Bonus vs 0.99 € | Margin at worst cost |
+  |---|---|---|---|---|---|
+  | 0.99 € | 60 | 1.65 | 1.17 | — (way in) | +61 % |
+  | 2.99 € | 200 | 1.50 | 1.06 | +10 % | +46 % |
+  | 4.99 € | 360 | 1.39 | 0.98 | +19 % ("Le plus choisi") | +35 % |
+  | 9.99 € | 800 | 1.25 | 0.89 | +32 % | +22 % |
+  | 19.99 € | 1750 | 1.14 | 0.81 | +44 % ("Meilleur prix") | +11 % |
+
+  Net = price / 1.2 (VAT) × 0.85 (Small Business Program). "Worst cost" = 0.73 c€ a
+  credit: 10 new images on cards without a concept (sheet 12.1 c€ + concept call 1 c€
+  for 18 credits). A full 10-card list (words, images, tiers: 33 credits, ≈ 14 c€) costs
+  0.42 c€ a credit, where even the biggest pack earns +92 %. Only image requests of
+  fewer than ~8 new icons lose money, whatever the pack (3 images: 1.19 c€ a credit).
+  A pack is ≈ 2 / 7 / 12 / 28 / 62 illustrated lists of 10 cards (28 credits each).
+  The 0.99 € pack is the way in, 4.99 € the one the eye lands on, 19.99 € the anchor.
+  Without the Small Business Program (30 % to Apple) every net figure is × 0.82: the
+  19.99 € pack would sit at 0.67 c€, under the worst cost, so stay enrolled.
 
 ## Tiercraft+ (auto-renewable subscription)
 
@@ -99,8 +112,16 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   attest in production, the only environment accepted. A wallet without attestation
   works, it just gets no bonus.
 - Credits for tests or support: `select public.wallet_grant(<wallet id>, <amount>, '<reason>')`.
-- Still to do: the in-app purchases (App Store Connect products, receipt check on the
-  server calling `wallet_grant`), Android (Play Integrity instead of App Attest).
+- **Purchases** (`purchase.ts`, migration `*_credit_purchases.sql`): the app buys with
+  expo-iap (StoreKit 2) and sends the signed transaction (JWS); the server checks the
+  chain up to Apple Root CA G3 (pinned by its SHA-256), Apple's OIDs on the intermediate
+  and the signer, the ES256 signature, the bundle id, the product and that it isn't
+  refunded, then `wallet_purchase` credits it once (the transaction id is the key).
+  The app finishes the transaction only after the server answered, so a purchase made
+  offline is credited at the next launch. Sandbox transactions are accepted (TestFlight
+  and Apple's review buy in the sandbox).
+- Still to do: refunds (App Store Server Notifications to take back refunded packs),
+  Android (Play Billing and Play Integrity).
 
 ## Implementation notes
 

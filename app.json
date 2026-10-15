@@ -67,7 +67,8 @@
         {
           "mode": "production"
         }
-      ]
+      ],
+      "expo-iap"
     ],
     "extra": {
       "eas": {

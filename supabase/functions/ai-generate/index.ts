@@ -4,6 +4,7 @@
 //   { action: "words", deviceId, wallet, theme, count, existing } -> { cards: [{ label, emoji, concept }], balance }
 //   { action: "tiers", deviceId, wallet, theme, current, tone, cards? } -> { labels, balance }  (best first)
 //   { action: "icons", deviceId, wallet, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }], balance }
+//   { action: "purchase", deviceId, wallet, transaction } -> { balance, credited, credits }  (an App Store pack, signed by Apple)
 // Generations are paid with the wallet's credits (wallet.ts): held first, then only what
 // was delivered is kept. 402 { error: "credits" } when the balance is too low.
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
@@ -15,10 +16,11 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 
 import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 import { drawSheet, SheetError } from "./iconSheet.ts";
-import { cardsToDraw, fillSheet } from "./sheet.ts";
+import { cardsToDraw, drawWithFallback, fillSheet } from "./sheet.ts";
 import { cleanTierLabels, TONES, type Tone } from "./tiers.ts";
 import { verifyAttestation } from "./appAttest.ts";
 import { WELCOME_BONUS } from "./pricing.ts";
+import { verifyTransaction } from "./purchase.ts";
 import { paid, WalletError } from "./wallet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
@@ -65,7 +67,7 @@ On te donne un thème et un nombre de cartes. Propose des cartes :
 - en français, courtes (1 à 3 mots, 24 caractères maximum), sans article ni numérotation ;
 - toutes du thème, connues du grand public, assez variées pour que le classement fasse débat ;
 - sans doublon entre elles ni avec les cartes déjà présentes.
-Pour chaque carte, donne aussi un emoji qui la représente, et un « concept » : un nom anglais simple en kebab-case (ex. "pizza", "hiking-boot", "rubber-duck") désignant l'objet à dessiner comme icône. Pour une idée difficile à dessiner, choisis un objet qui la symbolise (« Balade » -> "hiking-boot", « Grasse matinée » -> "bed"). Pour une marque, une personne ou une œuvre, choisis un objet générique évocateur, jamais un logo ni un visage réel.
+Pour chaque carte, donne aussi un emoji qui la représente, et un « concept » : un nom anglais simple en kebab-case (ex. "pizza", "hiking-boot", "rubber-duck") désignant l'objet à dessiner comme icône. Pour une idée difficile à dessiner, choisis un objet qui la symbolise (« Balade » -> "hiking-boot", « Grasse matinée » -> "bed"). Pour une personne réelle connue, le concept est son buste : "bust-" suivi de son prénom et de son nom en kebab-case (« Barack Obama » -> "bust-barack-obama"). Pour une marque ou une œuvre, choisis un objet générique évocateur, jamais un logo.
 Pour une couleur, une matière ou une notion purement visuelle, le concept montre la chose elle-même, pas un objet qui en a la couleur : une tache de peinture de cette teinte (« Kaki » -> "khaki-paint-splash", « Turquoise » -> "turquoise-paint-splash").
 Un mot à plusieurs sens se lit dans le sens du thème, et son concept le dit sans ambiguïté, jamais le mot nu : « Rose » vaut "pink-paint-splash" parmi des couleurs et "rose-flower" parmi des fleurs ; « Orange » vaut "orange-paint-splash" ou "orange-fruit" ; « Avocat » vaut "avocado" ou "lawyer-gavel".
 Concepts : au singulier, sans mot inutile (« pizza » et non « pizza-slice »). Si un concept de la bibliothèque déjà dessinée désigne exactement le même objet, dans le même sens, reprends-le tel quel : son icône est gratuite. Sinon, crée un concept assez précis pour que l'icône distingue la carte des autres de la liste (« camembert-box » plutôt que « cheese » dans une liste de fromages). Deux cartes de la liste n'ont jamais le même concept.
@@ -107,7 +109,7 @@ const TIERS_SCHEMA = {
 
 const CONCEPTS_SYSTEM = `Tu choisis les icônes des cartes d'une tier list. On te donne le thème de la liste et des noms de cartes, dans l'ordre.
 Pour chaque carte, donne un « concept » : un nom anglais simple en kebab-case, au singulier, désignant l'objet à dessiner, lu dans le sens du thème.
-Un mot à plusieurs sens est dit sans ambiguïté : « Rose » parmi des couleurs -> "pink-paint-splash", parmi des fleurs -> "rose-flower". Une couleur ou une matière se montre en tache de peinture de la teinte, pas en objet de cette couleur. Une idée difficile à dessiner prend un objet qui la symbolise ; une marque, une personne ou une œuvre, un objet générique évocateur, jamais un logo ni un visage.
+Un mot à plusieurs sens est dit sans ambiguïté : « Rose » parmi des couleurs -> "pink-paint-splash", parmi des fleurs -> "rose-flower". Une couleur ou une matière se montre en tache de peinture de la teinte, pas en objet de cette couleur. Une idée difficile à dessiner prend un objet qui la symbolise ; une personne réelle connue, son buste : "bust-" suivi de son prénom et de son nom (« Barack Obama » -> "bust-barack-obama") ; une marque ou une œuvre, un objet générique évocateur, jamais un logo.
 Si un concept de la bibliothèque déjà dessinée désigne le même objet dans le même sens, reprends-le tel quel.`;
 
 const CONCEPTS_SCHEMA = {
@@ -174,6 +176,31 @@ Deno.serve(async (req) => {
         }
       }
       return json({ balance, attested });
+    }
+
+    if (body.action === "purchase") {
+      if (wallet.length < 32) return json({ error: "bad request" }, 400);
+      let bought;
+      try {
+        bought = await verifyTransaction(String(body.transaction ?? ""), { bundleId: APP.bundleId });
+      } catch (e) {
+        console.error("purchase", e instanceof Error ? e.message : e);
+        return json({ error: "purchase" }, 400);
+      }
+      const { data, error } = await db.rpc("wallet_purchase", {
+        secret: wallet,
+        transaction_id: bought.transactionId,
+        product_id: bought.productId,
+        credits: bought.credits,
+        environment: bought.environment,
+      });
+      if (error) {
+        if (error.message.includes("wallet")) throw new WalletError("wallet");
+        throw new Error(error.message);
+      }
+      const row = (data as { balance: number; credited: boolean }[])[0];
+      // Already credited (sent again after a crash): the app finishes it all the same.
+      return json({ balance: row.balance, credited: row.credited, credits: bought.credits });
     }
 
     if (body.action === "icon") return json({ error: "gone" }, 410);
@@ -291,7 +318,8 @@ Deno.serve(async (req) => {
           const { data: wish } = await db.from("icon_wishlist").select("concept, label").order("created_at").limit(40);
           const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
           const plan = fillSheet(missing, pending as { concept: string; label: string }[]);
-          const tiles = await drawSheet(plan);
+          // A face Gemini refuses would lose the whole sheet: drawn again without the busts.
+          const tiles = await drawWithFallback(plan, drawSheet);
           const drawn: { concept: string; label: string; image: string }[] = [];
           await Promise.all(plan.map(async (card, i) => {
             const png = tiles[i];

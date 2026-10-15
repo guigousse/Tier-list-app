@@ -2,12 +2,11 @@
 // Apple device. It guards the welcome credits: without it, a script could open wallets
 // by the thousand and drain the bonus. The steps follow Apple's "Validating apps that
 // connect to your server"; node-app-attest (MIT) served as a reference, but its
-// node:crypto certificate check isn't implemented in Deno. Nor is WebCrypto's ECDSA
-// with a P-384 key and SHA-256, which is how Apple's CA signs the credential: the
-// signatures are checked with noble's P-384.
-import { p384 } from "npm:@noble/curves@1.9.7/p384";
+// node:crypto certificate check isn't implemented in Deno (certs.ts).
 import { decode } from "npm:cbor-x@1.6.6";
 import * as x509 from "npm:@peculiar/x509@1.14.3";
+
+import { signedBy } from "./certs.ts";
 
 // Apple App Attestation Root CA (valid until 2045), from Apple's Private PKI page.
 const ROOT = new x509.X509Certificate(
@@ -22,49 +21,6 @@ const b64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 const sha256 = async (b: Uint8Array) => new Uint8Array(await crypto.subtle.digest("SHA-256", b));
 const equal = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
-
-/** `cert` signed by `issuer`'s P-384 key, and valid at `date`. */
-async function signedBy(cert: x509.X509Certificate, issuer: x509.X509Certificate, date: Date) {
-  if (date < cert.notBefore || date > cert.notAfter) return false;
-  const hash = (cert.signatureAlgorithm as { hash?: { name?: string } }).hash?.name;
-  if (hash !== "SHA-256" && hash !== "SHA-384") return false;
-  const { tbs, signature } = signedParts(new Uint8Array(cert.rawData));
-  const digest = new Uint8Array(await crypto.subtle.digest(hash, tbs));
-  // The issuer's public key: the uncompressed P-384 point ending its SPKI.
-  const spki = new Uint8Array(issuer.publicKey.rawData);
-  const point = spki.subarray(spki.length - 97);
-  try {
-    return p384.verify(signature, digest, point);
-  } catch {
-    return false;
-  }
-}
-
-/** One DER element at `at`: where its value starts and where the element ends. */
-function element(der: Uint8Array, at: number) {
-  let len = der[at + 1];
-  let head = 2;
-  if (len & 0x80) {
-    const n = len & 0x7f;
-    len = 0;
-    for (let i = 0; i < n; i++) len = len * 256 + der[at + 2 + i];
-    head += n;
-  }
-  return { start: at + head, end: at + head + len };
-}
-
-/**
- * Certificate ::= SEQUENCE { tbsCertificate, signatureAlgorithm, signature BIT STRING }:
- * the signed bytes and the signature, read from the DER (the library keeps them private).
- */
-function signedParts(raw: Uint8Array) {
-  const outer = element(raw, 0);
-  const tbs = element(raw, outer.start);
-  const alg = element(raw, tbs.end);
-  const sig = element(raw, alg.end);
-  // A BIT STRING's first byte counts unused bits (0 here): the DER signature follows.
-  return { tbs: raw.subarray(outer.start, tbs.end), signature: raw.subarray(sig.start + 1, sig.end) };
-}
 
 /** The value of the innermost DER element: the nonce sits in SEQUENCE { [1] { OCTET STRING } }. */
 function innermost(der: Uint8Array): Uint8Array {

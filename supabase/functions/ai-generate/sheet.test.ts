@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/sheet.test.ts
-import { cardsToDraw, cellObject, clearBackground, copyRegion, fillSheet, gridFor, KEY, sheetPrompt } from "./sheet.ts";
+import { cardsToDraw, cellObject, clearBackground, copyRegion, drawWithFallback, fillSheet, gridFor, isBust, KEY, sheetPrompt } from "./sheet.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -266,4 +266,38 @@ Deno.test("un pixel de fond effacé ne garde pas son magenta, qui déteindrait a
   paint(px, w, 5, 5, 15, 15, [200, 120, 40]);
   clearBackground(px, w, h);
   same([...px.slice(0, 4)], [0, 0, 0, 0]);
+});
+
+Deno.test("une personne célèbre se dessine en buste caricatural, nommée par sa carte", () => {
+  const text = sheetPrompt([{ label: "Barack Obama", concept: "bust-barack-obama", theme: "Présidents américains" }, { label: "Saxophone", concept: "saxophone" }], 2, 1);
+  if (!text.includes("1. a friendly caricature bust (head and shoulders) of Barack Obama")) throw new Error(text);
+  if (!text.includes("2. saxophone")) throw new Error(text);
+  same([isBust("bust-barack-obama"), isBust("saxophone"), isBust("robust-tool")], [true, false, false]);
+});
+
+Deno.test("une planche refusée à cause des visages est redessinée sans eux, les autres cartes gardent leur image", async () => {
+  const plan = [{ concept: "bust-donald-trump" }, { concept: "saxophone" }, { concept: "bust-joe-biden" }, { concept: "pizza" }];
+  const asked: string[][] = [];
+  const tiles = await drawWithFallback(plan, async (cards) => {
+    asked.push(cards.map((c) => c.concept));
+    if (cards.some((c) => isBust(c.concept))) throw new Error("no image");
+    return cards.map((c) => new Uint8Array([c.concept.length]));
+  });
+  same(asked, [["bust-donald-trump", "saxophone", "bust-joe-biden", "pizza"], ["saxophone", "pizza"]]);
+  // Back in the plan's order: the busts without a picture, the others with theirs.
+  same(tiles.map((t) => (t ? t[0] : null)), [null, 9, null, 5]);
+});
+
+Deno.test("une planche sans visage qui échoue n'est pas retentée", async () => {
+  let calls = 0;
+  try {
+    await drawWithFallback([{ concept: "pizza" }], async () => {
+      calls++;
+      throw new Error("no image");
+    });
+  } catch {
+    same(calls, 1);
+    return;
+  }
+  throw new Error("aurait dû échouer");
 });

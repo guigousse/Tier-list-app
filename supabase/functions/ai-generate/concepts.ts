@@ -28,6 +28,8 @@ function singular(word: string): string {
 
 export function normalizeConcept(concept: string): string {
   const words = slug(concept).split("-").filter(Boolean);
+  // A person's name is kept as written: "bust-john-adams" isn't an Adam.
+  if (words[0] === "bust" && words.length > 1) return words.join("-").slice(0, 40);
   const kept = words.filter((w) => !FILLER.has(w));
   return (kept.length ? kept : words).map(singular).join("-").slice(0, 40);
 }

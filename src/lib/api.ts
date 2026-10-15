@@ -104,6 +104,15 @@ export function aiWallet(deviceId: string, wallet: string, attest?: Attestation)
   return aiCall({ action: 'wallet', deviceId, wallet, ...attest }, 20_000);
 }
 
+/**
+ * Credits an energy pack bought in the App Store: `transaction` is StoreKit's signed
+ * transaction, checked by the server against Apple's certificates. `credited` is false
+ * when it had already been credited.
+ */
+export function aiPurchase(deviceId: string, wallet: string, transaction: string): Promise<{ balance: number; credited: boolean; credits: number }> {
+  return aiCall({ action: 'purchase', deviceId, wallet, transaction }, 30_000);
+}
+
 /** Card names for a theme (without the cards already in the list), paid from `wallet`. */
 export function aiWords(deviceId: string, wallet: string, theme: string, count: number, existing: string[]): Promise<{ cards: AiCard[]; balance: number }> {
   return aiCall({ action: 'words', deviceId, wallet, theme, count, existing }, 90_000);
