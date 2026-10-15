@@ -1,24 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
-import { Clickable } from '../Clickable';
+import { playSparkle } from '../../lib/sound';
 
 const SIZE = 58;
 const RAINBOW = ['#FF5F6D', '#FFB347', '#FFE66B', '#7BE495', '#5AB8FF', '#9B7CFF', '#FF7FD1'] as const;
 
-const KINDS = {
-  all: { glyph: 'albums', label: 'Générer avec l’IA : cartes et images' },
-} as const;
-
 /**
- * Floating button that opens the AI window: a rainbow disc with a wand passing in
- * front of the cards it makes, a light sweep running across it now and then, and a
- * soft breathing halo. `busy`: still generating, the disc spins slowly.
+ * Floating button that opens the AI window: a rainbow disc with sparkles in its
+ * centre, a light sweep running across it now and then, and a soft breathing halo.
+ * It sounds a glint, not the usual click. `busy`: still generating, the disc spins slowly.
  */
-export function MagicWand({ kind, onPress, busy = false }: { kind: keyof typeof KINDS; onPress: () => void; busy?: boolean }) {
+export function MagicWand({ onPress, busy = false }: { onPress: () => void; busy?: boolean }) {
   const sweep = useSharedValue(0);
   const breath = useSharedValue(0);
   const spin = useSharedValue(0);
@@ -39,10 +35,13 @@ export function MagicWand({ kind, onPress, busy = false }: { kind: keyof typeof 
       <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]}>
         <LinearGradient colors={RAINBOW} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fill} />
       </Animated.View>
-      <Clickable
+      <Pressable
         accessibilityRole="button"
-        accessibilityLabel={KINDS[kind].label}
-        onPress={onPress}
+        accessibilityLabel="Générer avec l’IA : cartes, images et rangs"
+        onPress={() => {
+          playSparkle();
+          onPress();
+        }}
         style={({ pressed }) => [styles.button, pressed && { transform: [{ scale: 0.93 }] }]}
       >
         <Animated.View style={[StyleSheet.absoluteFill, ringStyle]}>
@@ -51,10 +50,8 @@ export function MagicWand({ kind, onPress, busy = false }: { kind: keyof typeof 
         <View style={styles.clip} pointerEvents="none">
           <Animated.View style={[styles.sweep, sweepStyle]} />
         </View>
-        <Ionicons name={KINDS[kind].glyph} size={26} color="rgba(255,255,255,0.92)" style={[styles.icon, styles.glyph]} />
-        <Ionicons name="color-wand" size={24} color="#FFFFFF" style={[styles.icon, styles.wandIcon]} />
-        <Ionicons name="sparkles" size={12} color="#FFFFFF" style={styles.spark} />
-      </Clickable>
+        <Ionicons name="sparkles" size={28} color="#FFFFFF" style={styles.icon} />
+      </Pressable>
     </View>
   );
 }
@@ -81,8 +78,4 @@ const styles = StyleSheet.create({
   clip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: SIZE / 2 },
   sweep: { position: 'absolute', top: -SIZE / 2, width: SIZE * 0.35, height: SIZE * 2, backgroundColor: 'rgba(255,255,255,0.55)' },
   icon: { textShadowColor: 'rgba(60,20,90,0.45)', textShadowRadius: 4, textShadowOffset: { width: 0, height: 1 } },
-  // The glyph a little up and right, the wand across its lower left corner.
-  glyph: { position: 'absolute', top: 11, right: 11 },
-  wandIcon: { position: 'absolute', bottom: 9, left: 9, textShadowColor: 'rgba(60,20,90,0.7)', textShadowRadius: 5 },
-  spark: { position: 'absolute', top: 7, left: 13 },
 });

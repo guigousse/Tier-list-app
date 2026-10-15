@@ -300,7 +300,7 @@ function Editor({ list }: { list: TierList }) {
         {/* AI generation: personal lists only (daily and popular cards are fixed). */}
         {fixed ? null : (
           <View style={styles.wand} pointerEvents="box-none">
-            <MagicWand kind="all" onPress={() => setAiOpen(true)} busy={aiRunning !== null} />
+            <MagicWand onPress={() => setAiOpen(true)} busy={aiRunning !== null} />
           </View>
         )}
       </View>
