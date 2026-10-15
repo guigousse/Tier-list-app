@@ -5,6 +5,7 @@ import type { Card, TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
 import { cacheAiIcon } from './aiIconFiles';
 import { aiIcons, aiTiers, aiWords } from './api';
+import { creditsError, setBalance, walletForRequest } from './credits';
 import { cardIconFor } from './cardIcons';
 import { splitEmoji } from './emoji';
 
@@ -16,20 +17,16 @@ import { splitEmoji } from './emoji';
  */
 
 /**
- * Credits a generation costs (docs/monetization-plan.md; 1 credit ≈ 1 cent, 200 credits
- * for 1.99 €). All the images of a list are drawn on one sheet (≈ 12 c€ whatever its
- * size): images cost a fixed part plus a little each, so the more cards get one, the
- * cheaper each image. Small lists lose a little, made up by the icons their free
- * cells draw ahead and by every reused icon.
+ * Credits a generation costs (docs/monetization-plan.md; 1 credit ≈ 1 cent). All the
+ * images of a list are drawn on one sheet (≈ 12 c€ whatever its size): images cost a
+ * fixed part plus a little each, so the more cards get one, the cheaper each image.
+ * Measured, a 5-card illustrated list pays for itself even with no icon reused.
  */
-export const CREDITS = { word: 1, tier: 1, sheet: 2, image: 1 };
+export const CREDITS = { word: 1, tier: 1, sheet: 8, image: 1 };
 
 export function imageCredits(count: number): number {
   return count > 0 ? CREDITS.sheet + count * CREDITS.image : 0;
 }
-
-/** Balance shown while there are no real credits yet (nothing is taken). */
-export const TEST_BALANCE = 200;
 
 /** New cards, plus cards whose word is replaced: 1 credit each. */
 export function wordCredits(count: number, replaced = 0): number {
@@ -74,6 +71,8 @@ const patch = (p: Partial<AiJob>) => {
 
 /** What to tell the player when generation fails. */
 export function aiError(e: unknown): string {
+  const short = creditsError(e);
+  if (short) return short;
   const m = e instanceof Error ? e.message : '';
   if (m === 'quota') return 'Limite de générations atteinte pour aujourd’hui : réessayez demain.';
   if (m === 'theme refused') return 'Ce thème ne peut pas être généré : essayez-en un autre.';
@@ -99,7 +98,8 @@ export async function generateWords(listId: string, theme: string, count: number
   useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0, replaced: 0 } });
   try {
     const existing = Object.values(list.cards).map((c) => c.label);
-    const { cards } = await aiWords(store.deviceId, theme, count + replace.length, existing);
+    const { cards, balance } = await aiWords(store.deviceId, await walletForRequest(), theme, count + replace.length, existing);
+    setBalance(balance);
     const label = (c: (typeof cards)[number]) => `${c.emoji} ${c.label}`.trim();
     let replaced = 0;
     replace.forEach((card, i) => {
@@ -134,7 +134,8 @@ export async function generateTiers(listId: string, theme: string, tone: TierTon
       .map((c) => splitEmoji(c.label).text || c.label)
       .filter(Boolean)
       .slice(0, 12);
-    const { labels } = await aiTiers(store.deviceId, theme, list.tiers.map((t) => t.label), tone, examples);
+    const { labels, balance } = await aiTiers(store.deviceId, await walletForRequest(), theme, list.tiers.map((t) => t.label), tone, examples);
+    setBalance(balance);
     let tiers = 0;
     list.tiers.forEach((t, i) => {
       const label = labels[i]?.trim();
@@ -190,7 +191,8 @@ export async function generateImages(listId: string, cardIds: string[]): Promise
       redraw.has(c.id) ? { label: splitEmoji(c.label).text, concept: '', redraw: true } : { label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' },
     );
     // The theme gives a homonym its sense: "Rose" is a colour in a list of colours.
-    const { icons } = await aiIcons(store.deviceId, asked, list.title);
+    const { icons, balance } = await aiIcons(store.deviceId, await walletForRequest(), asked, list.title);
+    setBalance(balance);
     queue.forEach((card, i) => {
       const url = icons[i]?.url;
       const concept = icons[i]?.concept;
@@ -200,8 +202,9 @@ export async function generateImages(listId: string, cardIds: string[]): Promise
       cacheAiIcon(url);
       patch({ icons: (useAiJob.getState().job?.icons ?? 0) + 1 });
     });
-  } catch {
-    patch({ failed: queue.length });
+  } catch (e) {
+    // Short of credits: said as such (nothing was drawn, nothing taken).
+    patch({ failed: queue.length, error: creditsError(e) ?? undefined });
   }
   patch({ phase: 'done' });
 }

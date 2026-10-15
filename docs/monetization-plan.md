@@ -1,6 +1,7 @@
-# Monetisation plan (AI credits) — to implement later
+# Monetisation plan (AI credits)
 
-Decided with the owner on 2026-10-14. Nothing is implemented yet.
+Decided with the owner on 2026-10-14. Credits are real since 2026-10-15 (see
+"Implementation" below); the in-app purchases that sell them are still to do.
 Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 
 ## AI services
@@ -12,7 +13,8 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 ## Credits
 
 - **No free weekly credits** (decided 2026-10-14): they were the main cost.
-- **Welcome bonus** at sign-up, the only free credits (20 in the proposed scale).
+- **Welcome bonus**, the only free credits: **30** (a 10-card illustrated list is 28),
+  once per wallet and per App Attest key.
 - **Packs** (consumable in-app purchases):
 
   | Price | Credits |
@@ -53,13 +55,15 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   sinks the model. Hence no free weekly credits, only a welcome bonus.
 - The app's current scale (1 credit per card, 5 per image) with the old packs
   (25 credits for 1.99 €) is profitable but makes an illustrated list cost 4.78 €.
-- **Adopted scale** (2026-10-14, revised): **1 credit ≈ 1 cent** (200 credits for
-  1.99 €); 1 credit per card; images **2 credits per list plus 1 per image**
-  (3 images = 5 credits, 10 = 12, 20 = 22). A sheet costs ≈ 12 c€ and a credit nets
-  ≈ 0.71 c€: with every icon to draw, a 3-card list loses ≈ 6.6 c€, 10 cards earn
-  ≈ 2.6 c€, 20 cards ≈ 15.8 c€. The margin comes from reuse (a reused icon is paid
-  by the player, free for us) and from the icons free cells draw ahead: at 30 %
-  reuse an image costs ≈ 0.7 c€ for ≈ 0.8–1.2 c€ earned. Watch the reuse rate.
+- **Adopted scale** (2026-10-15, the sweet spot): **1 credit ≈ 1 cent** (200 credits
+  for 1.99 €); 1 credit per card; images **8 credits per sheet plus 1 per image**
+  (3 images = 11 credits, 10 = 18, 20 = 28). A sheet costs ≈ 12.1 c€ and a credit nets
+  ≈ 0.71 c€: with every icon to draw, images alone pay for the sheet from 10 of them
+  (18 credits ≈ 12.7 c€), and a 5-card list with its words and images breaks even.
+  Small requests lose a little (3 images ≈ −4.3 c€), 20 images earn ≈ +7.7 c€. The
+  margin comes from reuse (a reused icon is paid by the player, free for us) and from
+  the icons free cells draw ahead. The earlier 2 + 1 lost money below ~15 images.
+  Watch the reuse rate.
 - Same scale for the other AI tabs (2026-10-14): a card whose word is replaced costs
   1 credit, like a new card; renaming the tiers costs **1 credit per tier** (one Opus
   call, effort low, ≈ 1 c€ whatever the tier count); a redrawn image counts as an
@@ -71,6 +75,32 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   sheet lost after Gemini was paid: twice on the presidents list, before the cutting
   fit in the edge function's 2 s of CPU).
 - Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
+
+## Implementation (2026-10-15)
+
+- **The balance lives on the server only** (`supabase/migrations/20261015010000_credits.sql`):
+  tables `credit_wallets`, `credit_holds`, `credit_ledger` (every movement), with row
+  security on and no rights for the app's key. Only the `ai-generate` edge function
+  (service role) can call the wallet functions. The app shows the balance it is given.
+- **The price is set on the server** (`supabase/functions/ai-generate/pricing.ts`): the
+  app sends what it wants generated, never a price. `src/lib/aiGenerate.ts` shows the
+  same scale for the estimate.
+- A wallet is reached by a random 64-character secret made on the phone and kept in
+  the Keychain with the identity (the database stores its SHA-256), so a reinstall
+  keeps its credits.
+- **Hold, then settle** (`wallet.ts`): the maximum price is held atomically before the
+  AI is called (an empty wallet never reaches it, two requests can't spend the same
+  credits), then only what was delivered is kept; a failure gives everything back, and
+  a hold left open by a request that died is refunded after 10 minutes.
+- **Welcome bonus guarded by Apple App Attest** (`appAttest.ts`, Apple's 9 steps,
+  checked against real attestations): only a genuine copy of the app on a real iPhone
+  gets it, once per wallet and once per device key; challenges are single-use and
+  expire in 5 minutes. No entitlement is needed: TestFlight and App Store builds
+  attest in production, the only environment accepted. A wallet without attestation
+  works, it just gets no bonus.
+- Credits for tests or support: `select public.wallet_grant(<wallet id>, <amount>, '<reason>')`.
+- Still to do: the in-app purchases (App Store Connect products, receipt check on the
+  server calling `wallet_grant`), Android (Play Integrity instead of App Attest).
 
 ## Implementation notes
 

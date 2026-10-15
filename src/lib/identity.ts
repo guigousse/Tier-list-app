@@ -5,14 +5,15 @@ import { useTierStore } from '../store/useTierStore';
 import { fetchFriends } from './api';
 
 /**
- * The install's identity (device id, and profile secret once created) is also kept
- * in the iOS Keychain, which survives deleting the app: after a reinstall on the
- * same iPhone, the player gets their profile, friends and votes back.
+ * The install's identity (device id, profile secret once created, credits wallet's
+ * secret) is also kept in the iOS Keychain, which survives deleting the app: after a
+ * reinstall on the same iPhone, the player gets their profile, friends, votes and
+ * credits back.
  */
 const KEY = 'tiercraft.identity';
 const OPTIONS = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
 
-type Identity = { deviceId: string; secret?: string };
+type Identity = { deviceId: string; secret?: string; wallet?: string };
 
 async function read(): Promise<Identity | null> {
   try {
@@ -26,9 +27,10 @@ async function read(): Promise<Identity | null> {
 /** Saves the current device id and profile secret to the Keychain. */
 export async function saveIdentity(): Promise<void> {
   if (Platform.OS === 'web') return;
-  const { deviceId, profile } = useTierStore.getState();
+  const { deviceId, profile, walletSecret } = useTierStore.getState();
   try {
-    await SecureStore.setItemAsync(KEY, JSON.stringify({ deviceId, secret: profile?.secret } satisfies Identity), OPTIONS);
+    const identity: Identity = { deviceId, secret: profile?.secret, wallet: walletSecret ?? undefined };
+    await SecureStore.setItemAsync(KEY, JSON.stringify(identity), OPTIONS);
   } catch {
     // Keychain unavailable: the identity stays in the app's storage only.
   }
@@ -56,6 +58,12 @@ async function run(): Promise<void> {
   // Fresh install: take back the device id the votes were made with.
   if (saved.deviceId !== state.deviceId && !state.profile) {
     useTierStore.setState({ deviceId: saved.deviceId });
+  }
+  // And the credits: the same wallet, not a new empty one.
+  if (saved.wallet && saved.wallet !== state.walletSecret) {
+    useTierStore.setState({ walletSecret: saved.wallet });
+  } else if (!saved.wallet && state.walletSecret) {
+    await saveIdentity();
   }
   if (saved.secret && !useTierStore.getState().profile) {
     try {

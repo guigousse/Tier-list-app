@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
-import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, replaceableCards, imageCredits, MIN_IMAGES, TEST_BALANCE, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, replaceableCards, imageCredits, MIN_IMAGES, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { openWallet, useCredits } from '../../lib/credits';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
@@ -45,31 +46,34 @@ function useJobView(visible: boolean, listId: string, kind: Mode, onOpen?: () =>
 
 const credits = (n: number) => `${n} crédit${n > 1 ? 's' : ''}`;
 
+/** The balance the server last gave (null: not known yet, the server decides). */
+const short = (cost: number, balance: number | null) => balance !== null && cost > balance;
+
 function Balance({ cost }: { cost: number }) {
-  // No credits yet: a test balance, nothing is taken.
-  const balance = TEST_BALANCE;
+  const balance = useCredits((s) => s.balance);
   return (
     <>
       <View style={[styles.recap, styles.recapTotal]}>
         <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
-        <Text style={[styles.recapValue, { fontSize: 18 }, cost > balance && { color: colors.danger }]}>{credits(cost)}</Text>
+        <Text style={[styles.recapValue, { fontSize: 18 }, short(cost, balance) && { color: colors.danger }]}>{credits(cost)}</Text>
       </View>
       <View style={styles.recap}>
         <Text style={styles.recapText}>Votre solde</Text>
-        <Text style={styles.recapValue}>{credits(balance)}</Text>
+        <Text style={styles.recapValue}>{balance === null ? '…' : credits(balance)}</Text>
       </View>
-      <Text style={styles.hint}>Phase de test : solde fictif, rien n’est décompté.</Text>
+      <Text style={styles.hint}>Seul ce qui est livré est décompté : une génération ratée ne coûte rien.</Text>
     </>
   );
 }
 
 function Footer({ label, cost, ready, busy, onPress, note }: { label: string; cost: number; ready: boolean; busy: boolean; onPress: () => void; note?: string }) {
-  const affordable = cost <= TEST_BALANCE;
+  const balance = useCredits((s) => s.balance);
+  const affordable = !short(cost, balance);
   return (
     <View style={styles.footer}>
       {note ? <Text style={styles.short}>{note}</Text> : null}
       {busy ? <Text style={styles.short}>Une génération est déjà en cours pour cette liste.</Text> : null}
-      {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {credits(cost - TEST_BALANCE)}.</Text> : null}
+      {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {credits(cost - (balance ?? 0))}.</Text> : null}
       <Button label={`${label} · ${credits(cost)}`} icon="sparkles" disabled={!ready || busy || !affordable} onPress={onPress} />
     </View>
   );
@@ -396,6 +400,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
           <View style={styles.bar}>
             <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
           </View>
+          {job.error ? <Text style={styles.error}>{job.error}</Text> : null}
           {running ? (
             <Text style={styles.hint}>Toutes les images sont dessinées ensemble, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
           ) : null}
@@ -493,6 +498,10 @@ export function AiSheet({ visible, onClose, listId, title }: Props & { title: st
     setWasVisible(visible);
     if (visible) setMode(running ?? (list && imageChoices(list).toDraw.length > 0 ? 'images' : 'words'));
   }
+  // The balance shown must be the server's: refreshed each time the window opens.
+  useEffect(() => {
+    if (visible) openWallet();
+  }, [visible]);
   // Both panels follow the window, not the tab: switching tabs keeps what was chosen.
   const words = useWordsPanel({ visible, onClose, listId, title });
   const images = useImagesPanel({ visible, onClose, listId });

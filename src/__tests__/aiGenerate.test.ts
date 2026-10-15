@@ -9,11 +9,17 @@ jest.mock('../lib/api', () => ({
   aiTiers: jest.fn(),
 }));
 jest.mock('../lib/aiIconFiles', () => ({ cacheAiIcon: jest.fn() }));
+jest.mock('../lib/credits', () => ({
+  walletForRequest: jest.fn(async () => 'secret-du-porte-monnaie'),
+  setBalance: jest.fn(),
+  creditsError: (e: unknown) => (e instanceof Error && e.message === 'credits' ? 'Pas assez de crédits pour cette génération.' : null),
+}));
 
 const words = aiWords as jest.Mock;
 const icons = aiIcons as jest.Mock;
 const tiers = aiTiers as jest.Mock;
 const store = () => useTierStore.getState();
+const WALLET = 'secret-du-porte-monnaie';
 
 beforeEach(() => {
   useTierStore.setState({ lists: {} });
@@ -28,9 +34,10 @@ describe('AI generation', () => {
     expect(wordCredits(10)).toBe(10);
     // One drawing sheet for the whole list: a fixed part, then a little per image.
     expect(imageCredits(0)).toBe(0);
-    expect(imageCredits(3)).toBe(5);
-    expect(imageCredits(10)).toBe(12);
-    expect(imageCredits(20)).toBe(22);
+    // A sheet costs Gemini the same for 3 icons or 20: a fixed part, then 1 per image.
+    expect(imageCredits(3)).toBe(11);
+    expect(imageCredits(10)).toBe(18);
+    expect(imageCredits(20)).toBe(28);
     expect(imageCredits(3) / 3).toBeGreaterThan(imageCredits(10) / 10);
   });
 
@@ -45,7 +52,7 @@ describe('AI generation', () => {
 
     await generateWords(id, 'Fromages', 2);
 
-    expect(words).toHaveBeenCalledWith(expect.any(String), 'Fromages', 2, ['Comté']);
+    expect(words).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', 2, ['Comté']);
     expect(icons).not.toHaveBeenCalled();
     const list = store().lists[id];
     expect(list.title).toBe('Fromages');
@@ -100,9 +107,9 @@ describe('AI generation', () => {
 
     expect(icons).toHaveBeenCalledTimes(1);
     // The list's theme tells which sense a homonym has (a pink "Rose" among colours).
-    expect(icons.mock.calls[0][2]).toBe('Fromages');
+    expect(icons.mock.calls[0][3]).toBe('Fromages');
     // A renamed card loses its concept: the server draws its label.
-    expect(icons.mock.calls[0][1]).toEqual([
+    expect(icons.mock.calls[0][2]).toEqual([
       { label: 'Brie', concept: 'brie' },
       { label: 'Roquefort', concept: '' },
       { label: 'Tomme', concept: '' },
@@ -126,7 +133,7 @@ describe('AI generation', () => {
 
     icons.mockResolvedValue({ icons: [{ url: 'https://x/1.png' }, { url: 'https://x/2.png' }, { url: 'https://x/3.png' }] });
     await generateImages(id, [ids[0], ids[2], ids[3]]);
-    expect(icons.mock.calls[0][1].map((c: { label: string }) => c.label)).toEqual(['Brie', 'Tomme', 'Gouda']);
+    expect(icons.mock.calls[0][2].map((c: { label: string }) => c.label)).toEqual(['Brie', 'Tomme', 'Gouda']);
     expect(store().lists[id].cards[ids[1]].iconUrl).toBeUndefined();
   });
 
@@ -162,7 +169,7 @@ describe('AI generation', () => {
 
     await generateImages(id, [rouge.id, vert.id, rose.id]);
 
-    expect(icons.mock.calls[0][1]).toEqual([
+    expect(icons.mock.calls[0][2]).toEqual([
       { label: 'Rouge', concept: '' },
       { label: 'Vert', concept: '' },
       // Its concept may be what was wrong (a flamingo for a colour): read again.
@@ -179,7 +186,7 @@ describe('AI generation', () => {
     const photo = store().addCard(id, { label: 'Photo', color: '#000', imageName: 'p.jpg' });
     icons.mockResolvedValue({ icons: [{ url: 'https://x/1.png' }, { url: 'https://x/2.png' }, { url: 'https://x/3.png' }] });
     await generateImages(id, Object.keys(store().lists[id].cards));
-    expect(icons.mock.calls[0][1].map((c: { label: string }) => c.label)).toEqual(['A', 'B', 'C']);
+    expect(icons.mock.calls[0][2].map((c: { label: string }) => c.label)).toEqual(['A', 'B', 'C']);
     expect(photo).toBeDefined();
   });
 
@@ -195,7 +202,7 @@ describe('AI generation', () => {
     await generateTiers(id, 'Fromages', 'humour');
 
     // The cards say what the theme is really about ("Fromages" of a region, of a shop…).
-    expect(tiers).toHaveBeenCalledWith(expect.any(String), 'Fromages', ['S', 'A', 'B'], 'humour', ['Comté', 'Brie']);
+    expect(tiers).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', ['S', 'A', 'B'], 'humour', ['Comté', 'Brie']);
     expect(store().lists[id].tiers.map((t) => t.label)).toEqual(['Grand cru', 'Bien affiné', 'Bof']);
     // Renaming the tiers leaves the list's title and cards alone.
     expect(store().lists[id].title).toBe('Ma liste');
@@ -232,7 +239,7 @@ describe('AI generation', () => {
     await generateWords(id, 'Fromages', 1, [gouda.id]);
 
     // One call for both: the AI knows every card, the replaced one included, to avoid it.
-    expect(words).toHaveBeenCalledWith(expect.any(String), 'Fromages', 2, ['🧀 Comté', '🧀 Gouda', '🧀 Brie']);
+    expect(words).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', 2, ['🧀 Comté', '🧀 Gouda', '🧀 Brie']);
     const after = store().lists[id];
     const replaced = after.cards[gouda.id];
     expect(replaced.label).toBe('🧀 Roquefort');
@@ -255,5 +262,17 @@ describe('AI generation', () => {
     await generateWords(id, 'Lettres', 0, [a.id]);
     // The server sends at least 3: only what was asked is kept.
     expect(Object.values(store().lists[id].cards).map((c) => c.label)).toEqual(['C', 'B']);
+  });
+
+  it('shows the balance the server sends back, and says when credits are short', async () => {
+    const { setBalance } = jest.requireMock('../lib/credits');
+    const id = store().createList({ title: 'T', tierLabels: ['S'] });
+    words.mockResolvedValue({ cards: [{ label: 'Brie', emoji: '🧀', concept: 'brie' }], balance: 41 });
+    await generateWords(id, 'Fromages', 1);
+    expect(setBalance).toHaveBeenCalledWith(41);
+
+    words.mockRejectedValue(new Error('credits'));
+    await generateWords(id, 'Fromages', 5);
+    expect(useAiJob.getState().job).toMatchObject({ phase: 'error', error: 'Pas assez de crédits pour cette génération.' });
   });
 });

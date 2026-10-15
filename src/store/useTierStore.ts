@@ -57,6 +57,10 @@ type State = {
   badgeChoices: Record<string, string>;
   /** Badges shown on the profile, up to 3. */
   shownBadges: string[];
+  /** Secret of this install's credits wallet (the balance itself lives on the server). */
+  walletSecret: string | null;
+  /** Apple vouched for this install once (App Attest): the welcome bonus was asked for. */
+  walletAttested: boolean;
 
   createList: (input: NewListInput) => string;
   /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
@@ -148,6 +152,8 @@ type Persisted = {
   viewedMail?: string[];
   badgeChoices?: Record<string, string>;
   shownBadges?: string[];
+  walletSecret?: string | null;
+  walletAttested?: boolean;
 };
 
 /** Upgrades data saved by an older version of the app (see `version` below). */
@@ -160,6 +166,11 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
   if (version < 3) {
     // v3: welcome screens. People who already made tier lists don't need them.
     data.settings = { ...data.settings, onboarded: Object.keys(data.lists ?? {}).length > 0 };
+  }
+  if (version < 5) {
+    // v5: credits wallet. None yet: it opens at the next launch.
+    data.walletSecret = null;
+    data.walletAttested = false;
   }
   return data;
 }
@@ -188,6 +199,8 @@ export const useTierStore = create<State>()(
         viewedMail: [],
         badgeChoices: {},
         shownBadges: [],
+        walletSecret: null,
+        walletAttested: false,
 
         createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
           const now = Date.now();
@@ -509,7 +522,7 @@ export const useTierStore = create<State>()(
     {
       name: STORE_KEY,
       // Bump with every change to the persisted shape, and handle it in `migrate`.
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => migrateStore(persisted, version),
       // Unreadable data (corrupted, or a migration that throws): keep a copy aside
       // and start from the defaults, rather than staying on a blank screen.
@@ -526,6 +539,8 @@ export const useTierStore = create<State>()(
         viewedMail: state.viewedMail,
         badgeChoices: state.badgeChoices,
         shownBadges: state.shownBadges,
+        walletSecret: state.walletSecret,
+        walletAttested: state.walletAttested,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
@@ -538,6 +553,8 @@ export const useTierStore = create<State>()(
           viewedMail: p.viewedMail ?? current.viewedMail,
           badgeChoices: p.badgeChoices ?? current.badgeChoices,
           shownBadges: p.shownBadges ?? current.shownBadges,
+          walletSecret: p.walletSecret ?? current.walletSecret,
+          walletAttested: p.walletAttested ?? current.walletAttested,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
       },

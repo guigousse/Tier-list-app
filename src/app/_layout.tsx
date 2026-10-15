@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
+import { openWallet } from '../lib/credits';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
@@ -52,6 +53,8 @@ export default function RootLayout() {
       syncDailyVotes();
       // Notifications about friends: this install's push token on the profile.
       syncPushToken();
+      // The wallet after the identity: a reinstall finds its credits through the Keychain.
+      openWallet();
     });
   }, [hydrated]);
 

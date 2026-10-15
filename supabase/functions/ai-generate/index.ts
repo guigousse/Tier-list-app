@@ -1,8 +1,11 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
-//   { action: "words", deviceId, theme, count, existing } -> { cards: [{ label, emoji, concept }] }
-//   { action: "tiers", deviceId, theme, current, tone, cards? } -> { labels }  (one name per tier, best first)
-//   { action: "icon", deviceId, label, concept }          -> { concept, svg, reused }  (SVG, older app versions)
-//   { action: "icons", deviceId, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }] }  (one Gemini sheet)
+//   { action: "challenge", deviceId } -> { challenge }  (one-use, for App Attest)
+//   { action: "wallet", deviceId, wallet, keyId?, attestation?, challenge? } -> { balance, attested }
+//   { action: "words", deviceId, wallet, theme, count, existing } -> { cards: [{ label, emoji, concept }], balance }
+//   { action: "tiers", deviceId, wallet, theme, current, tone, cards? } -> { labels, balance }  (best first)
+//   { action: "icons", deviceId, wallet, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }], balance }
+// Generations are paid with the wallet's credits (wallet.ts): held first, then only what
+// was delivered is kept. 402 { error: "credits" } when the balance is too low.
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
 // by every player; a redrawn concept keeps its first image and adds the new one to
 // card_icon_images, the history of every picture drawn. Per-device and global daily
@@ -14,10 +17,14 @@ import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 import { drawSheet, SheetError } from "./iconSheet.ts";
 import { cardsToDraw, fillSheet } from "./sheet.ts";
 import { cleanTierLabels, TONES, type Tone } from "./tiers.ts";
+import { verifyAttestation } from "./appAttest.ts";
+import { WELCOME_BONUS } from "./pricing.ts";
+import { paid, WalletError } from "./wallet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
 const WORDS_MODEL = "claude-opus-5-5";
-const ICON_MODEL = "claude-opus-5-5";
+/** The app's App ID, which App Attest binds every attestation to. */
+const APP = { teamId: "9D78779LKL", bundleId: "com.guigousse.TierCraft" };
 
 const anthropic = new Anthropic(); // ANTHROPIC_API_KEY, an Edge Function secret
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -116,81 +123,12 @@ async function libraryHint() {
   return (data ?? []).map((r: { concept: string }) => r.concept).join(", ") || "vide";
 }
 
-const ICON_SYSTEM = `Tu dessines des icônes vectorielles SVG pour les cartes d'une application de tier lists.
-Style imposé, identique aux exemples :
-- viewBox "0 0 100 100", dessin centré occupant environ 80 % de la surface, fond transparent ;
-- illustration cartoon simple et lisible à 55 pixels : peu de formes, pas de petits détails ;
-- contours foncés chauds stroke="#2A1B14" d'épaisseur 2 à 2,6, stroke-linejoin="round" stroke-linecap="round" ;
-- aplats de couleurs vives, plus une ombre (teinte plus foncée) et un reflet (blanc ou teinte claire, opacity .3 à .8) par forme principale ;
-- éléments autorisés uniquement : svg, g, path, circle, ellipse, rect, line, polyline, polygon, defs, linearGradient, radialGradient, stop, clipPath. Pas de texte, pas d'image, pas de style CSS, pas de script ;
-- jamais de logo, de marque, de texte ni de visage de personne réelle : un objet générique.
-Exemple « croissant » :
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#E9A24A" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M9 63 C10 52 18 44 28 44 C28 52 25 59 20 66 C15 69 10 67 9 63 Z"/>
-<path fill="#E9A24A" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M91 63 C90 52 82 44 72 44 C72 52 75 59 80 66 C85 69 90 67 91 63 Z"/>
-<path fill="#E39A40" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M22 50 C26 38 38 34 44 38 C44 50 40 60 32 66 C24 66 19 58 22 50 Z"/>
-<path fill="#E39A40" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M78 50 C74 38 62 34 56 38 C56 50 60 60 68 66 C76 66 81 58 78 50 Z"/>
-<path fill="#F0AE55" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M36 40 C36 28 64 28 64 40 C64 54 58 66 50 68 C42 66 36 54 36 40 Z"/>
-<g fill="#C77A2A" opacity=".55"><path d="M50 68 C56 64 60 56 61 48 C58 56 54 62 50 64 Z"/><path d="M32 66 C38 62 41 55 42 48 C38 56 35 60 30 62 Z"/><path d="M68 66 C62 62 59 55 58 48 C62 56 65 60 70 62 Z"/></g>
-<path fill="#FFD48C" opacity=".8" d="M42 36 C45 32 52 31 56 33 C51 33 46 35 43 39 Z"/>
-<path fill="#FFD48C" opacity=".7" d="M27 45 C29 42 33 40 36 41 C33 42 30 44 28 48 Z"/></svg>
-Exemple « rubber-duck » :
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#FFD23F" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M10 62 C10 48 26 48 40 54 C56 44 90 44 90 62 C90 80 74 88 50 88 C26 88 10 80 10 62 Z"/>
-<path fill="#F2B21C" d="M14 70 C22 80 36 84 50 84 C66 84 80 80 88 66 C86 80 72 88 50 88 C30 88 16 82 14 70 Z"/>
-<path fill="#F2B21C" stroke="#2A1B14" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M50 60 C58 56 70 56 76 62 C70 68 58 70 50 66 Z"/>
-<circle fill="#FFD23F" stroke="#2A1B14" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" cx="38" cy="34" r="20"/>
-<path fill="#FF8A2B" stroke="#2A1B14" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" d="M54 30 C62 28 72 28 74 32 C72 38 62 40 54 38 Z"/>
-<path fill="none" stroke="#2A1B14" stroke-width="1.6" d="M56 34 H70"/>
-<circle fill="#2A1B14" cx="42" cy="28" r="3.2"/><circle fill="#FFFFFF" cx="43.2" cy="26.8" r="1.1"/>
-<ellipse fill="#FF8A7A" opacity=".55" cx="32" cy="40" rx="4.5" ry="2.8"/>
-<path fill="#FFF3B0" opacity=".8" d="M24 24 C28 18 36 15 42 16 C36 18 30 22 27 28 Z"/>
-<g fill="#FFFFFF" stroke="#9FD3F2" stroke-width="1.4"><circle cx="16" cy="88" r="5"/><circle cx="84" cy="90" r="4"/><circle cx="92" cy="82" r="3"/></g></svg>`;
+/** A daily limit of the device (ai_allow) reached: nothing is charged. */
+class QuotaError extends Error {}
 
-const ICON_SCHEMA = {
-  type: "object",
-  properties: { svg: { type: "string" } },
-  required: ["svg"],
-  additionalProperties: false,
-};
-
-const TAGS = new Set(["svg", "g", "path", "circle", "ellipse", "rect", "line", "polyline", "polygon", "defs", "lineargradient", "radialgradient", "stop", "clippath"]);
-const ATTRS = new Set([
-  "d", "cx", "cy", "r", "rx", "ry", "x", "y", "x1", "y1", "x2", "y2", "fx", "fy", "width", "height", "points",
-  "fill", "stroke", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-opacity", "stroke-dasharray", "fill-opacity", "fill-rule",
-  "clip-rule", "opacity", "transform", "id", "offset", "stop-color", "stop-opacity", "gradientunits", "gradienttransform", "clip-path",
-]);
-
-/** Keeps only drawing elements and attributes (no script, link, style or text), or null. */
-export function sanitize(svg: string): string | null {
-  const start = svg.indexOf("<svg");
-  if (start < 0) return null;
-  const out: string[] = [];
-  const re = /<(\/?)([a-zA-Z]+)([^>]*?)(\/?)>/g;
-  let m: RegExpExecArray | null;
-  const body = svg.slice(start);
-  while ((m = re.exec(body))) {
-    const [, close, tag, attrs, self] = m;
-    if (!TAGS.has(tag.toLowerCase())) continue;
-    if (close) {
-      out.push(`</${tag}>`);
-      continue;
-    }
-    if (tag.toLowerCase() === "svg") {
-      out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`);
-      continue;
-    }
-    const kept: string[] = [];
-    for (const a of attrs.matchAll(/([a-zA-Z][a-zA-Z0-9:-]*)\s*=\s*"([^"]*)"/g)) {
-      const name = a[1].toLowerCase();
-      const value = a[2];
-      // Only references inside the drawing itself (url(#id)), nothing external.
-      if (!ATTRS.has(name) || /url\((?!#)|javascript:|data:|[<>]/i.test(value)) continue;
-      kept.push(`${a[1]}="${value}"`);
-    }
-    out.push(`<${tag}${kept.length ? " " + kept.join(" ") : ""}${self ? "/" : ""}>`);
-  }
-  const clean = out.join("");
-  const ok = clean.startsWith("<svg") && clean.endsWith("</svg>") && clean.length <= 16000 && /<(path|circle|ellipse|rect|polygon)/.test(clean);
-  return ok ? clean : null;
+async function allow(deviceId: string, kind: "words" | "icon") {
+  const { data } = await db.rpc("ai_allow", { device_id: deviceId, kind });
+  if (!data) throw new QuotaError("quota");
 }
 
 Deno.serve(async (req) => {
@@ -204,44 +142,80 @@ Deno.serve(async (req) => {
   }
   const deviceId = String(body.deviceId ?? "");
   if (!UUID.test(deviceId)) return json({ error: "bad request" }, 400);
+  const wallet = String(body.wallet ?? "");
 
   try {
+    if (body.action === "challenge") {
+      const { data, error } = await db.rpc("attest_challenge");
+      if (error) throw new Error(error.message);
+      return json({ challenge: data });
+    }
+
+    if (body.action === "wallet") {
+      if (wallet.length < 32) return json({ error: "bad request" }, 400);
+      const opened = await db.rpc("wallet_open", { secret: wallet });
+      if (opened.error) throw new Error(opened.error.message);
+      let balance = opened.data as number;
+      let attested = false;
+      const attestation = String(body.attestation ?? ""), keyId = String(body.keyId ?? ""), challenge = String(body.challenge ?? "");
+      if (attestation && keyId && challenge) {
+        try {
+          // Issued by us, less than 5 minutes ago, and never used: no replay.
+          const { data: fresh } = await db.rpc("attest_take", { challenge });
+          if (!fresh) throw new Error("challenge");
+          await verifyAttestation({ attestation, challenge, keyId, ...APP });
+          const welcomed = await db.rpc("wallet_welcome", { secret: wallet, key_id: keyId, amount: WELCOME_BONUS });
+          if (welcomed.error) throw new Error(welcomed.error.message);
+          balance = welcomed.data as number;
+          attested = true;
+        } catch (e) {
+          // The wallet works all the same, without the welcome bonus.
+          console.error("attest", e instanceof Error ? e.message : e);
+        }
+      }
+      return json({ balance, attested });
+    }
+
+    if (body.action === "icon") return json({ error: "gone" }, 410);
     if (body.action === "words") {
       const theme = String(body.theme ?? "").trim().slice(0, 80);
-      const count = Math.min(20, Math.max(3, Math.round(Number(body.count) || 10)));
+      // From 1: replacing a single card asks for a single word, and pays for one.
+      const count = Math.min(20, Math.max(1, Math.round(Number(body.count) || 10)));
       const existing = (Array.isArray(body.existing) ? body.existing : []).map(String).slice(0, 60);
       if (!theme) return json({ error: "theme" }, 400);
-      const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
-      if (!allowed) return json({ error: "quota" }, 429);
-      const drawn = await libraryHint();
-      const result = await ask(
-        WORDS_MODEL,
-        "low",
-        WORDS_SYSTEM,
-        `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}\nBibliothèque déjà dessinée : ${drawn}`,
-        WORDS_SCHEMA,
-        4000,
-      );
-      const seen = new Set(existing.map((e) => e.toLowerCase()));
-      const kept = ((result.cards ?? []) as { label: string; emoji: string; concept: string }[])
-        .map((c) => ({
-          label: String(c.label).trim().slice(0, 40),
-          emoji: String(c.emoji).trim().slice(0, 8),
-          concept: String(c.concept ?? ""),
-        }))
-        .filter((c) => {
-          const key = c.label.toLowerCase();
-          if (!c.label || seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        })
-        .slice(0, count);
-      if (kept.length === 0) return json({ error: "theme refused" }, 422);
-      const concepts = uniqueConcepts(kept);
-      const cards = kept.map((c, i) => ({ ...c, concept: concepts[i] }));
-      // Every concept proposed joins the wishlist: free cells of later sheets draw it.
-      await db.from("icon_wishlist").upsert(cards.map((c) => ({ concept: c.concept, label: c.label })), { onConflict: "concept", ignoreDuplicates: true });
-      return json({ cards });
+      await allow(deviceId, "words");
+      const out = await paid(db.rpc.bind(db), wallet, "words", count, async () => {
+        const drawn = await libraryHint();
+        const result = await ask(
+          WORDS_MODEL,
+          "low",
+          WORDS_SYSTEM,
+          `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}\nBibliothèque déjà dessinée : ${drawn}`,
+          WORDS_SCHEMA,
+          4000,
+        );
+        const seen = new Set(existing.map((e) => e.toLowerCase()));
+        const kept = ((result.cards ?? []) as { label: string; emoji: string; concept: string }[])
+          .map((c) => ({
+            label: String(c.label).trim().slice(0, 40),
+            emoji: String(c.emoji).trim().slice(0, 8),
+            concept: String(c.concept ?? ""),
+          }))
+          .filter((c) => {
+            const key = c.label.toLowerCase();
+            if (!c.label || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, count);
+        if (kept.length === 0) throw new Error("refused");
+        const concepts = uniqueConcepts(kept);
+        const cards = kept.map((c, i) => ({ ...c, concept: concepts[i] }));
+        // Every concept proposed joins the wishlist: free cells of later sheets draw it.
+        await db.from("icon_wishlist").upsert(cards.map((c) => ({ concept: c.concept, label: c.label })), { onConflict: "concept", ignoreDuplicates: true });
+        return { delivered: cards.length, value: cards };
+      });
+      return json({ cards: out.value, balance: out.balance });
     }
 
     if (body.action === "tiers") {
@@ -250,35 +224,23 @@ Deno.serve(async (req) => {
       const current = (Array.isArray(body.current) ? body.current : []).map((l) => String(l).slice(0, 50)).slice(0, 12);
       const cards = (Array.isArray(body.cards) ? body.cards : []).map((l) => String(l).slice(0, 40)).slice(0, 12);
       if (!theme || !(tone in TONES) || current.length === 0) return json({ error: "bad request" }, 400);
-      const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
-      if (!allowed) return json({ error: "quota" }, 429);
-      const result = await ask(
-        WORDS_MODEL,
-        "low",
-        TIERS_SYSTEM,
-        `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}\nQuelques cartes de la liste : ${cards.join(", ") || "aucune"}`,
-        TIERS_SCHEMA,
-        1000,
-      );
-      const raw = (result.labels ?? []) as unknown[];
-      if (raw.length === 0) return json({ error: "theme refused" }, 422);
-      return json({ labels: cleanTierLabels(raw, current) });
-    }
-
-    if (body.action === "icon") {
-      const label = String(body.label ?? "").trim().slice(0, 40);
-      const concept = normalizeConcept(String(body.concept || label));
-      if (!concept) return json({ error: "bad request" }, 400);
-      // Already drawn for someone: free and instant.
-      const { data: known } = await db.from("card_icons").select("svg").eq("concept", concept).maybeSingle();
-      if (known) return json({ concept, svg: known.svg, reused: true });
-      const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "icon" });
-      if (!allowed) return json({ error: "quota" }, 429);
-      const result = await ask(ICON_MODEL, "medium", ICON_SYSTEM, `Dessine l'icône du concept « ${concept} » (carte : « ${label} »).`, ICON_SCHEMA, 16000);
-      const svg = sanitize(String(result.svg ?? ""));
-      if (!svg) return json({ error: "icon failed" }, 502);
-      await db.from("card_icons").upsert({ concept, svg, label }, { onConflict: "concept", ignoreDuplicates: true });
-      return json({ concept, svg, reused: false });
+      await allow(deviceId, "words");
+      const out = await paid(db.rpc.bind(db), wallet, "tiers", current.length, async () => {
+        const result = await ask(
+          WORDS_MODEL,
+          "low",
+          TIERS_SYSTEM,
+          `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}\nQuelques cartes de la liste : ${cards.join(", ") || "aucune"}`,
+          TIERS_SCHEMA,
+          1000,
+        );
+        const raw = (result.labels ?? []) as unknown[];
+        if (raw.length === 0) throw new Error("refused");
+        const labels = cleanTierLabels(raw, current);
+        // A name kept (missing, too long, twice) isn't charged.
+        return { delivered: labels.filter((l, i) => l !== current[i]).length, value: labels };
+      });
+      return json({ labels: out.value, balance: out.balance });
     }
 
     if (body.action === "icons") {
@@ -290,71 +252,75 @@ Deno.serve(async (req) => {
         redraw: c?.redraw === true,
       })).filter((c: { label: string; concept: string }) => c.label || c.concept);
       if (asked.length === 0) return json({ error: "bad request" }, 400);
-      // Cards without a concept (added by hand, renamed): read in the theme's sense, or
-      // "Rose" would get whichever rose the library drew first, flower or colour.
-      const bare = asked.filter((c: { concept: string }) => !c.concept);
-      let proposed: string[] = [];
-      if (bare.length && theme) {
-        // A Claude call: bounded like the words, so the endpoint can't run it for free.
-        const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "words" });
-        if (!allowed) return json({ error: "quota" }, 429);
-        try {
-          const result = await ask(
-            WORDS_MODEL,
-            "low",
-            CONCEPTS_SYSTEM,
-            `Thème : ${theme}\nCartes : ${bare.map((c: { label: string }) => c.label).join(" | ")}\nBibliothèque déjà dessinée : ${await libraryHint()}`,
-            CONCEPTS_SCHEMA,
-            2000,
-          );
-          proposed = ((result.concepts ?? []) as unknown[]).map(String);
-        } catch (e) {
-          // The card's own name still makes a drawing: not worth failing the sheet.
-          console.error("concepts", e);
+      const out = await paid(db.rpc.bind(db), wallet, "images", asked.length, async () => {
+        // Cards without a concept (added by hand, renamed): read in the theme's sense, or
+        // "Rose" would get whichever rose the library drew first, flower or colour.
+        const bare = asked.filter((c: { concept: string }) => !c.concept);
+        let proposed: string[] = [];
+        if (bare.length && theme) {
+          // A Claude call: bounded like the words.
+          await allow(deviceId, "words");
+          try {
+            const result = await ask(
+              WORDS_MODEL,
+              "low",
+              CONCEPTS_SYSTEM,
+              `Thème : ${theme}\nCartes : ${bare.map((c: { label: string }) => c.label).join(" | ")}\nBibliothèque déjà dessinée : ${await libraryHint()}`,
+              CONCEPTS_SCHEMA,
+              2000,
+            );
+            proposed = ((result.concepts ?? []) as unknown[]).map(String);
+          } catch (e) {
+            // The card's own name still makes a drawing: not worth failing the sheet.
+            console.error("concepts", e);
+          }
         }
-      }
-      asked = withConcepts(asked, proposed);
-      const concepts = [...new Set(asked.map((c: { concept: string }) => c.concept))];
-      // Already drawn as a picture for someone: free and instant. (An SVG-only concept
-      // is drawn again: the sheet style must stay the same across a list.)
-      const { data: known } = await db.from("card_icons").select("concept, image").in("concept", concepts).not("image", "is", null);
-      const urls = new Map<string, string>((known ?? []).map((k: { concept: string; image: string }) => [k.concept, k.image]));
-      const alreadyDrawn = new Set(urls.keys());
-      const missing = cardsToDraw(asked, alreadyDrawn);
-      if (missing.length) {
-        const { data: allowed } = await db.rpc("ai_allow", { device_id: deviceId, kind: "icon" });
-        if (!allowed) return json({ error: "quota" }, 429);
-        const { data: wish } = await db.from("icon_wishlist").select("concept, label").order("created_at").limit(40);
-        const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
-        const plan = fillSheet(missing, pending as { concept: string; label: string }[]);
-        const tiles = await drawSheet(plan);
-        const drawn: { concept: string; label: string; image: string }[] = [];
-        await Promise.all(plan.map(async (card, i) => {
-          const png = tiles[i];
-          if (!png) return;
-          // Name unique to this drawing: the CDN and the players' copies keep a file a
-          // year, a concept redrawn under the same name would stay the old picture.
-          const path = `${card.concept}-${Date.now().toString(36)}.png`;
-          const { error } = await db.storage.from("card-icons").upload(path, png, { contentType: "image/png", upsert: true, cacheControl: "31536000" });
-          if (error) return console.error("upload", card.concept, error.message);
-          const image = db.storage.from("card-icons").getPublicUrl(path).data.publicUrl;
-          drawn.push({ concept: card.concept, label: card.label, image });
-          urls.set(card.concept, image);
-        }));
-        if (drawn.length) {
-          // A redrawn concept keeps its library image (other players' lists use it); the
-          // new one is added beside it, and goes to the card that asked for it.
-          const fresh = drawn.filter((d) => !alreadyDrawn.has(d.concept));
-          if (fresh.length) await db.from("card_icons").upsert(fresh, { onConflict: "concept" });
-          await db.from("card_icon_images").insert(drawn);
-          await db.from("icon_wishlist").delete().in("concept", drawn.map((d) => d.concept));
+        asked = withConcepts(asked, proposed);
+        const concepts = [...new Set(asked.map((c: { concept: string }) => c.concept))];
+        // Already drawn as a picture for someone: free and instant. (An SVG-only concept
+        // is drawn again: the sheet style must stay the same across a list.)
+        const { data: known } = await db.from("card_icons").select("concept, image").in("concept", concepts).not("image", "is", null);
+        const urls = new Map<string, string>((known ?? []).map((k: { concept: string; image: string }) => [k.concept, k.image]));
+        const alreadyDrawn = new Set(urls.keys());
+        const missing = cardsToDraw(asked, alreadyDrawn);
+        if (missing.length) {
+          await allow(deviceId, "icon");
+          const { data: wish } = await db.from("icon_wishlist").select("concept, label").order("created_at").limit(40);
+          const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
+          const plan = fillSheet(missing, pending as { concept: string; label: string }[]);
+          const tiles = await drawSheet(plan);
+          const drawn: { concept: string; label: string; image: string }[] = [];
+          await Promise.all(plan.map(async (card, i) => {
+            const png = tiles[i];
+            if (!png) return;
+            // Name unique to this drawing: the CDN and the players' copies keep a file a
+            // year, a concept redrawn under the same name would stay the old picture.
+            const path = `${card.concept}-${Date.now().toString(36)}.png`;
+            const { error } = await db.storage.from("card-icons").upload(path, png, { contentType: "image/png", upsert: true, cacheControl: "31536000" });
+            if (error) return console.error("upload", card.concept, error.message);
+            const image = db.storage.from("card-icons").getPublicUrl(path).data.publicUrl;
+            drawn.push({ concept: card.concept, label: card.label, image });
+            urls.set(card.concept, image);
+          }));
+          if (drawn.length) {
+            // A redrawn concept keeps its library image (other players' lists use it); the
+            // new one is added beside it, and goes to the card that asked for it.
+            const fresh = drawn.filter((d) => !alreadyDrawn.has(d.concept));
+            if (fresh.length) await db.from("card_icons").upsert(fresh, { onConflict: "concept" });
+            await db.from("card_icon_images").insert(drawn);
+            await db.from("icon_wishlist").delete().in("concept", drawn.map((d) => d.concept));
+          }
         }
-      }
-      return json({ icons: asked.map((c: { concept: string }) => ({ concept: c.concept, url: urls.get(c.concept) ?? null })) });
+        const icons = asked.map((c: { concept: string }) => ({ concept: c.concept, url: urls.get(c.concept) ?? null }));
+        return { delivered: icons.filter((i) => i.url).length, value: icons };
+      });
+      return json({ icons: out.value, balance: out.balance });
     }
 
     return json({ error: "bad request" }, 400);
   } catch (e) {
+    if (e instanceof WalletError) return json({ error: e.code }, e.code === "credits" ? 402 : 401);
+    if (e instanceof QuotaError) return json({ error: "quota" }, 429);
     if (e instanceof SheetError) return json({ error: e.message === "busy" ? "busy" : "icon failed" }, e.message === "busy" ? 503 : 502);
     if (e instanceof Anthropic.RateLimitError) return json({ error: "busy" }, 503);
     if (e instanceof Anthropic.APIError) {

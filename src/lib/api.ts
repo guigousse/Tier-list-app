@@ -89,20 +89,36 @@ async function aiCall<T>(body: object, timeoutMs: number): Promise<T> {
 
 export type AiCard = { label: string; emoji: string; concept: string };
 
-/** Card names for a theme (without the cards already in the list). */
-export function aiWords(deviceId: string, theme: string, count: number, existing: string[]): Promise<{ cards: AiCard[] }> {
-  return aiCall({ action: 'words', deviceId, theme, count, existing }, 90_000);
+/** A one-use challenge for App Attest (the welcome bonus). */
+export function aiChallenge(deviceId: string): Promise<{ challenge: string }> {
+  return aiCall({ action: 'challenge', deviceId }, 15_000);
+}
+
+export type Attestation = { keyId: string; attestation: string; challenge: string };
+
+/**
+ * Opens this install's credits wallet (or finds it again) and returns its balance; with
+ * an App Attest attestation, the welcome bonus is added once.
+ */
+export function aiWallet(deviceId: string, wallet: string, attest?: Attestation): Promise<{ balance: number; attested: boolean }> {
+  return aiCall({ action: 'wallet', deviceId, wallet, ...attest }, 20_000);
+}
+
+/** Card names for a theme (without the cards already in the list), paid from `wallet`. */
+export function aiWords(deviceId: string, wallet: string, theme: string, count: number, existing: string[]): Promise<{ cards: AiCard[]; balance: number }> {
+  return aiCall({ action: 'words', deviceId, wallet, theme, count, existing }, 90_000);
 }
 
 /** New tier names for the theme, in `tone`, best tier first, as many as `current`; `cards`: a few, for context. */
 export function aiTiers(
   deviceId: string,
+  wallet: string,
   theme: string,
   current: string[],
   tone: TierTone,
   cards: string[],
-): Promise<{ labels: string[] }> {
-  return aiCall({ action: 'tiers', deviceId, theme, current, tone, cards }, 60_000);
+): Promise<{ labels: string[]; balance: number }> {
+  return aiCall({ action: 'tiers', deviceId, wallet, theme, current, tone, cards }, 60_000);
 }
 
 /**
@@ -111,10 +127,11 @@ export function aiTiers(
  */
 export function aiIcons(
   deviceId: string,
+  wallet: string,
   cards: { label: string; concept: string; redraw?: boolean }[],
   theme: string,
-): Promise<{ icons: { concept: string; url: string | null }[] }> {
-  return aiCall({ action: 'icons', deviceId, cards, theme }, 240_000);
+): Promise<{ icons: { concept: string; url: string | null }[]; balance: number }> {
+  return aiCall({ action: 'icons', deviceId, wallet, cards, theme }, 240_000);
 }
 
 /** Hidden theme tags and trend scores of the popular tier lists. */
