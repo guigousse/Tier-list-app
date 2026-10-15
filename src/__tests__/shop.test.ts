@@ -56,24 +56,27 @@ describe('energy shop', () => {
     expect(useShop.getState().celebration).toMatchObject({ packId: 'tiercraft.energy.360', from: 30, to: 390 });
   });
 
-  it('starts the bolts as soon as the server has credited, without waiting for Apple to close the transaction', async () => {
+  it('closes the transaction with Apple first, then shows the new balance and the bolts together', async () => {
     purchase.mockResolvedValue({ balance: 390, credited: true, credits: 360 });
-    // Closing the transaction with Apple takes a moment: the new balance must not show
-    // alone meanwhile, the celebration counts up to it.
-    let atFinish: unknown = 'not called';
+    // While Apple closes the transaction, nothing changes on screen: the new balance
+    // must not show alone, then fall back to the old one when the bolts leave.
+    let atFinish: unknown[] = [];
     finish.mockImplementationOnce(async () => {
-      atFinish = useShop.getState().celebration;
+      atFinish = [useShop.getState().celebration, (setBalance as jest.Mock).mock.calls.length];
     });
     await deliver(bought as never);
-    expect(atFinish).toMatchObject({ from: 30, to: 390 });
+    expect(atFinish).toEqual([null, 0]);
+    expect(setBalance).toHaveBeenCalledWith(390);
+    expect(useShop.getState().celebration).toMatchObject({ from: 30, to: 390 });
   });
 
-  it('keeps the credits shown when Apple fails to close the transaction: it comes back, already credited', async () => {
+  it('shows the credits without a show when Apple fails to close the transaction: it comes back, already credited', async () => {
     purchase.mockResolvedValue({ balance: 390, credited: true, credits: 360 });
     finish.mockRejectedValueOnce(new Error('StoreKit'));
     await deliver(bought as never);
+    expect(setBalance).toHaveBeenCalledWith(390);
     expect(useShop.getState().message).toContain('360');
-    expect(useShop.getState().celebration).toMatchObject({ to: 390 });
+    expect(useShop.getState().celebration).toBeNull();
   });
 
   it('keeps an unpaid purchase open when the server is out of reach: Apple gives it back at the next launch', async () => {

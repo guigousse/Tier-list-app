@@ -57,18 +57,21 @@ export async function deliver(purchase: Purchase): Promise<void> {
     return;
   }
   const { balance, credited, credits } = result;
-  // The new balance and the celebration together, before closing the transaction with
-  // Apple (which takes a moment): the counter must not show the new balance meanwhile,
-  // then fall back to the old one when the bolts leave.
+  // Closed with Apple first. Left open, StoreKit hands it back at the next launch, and
+  // the server answers that it's already credited: then no show, only the balance.
+  const finished = await Iap.finishTransaction({ purchase, isConsumable: true }).then(
+    () => true,
+    () => false,
+  );
+  // The new balance and the celebration in the same step: the counter must not show the
+  // new balance alone, then fall back to the old one when the bolts leave.
   setBalance(balance);
   useShop.setState({
     buying: null,
     message: credited ? `+${credits} crédits d’énergie ajoutés.` : null,
     // Counted from the balance before this purchase, which the server's answer gives.
-    celebration: credited ? { packId: purchase.productId, from: balance - credits, to: balance, key: Date.now() } : null,
+    celebration: credited && finished ? { packId: purchase.productId, from: balance - credits, to: balance, key: Date.now() } : null,
   });
-  // Left open, StoreKit hands it back at the next launch; the server knows it's credited.
-  await Iap.finishTransaction({ purchase, isConsumable: true }).catch(() => {});
 }
 
 export async function buy(id: string): Promise<void> {
