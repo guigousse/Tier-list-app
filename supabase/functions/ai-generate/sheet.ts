@@ -38,9 +38,10 @@ function magentaHue(px: Pixels, i: number) {
   return low > 200 && Math.abs(r - b) < Math.max(r, b) * 0.1 && g < low * 0.75;
 }
 
-function distance(px: Pixels, i: number) {
+/** Squared distance to the key: no square root in a loop over millions of pixels. */
+function distance2(px: Pixels, i: number) {
   const r = px[i] - KEY[0], g = px[i + 1] - KEY[1], b = px[i + 2] - KEY[2];
-  return Math.sqrt(r * r + g * g + b * b);
+  return r * r + g * g + b * b;
 }
 
 /**
@@ -73,22 +74,36 @@ function lineBands(solid: boolean[], maxThickness: number) {
 export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols: number; rows: number }) {
   const n = w * h;
   const clear = new Uint8Array(n);
+  // The edge function has 2 s of CPU for the whole sheet (≈ 4 Mpx at 2K): measured at
+  // ~1 s for this flood written with a JS array and a square root per visit, a sheet
+  // of presidents died there twice after Gemini had been paid. Each pixel's class is
+  // computed once, and a pixel enters the typed stack at most once.
+  const floodable = new Uint8Array(n);
+  const stack = new Int32Array(n);
+  let top = 0;
+  const T2 = TIGHT * TIGHT, L2 = LOOSE * LOOSE;
+  const push = (p: number) => {
+    if (clear[p] || !floodable[p]) return;
+    clear[p] = 1;
+    stack[top++] = p;
+  };
+  for (let p = 0; p < n; p++) {
+    const d = distance2(px, p * 4);
+    floodable[p] = d < L2 || magentaHue(px, p * 4) ? 1 : 0;
+  }
   // Flood from the edges and from every near-exact key pixel: a grid the model drew
   // anyway would otherwise wall the flood out of the cells. A pink inside an object
   // stays out of reach, behind the object's dark outline.
-  const stack: number[] = [];
-  for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
-  for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
-  for (let p = 0; p < n; p++) if (distance(px, p * 4) < TIGHT) stack.push(p);
-  while (stack.length) {
-    const p = stack.pop()!;
-    if (clear[p] || (distance(px, p * 4) >= LOOSE && !magentaHue(px, p * 4))) continue;
-    clear[p] = 1;
-    const x = p % w, y = (p - x) / w;
-    if (x > 0) stack.push(p - 1);
-    if (x < w - 1) stack.push(p + 1);
-    if (y > 0) stack.push(p - w);
-    if (y < h - 1) stack.push(p + w);
+  for (let x = 0; x < w; x++) push(x), push((h - 1) * w + x);
+  for (let y = 0; y < h; y++) push(y * w), push(y * w + w - 1);
+  for (let p = 0; p < n; p++) if (distance2(px, p * 4) < T2) push(p);
+  while (top) {
+    const p = stack[--top];
+    const x = p % w;
+    if (x > 0) push(p - 1);
+    if (x < w - 1) push(p + 1);
+    if (p >= w) push(p - w);
+    if (p < n - w) push(p + w);
   }
   // White tile behind each icon: flooded in from the background, it stops at the
   // icon's dark outline, so the white inside a drawing stays. Only a region spanning
@@ -96,27 +111,30 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
   if (grid) {
     const cw = w / grid.cols, ch = h / grid.rows;
     const seen = new Uint8Array(n);
+    // The flood's stack is free again: it holds each region, which is also its queue.
+    const region = stack;
     for (let s = 0; s < n; s++) {
       if (seen[s] || clear[s] || !tileWhite(px, s * 4)) continue;
       const sx = s % w, sy = (s - sx) / w;
       const touches = (sx > 0 && clear[s - 1]) || (sx < w - 1 && clear[s + 1]) || (sy > 0 && clear[s - w]) || (sy < h - 1 && clear[s + w]);
       if (!touches) continue;
-      const region: number[] = [];
       let minX = sx, maxX = sx, minY = sy, maxY = sy;
+      let size = 0;
       seen[s] = 1;
-      const queue = [s];
-      while (queue.length) {
-        const p = queue.pop()!;
-        region.push(p);
+      region[size++] = s;
+      for (let k = 0; k < size; k++) {
+        const p = region[k];
         const x = p % w, y = (p - x) / w;
-        minX = Math.min(minX, x), maxX = Math.max(maxX, x), minY = Math.min(minY, y), maxY = Math.max(maxY, y);
-        for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
-          if (q < 0 || seen[q] || clear[q] || !tileWhite(px, q * 4)) continue;
-          seen[q] = 1;
-          queue.push(q);
-        }
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        if (x > 0 && !seen[p - 1] && !clear[p - 1] && tileWhite(px, (p - 1) * 4)) (seen[p - 1] = 1), (region[size++] = p - 1);
+        if (x < w - 1 && !seen[p + 1] && !clear[p + 1] && tileWhite(px, (p + 1) * 4)) (seen[p + 1] = 1), (region[size++] = p + 1);
+        if (y > 0 && !seen[p - w] && !clear[p - w] && tileWhite(px, (p - w) * 4)) (seen[p - w] = 1), (region[size++] = p - w);
+        if (y < h - 1 && !seen[p + w] && !clear[p + w] && tileWhite(px, (p + w) * 4)) (seen[p + w] = 1), (region[size++] = p + w);
       }
-      if (maxX - minX + 1 >= cw * 0.6 && maxY - minY + 1 >= ch * 0.6) for (const p of region) clear[p] = 1;
+      if (maxX - minX + 1 >= cw * 0.6 && maxY - minY + 1 >= ch * 0.6) for (let k = 0; k < size; k++) clear[region[k]] = 1;
     }
   }
 
@@ -136,7 +154,9 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
   });
   for (const y of lineBands(rowSolid, Math.max(3, h * 0.02))) for (let x = 0; x < w; x++) clear[y * w + x] = 1;
   for (const x of lineBands(colSolid, Math.max(3, w * 0.02))) for (let y = 0; y < h; y++) clear[y * w + x] = 1;
-  for (let p = 0; p < n; p++) if (clear[p]) px[p * 4 + 3] = 0;
+  // Transparent black, not transparent magenta: resizing a tile blends neighbours'
+  // colours whatever their alpha, and the magenta would come back as a pink rim.
+  for (let p = 0; p < n; p++) if (clear[p]) px.fill(0, p * 4, p * 4 + 4);
 
   // Despill: edge pixels blended with the magenta keep a pink fringe; red and blue
   // are brought back down to the green level, which magenta lacks.
@@ -164,6 +184,7 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
   const y0 = Math.floor((row * h) / grid.rows), y1 = Math.floor(((row + 1) * h) / grid.rows);
   const cw = x1 - x0, ch = y1 - y0;
   const label = new Int32Array(cw * ch);
+  const stack = new Int32Array(cw * ch);
   const parts: { size: number; minX: number; minY: number; maxX: number; maxY: number }[] = [];
   const solid = (x: number, y: number) => px[(y * w + x) * 4 + 3] > 16;
 
@@ -172,10 +193,11 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
       if (label[sy * cw + sx] || !solid(x0 + sx, y0 + sy)) continue;
       const part = { size: 0, minX: sx, minY: sy, maxX: sx, maxY: sy };
       parts.push(part);
-      const stack = [sy * cw + sx];
+      let top = 0;
+      stack[top++] = sy * cw + sx;
       label[sy * cw + sx] = parts.length;
-      while (stack.length) {
-        const q = stack.pop()!;
+      while (top) {
+        const q = stack[--top];
         const qx = q % cw, qy = (q - qx) / cw;
         part.size++;
         part.minX = Math.min(part.minX, qx);
@@ -189,7 +211,7 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
             const k = ny * cw + nx;
             if (label[k] || !solid(x0 + nx, y0 + ny)) continue;
             label[k] = parts.length;
-            stack.push(k);
+            stack[top++] = k;
           }
         }
       }
@@ -257,4 +279,23 @@ export function cardsToDraw<T extends { concept: string; redraw?: boolean }>(ask
     seen.add(c.concept);
     return c.redraw || !drawn.has(c.concept);
   });
+}
+
+/**
+ * Copies a box of the sheet into a tile at (dx, dy), row by row. Cloning the whole
+ * sheet to crop each tile copied ≈ 17 MB per icon: a third of the CPU budget.
+ */
+export function copyRegion(
+  src: Pixels,
+  srcW: number,
+  box: { x: number; y: number; w: number; h: number },
+  dst: Pixels,
+  dstW: number,
+  dx: number,
+  dy: number,
+) {
+  for (let y = 0; y < box.h; y++) {
+    const from = ((box.y + y) * srcW + box.x) * 4;
+    dst.set(src.subarray(from, from + box.w * 4), ((dy + y) * dstW + dx) * 4);
+  }
 }

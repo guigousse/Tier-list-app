@@ -4,13 +4,17 @@
 // and remove it ourselves; give it a reference picture to keep one style throughout.
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
-import { cellObject, clearBackground, gridFor, sheetPrompt } from "./sheet.ts";
+import { cellObject, clearBackground, copyRegion, gridFor, sheetPrompt } from "./sheet.ts";
 import { STYLE_REF } from "./style-ref.ts";
 
 /** Same price for a 1K or 2K picture: 2K gives each of 20 cells ~480 px. */
 const MODEL = "gemini-3-pro-image-preview";
 /** Icon side in pixels: sharp up to a ~64 pt card on a 3× screen. */
 const TILE = 192;
+/** Longest side the sheet is cut at (see drawSheet). */
+const SHEET_MAX = 1600;
+/** zlib level 3, not 9: measured on 20 tiles, 200 ms instead of 780, files 1 % bigger. */
+const PNG_LEVEL = 3;
 
 export class SheetError extends Error {}
 
@@ -34,7 +38,15 @@ export async function drawSheet(cards: { label: string; concept: string; theme?:
     console.error("gemini", res.status, JSON.stringify(data).slice(0, 500));
     throw new SheetError("no image");
   }
-  const sheet = await Image.decode(Uint8Array.from(atob(part.inlineData.data), (c) => c.charCodeAt(0)));
+  // A plain loop: Uint8Array.from with a callback runs it on each of ~6 M characters.
+  const binary = atob(part.inlineData.data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const sheet = await Image.decode(bytes);
+  // Keying a 2K sheet of 20 cells (5 Mpx) took ≈ 1.6 s of the 2 s of CPU; at 1600 px,
+  // ≈ 1 s. Each cell keeps ≈ 320 px, well above the 192 px tile.
+  const k = SHEET_MAX / Math.max(sheet.width, sheet.height);
+  if (k < 1) sheet.resize(Math.round(sheet.width * k), Math.round(sheet.height * k));
   clearBackground(sheet.bitmap, sheet.width, sheet.height, grid);
   const tiles: (Uint8Array | null)[] = [];
   for (let i = 0; i < cards.length; i++) {
@@ -46,8 +58,8 @@ export async function drawSheet(cards: { label: string; concept: string; theme?:
     // Square with a small margin, so every icon sits the same way on its card.
     const side = Math.round(Math.max(box.w, box.h) * 1.08);
     const square = new Image(side, side);
-    square.composite(sheet.clone().crop(box.x, box.y, box.w, box.h), Math.round((side - box.w) / 2), Math.round((side - box.h) / 2));
-    tiles.push(await square.resize(TILE, TILE).encode(9));
+    copyRegion(sheet.bitmap, sheet.width, box, square.bitmap, side, Math.round((side - box.w) / 2), Math.round((side - box.h) / 2));
+    tiles.push(await square.resize(TILE, TILE).encode(PNG_LEVEL));
   }
   return tiles;
 }

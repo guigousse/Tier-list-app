@@ -65,6 +65,11 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   call, effort low, ≈ 1 c€ whatever the tier count); a redrawn image counts as an
   image. Cards added by hand or renamed are read in the theme before drawing (one
   extra Opus call, ≈ 1 c€, not charged).
+- **Charge only what was delivered** (rule for when credits are real, 2026-10-15): the
+  credits are taken on the server once the result is saved, per card or image actually
+  received. A failed generation costs the player nothing, even when it cost us (a
+  sheet lost after Gemini was paid: twice on the presidents list, before the cutting
+  fit in the edge function's 2 s of CPU).
 - Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
 
 ## Implementation notes

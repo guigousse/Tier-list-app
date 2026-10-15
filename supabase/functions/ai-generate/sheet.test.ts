@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/sheet.test.ts
-import { cardsToDraw, cellObject, clearBackground, fillSheet, gridFor, KEY, sheetPrompt } from "./sheet.ts";
+import { cardsToDraw, cellObject, clearBackground, copyRegion, fillSheet, gridFor, KEY, sheetPrompt } from "./sheet.ts";
 
 function same(actual: unknown, expected: unknown) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -248,4 +248,22 @@ Deno.test("une icône déjà dessinée est reprise, sauf si le joueur demande à
     drawn,
   );
   same(plan.map((c) => c.label), ["Tulipe", "Rose"]);
+});
+
+Deno.test("une tuile est copiée de la planche au centre de son carré, sans le reste", () => {
+  const w = 6, h = 4, src = new Uint8ClampedArray(w * h * 4);
+  for (let p = 0; p < w * h; p++) src.set([p, 0, 0, 255], p * 4);
+  const side = 4, dst = new Uint8ClampedArray(side * side * 4);
+  copyRegion(src, w, { x: 2, y: 1, w: 2, h: 2 }, dst, side, 1, 1);
+  const red = (x: number, y: number) => dst[(y * side + x) * 4];
+  const a = (x: number, y: number) => dst[(y * side + x) * 4 + 3];
+  same([red(1, 1), red(2, 1), red(1, 2), red(2, 2)], [8, 9, 14, 15]);
+  same([a(0, 0), a(3, 3), a(1, 1)], [0, 0, 255]);
+});
+
+Deno.test("un pixel de fond effacé ne garde pas son magenta, qui déteindrait au redimensionnement", () => {
+  const w = 20, h = 20, px = sheet(w, h);
+  paint(px, w, 5, 5, 15, 15, [200, 120, 40]);
+  clearBackground(px, w, h);
+  same([...px.slice(0, 4)], [0, 0, 0, 0]);
 });
