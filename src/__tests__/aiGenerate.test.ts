@@ -1,4 +1,4 @@
-import { cardsNeedingImage, generateImages, generateTiers, generateWords, imageChoices, imageCredits, MIN_IMAGES, tierCredits, useAiJob, wordCredits } from '../lib/aiGenerate';
+import { cardsNeedingImage, generateImages, generateTiers, generateWords, imageChoices, imageCredits, MIN_IMAGES, sheetSizes, tierCredits, useAiJob, wordCredits } from '../lib/aiGenerate';
 import { ANTHRACITE } from '../constants/theme';
 import { aiIcons, aiTiers, aiWords } from '../lib/api';
 import { useTierStore } from '../store/useTierStore';
@@ -39,6 +39,42 @@ describe('AI generation', () => {
     expect(imageCredits(10)).toBe(18);
     expect(imageCredits(20)).toBe(28);
     expect(imageCredits(3) / 3).toBeGreaterThan(imageCredits(10) / 10);
+  });
+
+  it('splits more than 20 images into even sheets, each paying its fixed part', () => {
+    expect(sheetSizes(3)).toEqual([3]);
+    expect(sheetSizes(20)).toEqual([20]);
+    // 13 + 13 rather than 20 + 6: same price, more room for each icon.
+    expect(sheetSizes(26)).toEqual([13, 13]);
+    expect(sheetSizes(41)).toEqual([14, 14, 13]);
+    expect(imageCredits(26)).toBe(8 + 13 + 8 + 13);
+  });
+
+  it('draws all 26 selected cards, on two sheets of 13', async () => {
+    const labels = Array.from({ length: 26 }, (_, i) => `Carte ${i + 1}`);
+    const id = store().createList({ title: 'Grande liste', tierLabels: ['S'], cardLabels: labels });
+    icons.mockImplementation(async (_d: string, _w: string, cards: { label: string }[]) => ({
+      icons: cards.map((c) => ({ concept: c.label, url: `https://x/${encodeURIComponent(c.label)}.png` })),
+      balance: 50,
+    }));
+
+    await generateImages(id, Object.keys(store().lists[id].cards));
+
+    expect(icons.mock.calls.map((c) => c[2].length)).toEqual([13, 13]);
+    expect(Object.values(store().lists[id].cards).every((c) => c.iconUrl)).toBe(true);
+    expect(useAiJob.getState().job).toMatchObject({ phase: 'done', cards: 26, icons: 26, failed: 0 });
+  });
+
+  it('keeps the images of the sheet that came, when the other one fails', async () => {
+    const labels = Array.from({ length: 22 }, (_, i) => `Carte ${i + 1}`);
+    const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: labels });
+    icons
+      .mockResolvedValueOnce({ icons: Array.from({ length: 11 }, (_, i) => ({ url: `https://x/${i}.png` })), balance: 10 })
+      .mockRejectedValueOnce(new Error('credits'));
+
+    await generateImages(id, Object.keys(store().lists[id].cards));
+
+    expect(useAiJob.getState().job).toMatchObject({ phase: 'done', icons: 11, failed: 11, error: 'Pas assez de crédits pour cette génération.' });
   });
 
   it('adds the words only, and names the list after the theme', async () => {

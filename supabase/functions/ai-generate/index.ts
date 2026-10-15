@@ -245,7 +245,10 @@ Deno.serve(async (req) => {
 
     if (body.action === "icons") {
       const theme = String(body.theme ?? "").trim().slice(0, 80);
-      let asked = (Array.isArray(body.cards) ? body.cards : []).slice(0, 20).map((c: { label?: unknown; concept?: unknown; redraw?: unknown }) => ({
+      // One sheet holds 20 icons: the app splits beyond that. More would be dropped
+      // without a word, the player seeing them as failed drawings: refused instead.
+      if (Array.isArray(body.cards) && body.cards.length > 20) return json({ error: "bad request" }, 400);
+      let asked = (Array.isArray(body.cards) ? body.cards : []).map((c: { label?: unknown; concept?: unknown; redraw?: unknown }) => ({
         label: String(c?.label ?? "").trim().slice(0, 40),
         concept: normalizeConcept(String(c?.concept ?? "")),
         theme: theme || undefined,

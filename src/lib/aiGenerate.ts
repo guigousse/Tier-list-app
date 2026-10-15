@@ -24,8 +24,23 @@ import { splitEmoji } from './emoji';
  */
 export const CREDITS = { word: 1, tier: 1, sheet: 8, image: 1 };
 
+/** Icons on one sheet: beyond 20, Gemini's cells get too small to read (server: sheet.ts). */
+export const SHEET_MAX = 20;
+
+/**
+ * The sheets `count` images are drawn on: as few as possible, of even sizes (26 → 13 +
+ * 13, not 20 + 6): the price is the same, and each icon gets more room.
+ */
+export function sheetSizes(count: number): number[] {
+  if (count <= 0) return [];
+  const sheets = Math.ceil(count / SHEET_MAX);
+  const base = Math.floor(count / sheets);
+  return Array.from({ length: sheets }, (_, i) => base + (i < count % sheets ? 1 : 0));
+}
+
+/** Each sheet pays its fixed part: it costs Gemini as much as the first. */
 export function imageCredits(count: number): number {
-  return count > 0 ? CREDITS.sheet + count * CREDITS.image : 0;
+  return sheetSizes(count).length * CREDITS.sheet + Math.max(0, count) * CREDITS.image;
 }
 
 /** New cards, plus cards whose word is replaced: 1 credit each. */
@@ -183,28 +198,44 @@ export async function generateImages(listId: string, cardIds: string[]): Promise
   queue.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   if (queue.length < MIN_IMAGES) return;
   useAiJob.setState({ job: { listId, kind: 'images', phase: 'working', cards: queue.length, icons: 0, failed: 0 } });
+  let wallet: string;
   try {
-    // A card without a concept (added by hand, or renamed): the server draws its label.
-    // A redrawn card is read again in the theme: its concept may be what was wrong (a
-    // flamingo for the colour pink). The server adds the new image beside the old one.
-    const asked = queue.map((c) =>
-      redraw.has(c.id) ? { label: splitEmoji(c.label).text, concept: '', redraw: true } : { label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' },
-    );
-    // The theme gives a homonym its sense: "Rose" is a colour in a list of colours.
-    const { icons, balance } = await aiIcons(store.deviceId, await walletForRequest(), asked, list.title);
-    setBalance(balance);
-    queue.forEach((card, i) => {
-      const url = icons[i]?.url;
-      const concept = icons[i]?.concept;
-      if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });
-      // The card may have been deleted meanwhile.
-      if (useTierStore.getState().lists[listId]?.cards[card.id]) useTierStore.getState().updateCard(listId, card.id, concept ? { iconUrl: url, aiConcept: concept } : { iconUrl: url });
-      cacheAiIcon(url);
-      patch({ icons: (useAiJob.getState().job?.icons ?? 0) + 1 });
-    });
-  } catch (e) {
-    // Short of credits: said as such (nothing was drawn, nothing taken).
-    patch({ failed: queue.length, error: creditsError(e) ?? undefined });
+    wallet = await walletForRequest();
+  } catch {
+    return patch({ failed: queue.length, phase: 'done' });
   }
+  // More than one sheet: drawn at the same time, each paid on its own, so a sheet that
+  // fails (short of credits, Gemini busy) doesn't lose the other one's images.
+  const batches: Card[][] = [];
+  let start = 0;
+  for (const size of sheetSizes(queue.length)) batches.push(queue.slice(start, (start += size)));
+  await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        // A card without a concept (added by hand, or renamed): the server draws its label.
+        // A redrawn card is read again in the theme: its concept may be what was wrong (a
+        // flamingo for the colour pink). The server adds the new image beside the old one.
+        const asked = batch.map((c) =>
+          redraw.has(c.id) ? { label: splitEmoji(c.label).text, concept: '', redraw: true } : { label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' },
+        );
+        // The theme gives a homonym its sense: "Rose" is a colour in a list of colours.
+        const { icons, balance } = await aiIcons(store.deviceId, wallet, asked, list.title);
+        setBalance(balance);
+        batch.forEach((card, i) => {
+          const url = icons[i]?.url;
+          const concept = icons[i]?.concept;
+          if (!url) return patch({ failed: (useAiJob.getState().job?.failed ?? 0) + 1 });
+          // The card may have been deleted meanwhile.
+          if (useTierStore.getState().lists[listId]?.cards[card.id]) useTierStore.getState().updateCard(listId, card.id, concept ? { iconUrl: url, aiConcept: concept } : { iconUrl: url });
+          cacheAiIcon(url);
+          patch({ icons: (useAiJob.getState().job?.icons ?? 0) + 1 });
+        });
+      } catch (e) {
+        // Short of credits: said as such (nothing was drawn, nothing taken for this sheet).
+        const error = creditsError(e);
+        patch({ failed: (useAiJob.getState().job?.failed ?? 0) + batch.length, ...(error ? { error } : {}) });
+      }
+    }),
+  );
   patch({ phase: 'done' });
 }

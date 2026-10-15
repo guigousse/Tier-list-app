@@ -3,7 +3,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
-import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, replaceableCards, imageCredits, MIN_IMAGES, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
+import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, replaceableCards, imageCredits, MIN_IMAGES, sheetSizes, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
 import { openWallet, useCredits } from '../../lib/credits';
 import { useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../Clickable';
@@ -409,7 +409,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
           </View>
           {job.error ? <Text style={styles.error}>{job.error}</Text> : null}
           {running ? (
-            <Text style={styles.hint}>Toutes les images sont dessinées ensemble, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
+            <Text style={styles.hint}>Toutes les images sont dessinées en même temps, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
           ) : null}
         </View>
       ),
@@ -417,6 +417,8 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
   }
 
   const perImage = n ? (cost / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0';
+  // Beyond 20, a second sheet: said, or the jump in price would look like a mistake.
+  const sheets = sheetSizes(n);
   const allOn = n === cards.length;
   const note =
     cards.length < MIN_IMAGES
@@ -484,6 +486,11 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
           </Text>
           <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
         </View>
+        {sheets.length > 1 ? (
+          <Text style={styles.hint}>
+            {sheets.length} planches de {sheets.join(' + ')} images, dessinées en même temps : une planche en tient 20 au plus, et chacune compte sa part fixe de {CREDITS.sheet} crédits.
+          </Text>
+        ) : null}
         <Balance cost={cost} />
       </View>
       </>
