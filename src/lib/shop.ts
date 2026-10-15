@@ -49,19 +49,26 @@ export const useShop = create<{
 export async function deliver(purchase: Purchase): Promise<void> {
   const jws = purchase.purchaseToken;
   if (!jws) return;
+  let result: Awaited<ReturnType<typeof aiPurchase>>;
   try {
-    const { balance, credited, credits } = await aiPurchase(useTierStore.getState().deviceId, await walletForRequest(), jws);
-    setBalance(balance);
-    await Iap.finishTransaction({ purchase, isConsumable: true });
-    useShop.setState({
-      buying: null,
-      message: credited ? `+${credits} crédits d’énergie ajoutés.` : null,
-      // Counted from the balance before this purchase, which the server's answer gives.
-      celebration: credited ? { packId: purchase.productId, from: balance - credits, to: balance, key: Date.now() } : null,
-    });
+    result = await aiPurchase(useTierStore.getState().deviceId, await walletForRequest(), jws);
   } catch {
     useShop.setState({ buying: null, message: 'Achat reçu : les crédits arriveront au prochain lancement de l’app, une fois la connexion revenue.' });
+    return;
   }
+  const { balance, credited, credits } = result;
+  // The new balance and the celebration together, before closing the transaction with
+  // Apple (which takes a moment): the counter must not show the new balance meanwhile,
+  // then fall back to the old one when the bolts leave.
+  setBalance(balance);
+  useShop.setState({
+    buying: null,
+    message: credited ? `+${credits} crédits d’énergie ajoutés.` : null,
+    // Counted from the balance before this purchase, which the server's answer gives.
+    celebration: credited ? { packId: purchase.productId, from: balance - credits, to: balance, key: Date.now() } : null,
+  });
+  // Left open, StoreKit hands it back at the next launch; the server knows it's credited.
+  await Iap.finishTransaction({ purchase, isConsumable: true }).catch(() => {});
 }
 
 export async function buy(id: string): Promise<void> {

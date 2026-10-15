@@ -56,6 +56,26 @@ describe('energy shop', () => {
     expect(useShop.getState().celebration).toMatchObject({ packId: 'tiercraft.energy.360', from: 30, to: 390 });
   });
 
+  it('starts the bolts as soon as the server has credited, without waiting for Apple to close the transaction', async () => {
+    purchase.mockResolvedValue({ balance: 390, credited: true, credits: 360 });
+    // Closing the transaction with Apple takes a moment: the new balance must not show
+    // alone meanwhile, the celebration counts up to it.
+    let atFinish: unknown = 'not called';
+    finish.mockImplementationOnce(async () => {
+      atFinish = useShop.getState().celebration;
+    });
+    await deliver(bought as never);
+    expect(atFinish).toMatchObject({ from: 30, to: 390 });
+  });
+
+  it('keeps the credits shown when Apple fails to close the transaction: it comes back, already credited', async () => {
+    purchase.mockResolvedValue({ balance: 390, credited: true, credits: 360 });
+    finish.mockRejectedValueOnce(new Error('StoreKit'));
+    await deliver(bought as never);
+    expect(useShop.getState().message).toContain('360');
+    expect(useShop.getState().celebration).toMatchObject({ to: 390 });
+  });
+
   it('keeps an unpaid purchase open when the server is out of reach: Apple gives it back at the next launch', async () => {
     purchase.mockRejectedValue(new Error('Network request failed'));
     await deliver(bought as never);
