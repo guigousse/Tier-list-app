@@ -50,3 +50,13 @@ apparaissent dans l'écran « Modèles » après les modèles intégrés à l'ap
 
 Table `shared_lists`, sans accès direct : l'app passe par les fonctions
 `share_list(payload)` (renvoie un code à 6 caractères) et `get_shared_list(code)`.
+
+## Listes envoyées entre amis
+
+Table `list_mail`, sans accès direct : `send_list`, `get_mail`, `answer_mail`,
+`rerank_mail`… L'ami classe les cartes sans voir le classement de l'expéditeur,
+puis les deux classements sont comparés. Le classement de l'expéditeur
+(`sender_ranks`) n'est pas figé à l'envoi : l'app le renvoie via
+`set_sender_ranks(secret, mail, ranks)` quand l'expéditeur valide son classement
+(jamais à chaque carte déplacée). Les listes classées entre amis comptent dans
+`completed` (« listes complétées » des profils), une fois par liste.
