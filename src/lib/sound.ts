@@ -2,7 +2,7 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 
 import { useTierStore } from '../store/useTierStore';
 
-type Sound = 'click' | 'tick' | 'pop' | 'sparkle';
+type Sound = 'click' | 'tick' | 'pop' | 'sparkle' | 'thunder' | 'coin';
 
 const SOURCES: Record<Sound, number> = {
   click: require('../../assets/sounds/click.wav'),
@@ -10,18 +10,22 @@ const SOURCES: Record<Sound, number> = {
   pop: require('../../assets/sounds/pop.wav'),
   // Made by scripts/generate-sparkle.py.
   sparkle: require('../../assets/sounds/sparkle.wav'),
+  // Made by scripts/generate-purchase-sounds.py: a pack bought in the shop.
+  thunder: require('../../assets/sounds/thunder.wav'),
+  coin: require('../../assets/sounds/coin.wav'),
 };
 // Files peak at 0.8: these volumes give Broc's own levels (click 0.4, tick 0.18, pop 0.42).
 // The sparkle lasts 0.65 s, ten times the click: softer, or it would cover the screen.
-const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525, sparkle: 0.35 };
+// The coin rings ~16 times in a row while the balance counts: low, or it would grate.
+const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525, sparkle: 0.35, thunder: 0.6, coin: 0.3 };
 /** Players per sound, used in turn so quick repeats can overlap instead of cutting each other. */
-const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2, sparkle: 1 };
+const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2, sparkle: 1, thunder: 1, coin: 3 };
 /** The same sound asked again within this time is one sound (two handlers on one tap). */
 const SAME_TAP_MS = 60;
 
 const pools: Partial<Record<Sound, AudioPlayer[]>> = {};
-const next: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0 };
-const lastPlayed: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0 };
+const next: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0 };
+const lastPlayed: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0 };
 let modeSet = false;
 
 function pool(sound: Sound): AudioPlayer[] {
@@ -93,7 +97,19 @@ export function preloadSounds(): void {
     pool('tick');
     pool('pop');
     pool('sparkle');
+    pool('thunder');
+    pool('coin');
   } catch {
     // Audio unavailable.
   }
+}
+
+/** A bolt striking: a pack bought lands in the shop. */
+export function playThunder(): void {
+  play('thunder');
+}
+
+/** One coin of the slot machine, while the balance counts up after a purchase. */
+export function playCoin(): void {
+  play('coin');
 }

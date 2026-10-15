@@ -1,14 +1,19 @@
-import { useEffect } from 'react';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Clickable } from '../components/Clickable';
 import { ENERGY, EnergyAmount } from '../components/Energy';
+import { PurchaseBurst } from '../components/PurchaseBurst';
 import { colors, radius, spacing } from '../constants/theme';
 import { imageCredits } from '../lib/aiGenerate';
+import { BURST, coinTimes, counterAt } from '../lib/celebration';
 import { openWallet, useCredits } from '../lib/credits';
 import { useResponsive } from '../lib/layout';
 import { bonusPercent, buy, openShop, PACKS, type Pack, useShop } from '../lib/shop';
+import { playCoin, playThunder } from '../lib/sound';
 
 /** Pack pictures (Gemini sheet in the card icons' style, keyed like them): 1 to 5 bolts. */
 const PACK_ART = [
@@ -24,44 +29,134 @@ const LIST = 10 + imageCredits(10);
 
 const euros = (price: number) => price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
+type Point = { x: number; y: number };
+
 /** The energy shop: the packs, cheapest first, each with what it gives beyond the first. */
 export default function Store() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const balance = useCredits((s) => s.balance);
-  const { prices, buying, message } = useShop();
+  const { prices, buying, message, celebration } = useShop();
   useEffect(() => {
     openShop();
     openWallet();
   }, []);
 
+  // A pack credited: bolts from it to the balance, which then counts up to the new one.
+  const root = useRef<View>(null);
+  const counter = useRef<View>(null);
+  const arts = useRef<Record<string, View | null>>({});
+  const [burst, setBurst] = useState<{ from: Point; to: Point; key: number } | null>(null);
+  const [shown, setShown] = useState<number | null>(null);
+  const pulse = useSharedValue(1);
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
+  useEffect(() => {
+    if (!celebration) return;
+    const { packId, from, to, key } = celebration;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let frame = 0;
+    // Window coordinates, made relative to the overlay laid over the whole page.
+    const art = arts.current[packId];
+    root.current?.measureInWindow((rx, ry) => {
+      art?.measureInWindow((ax, ay, aw, ah) => {
+        counter.current?.measureInWindow((cx, cy, _cw, ch) => {
+          setBurst({ from: { x: ax - rx + aw / 2, y: ay - ry + ah / 2 }, to: { x: cx - rx + 14, y: cy - ry + ch / 2 }, key });
+        });
+      });
+    });
+    playThunder();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    for (const t of coinTimes()) {
+      timers.push(
+        setTimeout(() => {
+          playCoin();
+          Haptics.selectionAsync().catch(() => {});
+        }, t),
+      );
+    }
+    timers.push(
+      setTimeout(() => {
+        pulse.value = withSequence(withTiming(1.18, { duration: 120 }), withSpring(1));
+        const start = Date.now();
+        const tick = () => {
+          const progress = (Date.now() - start) / BURST.count;
+          setShown(counterAt(from, to, progress));
+          if (progress < 1) frame = requestAnimationFrame(tick);
+          else pulse.value = withSequence(withTiming(1.25, { duration: 140 }), withSpring(1));
+        };
+        frame = requestAnimationFrame(tick);
+      }, BURST.arrive),
+    );
+    timers.push(
+      setTimeout(() => {
+        setBurst(null);
+        setShown(null);
+        useShop.setState({ celebration: null });
+      }, BURST.arrive + BURST.count + 600),
+    );
+    return () => {
+      timers.forEach(clearTimeout);
+      cancelAnimationFrame(frame);
+    };
+  }, [celebration, pulse]);
+
   return (
-    <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}>
-      <View style={styles.balance}>
-        <Text style={styles.balanceLabel}>Votre énergie</Text>
-        <EnergyAmount amount={balance} size={26} style={styles.balanceValue} />
-      </View>
-
-      {message ? (
-        <View style={styles.message} accessibilityLiveRegion="polite">
-          <Text style={styles.messageText}>{message}</Text>
+    <View ref={root} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}>
+        <View style={styles.balance}>
+          <Text style={styles.balanceLabel}>Votre énergie</Text>
+          <Animated.View ref={counter} style={pulseStyle}>
+            {/* While the bolts fly, still the old balance: the server's new one is counted up to. */}
+            <EnergyAmount amount={shown ?? (celebration ? celebration.from : balance)} size={26} style={styles.balanceValue} />
+          </Animated.View>
         </View>
-      ) : null}
 
-      {PACKS.map((pack, i) => (
-        <PackRow key={pack.id} pack={pack} rank={i} price={prices[pack.id] ?? euros(pack.price)} busy={buying === pack.id} disabled={buying !== null} />
-      ))}
+        {message ? (
+          <View style={styles.message} accessibilityLiveRegion="polite">
+            <Text style={styles.messageText}>{message}</Text>
+          </View>
+        ) : null}
 
-      <Text style={styles.note}>
-        {Platform.OS === 'ios'
-          ? `Paiement par l’App Store. L’énergie ne périme pas et reste après une réinstallation de l’app. Une liste de 10 cartes écrites et illustrées en coûte ${LIST}.`
-          : 'Les packs d’énergie s’achètent pour le moment depuis l’app iPhone.'}
-      </Text>
-    </ScrollView>
+        {PACKS.map((pack, i) => (
+          <PackRow
+            key={pack.id}
+            pack={pack}
+            rank={i}
+            price={prices[pack.id] ?? euros(pack.price)}
+            busy={buying === pack.id}
+            disabled={buying !== null}
+            artRef={(v) => {
+              arts.current[pack.id] = v;
+            }}
+          />
+        ))}
+
+        <Text style={styles.note}>
+          {Platform.OS === 'ios'
+            ? `Paiement par l’App Store. L’énergie ne périme pas et reste après une réinstallation de l’app. Une liste de 10 cartes écrites et illustrées en coûte ${LIST}.`
+            : 'Les packs d’énergie s’achètent pour le moment depuis l’app iPhone.'}
+        </Text>
+      </ScrollView>
+      {burst ? <PurchaseBurst key={burst.key} from={burst.from} to={burst.to} /> : null}
+    </View>
   );
 }
 
-function PackRow({ pack, rank, price, busy, disabled }: { pack: Pack; rank: number; price: string; busy: boolean; disabled: boolean }) {
+function PackRow({
+  pack,
+  rank,
+  price,
+  busy,
+  disabled,
+  artRef,
+}: {
+  pack: Pack;
+  rank: number;
+  price: string;
+  busy: boolean;
+  disabled: boolean;
+  artRef: (view: View | null) => void;
+}) {
   const bonus = bonusPercent(pack);
   const lists = Math.floor(pack.credits / LIST);
   return (
@@ -72,7 +167,9 @@ function PackRow({ pack, rank, price, busy, disabled }: { pack: Pack; rank: numb
         </View>
       ) : null}
       {/* Drawn in the icons' style: one more bolt per pack, and hotter, up to the fireball. */}
-      <Image source={PACK_ART[rank]} style={[styles.art, { transform: [{ scale: 0.86 + rank * 0.06 }] }]} accessibilityIgnoresInvertColors />
+      <View ref={artRef} collapsable={false}>
+        <Image source={PACK_ART[rank]} style={[styles.art, { transform: [{ scale: 0.86 + rank * 0.06 }] }]} accessibilityIgnoresInvertColors />
+      </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={styles.credits}>{pack.credits.toLocaleString('fr-FR')}</Text>
         <Text style={styles.detail}>

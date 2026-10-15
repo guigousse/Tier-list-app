@@ -37,7 +37,9 @@ export const useShop = create<{
   buying: string | null;
   /** What to tell the player after a purchase. */
   message: string | null;
-}>(() => ({ prices: {}, buying: null, message: null }));
+  /** A pack just credited: the shop page plays its bolts flying to the balance. */
+  celebration: { packId: string; from: number; to: number; key: number } | null;
+}>(() => ({ prices: {}, buying: null, message: null, celebration: null }));
 
 /**
  * Credits a purchase Apple has confirmed, then finishes it. Unfinished, StoreKit hands
@@ -51,7 +53,12 @@ export async function deliver(purchase: Purchase): Promise<void> {
     const { balance, credited, credits } = await aiPurchase(useTierStore.getState().deviceId, await walletForRequest(), jws);
     setBalance(balance);
     await Iap.finishTransaction({ purchase, isConsumable: true });
-    useShop.setState({ buying: null, message: credited ? `+${credits} crédits d’énergie ajoutés.` : null });
+    useShop.setState({
+      buying: null,
+      message: credited ? `+${credits} crédits d’énergie ajoutés.` : null,
+      // Counted from the balance before this purchase, which the server's answer gives.
+      celebration: credited ? { packId: purchase.productId, from: balance - credits, to: balance, key: Date.now() } : null,
+    });
   } catch {
     useShop.setState({ buying: null, message: 'Achat reçu : les crédits arriveront au prochain lancement de l’app, une fois la connexion revenue.' });
   }

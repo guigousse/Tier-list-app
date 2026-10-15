@@ -23,7 +23,7 @@ beforeEach(() => {
   finish.mockClear();
   (setBalance as jest.Mock).mockClear();
   (Iap.requestPurchase as jest.Mock).mockClear();
-  useShop.setState({ buying: null, message: null });
+  useShop.setState({ buying: null, message: null, celebration: null });
 });
 
 describe('energy shop', () => {
@@ -52,6 +52,8 @@ describe('energy shop', () => {
     expect(setBalance).toHaveBeenCalledWith(390);
     expect(finish).toHaveBeenCalledWith({ purchase: bought, isConsumable: true });
     expect(useShop.getState().message).toContain('360');
+    // The shop page plays the bolts flying to the balance, counting from the old one.
+    expect(useShop.getState().celebration).toMatchObject({ packId: 'tiercraft.energy.360', from: 30, to: 390 });
   });
 
   it('keeps an unpaid purchase open when the server is out of reach: Apple gives it back at the next launch', async () => {
@@ -66,5 +68,6 @@ describe('energy shop', () => {
     await deliver(bought as never);
     expect(finish).toHaveBeenCalled();
     expect(useShop.getState().message).toBeNull();
+    expect(useShop.getState().celebration).toBeNull();
   });
 });
