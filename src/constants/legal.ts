@@ -27,8 +27,8 @@ export const PRIVACY: LegalSection[] = [
     bullets: [
       'Quand vous partagez une tier list : son titre, les noms et couleurs des rangs et des cartes, et le classement (jamais les photos), pour créer le code de partage.',
       'Quand vous validez la tier list du jour ou une liste populaire : votre classement et l’identifiant aléatoire de l’app, pour calculer le classement moyen et éviter les votes en double.',
-      'Quand vous ajoutez une liste populaire en favori : la liste concernée et l’identifiant aléatoire, pour le compteur de favoris.',
-      'Si vous créez un profil de joueur : votre pseudo, son numéro et votre avatar, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes populaires, jamais vos listes personnelles).',
+      'Quand vous ouvrez une liste populaire ou l’ajoutez en favori : la liste concernée et l’identifiant aléatoire, pour les compteurs de vues et de favoris et les tendances.',
+      'Si vous créez un profil de joueur : votre pseudo, son numéro, votre avatar et vos badges, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes populaires, jamais vos listes personnelles).',
       'Quand vous envoyez une tier list à des amis : son titre, ses rangs et le nom de ses cartes (jamais les photos), votre classement et celui de vos amis, pour les comparer. Seuls vous et les amis destinataires la voient ; elle est conservée 90 jours.',
       'Si vous activez les notifications avec un profil : le jeton de notification de l’appareil, pour vous prévenir quand un ami vous envoie une tier list ou classe la vôtre.',
       'Quand vous créez avec l’IA : le thème saisi, les noms des cartes et des rangs (jamais les photos) et l’identifiant aléatoire, pour générer le résultat et limiter l’usage par appareil. Les images générées sont conservées, sans lien avec vous, pour être réutilisées.',
@@ -70,7 +70,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Vos droits',
     paragraphs: [
-      `Vous pouvez effacer vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. Réglages → Supprimer mon profil efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour accéder à vos données en ligne ou les corriger, écrivez à ${PUBLISHER.email}. Vous pouvez aussi saisir la CNIL (cnil.fr).`,
+      `Vous pouvez effacer vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. Réglages → Supprimer mon profil efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour accéder à vos données en ligne ou les corriger, écrivez à ${PUBLISHER.email}. Le porte-monnaie d’énergie n’est pas effacé avec le profil, pour que vous gardiez l’énergie achetée : écrivez-nous pour le supprimer. Vous pouvez aussi saisir la CNIL (cnil.fr).`,
     ],
   },
 ];
@@ -92,6 +92,19 @@ export const LEGAL_NOTICE: LegalSection[] = [
     title: 'Propriété intellectuelle',
     paragraphs: [
       'L’app, son nom, son logo et ses contenus sont protégés. Les icônes d’applications appartiennent à leurs éditeurs respectifs. Les images Wikimedia sont utilisées selon leurs licences, indiquées sur chaque carte.',
+    ],
+  },
+  {
+    title: 'Contenus générés par l’IA',
+    paragraphs: [
+      'Les cartes, images et noms de rangs créés avec l’IA sont produits automatiquement par Anthropic et Google Gemini à partir du thème saisi : ils peuvent contenir des erreurs. Les personnalités sont représentées en caricature, dans un but humoristique. Un contenu inapproprié peut être signalé à l’adresse de contact.',
+    ],
+  },
+  {
+    title: 'Énergie et achats',
+    paragraphs: [
+      'L’énergie sert uniquement à lancer des générations IA dans Tiercraft : elle n’a pas de valeur monétaire et ne peut être ni échangée ni convertie en argent. Une génération ratée ne coûte rien. Les packs sont vendus et remboursés par Apple, selon les conditions de l’App Store.',
+      'Si Apple rembourse un pack, son énergie est retirée du solde ; la part déjà utilisée est déduite des achats suivants, et la génération IA peut être suspendue après des remboursements répétés d’énergie déjà utilisée.',
     ],
   },
   {

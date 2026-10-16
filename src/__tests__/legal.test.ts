@@ -18,3 +18,18 @@ describe('legal texts', () => {
     expect(t).toContain('transaction signée par Apple');
   });
 });
+
+describe('legal texts follow the latest features', () => {
+  it('cover popular list views, badges and the energy kept after deleting the profile', () => {
+    const t = text(PRIVACY);
+    expect(t).toContain('ouvrez une liste populaire');
+    expect(t).toContain('badges');
+    expect(t).toContain('porte-monnaie d’énergie n’est pas effacé');
+  });
+
+  it('give the terms of AI content and energy in the legal notice', () => {
+    const titles = LEGAL_NOTICE.map((s) => s.title);
+    expect(titles).toContain('Contenus générés par l’IA');
+    expect(titles).toContain('Énergie et achats');
+  });
+});
