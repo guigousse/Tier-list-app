@@ -21,6 +21,9 @@ const tiers = aiTiers as jest.Mock;
 const store = () => useTierStore.getState();
 const WALLET = 'secret-du-porte-monnaie';
 
+// Read before the tests set it to 0.
+const DEFAULT_IMAGE_WAIT = timing.imageMinWait;
+
 beforeEach(() => {
   // The drawing's minimum wait (images from the library) is tested on its own below.
   timing.imageMinWait = 0;
@@ -342,10 +345,7 @@ describe('images from the library', () => {
   });
 
   it('wait 3 to 4 seconds when nothing had to be drawn', () => {
-    jest.isolateModules(() => {
-      const { timing: fresh } = require('../lib/aiGenerate');
-      expect(fresh.imageMinWait).toBeGreaterThanOrEqual(3000);
-      expect(fresh.imageMinWait).toBeLessThanOrEqual(4000);
-    });
+    expect(DEFAULT_IMAGE_WAIT).toBeGreaterThanOrEqual(3000);
+    expect(DEFAULT_IMAGE_WAIT).toBeLessThanOrEqual(4000);
   });
 });
