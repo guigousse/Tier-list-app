@@ -226,22 +226,15 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>Total</Text>
         </View>
-        {count ? (
-          <View style={styles.recap}>
-            <Text style={styles.recapText}>
-              {count} nouvelle{count > 1 ? 's' : ''} carte{count > 1 ? 's' : ''} × {CREDITS.word} crédit
-            </Text>
-            <EnergyAmount amount={count * CREDITS.word} size={14} style={styles.recapValue} />
-          </View>
-        ) : null}
-        {replace.length ? (
-          <View style={styles.recap}>
-            <Text style={styles.recapText}>
-              {replace.length} carte{replace.length > 1 ? 's' : ''} remplacée{replace.length > 1 ? 's' : ''} × {CREDITS.word} crédit
-            </Text>
-            <EnergyAmount amount={replace.length * CREDITS.word} size={14} style={styles.recapValue} />
-          </View>
-        ) : null}
+        <View style={styles.recap}>
+          <Text style={styles.recapText}>
+            {[count ? `${count} nouvelle${count > 1 ? 's' : ''} carte${count > 1 ? 's' : ''}` : '', replace.length ? `${replace.length} remplacée${replace.length > 1 ? 's' : ''}` : '']
+              .filter(Boolean)
+              .join(' et ')}{' '}
+            · prix fixe
+          </Text>
+          <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
+        </View>
         <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
         <Balance cost={cost} />
       </View>
@@ -355,7 +348,7 @@ function useTiersPanel({ visible, onClose, listId, title }: Props & { title: str
           </View>
           <View style={styles.recap}>
             <Text style={styles.recapText}>
-              {tiers.length} rang{tiers.length > 1 ? 's' : ''} × {CREDITS.tier} crédit
+              {tiers.length} rang{tiers.length > 1 ? 's' : ''} renommé{tiers.length > 1 ? 's' : ''} · prix fixe
             </Text>
             <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
           </View>

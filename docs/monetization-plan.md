@@ -45,7 +45,7 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
 - Can **propose tier lists to be made public** (moderation queue, the owner approves).
 - Cheap extras: exclusive "+" badge and avatar items, creator name on published lists, no ads.
 
-## Measured AI costs (2026-10-14, Claude Opus 5.5 kept for quality)
+## Measured AI costs (2026-10-14; cards on Sonnet 5.5 since 2026-10-16, see below)
 
 - Card names: 12 names ≈ 1.06 ¢ $ (≈ 0.09 ¢ $ per card), 4–5 s. Sonnet 5.5 is half the
   price but put hummus in "Greek dishes"; Haiku 5.5 is 40× cheaper but gives vaguer
@@ -87,17 +87,21 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   call, effort low, ≈ 1 c€ whatever the tier count); a redrawn image counts as an
   image. Cards added by hand or renamed are read in the theme before drawing (one
   extra Opus call, ≈ 1 c€, not charged).
-- **Cartes écrites : 5 crédits au plus par génération** (2026-10-16). Un seul appel Opus
-  écrit toutes les cartes et son coût dépend peu de leur nombre (tarif Opus 5.5 : 4 $ /
-  20 $ le million de jetons en entrée / sortie) : ≈ 0,7 ¢ $ de fixe (consigne ≈ 650
-  jetons, bibliothèque de concepts ≈ 800 jetons aujourd'hui, ≈ 2 400 à 500 concepts) plus
-  ≈ 0,05 ¢ $ par carte écrite (≈ 25 jetons de sortie). Mesuré le 14 octobre : 12 cartes
-  ≈ 1,06 ¢ $. Soit ≈ 0,8 ¢ $ pour 1 carte, ≈ 1,7 ¢ $ pour 20 (≈ 2,3 ¢ $ à bibliothèque
-  pleine). 1 crédit par carte jusqu'à 5, puis plus rien : 5 crédits rapportent 4,0 c€
-  (pack 1 750) à 5,8 c€ (pack 60), au moins le double du pire coût, et une liste de 20
-  cartes ne coûte plus 20 crédits. Remplacer une seule carte reste à 1 crédit (≈ le
-  coût). Les cartes ajoutées et remplacées partent dans le même appel : le plafond
-  couvre les deux.
+- **Texte : 3 crédits fixes par génération** (2026-10-16), cartes écrites ou remplacées
+  comme rangs renommés, quel qu'en soit le nombre : un seul appel écrit tout et son coût
+  dépend peu du nombre. **Mesuré le 16 octobre** (consigne réelle, 12 cartes, 166
+  concepts dans la bibliothèque, 7 thèmes) : ≈ 2 520 jetons en entrée, ≈ 400 en
+  sortie ; **Opus 5.5 ≈ 1,8 ¢ $**, **Sonnet 5.5 ≈ 0,9 ¢ $** (tarifs 4 $ / 20 $ et 2 $ /
+  10 $ le million de jetons). Mêmes cartes et mêmes concepts sur Plats grecs, Couleurs,
+  Fromages, Fleurs, Jeux vidéo, Sports d'hiver ; sur les présidents de la Ve
+  République, Sonnet s'arrête aux 9 vrais quand Opus complète avec « Élysée » et
+  « Cohabitation ». Latence de Sonnet stable (≈ 5 s), Opus jusqu'à 17 s.
+  **Cartes et concepts passent donc sur Sonnet 5.5** ; les noms de rangs (jeux de mots
+  dans un ton choisi) restent sur Opus, pas encore comparés. Pire cas sur Sonnet : 20
+  cartes, bibliothèque pleine (500 concepts, ≈ 4 200 jetons d'entrée) ≈ 1,5 ¢ $
+  (≈ 1,4 c€). 3 crédits rapportent 2,4 c€ (pack 1 750) à 3,5 c€ (pack 60) : rentable
+  partout. Sur Opus, ce pire cas (≈ 3 ¢ $) aurait été à perte avec le plus gros pack.
+  Une liste de 10 cartes illustrées coûte 21 crédits (3 + 18).
 - **Charge only what was delivered** (rule for when credits are real, 2026-10-15): the
   credits are taken on the server once the result is saved, per card or image actually
   received. A failed generation costs the player nothing, even when it cost us (a

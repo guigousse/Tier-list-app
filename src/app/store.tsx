@@ -8,7 +8,7 @@ import { Clickable } from '../components/Clickable';
 import { ENERGY, EnergyAmount } from '../components/Energy';
 import { PurchaseBurst } from '../components/PurchaseBurst';
 import { colors, radius, spacing } from '../constants/theme';
-import { imageCredits } from '../lib/aiGenerate';
+import { imageCredits, wordCredits } from '../lib/aiGenerate';
 import { BURST, coinTimes, counterAt } from '../lib/celebration';
 import { openWallet, useCredits } from '../lib/credits';
 import { useResponsive } from '../lib/layout';
@@ -25,7 +25,7 @@ const PACK_ART = [
 ];
 
 /** What a full list costs: 10 cards written and illustrated, a yardstick for the packs. */
-const LIST = 10 + imageCredits(10);
+const LIST = wordCredits(10) + imageCredits(10);
 
 const euros = (price: number) => price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 

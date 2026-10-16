@@ -22,9 +22,8 @@ import { splitEmoji } from './emoji';
  * fixed part plus a little each, so the more cards get one, the cheaper each image.
  * Measured, a 5-card illustrated list pays for itself even with no icon reused.
  */
-export const CREDITS = { word: 1, tier: 1, sheet: 8, image: 1 };
-/** Cards written in one generation are paid 5 at most (supabase/functions/ai-generate/pricing.ts). */
-export const WORDS_CAP = 5;
+/** Text costs 3 credits a generation, whatever the count (supabase/functions/ai-generate/pricing.ts). */
+export const CREDITS = { text: 3, sheet: 8, image: 1 };
 
 /** Icons on one sheet: beyond 20, Gemini's cells get too small to read (server: sheet.ts). */
 export const SHEET_MAX = 20;
@@ -45,13 +44,13 @@ export function imageCredits(count: number): number {
   return sheetSizes(count).length * CREDITS.sheet + Math.max(0, count) * CREDITS.image;
 }
 
-/** New cards, plus cards whose word is replaced: 1 credit each, 5 at most (one call). */
+/** New cards and cards whose word is replaced, written in one call: one fixed price. */
 export function wordCredits(count: number, replaced = 0): number {
-  return Math.min(count + replaced, WORDS_CAP) * CREDITS.word;
+  return count + replaced > 0 ? CREDITS.text : 0;
 }
 
 export function tierCredits(count: number): number {
-  return count * CREDITS.tier;
+  return count > 0 ? CREDITS.text : 0;
 }
 
 /** Tone of the tier names: the server knows each one's instructions. */

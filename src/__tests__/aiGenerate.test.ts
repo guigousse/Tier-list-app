@@ -30,13 +30,12 @@ beforeEach(() => {
 });
 
 describe('AI generation', () => {
-  it('costs 1 credit per card up to 5 a generation, and images cost less each the more there are', () => {
-    // One Opus call writes them all: its cost hardly depends on the count (≈ 1 c€ for 1 card, ≈ 2 c€ for 20).
-    expect(wordCredits(1)).toBe(1);
-    expect(wordCredits(3)).toBe(3);
-    expect(wordCredits(5)).toBe(5);
-    expect(wordCredits(10)).toBe(5);
-    expect(wordCredits(20)).toBe(5);
+  it('writing cards costs 3 credits whatever their number, and images cost less each the more there are', () => {
+    // One AI call writes them all: its cost hardly depends on the count (≈ 1 c€ for 1 card, ≈ 2 c€ for 20).
+    expect(wordCredits(1)).toBe(3);
+    expect(wordCredits(10)).toBe(3);
+    expect(wordCredits(20)).toBe(3);
+    expect(wordCredits(0)).toBe(0);
     // One drawing sheet for the whole list: a fixed part, then a little per image.
     expect(imageCredits(0)).toBe(0);
     // A sheet costs Gemini the same for 3 icons or 20: a fixed part, then 1 per image.
@@ -231,8 +230,9 @@ describe('AI generation', () => {
     expect(photo).toBeDefined();
   });
 
-  it('renames the tiers for 1 credit each', () => {
-    expect(tierCredits(5)).toBe(5);
+  it('renames the tiers for 3 credits, like any text', () => {
+    expect(tierCredits(5)).toBe(3);
+    expect(tierCredits(1)).toBe(3);
     expect(tierCredits(0)).toBe(0);
   });
 
@@ -294,14 +294,13 @@ describe('AI generation', () => {
     expect(useAiJob.getState().job).toMatchObject({ kind: 'words', phase: 'done', cards: 1, replaced: 1 });
   });
 
-  it('can replace cards without adding any, for 1 credit each', async () => {
+  it('can replace cards without adding any, for the same 3 credits', async () => {
     const id = store().createList({ title: 'T', tierLabels: ['S'], cardLabels: ['A', 'B'] });
     const [a] = Object.values(store().lists[id].cards);
     words.mockResolvedValue({ cards: [{ label: 'C', emoji: '', concept: 'c' }, { label: 'D', emoji: '', concept: 'd' }, { label: 'E', emoji: '', concept: 'e' }] });
-    expect(wordCredits(0, 1)).toBe(1);
-    expect(wordCredits(2, 1)).toBe(3);
-    // Added and replaced cards come in the same call: the cap covers both.
-    expect(wordCredits(5, 2)).toBe(5);
+    // Added and replaced cards come in the same call: one price for both.
+    expect(wordCredits(0, 1)).toBe(3);
+    expect(wordCredits(5, 2)).toBe(3);
     await generateWords(id, 'Lettres', 0, [a.id]);
     // The server sends at least 3: only what was asked is kept.
     expect(Object.values(store().lists[id].cards).map((c) => c.label)).toEqual(['C', 'B']);

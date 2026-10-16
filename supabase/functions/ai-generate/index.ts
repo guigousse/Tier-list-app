@@ -24,7 +24,11 @@ import { verifyTransaction } from "./purchase.ts";
 import { paid, WalletError } from "./wallet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
-const WORDS_MODEL = "claude-opus-5-5";
+// Cards and their concepts: Sonnet 5.5, half Opus's price for the same cards on 7 themes
+// measured on 2026-10-16 (≈ 0.9 ¢ $ against 1.8 for 12 cards), and steadier latency.
+const CARDS_MODEL = "claude-sonnet-5-5";
+// Tier names are wordplay in a chosen tone: Opus, not compared yet.
+const TIERS_MODEL = "claude-opus-5-5";
 /** The app's App ID, which App Attest binds every attestation to. */
 const APP = { teamId: "9D78779LKL", bundleId: "com.guigousse.TierCraft" };
 
@@ -214,7 +218,7 @@ Deno.serve(async (req) => {
       const out = await paid(db.rpc.bind(db), wallet, "words", count, async () => {
         const drawn = await libraryHint();
         const result = await ask(
-          WORDS_MODEL,
+          CARDS_MODEL,
           "low",
           WORDS_SYSTEM,
           `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}\nBibliothèque déjà dessinée : ${drawn}`,
@@ -254,7 +258,7 @@ Deno.serve(async (req) => {
       await allow(deviceId, "words");
       const out = await paid(db.rpc.bind(db), wallet, "tiers", current.length, async () => {
         const result = await ask(
-          WORDS_MODEL,
+          TIERS_MODEL,
           "low",
           TIERS_SYSTEM,
           `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}\nQuelques cartes de la liste : ${cards.join(", ") || "aucune"}`,
@@ -292,7 +296,7 @@ Deno.serve(async (req) => {
           await allow(deviceId, "words");
           try {
             const result = await ask(
-              WORDS_MODEL,
+              CARDS_MODEL,
               "low",
               CONCEPTS_SYSTEM,
               `Thème : ${theme}\nCartes : ${bare.map((c: { label: string }) => c.label).join(" | ")}\nBibliothèque déjà dessinée : ${await libraryHint()}`,
