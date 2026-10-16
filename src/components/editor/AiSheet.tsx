@@ -386,7 +386,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
   if (showJob && job) {
     const progress = job.cards ? (job.icons + job.failed) / job.cards : 1;
     return {
-      title: 'Génération des images',
+      title: 'Préparation des images',
       footer: <Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />,
       body: (
         <View style={{ gap: spacing.sm }}>
@@ -402,7 +402,9 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
           </View>
           {job.error ? <Text style={styles.error}>{job.error}</Text> : null}
           {running ? (
-            <Text style={styles.hint}>Toutes les images sont dessinées en même temps, en une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.</Text>
+            <Text style={styles.hint}>
+              Les images déjà dessinées dans la bibliothèque Tiercraft sont reprises, les autres sont dessinées par l’IA, toutes dans le même style. Comptez jusqu’à une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.
+            </Text>
           ) : null}
         </View>
       ),
@@ -415,15 +417,15 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
   const allOn = n === cards.length;
   const note =
     cards.length < MIN_IMAGES
-      ? `Il faut au moins ${MIN_IMAGES} cartes pour lancer une génération.`
+      ? `Il faut au moins ${MIN_IMAGES} cartes pour préparer des images.`
       : n < MIN_IMAGES
         ? `Sélectionnez au moins ${MIN_IMAGES} cartes.`
         : undefined;
   // Everything on, or back to the start: the bare cards on, the illustrated ones aside.
   const selectAll = () => setToggled(allOn ? [] : toRedraw.map((c) => c.id));
   return {
-    title: 'Générer les images',
-    footer: <Footer label="Dessiner" cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />,
+    title: 'Préparer les images',
+    footer: <Footer label="Préparer" cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />,
     body: (
       <>
       <View style={styles.section}>
@@ -463,7 +465,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
         )}
         {cards.length ? (
           <Text style={styles.hint}>
-            Les cartes sans image sont cochées. Touchez une carte déjà illustrée pour la redessiner : une nouvelle image s’ajoute à la bibliothèque, l’ancienne y reste. Les photos ne sont pas proposées.
+            Les cartes sans image sont cochées : une image déjà dessinée dans la bibliothèque Tiercraft leur est reprise, sinon l’IA en dessine une. Touchez une carte déjà illustrée pour la redessiner : une nouvelle image s’ajoute à la bibliothèque, l’ancienne y reste. Les photos ne sont pas proposées.
           </Text>
         ) : null}
       </View>
@@ -481,7 +483,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
         </View>
         {sheets.length > 1 ? (
           <Text style={styles.hint}>
-            {sheets.length} planches de {sheets.join(' + ')} images, dessinées en même temps : une planche en tient 20 au plus, et chacune compte sa part fixe de {CREDITS.sheet} crédits.
+            {sheets.length} planches de {sheets.join(' + ')} images, préparées en même temps : une planche en tient 20 au plus, et chacune compte sa part fixe de {CREDITS.sheet} crédits.
           </Text>
         ) : null}
         <Balance cost={cost} />

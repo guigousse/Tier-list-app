@@ -97,7 +97,7 @@ export const LEGAL_NOTICE: LegalSection[] = [
   {
     title: 'Contenus générés par l’IA',
     paragraphs: [
-      'Les cartes, images et noms de rangs créés avec l’IA sont produits automatiquement par Anthropic et Google Gemini à partir du thème saisi : ils peuvent contenir des erreurs. Les personnalités sont représentées en caricature, dans un but humoristique. Un contenu inapproprié peut être signalé à l’adresse de contact.',
+      'Les cartes, images et noms de rangs créés avec l’IA sont produits automatiquement par Anthropic et Google Gemini à partir du thème saisi : ils peuvent contenir des erreurs. Les personnalités sont représentées en caricature, dans un but humoristique, ou par un objet qui les évoque. Une image déjà dessinée pour une autre liste peut être reprise de la bibliothèque Tiercraft, sans lien avec la liste d’origine. Un contenu inapproprié peut être signalé à l’adresse de contact.',
     ],
   },
   {
