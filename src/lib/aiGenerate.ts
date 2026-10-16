@@ -186,6 +186,18 @@ export function imageChoices(list: TierList): { toDraw: Card[]; toRedraw: Card[]
 export const MIN_IMAGES = 3;
 
 /** Draws the selected cards (at least `MIN_IMAGES`): bare ones, and illustrated ones again. */
+/**
+ * Images all taken from the library come back at once: still shown after a few seconds,
+ * as if drawn, or the player would think nothing happened. (A real sheet takes ≈ 10 s.)
+ */
+export const timing = { imageMinWait: 3500 };
+
+/** `promise`, but not before `ms` from now: a slower answer isn't delayed any more. */
+export async function atLeast<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const [value] = await Promise.all([promise, new Promise((r) => setTimeout(r, ms))]);
+  return value;
+}
+
 export async function generateImages(listId: string, cardIds: string[]): Promise<void> {
   const store = useTierStore.getState();
   const list = store.lists[listId];
@@ -220,7 +232,7 @@ export async function generateImages(listId: string, cardIds: string[]): Promise
           redraw.has(c.id) ? { label: splitEmoji(c.label).text, concept: '', redraw: true } : { label: splitEmoji(c.label).text, concept: c.aiConcept ?? '' },
         );
         // The theme gives a homonym its sense: "Rose" is a colour in a list of colours.
-        const { icons, balance } = await aiIcons(store.deviceId, wallet, asked, list.title);
+        const { icons, balance } = await atLeast(aiIcons(store.deviceId, wallet, asked, list.title), timing.imageMinWait);
         setBalance(balance);
         batch.forEach((card, i) => {
           const url = icons[i]?.url;

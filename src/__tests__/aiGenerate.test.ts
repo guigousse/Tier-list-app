@@ -1,4 +1,4 @@
-import { cardsNeedingImage, generateImages, generateTiers, generateWords, imageChoices, imageCredits, MIN_IMAGES, sheetSizes, tierCredits, useAiJob, wordCredits } from '../lib/aiGenerate';
+import { atLeast, cardsNeedingImage, generateImages, generateTiers, generateWords, imageChoices, imageCredits, MIN_IMAGES, sheetSizes, tierCredits, timing, useAiJob, wordCredits } from '../lib/aiGenerate';
 import { ANTHRACITE } from '../constants/theme';
 import { aiIcons, aiTiers, aiWords } from '../lib/api';
 import { useTierStore } from '../store/useTierStore';
@@ -22,6 +22,8 @@ const store = () => useTierStore.getState();
 const WALLET = 'secret-du-porte-monnaie';
 
 beforeEach(() => {
+  // The drawing's minimum wait (images from the library) is tested on its own below.
+  timing.imageMinWait = 0;
   useTierStore.setState({ lists: {} });
   useAiJob.setState({ job: null });
   words.mockReset();
@@ -316,5 +318,34 @@ describe('AI generation', () => {
     words.mockRejectedValue(new Error('credits'));
     await generateWords(id, 'Fromages', 5);
     expect(useAiJob.getState().job).toMatchObject({ phase: 'error', error: 'Pas assez de crédits pour cette génération.' });
+  });
+});
+
+describe('images from the library', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('come after a few seconds all the same, as if drawn; a slower answer is not delayed more', async () => {
+    jest.useFakeTimers();
+    let done = false;
+    atLeast(Promise.resolve('ok'), 3500).then(() => (done = true));
+    await jest.advanceTimersByTimeAsync(3400);
+    expect(done).toBe(false);
+    await jest.advanceTimersByTimeAsync(100);
+    expect(done).toBe(true);
+
+    // A sheet really drawn (≈ 10 s) is shown at once when it arrives.
+    let slow = false;
+    const drawing = new Promise((r) => setTimeout(() => r('sheet'), 10_000));
+    atLeast(drawing, 3500).then(() => (slow = true));
+    await jest.advanceTimersByTimeAsync(10_000);
+    expect(slow).toBe(true);
+  });
+
+  it('wait 3 to 4 seconds when nothing had to be drawn', () => {
+    jest.isolateModules(() => {
+      const { timing: fresh } = require('../lib/aiGenerate');
+      expect(fresh.imageMinWait).toBeGreaterThanOrEqual(3000);
+      expect(fresh.imageMinWait).toBeLessThanOrEqual(4000);
+    });
   });
 });
