@@ -115,6 +115,18 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   received. A failed generation costs the player nothing, even when it cost us (a
   sheet lost after Gemini was paid: twice on the presidents list, before the cutting
   fit in the edge function's 2 s of CPU).
+- **Suivi du coût réel de chaque génération** (2026-10-16) : le serveur écrit dans
+  `ai_costs` une ligne par génération, avec les jetons facturés par Anthropic et Gemini,
+  leur coût en dollars (tarifs dans `supabase/functions/ai-generate/costs.ts`), les
+  crédits encaissés et le succès ou l'échec (un échec payé à l'IA et pas facturé y est
+  aussi). `select * from ai_margin(7)` donne, par type (cartes, rangs, images), le coût
+  moyen, ce qu'une génération rapporte au pire (crédit au prix du pack 1 750, 0,81 c€)
+  et la part mangée par l'IA. Chaque soir à 21 h 07 (heure de Paris en été),
+  `private.ai_cost_watch()` envoie une notification à l'iPhone du propriétaire
+  (`private.config`, clé `owner_profile`) si un type dépasse 60 % sur 7 jours (au moins
+  10 générations), ou si l'IA a coûté plus de 10 $ en 24 h. Testé sur des générations
+  simulées : images à 6,8 ¢ $ pour 18 crédits, 42 %, rien ; cartes à 6 ¢ $ pour 3
+  crédits, 223 %, alerte.
 - Safety valve: if monthly AI cost > ~30 % of net revenue, lower the welcome bonus first.
 
 ## Implementation (2026-10-15)

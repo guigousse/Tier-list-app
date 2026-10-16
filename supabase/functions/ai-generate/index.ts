@@ -21,6 +21,7 @@ import { cleanTierLabels, TONES, type Tone } from "./tiers.ts";
 import { verifyAttestation } from "./appAttest.ts";
 import { WELCOME_BONUS } from "./pricing.ts";
 import { verifyTransaction } from "./purchase.ts";
+import { addClaude, type CostKind, costRow, type Meter, newMeter } from "./costs.ts";
 import { paid, WalletError } from "./wallet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
@@ -48,7 +49,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LIBRARY_HINT = 500;
 
 /** One request with a JSON answer; refusals and unparsable answers are errors. */
-async function ask(model: string, effort: string, system: string, user: string, schema: object, maxTokens: number) {
+async function ask(model: string, effort: string, system: string, user: string, schema: object, maxTokens: number, meter?: Meter) {
   const params = {
     model,
     max_tokens: maxTokens,
@@ -60,6 +61,8 @@ async function ask(model: string, effort: string, system: string, user: string, 
     output_config: { effort, format: { type: "json_schema", schema } },
   };
   const response = await anthropic.beta.messages.create(params as never);
+  // The model that answered (a fallback may have), at its own rate.
+  if (meter) addClaude(meter, (response as { model?: string }).model ?? model, response.usage);
   if (response.stop_reason === "refusal") throw new Error("refused");
   const text = response.content.find((b: { type: string }) => b.type === "text") as { text: string } | undefined;
   if (!text) throw new Error("empty answer");
@@ -127,6 +130,27 @@ const CONCEPTS_SCHEMA = {
 async function libraryHint() {
   const { data } = await db.from("card_icons").select("concept").order("created_at", { ascending: false }).limit(LIBRARY_HINT);
   return (data ?? []).map((r: { concept: string }) => r.concept).join(", ") || "vide";
+}
+
+/**
+ * Runs a paid generation and writes what it really cost next to what the player paid
+ * (ai_costs), success or not: a failure we paid for and didn't charge counts too.
+ */
+async function tracked<T>(kind: CostKind, run: (meter: Meter) => Promise<{ value: T; balance: number; charged: number }>) {
+  const meter = newMeter();
+  let charged = 0;
+  let ok = false;
+  try {
+    const out = await run(meter);
+    charged = out.charged;
+    ok = true;
+    return out;
+  } finally {
+    if (meter.calls) {
+      const { error } = await db.from("ai_costs").insert(costRow(kind, meter, charged, ok));
+      if (error) console.error("ai_costs", error.message);
+    }
+  }
 }
 
 /** A daily limit of the device (ai_allow) reached: nothing is charged. */
@@ -215,7 +239,7 @@ Deno.serve(async (req) => {
       const existing = (Array.isArray(body.existing) ? body.existing : []).map(String).slice(0, 60);
       if (!theme) return json({ error: "theme" }, 400);
       await allow(deviceId, "words");
-      const out = await paid(db.rpc.bind(db), wallet, "words", count, async () => {
+      const out = await tracked("words", (meter) => paid(db.rpc.bind(db), wallet, "words", count, async () => {
         const drawn = await libraryHint();
         const result = await ask(
           CARDS_MODEL,
@@ -224,6 +248,7 @@ Deno.serve(async (req) => {
           `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}\nBibliothèque déjà dessinée : ${drawn}`,
           WORDS_SCHEMA,
           4000,
+          meter,
         );
         const seen = new Set(existing.map((e) => e.toLowerCase()));
         const kept = ((result.cards ?? []) as { label: string; emoji: string; concept: string }[])
@@ -245,7 +270,7 @@ Deno.serve(async (req) => {
         // Every concept proposed joins the wishlist: free cells of later sheets draw it.
         await db.from("icon_wishlist").upsert(cards.map((c) => ({ concept: c.concept, label: c.label })), { onConflict: "concept", ignoreDuplicates: true });
         return { delivered: cards.length, value: cards };
-      });
+      }));
       return json({ cards: out.value, balance: out.balance });
     }
 
@@ -256,7 +281,7 @@ Deno.serve(async (req) => {
       const cards = (Array.isArray(body.cards) ? body.cards : []).map((l) => String(l).slice(0, 40)).slice(0, 12);
       if (!theme || !(tone in TONES) || current.length === 0) return json({ error: "bad request" }, 400);
       await allow(deviceId, "words");
-      const out = await paid(db.rpc.bind(db), wallet, "tiers", current.length, async () => {
+      const out = await tracked("tiers", (meter) => paid(db.rpc.bind(db), wallet, "tiers", current.length, async () => {
         const result = await ask(
           TIERS_MODEL,
           "low",
@@ -264,13 +289,14 @@ Deno.serve(async (req) => {
           `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}\nQuelques cartes de la liste : ${cards.join(", ") || "aucune"}`,
           TIERS_SCHEMA,
           1000,
+          meter,
         );
         const raw = (result.labels ?? []) as unknown[];
         if (raw.length === 0) throw new Error("refused");
         const labels = cleanTierLabels(raw, current);
         // A name kept (missing, too long, twice) isn't charged.
         return { delivered: labels.filter((l, i) => l !== current[i]).length, value: labels };
-      });
+      }));
       return json({ labels: out.value, balance: out.balance });
     }
 
@@ -286,7 +312,7 @@ Deno.serve(async (req) => {
         redraw: c?.redraw === true,
       })).filter((c: { label: string; concept: string }) => c.label || c.concept);
       if (asked.length === 0) return json({ error: "bad request" }, 400);
-      const out = await paid(db.rpc.bind(db), wallet, "images", asked.length, async () => {
+      const out = await tracked("images", (meter) => paid(db.rpc.bind(db), wallet, "images", asked.length, async () => {
         // Cards without a concept (added by hand, renamed): read in the theme's sense, or
         // "Rose" would get whichever rose the library drew first, flower or colour.
         const bare = asked.filter((c: { concept: string }) => !c.concept);
@@ -302,6 +328,7 @@ Deno.serve(async (req) => {
               `Thème : ${theme}\nCartes : ${bare.map((c: { label: string }) => c.label).join(" | ")}\nBibliothèque déjà dessinée : ${await libraryHint()}`,
               CONCEPTS_SCHEMA,
               2000,
+              meter,
             );
             proposed = ((result.concepts ?? []) as unknown[]).map(String);
           } catch (e) {
@@ -323,7 +350,7 @@ Deno.serve(async (req) => {
           const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
           const plan = fillSheet(missing, pending as { concept: string; label: string }[]);
           // A face Gemini refuses would lose the whole sheet: drawn again without the busts.
-          const tiles = await drawWithFallback(plan, drawSheet);
+          const tiles = await drawWithFallback(plan, (cards) => drawSheet(cards, meter));
           const drawn: { concept: string; label: string; image: string }[] = [];
           await Promise.all(plan.map(async (card, i) => {
             const png = tiles[i];
@@ -348,7 +375,7 @@ Deno.serve(async (req) => {
         }
         const icons = asked.map((c: { concept: string }) => ({ concept: c.concept, url: urls.get(c.concept) ?? null }));
         return { delivered: icons.filter((i) => i.url).length, value: icons };
-      });
+      }));
       return json({ icons: out.value, balance: out.balance });
     }
 

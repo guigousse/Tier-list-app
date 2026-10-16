@@ -4,6 +4,7 @@
 // and remove it ourselves; give it a reference picture to keep one style throughout.
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
+import { addGemini, type Meter } from "./costs.ts";
 import { cellObject, clearBackground, copyRegion, gridFor, sheetPrompt } from "./sheet.ts";
 import { STYLE_REF } from "./style-ref.ts";
 
@@ -24,8 +25,8 @@ const PNG_LEVEL = 3;
 
 export class SheetError extends Error {}
 
-/** One PNG per card, in order; null where the cell came out empty. */
-export async function drawSheet(cards: { label: string; concept: string; theme?: string }[]): Promise<(Uint8Array | null)[]> {
+/** One PNG per card, in order; null where the cell came out empty. `meter` adds what the sheet cost. */
+export async function drawSheet(cards: { label: string; concept: string; theme?: string }[], meter?: Meter): Promise<(Uint8Array | null)[]> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new SheetError("no key");
   const grid = gridFor(cards.length);
@@ -39,6 +40,8 @@ export async function drawSheet(cards: { label: string; concept: string; theme?:
   });
   if (res.status === 429 || res.status === 503) throw new SheetError("busy");
   const data = await res.json().catch(() => null);
+  // Billed as soon as Gemini answered, image or not.
+  if (meter && res.ok) addGemini(meter, data?.usageMetadata);
   const part = data?.candidates?.[0]?.content?.parts?.find((p: { inlineData?: unknown }) => p.inlineData);
   if (!part) {
     console.error("gemini", res.status, JSON.stringify(data).slice(0, 500));
