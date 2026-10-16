@@ -1,10 +1,7 @@
-/**
- * Publisher details shown in the legal notice and privacy policy.
- * TODO before publishing: the publisher's name and contact e-mail.
- */
+/** Publisher details shown in the legal notice and privacy policy. */
 export const PUBLISHER = {
-  name: 'À compléter',
-  email: 'À compléter',
+  name: 'Guillaume Fenard',
+  email: 'broc.le.jeu@gmail.com',
 };
 
 /** Broc, the other app by the same publisher (App Store id). */
@@ -33,6 +30,9 @@ export const PRIVACY: LegalSection[] = [
       'Quand vous ajoutez une liste populaire en favori : la liste concernée et l’identifiant aléatoire, pour le compteur de favoris.',
       'Si vous créez un profil de joueur : votre pseudo, son numéro et votre avatar, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes populaires, jamais vos listes personnelles).',
       'Quand vous envoyez une tier list à des amis : son titre, ses rangs et le nom de ses cartes (jamais les photos), votre classement et celui de vos amis, pour les comparer. Seuls vous et les amis destinataires la voient ; elle est conservée 90 jours.',
+      'Si vous activez les notifications avec un profil : le jeton de notification de l’appareil, pour vous prévenir quand un ami vous envoie une tier list ou classe la vôtre.',
+      'Quand vous créez avec l’IA : le thème saisi, les noms des cartes et des rangs (jamais les photos) et l’identifiant aléatoire, pour générer le résultat et limiter l’usage par appareil. Les images générées sont conservées, sans lien avec vous, pour être réutilisées.',
+      'Quand vous utilisez ou achetez de l’énergie : un porte-monnaie anonyme (clé aléatoire gardée dans le trousseau), son solde et ses mouvements ; pour un achat, la transaction signée par Apple ; pour l’énergie offerte, une attestation App Attest qui prouve que l’app est authentique. En cas de demande de remboursement, Apple peut nous demander quelle part du pack a été utilisée : nous lui indiquons ce pourcentage, rien d’autre.',
       'À chaque échange avec le serveur : votre adresse IP, conservée moins de 24 heures, pour limiter les abus.',
     ],
   },
@@ -40,6 +40,8 @@ export const PRIVACY: LegalSection[] = [
     title: 'Services utilisés',
     bullets: [
       'Supabase (données hébergées en Europe, à Paris) : tier lists partagées, votes, favoris, profils et amis.',
+      'Anthropic (textes) et Google Gemini (images) : le thème et les noms des cartes et des rangs leur sont envoyés quand vous créez avec l’IA. Aucune donnée personnelle n’est transmise.',
+      'Apple : paiement des packs d’énergie par l’App Store et vérification App Attest. Nous ne recevons jamais vos coordonnées de paiement.',
       'Vercel : site de l’app et pages des liens de partage.',
       'Wikimedia et App Store : quand vous cherchez une image, le nom de la carte leur est envoyé ; les modèles avec des icônes d’apps interrogent l’App Store. Aucune donnée personnelle n’est transmise.',
       'Expo : téléchargement des mises à jour de l’app.',
@@ -62,13 +64,13 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Durée de conservation',
     paragraphs: [
-      'Les tier lists partagées sont supprimées si personne ne les a ouvertes depuis 6 mois. Les tier lists envoyées à des amis ne sont plus affichées après 90 jours. Les votes sont conservés pour les statistiques. Les adresses IP sont supprimées après 24 heures. Un profil est conservé tant que vous ne demandez pas sa suppression.',
+      'Les tier lists partagées sont supprimées si personne ne les a ouvertes depuis 6 mois. Les tier lists envoyées à des amis ne sont plus affichées après 90 jours. Les votes sont conservés pour les statistiques. L’historique du porte-monnaie et des achats est conservé pour la comptabilité et la gestion des remboursements. Les adresses IP sont supprimées après 24 heures. Un profil est conservé tant que vous ne demandez pas sa suppression.',
     ],
   },
   {
     title: 'Vos droits',
     paragraphs: [
-      'Vous pouvez effacer vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. Réglages → Supprimer mon profil efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour accéder à vos données en ligne ou les corriger, écrivez à l’adresse indiquée dans les mentions légales. Vous pouvez aussi saisir la CNIL (cnil.fr).',
+      `Vous pouvez effacer vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. Réglages → Supprimer mon profil efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour accéder à vos données en ligne ou les corriger, écrivez à ${PUBLISHER.email}. Vous pouvez aussi saisir la CNIL (cnil.fr).`,
     ],
   },
 ];

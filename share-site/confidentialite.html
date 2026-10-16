@@ -27,7 +27,7 @@
   <main>
     <header><img src="/icon.png" alt=""><a href="/">Tiercraft</a></header>
     <h1>Politique de confidentialité</h1>
-    <p class="muted">Dernière mise à jour : 14 octobre 2026</p>
+    <p class="muted">Dernière mise à jour : 16 octobre 2026</p>
 
     <p>Tiercraft est conçue pour fonctionner sans compte e-mail et collecter le moins de données possible. Cette page explique ce qui reste sur votre téléphone, ce qui est envoyé en ligne, et pourquoi.</p>
 
@@ -42,6 +42,9 @@
       <tr><td>Vous ajoutez une liste populaire en favori</td><td>La liste concernée et l’identifiant aléatoire.</td><td>Compter les favoris.</td></tr>
 <tr><td>Vous créez un profil de joueur (facultatif)</td><td>Pseudo, numéro et avatar (choisi dans une liste) ; vos amis et demandes d’amis ; les joueurs que vous bloquez ; les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire.</td><td>Ajouter des amis et comparer vos classements ; modération.</td></tr>
 <tr><td>Vous envoyez une tier list à des amis</td><td>Titre, rangs et noms des cartes (<strong>pas les photos</strong>), votre classement et celui de vos amis.</td><td>Leur permettre de la classer et comparer vos classements. Visible seulement par vous et les amis destinataires, conservée 90 jours.</td></tr>
+<tr><td>Vous activez les notifications (avec un profil)</td><td>Le jeton de notification de l’appareil, enregistré sur votre profil.</td><td>Vous prévenir quand un ami vous envoie une tier list ou classe la vôtre. Supprimé si vous coupez les notifications ou supprimez votre profil.</td></tr>
+<tr><td>Vous créez avec l’IA</td><td>Le thème saisi, les noms des cartes et des rangs, et l’identifiant aléatoire. <strong>Pas les photos.</strong></td><td>Générer les cartes, leurs images et les noms des rangs ; limiter l’usage par appareil. Les images générées sont conservées, sans lien avec vous, pour être réutilisées.</td></tr>
+<tr><td>Vous utilisez ou achetez de l’énergie</td><td>Un porte-monnaie anonyme (clé aléatoire gardée dans le trousseau du téléphone), son solde et ses mouvements ; pour un achat, la transaction signée par Apple (identifiant, pack, date) ; pour l’énergie offerte, une attestation App Attest d’Apple qui prouve que l’app est authentique, sans identifier l’appareil.</td><td>Tenir le solde, créditer chaque achat une seule fois, réserver l’énergie offerte aux iPhone authentiques. En cas de demande de remboursement, Apple peut nous demander quelle part du pack a été utilisée : nous lui indiquons ce pourcentage, rien d’autre.</td></tr>
 <tr><td>À chaque échange avec le serveur</td><td>Adresse IP, conservée moins de 24 heures.</td><td>Limiter les abus (envois massifs, tentatives de deviner des codes).</td></tr>
     </table>
     <p>L’identifiant aléatoire n’est lié à aucune information personnelle : ni nom, ni e-mail, ni identifiant publicitaire. Sans profil, seuls des résultats agrégés (moyennes, répartitions) sont consultables. Avec un profil, <strong>vos amis</strong> voient votre pseudo, votre avatar et vos classements validés (tier list du jour et listes populaires), jamais vos listes personnelles. Les autres joueurs ne voient que votre pseudo et votre avatar, s’ils connaissent votre code ami.</p>
@@ -49,6 +52,8 @@
     <h2>Services utilisés</h2>
     <ul>
       <li><strong>Supabase</strong> (hébergement en Europe, Paris) : stockage des tier lists partagées, des votes, des favoris, des profils et des amis.</li>
+      <li><strong>Anthropic</strong> (textes) et <strong>Google Gemini</strong> (images) : quand vous créez avec l’IA, le thème et les noms des cartes et des rangs leur sont envoyés pour générer le résultat. Aucune donnée personnelle n’est transmise.</li>
+      <li><strong>Apple</strong> : paiement des packs d’énergie par l’App Store, vérification App Attest. Nous ne recevons jamais vos coordonnées de paiement.</li>
       <li><strong>Vercel</strong> : site tier-list-app-share-site.vercel.app et liens de partage.</li>
       <li><strong>Wikimedia</strong> et <strong>App Store</strong> : quand vous cherchez une image, le nom de la carte est envoyé à Wikimedia ; les modèles avec des icônes d’apps interrogent l’App Store. Aucune donnée personnelle n’est transmise.</li>
       <li><strong>Expo</strong> : téléchargement des mises à jour de l’app.</li>
@@ -62,10 +67,10 @@
     </ul>
 
     <h2>Durée de conservation</h2>
-    <p>Les tier lists partagées sont supprimées automatiquement si personne ne les a ouvertes depuis 6 mois. Les votes sont conservés pour les statistiques. Les adresses IP sont supprimées après 24 heures. Un profil est conservé jusqu’à ce que vous le supprimiez.</p>
+    <p>Les tier lists partagées sont supprimées automatiquement si personne ne les a ouvertes depuis 6 mois. Les votes sont conservés pour les statistiques. L’historique du porte-monnaie et des achats est conservé pour la comptabilité et la gestion des remboursements. Les adresses IP sont supprimées après 24 heures. Un profil est conservé jusqu’à ce que vous le supprimiez.</p>
 
     <h2>Vos droits</h2>
-    <p>Vous pouvez effacer toutes vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. <strong>Réglages → Supprimer mon profil</strong> efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour toute autre demande concernant les données en ligne (accès, rectification), écrivez-nous à l’adresse indiquée sur la page <a href="/support">Assistance</a>. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+    <p>Vous pouvez effacer toutes vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. <strong>Réglages → Supprimer mon profil</strong> efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour toute autre demande concernant les données en ligne (accès, rectification), écrivez-nous à <a href="mailto:broc.le.jeu@gmail.com">broc.le.jeu@gmail.com</a>. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
   </main>
 </body>
 </html>
