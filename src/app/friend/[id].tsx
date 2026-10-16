@@ -11,11 +11,14 @@ import type { Template } from '../../constants/presets';
 import { colors, radius, spacing, TIER_COLORS } from '../../constants/theme';
 import { fetchFriendLists, removeFriend, type FriendVote, type PublicProfile } from '../../lib/api';
 import { openPopular } from '../../lib/create';
+import { completedLabel, friendMails, type FriendMail } from '../../lib/friendProfile';
+import { openMail } from '../../lib/mail';
 import { knownBadges } from '../../lib/badges';
 import { splitEmoji } from '../../lib/emoji';
 import { useResponsive } from '../../lib/layout';
 import { agreement, confirmReport, friendCode, myRanks, socialError, voteTemplate } from '../../lib/social';
 import { useCatalog, usePopularTemplates } from '../../store/useCatalog';
+import { useMail } from '../../store/useMail';
 import { useTierStore } from '../../store/useTierStore';
 
 const TIERS = 'SABCD';
@@ -61,6 +64,38 @@ function Comparison({ template, mine, theirs, name }: { template: Template; mine
   );
 }
 
+/** A list exchanged with the friend: opens to rank it, or to both rankings side by side. */
+function MailEntry({ row, name }: { row: FriendMail; name: string }) {
+  const date = new Date(row.mail.sentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return (
+    <View style={styles.entry}>
+      <Clickable
+        accessibilityRole="button"
+        onPress={() => openMail(row.mail, row.received)}
+        style={({ pressed }) => [styles.entryRow, pressed && { opacity: 0.85 }]}
+      >
+        <Ionicons name={row.received ? 'mail-open-outline' : 'paper-plane-outline'} size={26} color={colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text numberOfLines={1} style={styles.entryTitle}>
+            {row.mail.list.title}
+          </Text>
+          <Text style={styles.muted}>
+            {row.received ? `Envoyée par ${name}` : 'Envoyée par vous'} le {date}
+          </Text>
+        </View>
+        {row.score !== null ? (
+          <View style={styles.score}>
+            <Text style={styles.scoreText}>{row.score} %</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </View>
+        ) : (
+          <Text style={styles.cta}>{row.received ? 'À votre tour' : 'Voir'}</Text>
+        )}
+      </Clickable>
+    </View>
+  );
+}
+
 /** A friend's profile: their completed tier lists, compared with the player's rankings. */
 export default function Friend() {
   // `key`: a list to show compared right away (from a notification).
@@ -75,10 +110,15 @@ export default function Friend() {
   const [data, setData] = useState<{ profile: PublicProfile; votes: FriendVote[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(key ?? null);
+  // « En commun » : only the lists both ranked, to compare.
+  const [onlyCommon, setOnlyCommon] = useState(false);
+  const inbox = useMail((s) => s.inbox);
+  const outbox = useMail((s) => s.outbox);
 
   useEffect(() => {
     if (!profile || !id) return;
     fetchFriendLists(profile.secret, id).then(setData, (e) => setError(socialError(e)));
+    useMail.getState().refresh();
   }, [profile, id]);
 
   const entries = useMemo<Entry[]>(() => {
@@ -91,8 +131,12 @@ export default function Friend() {
     });
   }, [data, templates, daily, pastDailies, lists]);
 
-  const shared = entries.filter((e) => e.score !== null);
-  const average = shared.length ? Math.round(shared.reduce((s, e) => s + e.score!, 0) / shared.length) : null;
+  // Lists exchanged between the two of them: their profile counts them, and so does this page.
+  const mails = useMemo(() => (id ? friendMails(id, inbox, outbox) : []), [id, inbox, outbox]);
+  const scores = [...entries, ...mails].map((e) => e.score).filter((v): v is number => v !== null);
+  const average = scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : null;
+  const shownEntries = onlyCommon ? entries.filter((e) => e.score !== null) : entries;
+  const shownMails = onlyCommon ? mails.filter((m) => m.score !== null) : mails;
 
   const remove = () =>
     data &&
@@ -132,24 +176,50 @@ export default function Friend() {
               <Text style={styles.tag}> #{data.profile.tag}</Text>
             </Text>
             <View style={styles.stats}>
-              <View style={styles.stat}>
+              <Clickable
+                accessibilityRole="button"
+                accessibilityState={{ selected: !onlyCommon }}
+                onPress={() => setOnlyCommon(false)}
+                style={styles.stat}
+              >
                 <Text style={styles.statValue}>{data.profile.completed}</Text>
-                <Text style={styles.statLabel}>listes complétées</Text>
-              </View>
+                <Text style={styles.statLabel}>{completedLabel(data.profile.completed)}</Text>
+              </Clickable>
               <View style={styles.stat}>
                 <Text style={styles.statValue}>{average === null ? '–' : `${average} %`}</Text>
                 <Text style={styles.statLabel}>d’accord avec vous</Text>
               </View>
-              <View style={styles.stat}>
-                <Text style={styles.statValue}>{shared.length}</Text>
+              <Clickable
+                accessibilityRole="button"
+                accessibilityLabel={`${scores.length} en commun : afficher seulement les listes classées par vous deux`}
+                accessibilityState={{ selected: onlyCommon, disabled: scores.length === 0 }}
+                disabled={scores.length === 0}
+                onPress={() => setOnlyCommon((v) => !v)}
+                style={({ pressed }) => [styles.stat, onlyCommon && styles.statOn, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={styles.statValue}>{scores.length}</Text>
                 <Text style={styles.statLabel}>en commun</Text>
-              </View>
+              </Clickable>
             </View>
           </View>
 
           <View style={{ gap: spacing.sm }}>
-            {entries.length === 0 ? <Text style={styles.muted}>{data.profile.pseudo} n’a encore validé aucune liste.</Text> : null}
-            {entries.map((e) => {
+            {onlyCommon ? (
+              <View style={styles.filterHead}>
+                <Text style={styles.filterTitle}>Listes en commun</Text>
+                <Clickable accessibilityRole="button" onPress={() => setOnlyCommon(false)} hitSlop={8}>
+                  <Text style={styles.cta}>Tout afficher</Text>
+                </Clickable>
+              </View>
+            ) : null}
+            {entries.length === 0 && mails.length === 0 ? (
+              <Text style={styles.muted}>
+                {data.profile.completed > 0
+                  ? `Les listes de ${data.profile.pseudo} ont été classées avec d’autres amis : elles restent privées. Envoyez-lui une liste pour comparer vos classements !`
+                  : `${data.profile.pseudo} n’a encore validé aucune liste.`}
+              </Text>
+            ) : null}
+            {shownEntries.map((e) => {
               const expanded = open === e.vote.key;
               const title = e.template?.title ?? 'Liste retirée';
               const date = new Date(e.vote.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
@@ -188,6 +258,10 @@ export default function Friend() {
                 </View>
               );
             })}
+            {shownMails.length > 0 ? <Text style={styles.section}>Entre vous</Text> : null}
+            {shownMails.map((m) => (
+              <MailEntry key={m.mail.id} row={m} name={data.profile.pseudo} />
+            ))}
           </View>
         </>
       )}
@@ -197,6 +271,10 @@ export default function Friend() {
 
 const styles = StyleSheet.create({
   muted: { color: colors.textMuted, fontSize: 13 },
+  section: { color: colors.textMuted, fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginTop: spacing.sm },
+  filterHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  filterTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  statOn: { borderWidth: 2, borderColor: colors.primary, paddingVertical: spacing.md - 2 },
   header: { alignItems: 'center', gap: spacing.sm },
   name: { color: colors.text, fontSize: 24, fontWeight: '800' },
   tag: { color: colors.textMuted, fontWeight: '500' },

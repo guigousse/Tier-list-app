@@ -16,6 +16,7 @@ import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { knownBadges, usePendingBadges } from '../lib/badges';
 import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
+import { pullToRefresh } from '../lib/friendProfile';
 import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 
@@ -58,7 +59,7 @@ export default function Social() {
   const { column, gutter } = useResponsive();
   const profile = useTierStore((s) => s.profile);
   const [data, setData] = useState<Friends | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [pulling, setPulling] = useState(false);
   const [offline, setOffline] = useState(false);
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -72,14 +73,11 @@ export default function Social() {
   const load = useCallback(async () => {
     const secret = useTierStore.getState().profile?.secret;
     if (!secret) return;
-    setLoading(true);
     try {
       setData(await fetchFriends(secret));
       setOffline(false);
     } catch {
       setOffline(true);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -171,11 +169,8 @@ export default function Social() {
       keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
-          refreshing={loading && Boolean(data)}
-          onRefresh={() => {
-            load();
-            useMail.getState().refresh();
-          }}
+          refreshing={pulling}
+          onRefresh={() => pullToRefresh(setPulling, load, () => useMail.getState().refresh())}
           tintColor={colors.textMuted}
         />
       }
