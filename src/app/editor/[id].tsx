@@ -20,6 +20,7 @@ import { Tray } from '../../components/editor/Tray';
 import { AiSheet } from '../../components/editor/AiSheet';
 import { MagicWand } from '../../components/editor/MagicWand';
 import { aiBusy, useAiJob } from '../../lib/aiGenerate';
+import { isFixed, placementLocked, startsEditing } from '../../lib/editorMode';
 import { colors, spacing } from '../../constants/theme';
 import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
@@ -50,6 +51,8 @@ export default function EditorScreen() {
   }, [id]);
 
   const onMove = useCallback((cardId: string, zone: Zone, index: number) => moveCard(id!, cardId, zone, index), [id, moveCard]);
+  // The mode lives here: dragging is locked while editing (DragProvider wraps the editor).
+  const [editing, setEditing] = useState(() => Boolean(list && startsEditing(list, edit === '1')));
 
   if (!list) {
     return (
@@ -65,15 +68,15 @@ export default function EditorScreen() {
       cardSize={cardSize(settings.cardSize)}
       showLabels={settings.showCardLabels}
       haptics={settings.haptics}
-      locked={Boolean(list.mail?.answeredAt)}
+      locked={placementLocked(list, editing)}
       onMove={onMove}
     >
-      <Editor list={list} startEditing={edit === '1'} />
+      <Editor list={list} editing={editing} setEditing={setEditing} />
     </DragProvider>
   );
 }
 
-function Editor({ list, startEditing }: { list: TierList; startEditing: boolean }) {
+function Editor({ list, editing, setEditing }: { list: TierList; editing: boolean; setEditing: (on: boolean) => void }) {
   const insets = useSafeAreaInsets();
   const store = useTierStore.getState();
   const { scrollRef, viewportRef, onScrollLayout, onContentSize } = useDragContext();
@@ -92,20 +95,13 @@ function Editor({ list, startEditing }: { list: TierList; startEditing: boolean 
   const editingTierIndex = list.tiers.findIndex((t) => t.id === editingTierId);
   const editingTier = editingTierIndex >= 0 ? list.tiers[editingTierIndex] : null;
   const editingCard = cardSheet?.cardId ? list.cards[cardSheet.cardId] ?? null : null;
-  const editingCardZone: Zone | null = editingCard
-    ? list.pool.includes(editingCard.id)
-      ? POOL
-      : (list.tiers.find((t) => list.placement[t.id]?.includes(editingCard.id))?.id ?? POOL)
-    : null;
 
-  // Daily, popular and received tier lists have fixed tiers and cards: only the ranking changes.
   const daily = list.daily;
   const popular = list.popular;
   const mail = list.mail;
-  const fixed = Boolean(daily || popular || mail);
-  // The player's own lists have two modes: editing (title, tiers, cards) and ranking
-  // (only placing the cards), where they land once saved. An empty list has nothing to rank.
-  const [editing, setEditing] = useState(() => !fixed && (startEditing || Object.keys(list.cards).length === 0));
+  const fixed = isFixed(list);
+  // The player's own lists have two modes: editing (title, tiers, cards, never their
+  // place) and ranking (only placing the cards), where they land once saved.
   const editable = !fixed && editing;
   // A received list's ranking is frozen once sent back; daily and popular ones can
   // change and be validated again.
@@ -423,12 +419,9 @@ function Editor({ list, startEditing }: { list: TierList; startEditing: boolean 
       <CardSheet
         visible={cardSheet !== null}
         card={editingCard}
-        zone={editingCardZone}
-        tiers={list.tiers}
         onClose={() => setCardSheet(null)}
         onCreate={createCards}
         onUpdate={(patch) => editingCard && store.updateCard(list.id, editingCard.id, patch)}
-        onMove={(zone) => editingCard && store.moveCard(list.id, editingCard.id, zone)}
         onDelete={() => editingCard && store.deleteCard(list.id, editingCard.id)}
       />
 

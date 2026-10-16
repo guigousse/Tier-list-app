@@ -5,7 +5,7 @@ import { CARD_COLORS, colors, spacing } from '../../constants/theme';
 import { cardPreview } from '../../lib/cardPreview';
 import { deleteCardImage, downloadCardImage, pickCardImage } from '../../lib/images';
 import { findImages, searchTerm, type WikiImage } from '../../lib/wikimedia';
-import { POOL, type Card, type Tier, type Zone } from '../../store/types';
+import type { Card } from '../../store/types';
 import { CardView } from '../CardView';
 import { ColorPicker } from '../ColorPicker';
 import { Button, Chip, Field, Sheet } from '../ui';
@@ -16,16 +16,13 @@ type Props = {
   visible: boolean;
   /** Card being edited, or null to create new ones. */
   card: Card | null;
-  zone: Zone | null;
-  tiers: Tier[];
   onClose: () => void;
   onCreate: (drafts: CardDraft[]) => void;
   onUpdate: (patch: CardDraft) => void;
-  onMove: (zone: Zone) => void;
   onDelete: () => void;
 };
 
-export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpdate, onMove, onDelete }: Props) {
+export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete }: Props) {
   const [label, setLabel] = useState('');
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [imageName, setImageName] = useState<string | undefined>();
@@ -221,18 +218,6 @@ export function CardSheet({ visible, card, zone, tiers, onClose, onCreate, onUpd
               />
             </View>
           </View>
-
-          {card ? (
-            <View style={{ gap: spacing.sm }}>
-              <Text style={styles.label}>Placer dans</Text>
-              <View style={styles.wrap}>
-                {tiers.map((t) => (
-                  <Chip key={t.id} label={t.label} selected={zone === t.id} onPress={() => onMove(t.id)} />
-                ))}
-                <Chip label="Non classée" selected={zone === POOL} onPress={() => onMove(POOL)} />
-              </View>
-            </View>
-          ) : null}
 
           <View style={{ gap: spacing.sm }}>
             <Text style={styles.label}>Image</Text>
