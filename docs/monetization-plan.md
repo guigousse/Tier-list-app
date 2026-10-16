@@ -102,6 +102,14 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   (≈ 1,4 c€). 3 crédits rapportent 2,4 c€ (pack 1 750) à 3,5 c€ (pack 60) : rentable
   partout. Sur Opus, ce pire cas (≈ 3 ¢ $) aurait été à perte avec le plus gros pack.
   Une liste de 10 cartes illustrées coûte 21 crédits (3 + 18).
+- **Noms de rangs : Opus 5.5 gardé** (comparé le 16 octobre, 10 cas, les 5 tons) :
+  ≈ 0,43 ¢ $ l'appel sur Opus, ≈ 0,21 ¢ $ sur Sonnet, une différence négligeable devant
+  les 3 crédits. Mais Sonnet a dépassé la limite de 14 caractères dans 2 cas sur 10
+  (« Festin d'Olympe », « Cendres d'Hadès », « Putain de culte ») : ces noms sont
+  rejetés et le rang garde son ancien nom, alors que la génération est payée. Opus a
+  tout respecté, avec des séries plus fidèles au thème (fromages en humour : « Grand
+  cru / Bien coulant / Ça se tient / Un peu plâtre / Croûte à jeter » contre « Divin /
+  À point / Un peu mou / Trop fait / À jeter »).
 - **Charge only what was delivered** (rule for when credits are real, 2026-10-15): the
   credits are taken on the server once the result is saved, per card or image actually
   received. A failed generation costs the player nothing, even when it cost us (a
