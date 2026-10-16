@@ -9,7 +9,6 @@ import { useResponsive } from '../../lib/layout';
 import { trackState } from '../../lib/rewards';
 import { bestStreak, completedCount, dailyStreak } from '../../lib/streak';
 import { useTierStore } from '../../store/useTierStore';
-import { MyBadges } from './MyBadges';
 import { RewardPath } from './RewardPath';
 
 /**
@@ -58,8 +57,6 @@ export function ProfileRewards() {
 
   return (
     <ScrollView contentContainerStyle={[column, { paddingHorizontal: gutter, paddingTop: spacing.sm, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }]}>
-      <MyBadges />
-
       <View style={styles.section}>
         <View style={styles.head}>
           <Text style={styles.title}>✅ Listes validées · {progress.completed}</Text>
