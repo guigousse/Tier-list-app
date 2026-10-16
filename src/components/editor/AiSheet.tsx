@@ -62,7 +62,6 @@ function Balance({ cost }: { cost: number }) {
         <Text style={styles.recapText}>Votre solde</Text>
         <EnergyAmount amount={balance} style={styles.recapValue} />
       </View>
-      <Text style={styles.hint}>Seul ce qui est livré est décompté : une génération ratée ne coûte rien.</Text>
     </>
   );
 }
