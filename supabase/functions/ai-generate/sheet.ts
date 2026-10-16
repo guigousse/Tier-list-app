@@ -16,11 +16,20 @@ type Pixels = Uint8ClampedArray | Uint8Array;
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 
 /** Square cells, in a layout whose aspect ratio the image model accepts (1:1, 3:2, 4:3, 5:4). */
+/** Formats Gemini draws in; any other is refused (400 INVALID_ARGUMENT). */
+const ASPECTS = new Set(["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"]);
+
 export function gridFor(n: number) {
   const cols = Math.ceil(Math.sqrt(n));
-  const rows = Math.ceil(n / cols);
+  let rows = Math.ceil(n / cols);
+  // 2 cards made a 2:1 sheet, which Gemini refuses: a square grid, a cell left free.
+  if (!ASPECTS.has(aspectOf(cols, rows))) rows = cols;
+  return { cols, rows, aspect: aspectOf(cols, rows) };
+}
+
+function aspectOf(cols: number, rows: number) {
   const d = gcd(cols, rows);
-  return { cols, rows, aspect: `${cols / d}:${rows / d}` };
+  return `${cols / d}:${rows / d}`;
 }
 
 /**
@@ -273,11 +282,15 @@ export function fillSheet<T extends { concept: string }>(missing: T[], wishlist:
 export const isBust = (concept: string) => concept.startsWith("bust-");
 
 /** What Gemini is asked; the style comes from the reference picture sent with it. */
-export function sheetPrompt(cards: { label: string; concept: string; theme?: string }[], cols: number, rows: number) {
+export function sheetPrompt(cards: { label: string; concept: string; theme?: string; symbol?: boolean }[], cols: number, rows: number) {
   // The list's theme settles a homonym the concept alone might not: a "Rose" among colours.
   const list = cards
     .map((c, i) => {
-      const what = isBust(c.concept) ? `a friendly caricature bust (head and shoulders) of ${c.label}, recognizable by face, hairstyle and clothing` : c.concept.replace(/-/g, " ");
+      const what = c.symbol
+        ? `the single most emblematic object, building or creation associated with ${c.label}, with no person and no face`
+        : isBust(c.concept)
+          ? `a friendly caricature bust (head and shoulders) of ${c.label}, recognizable by face, hairstyle and clothing`
+          : c.concept.replace(/-/g, " ");
       return `${i + 1}. ${what} (for a card named "${c.label}"${c.theme ? ` in a list about "${c.theme}"` : ""})`;
     })
     .join("\n");
@@ -326,19 +339,29 @@ export function copyRegion(
 
 /**
  * Draws a sheet, and when Gemini refuses it (no picture: it turns down some real faces,
- * and one refused face loses the whole sheet), draws it again without the busts: the
- * other cards get their picture, the busts none, and are not charged. A refusal costs
- * nothing at Gemini. Tiles come back in the plan's order.
+ * and one refused face loses the whole sheet), draws it again with an emblematic object
+ * in place of each face; the library keeps that object under the bust's concept, since
+ * Gemini would refuse the face again. If even that is refused, the sheet is drawn
+ * without them: the other cards get their picture, the busts none, and are not charged.
+ * A refusal costs nothing at Gemini. Tiles come back in the plan's order.
  */
 export async function drawWithFallback<T extends { concept: string }>(
   plan: T[],
-  draw: (cards: T[]) => Promise<(Uint8Array | null)[]>,
+  draw: (cards: (T & { symbol?: boolean })[]) => Promise<(Uint8Array | null)[]>,
 ): Promise<(Uint8Array | null)[]> {
   try {
     return await draw(plan);
   } catch (e) {
+    const refused = (err: unknown) => err instanceof Error && err.message === "no image";
     const others = plan.filter((c) => !isBust(c.concept));
-    if (!(e instanceof Error) || e.message !== "no image" || others.length === plan.length || others.length === 0) throw e;
+    if (!refused(e) || others.length === plan.length) throw e;
+    // Gemini refuses some real faces (ten architects, 2026-10-16): each person becomes
+    // the object their name stands for (Gustave Eiffel's tower), no one drawn.
+    try {
+      return await draw(plan.map((c) => (isBust(c.concept) ? { ...c, symbol: true } : c)));
+    } catch (again) {
+      if (!refused(again) || others.length === 0) throw again;
+    }
     const tiles = await draw(others);
     let next = 0;
     return plan.map((c) => (isBust(c.concept) ? null : tiles[next++] ?? null));

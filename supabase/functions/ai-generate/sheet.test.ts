@@ -26,6 +26,18 @@ Deno.test("la grille garde des cases carrées et un format que Gemini sait produ
   same(gridFor(20), { cols: 5, rows: 4, aspect: "5:4" });
 });
 
+Deno.test("chaque taille de planche, de 1 à 20, a un format accepté par Gemini", () => {
+  // The list Gemini answers with when the format isn't one of these (400 INVALID_ARGUMENT).
+  const accepted = ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"];
+  for (let n = 1; n <= 20; n++) {
+    const g = gridFor(n);
+    if (!accepted.includes(g.aspect)) throw new Error(`${n} cartes : ${g.aspect}`);
+    if (g.cols * g.rows < n) throw new Error(`${n} cartes dans ${g.cols} × ${g.rows}`);
+  }
+  // Two cards (the non-busts left when a sheet of faces is refused): 2:1 was refused.
+  same(gridFor(2), { cols: 2, rows: 2, aspect: "1:1" });
+});
+
 Deno.test("le fond magenta disparaît, l'objet reste opaque", () => {
   const w = 40, h = 40, px = sheet(w, h);
   paint(px, w, 10, 10, 30, 30, [200, 120, 40]);
@@ -289,7 +301,21 @@ Deno.test("une personne célèbre se dessine en buste caricatural, nommée par s
   same([isBust("bust-barack-obama"), isBust("saxophone"), isBust("robust-tool")], [true, false, false]);
 });
 
-Deno.test("une planche refusée à cause des visages est redessinée sans eux, les autres cartes gardent leur image", async () => {
+Deno.test("une planche refusée à cause des visages est redessinée avec un objet emblématique à leur place", async () => {
+  const plan = [{ concept: "bust-gustave-eiffel", label: "Gustave Eiffel" }, { concept: "pizza", label: "Pizza" }];
+  const asked: string[][] = [];
+  const tiles = await drawWithFallback(plan, async (cards) => {
+    asked.push(cards.map((c) => `${c.concept}${"symbol" in c && c.symbol ? " (objet)" : ""}`));
+    // Gemini refuses the faces, not the objects standing for them.
+    if (cards.some((c) => isBust(c.concept) && !("symbol" in c && c.symbol))) throw new Error("no image");
+    return cards.map((c) => new Uint8Array([c.concept.length]));
+  });
+  same(asked, [["bust-gustave-eiffel", "pizza"], ["bust-gustave-eiffel (objet)", "pizza"]]);
+  // Every card gets its picture.
+  same(tiles.map((t) => (t ? t[0] : null)), [19, 5]);
+});
+
+Deno.test("si même les objets sont refusés, la planche est redessinée sans ces cartes, les autres gardent leur image", async () => {
   const plan = [{ concept: "bust-donald-trump" }, { concept: "saxophone" }, { concept: "bust-joe-biden" }, { concept: "pizza" }];
   const asked: string[][] = [];
   const tiles = await drawWithFallback(plan, async (cards) => {
@@ -297,9 +323,19 @@ Deno.test("une planche refusée à cause des visages est redessinée sans eux, l
     if (cards.some((c) => isBust(c.concept))) throw new Error("no image");
     return cards.map((c) => new Uint8Array([c.concept.length]));
   });
-  same(asked, [["bust-donald-trump", "saxophone", "bust-joe-biden", "pizza"], ["saxophone", "pizza"]]);
+  same(asked, [
+    ["bust-donald-trump", "saxophone", "bust-joe-biden", "pizza"],
+    ["bust-donald-trump", "saxophone", "bust-joe-biden", "pizza"],
+    ["saxophone", "pizza"],
+  ]);
   // Back in the plan's order: the busts without a picture, the others with theirs.
   same(tiles.map((t) => (t ? t[0] : null)), [null, 9, null, 5]);
+});
+
+Deno.test("à la place d'un visage refusé, le dessin montre un objet de la personne, sans personne", () => {
+  const text = sheetPrompt([{ concept: "bust-gustave-eiffel", label: "Gustave Eiffel", symbol: true }], 1, 1);
+  if (!text.includes("1. the single most emblematic object, building or creation associated with Gustave Eiffel, with no person and no face")) throw new Error(text);
+  if (text.includes("caricature")) throw new Error(text);
 });
 
 Deno.test("une planche sans visage qui échoue n'est pas retentée", async () => {
