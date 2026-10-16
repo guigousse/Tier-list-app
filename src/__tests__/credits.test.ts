@@ -1,10 +1,10 @@
 import * as AppIntegrity from '@expo/app-integrity';
 
-import { aiChallenge, aiWallet } from '../lib/api';
+import { aiChallenge, aiWallet, claimListCredits } from '../lib/api';
 import { creditsError, openWallet, useCredits } from '../lib/credits';
 import { useTierStore } from '../store/useTierStore';
 
-jest.mock('../lib/api', () => ({ aiChallenge: jest.fn(), aiWallet: jest.fn() }));
+jest.mock('../lib/api', () => ({ aiChallenge: jest.fn(), aiWallet: jest.fn(), claimListCredits: jest.fn() }));
 jest.mock('../lib/identity', () => ({ saveIdentity: jest.fn(async () => {}) }));
 jest.mock('@expo/app-integrity', () => ({
   isSupported: true,
@@ -14,16 +14,37 @@ jest.mock('@expo/app-integrity', () => ({
 
 const wallet = aiWallet as jest.Mock;
 const challenge = aiChallenge as jest.Mock;
+const claim = claimListCredits as jest.Mock;
 
 beforeEach(() => {
   useTierStore.setState({ walletSecret: null, walletAttested: false });
   useCredits.setState({ balance: null });
   wallet.mockReset();
   challenge.mockReset();
+  claim.mockReset();
+  claim.mockResolvedValue(undefined);
   (AppIntegrity.attestKeyAsync as jest.Mock).mockClear();
 });
 
 describe('credits wallet', () => {
+  it('claims the credits of the lists path once the wallet is open', async () => {
+    challenge.mockRejectedValue(new Error('offline'));
+    wallet.mockResolvedValue({ balance: 7, attested: false });
+    claim.mockResolvedValue(17);
+
+    expect(await openWallet()).toBe(17);
+    expect(claim).toHaveBeenCalledWith(useTierStore.getState().deviceId, useTierStore.getState().walletSecret);
+    expect(useCredits.getState().balance).toBe(17);
+  });
+
+  it('keeps the wallet balance when the claim fails', async () => {
+    challenge.mockRejectedValue(new Error('offline'));
+    wallet.mockResolvedValue({ balance: 7, attested: false });
+    claim.mockRejectedValue(new Error('offline'));
+
+    expect(await openWallet()).toBe(7);
+  });
+
   it('opens the wallet once with a long random secret, attested by Apple for the welcome bonus', async () => {
     challenge.mockResolvedValue({ challenge: 'c-1' });
     wallet.mockResolvedValue({ balance: 30, attested: true });

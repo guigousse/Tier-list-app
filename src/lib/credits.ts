@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { useTierStore } from '../store/useTierStore';
-import { aiChallenge, aiWallet, type Attestation } from './api';
+import { aiChallenge, aiWallet, claimListCredits, type Attestation } from './api';
 import { newId } from './id';
 import { saveIdentity } from './identity';
 
@@ -64,6 +64,8 @@ export function openWallet(): Promise<number | null> {
       const { balance, attested } = await aiWallet(useTierStore.getState().deviceId, wallet, proof);
       if (attested) useTierStore.setState({ walletAttested: true });
       setBalance(balance);
+      // Credits of the lists path; the wallet's balance stays if this fails.
+      setBalance(await claimListCredits(useTierStore.getState().deviceId, wallet).catch(() => undefined));
     } catch {
       // Out of reach: the next opening tries again.
     }

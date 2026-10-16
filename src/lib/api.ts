@@ -105,6 +105,14 @@ export function aiWallet(deviceId: string, wallet: string, attest?: Attestation)
 }
 
 /**
+ * Pays the credits of the lists path reached by this device (5 every 25 lists, counted
+ * by the server from its votes) into the wallet; returns the balance.
+ */
+export function claimListCredits(deviceId: string, wallet: string): Promise<number> {
+  return rpc<number>('claim_list_credits', { wallet, device_id: deviceId });
+}
+
+/**
  * Credits an energy pack bought in the App Store: `transaction` is StoreKit's signed
  * transaction, checked by the server against Apple's certificates. `credited` is false
  * when it had already been credited.

@@ -1,6 +1,6 @@
 // AI tier list generation, called by the app (the AI key never ships in the app).
 //   { action: "challenge", deviceId } -> { challenge }  (one-use, for App Attest)
-//   { action: "wallet", deviceId, wallet, keyId?, attestation?, challenge? } -> { balance, attested }  (pays the lists path's credits too)
+//   { action: "wallet", deviceId, wallet, keyId?, attestation?, challenge? } -> { balance, attested }
 //   { action: "words", deviceId, wallet, theme, count, existing } -> { cards: [{ label, emoji, concept }], balance }
 //   { action: "tiers", deviceId, wallet, theme, current, tone, cards? } -> { labels, balance }  (best first)
 //   { action: "icons", deviceId, wallet, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }], balance }
@@ -205,10 +205,6 @@ Deno.serve(async (req) => {
           console.error("attest", e instanceof Error ? e.message : e);
         }
       }
-      // Credits of the lists path (every 25 lists), counted from this device's votes.
-      const milestones = await db.rpc("wallet_milestones", { secret: wallet, device_id: deviceId });
-      if (milestones.error) console.error("milestones", milestones.error.message);
-      else balance = milestones.data as number;
       return json({ balance, attested });
     }
 
