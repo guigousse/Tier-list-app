@@ -57,6 +57,12 @@ type State = {
   badgeChoices: Record<string, string>;
   /** Badges shown on the profile, up to 3. */
   shownBadges: string[];
+  /**
+   * Last step celebrated on each reward path (MilestoneCelebration): what lies beyond is
+   * shown full screen, once. null until the app first sees the player's progress, which
+   * then counts as celebrated: no flood of the steps passed before this feature.
+   */
+  celebrated: { lists: number; flame: number } | null;
   /** Secret of this install's credits wallet (the balance itself lives on the server). */
   walletSecret: string | null;
   /** Apple vouched for this install once (App Attest): the welcome bonus was asked for. */
@@ -152,6 +158,7 @@ type Persisted = {
   viewedMail?: string[];
   badgeChoices?: Record<string, string>;
   shownBadges?: string[];
+  celebrated?: { lists: number; flame: number } | null;
   walletSecret?: string | null;
   walletAttested?: boolean;
 };
@@ -171,6 +178,10 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
     // v5: credits wallet. None yet: it opens at the next launch.
     data.walletSecret = null;
     data.walletAttested = false;
+  }
+  if (version < 6) {
+    // v6: steps celebrated full screen. None: the first launch starts from the player's progress.
+    data.celebrated = null;
   }
   return data;
 }
@@ -199,6 +210,7 @@ export const useTierStore = create<State>()(
         viewedMail: [],
         badgeChoices: {},
         shownBadges: [],
+        celebrated: null,
         walletSecret: null,
         walletAttested: false,
 
@@ -522,7 +534,7 @@ export const useTierStore = create<State>()(
     {
       name: STORE_KEY,
       // Bump with every change to the persisted shape, and handle it in `migrate`.
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => migrateStore(persisted, version),
       // Unreadable data (corrupted, or a migration that throws): keep a copy aside
       // and start from the defaults, rather than staying on a blank screen.
@@ -539,6 +551,7 @@ export const useTierStore = create<State>()(
         viewedMail: state.viewedMail,
         badgeChoices: state.badgeChoices,
         shownBadges: state.shownBadges,
+        celebrated: state.celebrated,
         walletSecret: state.walletSecret,
         walletAttested: state.walletAttested,
       }),
@@ -553,6 +566,7 @@ export const useTierStore = create<State>()(
           viewedMail: p.viewedMail ?? current.viewedMail,
           badgeChoices: p.badgeChoices ?? current.badgeChoices,
           shownBadges: p.shownBadges ?? current.shownBadges,
+          celebrated: p.celebrated ?? current.celebrated,
           walletSecret: p.walletSecret ?? current.walletSecret,
           walletAttested: p.walletAttested ?? current.walletAttested,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },

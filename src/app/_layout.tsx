@@ -13,6 +13,7 @@ import { restoreIdentity } from '../lib/identity';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
 import { preloadSounds } from '../lib/sound';
 import { AppHeader } from '../components/AppHeader';
+import { MilestoneWatcher } from '../components/rewards/MilestoneWatcher';
 import { useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated } from '../store/useTierStore';
@@ -131,6 +132,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="editor/[id]" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
+          <MilestoneWatcher />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -2,7 +2,7 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 
 import { useTierStore } from '../store/useTierStore';
 
-type Sound = 'click' | 'tick' | 'pop' | 'sparkle' | 'thunder' | 'coin';
+type Sound = 'click' | 'tick' | 'pop' | 'sparkle' | 'thunder' | 'coin' | 'complete';
 
 const SOURCES: Record<Sound, number> = {
   click: require('../../assets/sounds/click.wav'),
@@ -13,19 +13,21 @@ const SOURCES: Record<Sound, number> = {
   // Made by scripts/generate-purchase-sounds.py: a pack bought in the shop.
   thunder: require('../../assets/sounds/thunder.wav'),
   coin: require('../../assets/sounds/coin.wav'),
+  // Made by scripts/generate-reward-sounds.py: a reward reaching the player's profile.
+  complete: require('../../assets/sounds/complete.wav'),
 };
 // Files peak at 0.8: these volumes give Broc's own levels (click 0.4, tick 0.18, pop 0.42).
 // The sparkle lasts 0.65 s, ten times the click: softer, or it would cover the screen.
 // The coin rings ~16 times in a row while the balance counts: low, or it would grate.
-const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525, sparkle: 0.35, thunder: 0.6, coin: 0.3 };
+const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525, sparkle: 0.35, thunder: 0.6, coin: 0.3, complete: 0.4 };
 /** Players per sound, used in turn so quick repeats can overlap instead of cutting each other. */
-const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2, sparkle: 1, thunder: 1, coin: 3 };
+const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2, sparkle: 1, thunder: 1, coin: 3, complete: 1 };
 /** The same sound asked again within this time is one sound (two handlers on one tap). */
 const SAME_TAP_MS = 60;
 
 const pools: Partial<Record<Sound, AudioPlayer[]>> = {};
-const next: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0 };
-const lastPlayed: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0 };
+const next: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0, complete: 0 };
+const lastPlayed: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0, complete: 0 };
 let modeSet = false;
 
 function pool(sound: Sound): AudioPlayer[] {
@@ -99,6 +101,7 @@ export function preloadSounds(): void {
     pool('sparkle');
     pool('thunder');
     pool('coin');
+    pool('complete');
   } catch {
     // Audio unavailable.
   }
@@ -107,6 +110,11 @@ export function preloadSounds(): void {
 /** A bolt striking: a pack bought lands in the shop. */
 export function playThunder(): void {
   play('thunder');
+}
+
+/** A reward reaching the player's profile, after "Récupérer". */
+export function playComplete(): void {
+  play('complete');
 }
 
 /** One coin of the slot machine, while the balance counts up after a purchase. */
