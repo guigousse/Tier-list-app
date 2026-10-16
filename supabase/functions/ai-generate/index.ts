@@ -146,7 +146,9 @@ async function tracked<T>(kind: CostKind, run: (meter: Meter) => Promise<{ value
     ok = true;
     return out;
   } finally {
-    if (meter.calls) {
+    // Also a generation that cost nothing and was paid (every image already in the
+    // library): the reuse is where the margin grows. Nothing called, nothing paid: no row.
+    if (meter.calls || charged) {
       const { error } = await db.from("ai_costs").insert(costRow(kind, meter, charged, ok));
       if (error) console.error("ai_costs", error.message);
     }
