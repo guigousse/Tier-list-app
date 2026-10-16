@@ -54,8 +54,18 @@ function tileWhite(px: Pixels, i: number) {
   return (lo >= 200 && hi - lo <= 40) || (r >= 200 && b >= 200 && g >= 150 && Math.abs(r - b) < 30);
 }
 
-/** Rows (or columns) solid across the sheet, but only in bands a few pixels thick. */
-function lineBands(solid: boolean[], maxThickness: number) {
+/**
+ * Rows (or columns) solid across the sheet, but only in bands a few pixels thick that
+ * lie on a border between cells. An icon is widest near its cell's middle: the thin
+ * rims of a row of plates, nearly touching, passed for a line and were cut out of
+ * every icon (blanquette, cassoulet, choucroute), and the tiles were kept like that.
+ */
+function lineBands(solid: boolean[], maxThickness: number, cells: number) {
+  const cell = solid.length / cells;
+  const nearBorder = (k: number) => {
+    const off = k % cell;
+    return Math.min(off, cell - off) <= cell * 0.1;
+  };
   const lines: number[] = [];
   for (let a = 0; a < solid.length; ) {
     if (!solid[a]) {
@@ -64,7 +74,7 @@ function lineBands(solid: boolean[], maxThickness: number) {
     }
     let b = a;
     while (b < solid.length && solid[b]) b++;
-    if (b - a <= maxThickness) for (let k = a; k < b; k++) lines.push(k);
+    if (b - a <= maxThickness && nearBorder((a + b - 1) / 2)) for (let k = a; k < b; k++) lines.push(k);
     a = b;
   }
   return lines;
@@ -139,21 +149,10 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
   }
 
   // Grid lines: rows or columns solid across almost the whole sheet, a few pixels
-  // thick. Icons never are, each one keeps a magenta margin in its cell. Without the
-  // thickness bound, tiles laid nearly edge to edge passed for a grid and every row
-  // through them was wiped, icons included: only the tiles' rounded tops survived.
-  const rowSolid = Array.from({ length: h }, (_, y) => {
-    let solid = 0;
-    for (let x = 0; x < w; x++) solid += clear[y * w + x] ? 0 : 1;
-    return solid >= w * 0.85;
-  });
-  const colSolid = Array.from({ length: w }, (_, x) => {
-    let solid = 0;
-    for (let y = 0; y < h; y++) solid += clear[y * w + x] ? 0 : 1;
-    return solid >= h * 0.85;
-  });
-  for (const y of lineBands(rowSolid, Math.max(3, h * 0.02))) for (let x = 0; x < w; x++) clear[y * w + x] = 1;
-  for (const x of lineBands(colSolid, Math.max(3, w * 0.02))) for (let y = 0; y < h; y++) clear[y * w + x] = 1;
+  // thick. Without the thickness bound, tiles laid nearly edge to edge passed for a
+  // grid and every row through them was wiped, icons included: only the tiles'
+  // rounded tops survived. Without the grid, nothing says where a line may lie.
+  if (grid) wipeGridLines(clear, w, h, grid);
   // Transparent black, not transparent magenta: resizing a tile blends neighbours'
   // colours whatever their alpha, and the magenta would come back as a pink rim.
   for (let p = 0; p < n; p++) if (clear[p]) px.fill(0, p * 4, p * 4 + 4);
@@ -172,6 +171,21 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
       px[i + 2] -= spill;
     }
   }
+}
+
+function wipeGridLines(clear: Uint8Array, w: number, h: number, grid: { cols: number; rows: number }) {
+  const rowSolid = Array.from({ length: h }, (_, y) => {
+    let solid = 0;
+    for (let x = 0; x < w; x++) solid += clear[y * w + x] ? 0 : 1;
+    return solid >= w * 0.85;
+  });
+  const colSolid = Array.from({ length: w }, (_, x) => {
+    let solid = 0;
+    for (let y = 0; y < h; y++) solid += clear[y * w + x] ? 0 : 1;
+    return solid >= h * 0.85;
+  });
+  for (const y of lineBands(rowSolid, Math.max(3, h * 0.02), grid.rows)) for (let x = 0; x < w; x++) clear[y * w + x] = 1;
+  for (const x of lineBands(colSolid, Math.max(3, w * 0.02), grid.cols)) for (let y = 0; y < h; y++) clear[y * w + x] = 1;
 }
 
 /**

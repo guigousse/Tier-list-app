@@ -113,7 +113,7 @@ Deno.test("une grille dessinée par le modèle n'empêche pas de vider le fond d
   paint(px, w, 0, 14, 60, 16, [60, 20, 40]); // trait horizontal sur toute la largeur
   paint(px, w, 36, 3, 50, 10, [230, 160, 90]);
   paint(px, w, 36, 10, 50, 12, [120, 10, 110]); // ombre teintée, enfermée par la grille
-  clearBackground(px, w, h);
+  clearBackground(px, w, h, { cols: 2, rows: 2 });
   same(alpha(px, w, 40, 11), 0);
   same(alpha(px, w, 30, 5), 0);
   same(alpha(px, w, 10, 15), 0);
@@ -127,6 +127,20 @@ Deno.test("une rangée d'icônes larges n'est pas prise pour un trait de grille"
   clearBackground(px, w, h);
   same(alpha(px, w, 20, 15), 255);
   same(alpha(px, w, 40, 15), 255);
+});
+
+Deno.test("le rebord fin d'une rangée d'assiettes larges n'est pas effacé comme un trait de grille", () => {
+  // Planche « plats français » : blanquette, cassoulet, choucroute coupés net par
+  // une bande transparente à hauteur de leurs rebords, presque jointifs d'une case à l'autre.
+  const w = 200, h = 100, px = sheet(w, h);
+  for (let i = 0; i < 4; i++) {
+    const x = i * 50;
+    paint(px, w, x + 1, 24, x + 49, 26, [240, 230, 213]); // rebord : 2 px, 96 % de la case
+    paint(px, w, x + 12, 15, x + 38, 35, [230, 160, 90]); // le plat
+  }
+  clearBackground(px, w, h, { cols: 4, rows: 2 });
+  same(alpha(px, w, 25, 25), 255);
+  same(alpha(px, w, 5, 25), 255);
 });
 
 /** A white tile with rounded corners, as Gemini lays behind each icon despite the prompt. */
