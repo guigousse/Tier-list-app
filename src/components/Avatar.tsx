@@ -5,12 +5,25 @@ import { SvgXml } from 'react-native-svg';
 import { avatarSvg, decodeAvatar, isAvatarCode, type AvatarConfig, type AvatarZoom } from '../lib/avatar';
 import { avatarColor } from '../lib/social';
 
-/** An avatar drawn from its settings (used by the avatar editor for live previews), or a close-up of it. */
-export const AvatarDrawing = memo(function AvatarDrawing({ config, size, zoom }: { config: AvatarConfig; size: number; zoom?: AvatarZoom }) {
+/**
+ * An avatar drawn from its settings (used by the avatar editor for live previews), or a
+ * close-up of it. `focus`: all grey but that part, for rewards shown on the mannequin.
+ */
+export const AvatarDrawing = memo(function AvatarDrawing({
+  config,
+  size,
+  zoom,
+  focus,
+}: {
+  config: AvatarConfig;
+  size: number;
+  zoom?: AvatarZoom;
+  focus?: keyof AvatarConfig;
+}) {
   // Gradient ids unique to this drawing: on the web, every avatar of every screen
   // (hidden ones included) lives in the same page.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const xml = useMemo(() => avatarSvg(config, uid, zoom), [config, uid, zoom]);
+  const xml = useMemo(() => avatarSvg(config, uid, zoom, focus), [config, uid, zoom, focus]);
   return <SvgXml xml={xml} width={size} height={size} />;
 });
 

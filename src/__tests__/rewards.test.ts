@@ -2,13 +2,45 @@ import { stickerSvg } from '../lib/stickers';
 import { chooseBadge, FORKS, knownBadges, pendingForks, placeBadge } from '../lib/badges';
 import { useTierStore } from '../store/useTierStore';
 import { isArchived, type Mail } from '../store/useMail';
-import { milestones, stretchFill, trackState } from '../lib/rewards';
+import { lineFill, milestones, stretchFill, trackState } from '../lib/rewards';
 
 describe('reward paths', () => {
   it('has a reward at every step of both paths', () => {
-    expect(milestones('lists').map((m) => m.at)).toEqual([1, 3, 5, 10, 15, 25, 40, 50, 75, 100]);
     expect(milestones('flame').map((m) => m.at)).toEqual([1, 3, 7, 14, 21, 30, 50, 100]);
-    expect([...milestones('lists'), ...milestones('flame')].every((m) => m.rewards.length > 0)).toBe(true);
+    expect([...milestones('lists'), ...milestones('flame')].every((m) => m.rewards.length > 0 || (m.credits ?? 0) > 0)).toBe(true);
+  });
+
+  it('spreads the lists path out to 300, one item per step', () => {
+    const items = milestones('lists').filter((m) => m.rewards.length > 0);
+    expect(items.every((m) => m.rewards.length === 1)).toBe(true);
+    expect(items[0].at).toBe(1);
+    expect(items[items.length - 1].at).toBeGreaterThanOrEqual(250);
+    expect(Math.max(...FORKS.map((f) => f.at))).toBeGreaterThanOrEqual(200);
+  });
+
+  it('gives 5 credits every 25 lists, and only on the lists path', () => {
+    const credits = milestones('lists').filter((m) => m.credits);
+    expect(credits.map((m) => m.at)).toEqual([25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300]);
+    expect(credits.every((m) => m.credits === 5)).toBe(true);
+    expect(milestones('flame').some((m) => m.credits)).toBe(false);
+  });
+
+  it('keeps giving credits past the end of the path', () => {
+    const ats = milestones('lists', 340).map((m) => m.at);
+    expect(ats).toContain(325);
+    expect(ats).toContain(350);
+    expect(ats).not.toContain(375);
+  });
+
+  it('never puts two things on the same step of the lists path', () => {
+    const ats = [...milestones('lists').map((m) => m.at), ...FORKS.map((f) => f.at)];
+    expect(new Set(ats).size).toBe(ats.length);
+  });
+
+  it('places the filled line between the steps', () => {
+    expect(lineFill(0, [0, 25, 50])).toBe(0);
+    expect(lineFill(30, [0, 25, 50])).toBeCloseTo(1.2);
+    expect(lineFill(80, [0, 25, 50])).toBe(2);
   });
 
   it('follows the current flame but keeps the rewards of the best one', () => {
@@ -44,9 +76,9 @@ describe('badges', () => {
   beforeEach(() => useTierStore.setState({ badgeChoices: {}, shownBadges: [], profile: null }));
 
   it('offers each fork once reached, between two badges found by id', () => {
-    expect(pendingForks(1, {}).length).toBe(0);
-    expect(pendingForks(12, {}).map((f) => f.id)).toEqual(['food', 'pet', 'sauce']);
-    expect(pendingForks(12, { food: 'pizza' }).map((f) => f.id)).toEqual(['pet', 'sauce']);
+    expect(pendingForks(11, {}).length).toBe(0);
+    expect(pendingForks(60, {}).map((f) => f.id)).toEqual(['food', 'pet', 'sauce']);
+    expect(pendingForks(60, { food: 'pizza' }).map((f) => f.id)).toEqual(['pet', 'sauce']);
     expect(new Set(FORKS.flatMap((f) => f.options.map((b) => b.id))).size).toBe(FORKS.length * 2);
     expect(knownBadges(['pizza', 'from-a-newer-app']).map((b) => b.id)).toEqual(['pizza']);
   });

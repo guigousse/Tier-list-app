@@ -19,7 +19,7 @@ export type Fork = { id: string; at: number; question: string; options: [Badge, 
 export const FORKS: Fork[] = [
   {
     id: 'food',
-    at: 2,
+    at: 12,
     question: 'Pizza ou burger ?',
     options: [
       { id: 'pizza', label: 'Team Pizza', glow: '#FFB020' },
@@ -28,7 +28,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'pet',
-    at: 7,
+    at: 35,
     question: 'Chien ou chat ?',
     options: [
       { id: 'dog', label: 'Team Chien', glow: '#E0A86C' },
@@ -37,7 +37,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'sauce',
-    at: 12,
+    at: 60,
     question: 'Ketchup ou mayo ?',
     options: [
       { id: 'ketchup', label: 'Team Ketchup', glow: '#E8352B' },
@@ -46,7 +46,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'holiday',
-    at: 20,
+    at: 90,
     question: 'Mer ou montagne ?',
     options: [
       { id: 'sea', label: 'Team Mer', glow: '#3E9BE8' },
@@ -55,7 +55,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'taste',
-    at: 30,
+    at: 120,
     question: 'Sucré ou salé ?',
     options: [
       { id: 'sweet', label: 'Team Sucré', glow: '#FF7EB3' },
@@ -64,7 +64,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'drink',
-    at: 45,
+    at: 160,
     question: 'Café ou thé ?',
     options: [
       { id: 'coffee', label: 'Team Café', glow: '#FF7A59' },
@@ -73,7 +73,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'rhythm',
-    at: 60,
+    at: 190,
     question: 'Lève-tôt ou couche-tard ?',
     options: [
       { id: 'early', label: 'Lève-tôt', glow: '#FFB020' },
@@ -82,7 +82,7 @@ export const FORKS: Fork[] = [
   },
   {
     id: 'crew',
-    at: 85,
+    at: 240,
     question: 'Pirate ou ninja ?',
     options: [
       { id: 'pirate', label: 'Team Pirate', glow: '#F2C14E' },

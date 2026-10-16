@@ -6,7 +6,9 @@ import {
   HATS,
   isAvatarCode,
   isUnlocked,
+  MANNEQUIN,
   randomAvatar,
+  SKINS,
   type AvatarConfig,
 } from '../lib/avatar';
 import { bestStreak, completedCount } from '../lib/streak';
@@ -72,5 +74,15 @@ describe('unlocks', () => {
     expect(isUnlocked({ unlock: { streak: 7 } }, { bestStreak: 7, completed: 0 })).toBe(true);
     expect(isUnlocked({ unlock: { completed: 10 } }, { bestStreak: 0, completed: 10 })).toBe(true);
     expect(isUnlocked({}, { bestStreak: 0, completed: 0 })).toBe(true);
+  });
+
+  it('draws a reward on a grey mannequin, the item alone in colour', () => {
+    const crown = avatarSvg({ ...MANNEQUIN, hat: 'crown' }, 'u', undefined, 'hat');
+    expect(crown).toContain('#FFC93C');
+    expect(crown).not.toContain(SKINS.find((s) => s.id === MANNEQUIN.skin)!.fill);
+    const alien = avatarSvg({ ...MANNEQUIN, skin: 'alien' }, 'u', undefined, 'skin');
+    expect(alien).toContain('#9FE07F');
+    const plain = avatarSvg(MANNEQUIN, 'u');
+    expect(plain).toContain(SKINS.find((s) => s.id === MANNEQUIN.skin)!.fill);
   });
 });

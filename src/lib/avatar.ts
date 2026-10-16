@@ -36,8 +36,8 @@ export const SKINS: Skin[] = [
   { id: 'p6', label: 'Très foncé', fill: '#5E3B25', shade: '#472B1A' },
   { id: 'emoji', label: 'Emoji', fill: '#FFCC4D', shade: '#EDA634' },
   { id: 'alien', label: 'Alien', fill: '#9FE07F', shade: '#77BF5B', unlock: { streak: 14 } },
-  { id: 'smurf', label: 'Bleu', fill: '#8DBBFF', shade: '#6A98E6', unlock: { completed: 25 } },
-  { id: 'robot', label: 'Robot', fill: '#C3CCDA', shade: '#98A3B5', unlock: { completed: 50 } },
+  { id: 'smurf', label: 'Bleu', fill: '#8DBBFF', shade: '#6A98E6', unlock: { completed: 110 } },
+  { id: 'robot', label: 'Robot', fill: '#C3CCDA', shade: '#98A3B5', unlock: { completed: 210 } },
 ];
 
 export const HAIR_STYLES: Item[] = [
@@ -50,7 +50,7 @@ export const HAIR_STYLES: Item[] = [
   { id: 'bob', label: 'Carré' },
   { id: 'bun', label: 'Chignon' },
   { id: 'afro', label: 'Afro' },
-  { id: 'pony', label: 'Queue', unlock: { completed: 5 } },
+  { id: 'pony', label: 'Queue', unlock: { completed: 15 } },
   { id: 'mohawk', label: 'Crête', unlock: { streak: 7 } },
 ];
 
@@ -62,9 +62,9 @@ export const HAIR_COLORS: HairColor[] = [
   { id: 'red', label: 'Roux', fill: '#C4552C' },
   { id: 'grey', label: 'Gris', fill: '#BDB7B0' },
   { id: 'pink', label: 'Rose', fill: '#FF86B6', unlock: { streak: 7 } },
-  { id: 'blue', label: 'Bleu', fill: '#4C8DFF', unlock: { completed: 10 } },
+  { id: 'blue', label: 'Bleu', fill: '#4C8DFF', unlock: { completed: 30 } },
   { id: 'purple', label: 'Violet', fill: '#9466FF', unlock: { streak: 30 } },
-  { id: 'green', label: 'Vert', fill: '#3FBF7F', unlock: { completed: 3 } },
+  { id: 'green', label: 'Vert', fill: '#3FBF7F', unlock: { completed: 8 } },
   { id: 'flame', label: 'Flamme', fill: '#FF6A2B', unlock: { streak: 3 } },
 ];
 
@@ -74,7 +74,7 @@ export const EYE_SHAPES: Item[] = [
   { id: 'almond', label: 'En amande' },
   { id: 'sleepy', label: 'Paupières' },
   { id: 'happy', label: 'Rieurs' },
-  { id: 'wink', label: 'Clin d’œil', unlock: { completed: 10 } },
+  { id: 'wink', label: 'Clin d’œil', unlock: { completed: 40 } },
 ];
 
 export const EYE_COLORS: EyeColor[] = [
@@ -84,7 +84,7 @@ export const EYE_COLORS: EyeColor[] = [
   { id: 'blue', label: 'Bleu', fill: '#3B80DB' },
   { id: 'grey', label: 'Gris', fill: '#7D8B97' },
   { id: 'violet', label: 'Violet', fill: '#8B5CF6', unlock: { streak: 14 } },
-  { id: 'gold', label: 'Or', fill: '#E0A21B', unlock: { completed: 25 } },
+  { id: 'gold', label: 'Or', fill: '#E0A21B', unlock: { completed: 130 } },
   { id: 'ruby', label: 'Rubis', fill: '#E0303A', unlock: { streak: 21 } },
 ];
 
@@ -114,7 +114,7 @@ export const BEARDS: Item[] = [
   { id: 'goatee', label: 'Bouc' },
   { id: 'short', label: 'Barbe courte' },
   { id: 'full', label: 'Barbe fournie' },
-  { id: 'handlebar', label: 'Guidon', unlock: { completed: 10 } },
+  { id: 'handlebar', label: 'Guidon', unlock: { completed: 55 } },
 ];
 
 export const HATS: Item[] = [
@@ -122,11 +122,11 @@ export const HATS: Item[] = [
   { id: 'cap', label: 'Casquette' },
   { id: 'beanie', label: 'Bonnet' },
   { id: 'crown', label: 'Couronne', unlock: { streak: 7 } },
-  { id: 'headphones', label: 'Casque', unlock: { completed: 10 } },
+  { id: 'headphones', label: 'Casque', unlock: { completed: 65 } },
   { id: 'wizard', label: 'Sorcier', unlock: { streak: 30 } },
   { id: 'party', label: 'Chapeau de fête', unlock: { completed: 1 } },
-  { id: 'tophat', label: 'Haut-de-forme', unlock: { completed: 40 } },
-  { id: 'halo', label: 'Auréole', unlock: { completed: 75 } },
+  { id: 'tophat', label: 'Haut-de-forme', unlock: { completed: 170 } },
+  { id: 'halo', label: 'Auréole', unlock: { completed: 260 } },
   { id: 'horns', label: 'Cornes', unlock: { streak: 50 } },
 ];
 
@@ -134,9 +134,9 @@ export const GLASSES: Item[] = [
   { id: 'none', label: 'Aucunes' },
   { id: 'round', label: 'Rondes' },
   { id: 'square', label: 'Carrées' },
-  { id: 'sun', label: 'Soleil', unlock: { completed: 5 } },
+  { id: 'sun', label: 'Soleil', unlock: { completed: 20 } },
   { id: 'heart', label: 'Cœur', unlock: { streak: 14 } },
-  { id: 'star', label: 'Étoiles', unlock: { completed: 15 } },
+  { id: 'star', label: 'Étoiles', unlock: { completed: 80 } },
 ];
 
 export const BACKGROUNDS: Background[] = [
@@ -147,11 +147,11 @@ export const BACKGROUNDS: Background[] = [
   { id: 'sun', label: 'Soleil', stops: ['#FFE6A3', '#FFAE45'], shirt: '#5B3FE0' },
   { id: 'night', label: 'Nuit', stops: ['#3E4566', '#191D2B'], shirt: '#7C5CFF' },
   { id: 'rainbow', label: 'Arc-en-ciel', stops: ['#FF7F7F', '#FFD36E', '#7FE3A0', '#7FB8FF', '#B98BFF'], shirt: '#FFFFFF', unlock: { streak: 7 } },
-  { id: 'gold', label: 'Or', stops: ['#FFE9A6', '#E2A72E'], shirt: '#2D3047', unlock: { completed: 25 } },
+  { id: 'gold', label: 'Or', stops: ['#FFE9A6', '#E2A72E'], shirt: '#2D3047', unlock: { completed: 140 } },
   { id: 'galaxy', label: 'Galaxie', stops: ['#4B2C8F', '#0F0B26'], shirt: '#FF86B6', stars: true, unlock: { streak: 30 } },
   { id: 'ember', label: 'Braise', stops: ['#FFB36B', '#E2462B'], shirt: '#2D3047', unlock: { streak: 1 } },
   { id: 'inferno', label: 'Volcan', stops: ['#FFD36E', '#FF5A1F', '#4A0D0D'], shirt: '#FFD36E', stars: true, unlock: { streak: 100 } },
-  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, unlock: { completed: 100 } },
+  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, unlock: { completed: 290 } },
 ];
 
 export type AvatarConfig = {
@@ -667,8 +667,50 @@ function beard(id: string, paint: string, strands: string, fill: string, face: {
 /** Part of the drawing to show, for close-ups (e.g. on the eyes): square from (x, y). */
 export type AvatarZoom = { x: number; y: number; size: number };
 
-/** SVG markup of an avatar (round). `uid` keeps its gradient ids apart from other avatars'. */
-export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8, y: 12, size: 104 }): string {
+/** The generic character rewards are shown on: plain, so the item is all one sees. */
+export const MANNEQUIN: AvatarConfig = { ...DEFAULT_AVATAR, hair: 'short', brows: 'thin', mouth: 'closed' };
+
+/** Groups of the drawing, and the avatar parts that colour each one. */
+type Layer = 'bg' | 'skin' | 'hair' | 'eyes' | 'brows' | 'mouth' | 'beard' | 'hat' | 'glasses';
+const LAYER_OF: Record<keyof AvatarConfig, Layer> = {
+  face: 'skin',
+  skin: 'skin',
+  hair: 'hair',
+  hairColor: 'hair',
+  eyeShape: 'eyes',
+  eyes: 'eyes',
+  brows: 'brows',
+  mouth: 'mouth',
+  beard: 'beard',
+  hat: 'hat',
+  glasses: 'glasses',
+  bg: 'bg',
+};
+const GRADIENTS = ['bg', 'glow', 'skin', 'hair', 'iris', 'blush', 'shirt'];
+/** The gradients each group paints with, to leave the others out in colour. */
+const LAYER_GRADIENTS: Partial<Record<Layer, string[]>> = { bg: ['bg', 'glow', 'shirt'], skin: ['skin', 'blush'], hair: ['hair'], beard: ['hair'], eyes: ['iris'] };
+
+/** A colour as a grey of the same lightness, a little flattened: the mannequin's clay. */
+function clay(hex: string): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const v = Math.round(62 + (0.299 * r + 0.587 * g + 0.114 * b) * 0.6);
+  const h = v.toString(16).padStart(2, '0');
+  return `#${h}${h}${h}`;
+}
+
+/** SVG markup in clay greys, its gradients swapped for their grey copies. */
+function inClay(markup: string): string {
+  return markup
+    .replace(/#[0-9A-Fa-f]{6}\b/g, clay)
+    .replace(new RegExp(`(url\\(#|id=")(${GRADIENTS.join('|')})-`, 'g'), '$1$2G-');
+}
+
+/**
+ * SVG markup of an avatar (round). `uid` keeps its gradient ids apart from other avatars'.
+ * `focus`: everything is grey but that part, to show an item off on the mannequin.
+ */
+export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8, y: 12, size: 104 }, focus?: keyof AvatarConfig): string {
+  const layer = (name: Layer, markup: string) => (focus && LAYER_OF[focus] !== name ? inClay(markup) : markup);
   const skin = pick(SKINS, c.skin, DEFAULT_AVATAR.skin);
   const hairFill = pick(HAIR_COLORS, c.hairColor, DEFAULT_AVATAR.hairColor).fill;
   const eyeFill = pick(EYE_COLORS, c.eyes, DEFAULT_AVATAR.eyes).fill;
@@ -693,46 +735,51 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8,
   const [earL, earR] = EARS;
   const faceD = `${HEAD_TOP} ${face.jaw} Z`;
   const half = zoom.size / 2;
+  const gradients = [
+    `<linearGradient id="${id('bg')}" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient>`,
+    `<radialGradient id="${id('glow')}" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".38"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>`,
+    `<radialGradient id="${id('skin')}" cx=".42" cy=".36" r=".72"><stop offset="0" stop-color="${lighter(skin.fill, 0.14)}"/><stop offset=".6" stop-color="${skin.fill}"/><stop offset="1" stop-color="${mix(skin.fill, skin.shade, 0.55)}"/></radialGradient>`,
+    `<linearGradient id="${id('hair')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(hairFill, 0.14)}"/><stop offset="1" stop-color="${darker(hairFill, 0.12)}"/></linearGradient>`,
+    `<radialGradient id="${id('iris')}" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="${lighter(eyeFill, 0.35)}"/><stop offset="1" stop-color="${darker(eyeFill, 0.15)}"/></radialGradient>`,
+    `<radialGradient id="${id('blush')}"><stop offset="0" stop-color="#FF7F7A" stop-opacity=".5"/><stop offset="1" stop-color="#FF7F7A" stop-opacity="0"/></radialGradient>`,
+    `<linearGradient id="${id('shirt')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(bg.shirt, 0.12)}"/><stop offset="1" stop-color="${darker(bg.shirt, 0.1)}"/></linearGradient>`,
+  ];
+  // With a focus, only its own gradients stay in colour; the rest get clay copies.
+  const coloured = focus ? gradients.filter((_, i) => LAYER_GRADIENTS[LAYER_OF[focus]]?.includes(GRADIENTS[i])) : gradients;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${zoom.x} ${zoom.y} ${zoom.size} ${zoom.size}">
 <defs>
-<linearGradient id="${id('bg')}" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient>
-<radialGradient id="${id('glow')}" cx=".5" cy=".42" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".38"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
-<radialGradient id="${id('skin')}" cx=".42" cy=".36" r=".72"><stop offset="0" stop-color="${lighter(skin.fill, 0.14)}"/><stop offset=".6" stop-color="${skin.fill}"/><stop offset="1" stop-color="${mix(skin.fill, skin.shade, 0.55)}"/></radialGradient>
-<linearGradient id="${id('hair')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(hairFill, 0.14)}"/><stop offset="1" stop-color="${darker(hairFill, 0.12)}"/></linearGradient>
-<radialGradient id="${id('iris')}" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="${lighter(eyeFill, 0.35)}"/><stop offset="1" stop-color="${darker(eyeFill, 0.15)}"/></radialGradient>
-<radialGradient id="${id('blush')}"><stop offset="0" stop-color="#FF7F7A" stop-opacity=".5"/><stop offset="1" stop-color="#FF7F7A" stop-opacity="0"/></radialGradient>
-<linearGradient id="${id('shirt')}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighter(bg.shirt, 0.12)}"/><stop offset="1" stop-color="${darker(bg.shirt, 0.1)}"/></linearGradient>
+${coloured.join('\n')}
+${focus ? inClay(gradients.join('\n')) : ''}
 <clipPath id="${id('clip')}"><circle cx="${zoom.x + half}" cy="${zoom.y + half}" r="${half}"/></clipPath>
 <clipPath id="${id('face')}"><path d="${faceD}"/></clipPath>
 </defs>
 <g clip-path="${url('clip')}">
-<rect width="120" height="130" fill="${url('bg')}"/>
-<circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}
-${h.back}
-<path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88 48.5 92 C47.5 93.6 46 95 44 96.5 L44 106 L76 106 L76 96.5 C74 95 72.5 93.6 71.5 92 C69 88 68.5 83 69 76 Z"/>
-<path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>
-<path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
-<path fill="none" stroke="${darker(bg.shirt, 0.18)}" stroke-width="1.6" stroke-linecap="round" d="M47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5"/>
-${b.behind}
-<g stroke="${skinLine}" stroke-width=".8" stroke-opacity=".55">
+${layer('bg', `<rect width="120" height="130" fill="${url('bg')}"/>
+<circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}`)}
+${layer('hair', h.back)}
+${layer('skin', `<path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88 48.5 92 C47.5 93.6 46 95 44 96.5 L44 106 L76 106 L76 96.5 C74 95 72.5 93.6 71.5 92 C69 88 68.5 83 69 76 Z"/>
+<path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>`)}
+${layer('bg', `<path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
+<path fill="none" stroke="${darker(bg.shirt, 0.18)}" stroke-width="1.6" stroke-linecap="round" d="M47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5"/>`)}
+${layer('beard', b.behind)}
+${layer('skin', `<g stroke="${skinLine}" stroke-width=".8" stroke-opacity=".55">
 <ellipse fill="${skin.fill}" cx="${earL}" cy="62" rx="5.2" ry="6.8"/>
 <ellipse fill="${skin.fill}" cx="${earR}" cy="62" rx="5.2" ry="6.8"/></g>
 <path fill="none" stroke="${skin.shade}" stroke-width="1.5" stroke-linecap="round" d="M${earL + 1.6} 59 C${earL - 1.6} 59.5 ${earL - 1.8} 64 ${earL + 0.8} 65.5 M${earR - 1.6} 59 C${earR + 1.6} 59.5 ${earR + 1.8} 64 ${earR - 0.8} 65.5"/>
 <path fill="${url('skin')}" stroke="${skinLine}" stroke-width="1" stroke-opacity=".45" d="${faceD}"/>
 <ellipse fill="${url('blush')}" cx="45" cy="70.5" rx="6.5" ry="4.2"/>
-<ellipse fill="${url('blush')}" cx="75" cy="70.5" rx="6.5" ry="4.2"/>
-${b.jaw}
-${eye(c.eyeShape, 49, false, url('iris'), skin.fill, skin.shade, skinLine)}
-${eye(c.eyeShape, 71, true, url('iris'), skin.fill, skin.shade, skinLine)}
-${brows(c.brows, browFill)}
-<path fill="${skin.shade}" opacity=".55" d="M57.6 66.6 C58.4 69.4 61.6 69.4 62.4 66.6 C61.4 67.8 58.6 67.8 57.6 66.6 Z"/>
-<path fill="#FFFFFF" opacity=".35" d="M59.2 63 C59.6 64.4 60.4 64.4 60.8 63 Z"/>
-${mouth(c.mouth, skin.shade)}
-${b.mustache}
-${h.front}
-${glasses(c.glasses)}
-${hat(c.hat)}
+<ellipse fill="${url('blush')}" cx="75" cy="70.5" rx="6.5" ry="4.2"/>`)}
+${layer('beard', b.jaw)}
+${layer('eyes', eye(c.eyeShape, 49, false, url('iris'), skin.fill, skin.shade, skinLine) + eye(c.eyeShape, 71, true, url('iris'), skin.fill, skin.shade, skinLine))}
+${layer('brows', brows(c.brows, browFill))}
+${layer('skin', `<path fill="${skin.shade}" opacity=".55" d="M57.6 66.6 C58.4 69.4 61.6 69.4 62.4 66.6 C61.4 67.8 58.6 67.8 57.6 66.6 Z"/>
+<path fill="#FFFFFF" opacity=".35" d="M59.2 63 C59.6 64.4 60.4 64.4 60.8 63 Z"/>`)}
+${layer('mouth', mouth(c.mouth, skin.shade))}
+${layer('beard', b.mustache)}
+${layer('hair', h.front)}
+${layer('glasses', glasses(c.glasses))}
+${layer('hat', hat(c.hat))}
 </g>
 </svg>`;
 }
