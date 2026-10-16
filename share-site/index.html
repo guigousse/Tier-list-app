@@ -3,37 +3,349 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Tiercraft</title>
-  <meta name="description" content="Classez tout, de S à D : créez et partagez vos tier lists sur iPhone.">
-  <meta property="og:title" content="Tiercraft">
-  <meta property="og:description" content="Créez et partagez vos tier lists sur iPhone.">
-  <meta property="og:image" content="/icon.png">
+  <title>Tiercraft · Classez tout, de S à D</title>
+  <meta name="description" content="Tiercraft : une tier list à remplir chaque jour, des listes créées par l’IA en un thème, et vos amis pour comparer vos classements. Gratuit sur iPhone.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tiercraft · Classez tout, de S à D">
+  <meta property="og:description" content="Une tier list chaque jour, des listes créées par l’IA, et vos amis pour comparer vos goûts.">
+  <meta property="og:image" content="https://tier-list-app-share-site.vercel.app/img/og.png">
+  <meta property="og:url" content="https://tier-list-app-share-site.vercel.app">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0B0C12">
   <meta name="apple-itunes-app" content="app-id=6822017061">
   <link rel="icon" href="/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site.css">
   <style>
-    :root { color-scheme: dark; --bg: #0F1115; --text: #F2F4F8; --muted: #9AA3B2; --primary: #7C5CFF; }
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); color: var(--text);
-      font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    main { width: 100%; max-width: 420px; text-align: center; }
-    .icon { width: 96px; height: 96px; border-radius: 22px; }
-    h1 { font-size: 32px; margin: 20px 0 8px; }
-    .strip { display: flex; gap: 4px; margin: 0 auto 16px; max-width: 220px; }
-    .strip span { flex: 1; height: 4px; border-radius: 2px; }
-    p { color: var(--muted); margin: 0 0 24px; }
-    .links { margin-top: 24px; font-size: 14px; }
-    .links a { color: var(--muted); }
-    .btn { display: block; padding: 14px 18px; border-radius: 12px; font-weight: 600; text-decoration: none; background: var(--primary); color: #fff; }
+    section { max-width: 1120px; margin: 0 auto; padding: 56px 16px; }
+    .eyebrow { display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--primary-2); }
+    h1, h2 { letter-spacing: -1.5px; line-height: 1.04; margin: 10px 0 14px; font-weight: 900; }
+    h1 { font-size: clamp(44px, 8vw, 76px); }
+    h2 { font-size: clamp(34px, 6vw, 56px); }
+    .rainbow { background: linear-gradient(90deg, var(--s), var(--a) 30%, var(--b) 55%, var(--d)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ai-text { background: linear-gradient(90deg, #A98BFF, #FF7FA0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lead { font-size: clamp(17px, 2.4vw, 20px); color: #C9CFDA; max-width: 560px; margin: 0 0 24px; }
+    .split { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+    @media (min-width: 900px) { .split { grid-template-columns: 1fr 1fr; gap: 64px; } .hero .split { grid-template-columns: 1.05fr .95fr; } .split.flip > :first-child { order: 2; } }
+    .points { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 14px; }
+    .points li { display: flex; gap: 14px; align-items: flex-start; color: #D5DAE3; }
+    .points b { color: var(--text); }
+    .points .dot { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-weight: 900; color: #111; font-size: 15px; }
+    .free { color: var(--muted); font-size: 14px; margin-top: 12px; }
+
+    /* Tier rows and cards, drawn like the app's editor. */
+    .board { background: var(--bg-2); border: 1px solid var(--border); border-radius: 22px; padding: 12px; box-shadow: 0 40px 80px rgba(0, 0, 0, .45); }
+    .board-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 12px; font-weight: 800; }
+    .board-head span { color: var(--muted); font-weight: 600; font-size: 13px; }
+    .row { display: flex; min-height: 76px; border-bottom: 1px solid #0B0C12; background: var(--surface); transition: background .15s; }
+    .rows { border-radius: 10px; overflow: hidden; }
+    .row:last-child { border-bottom: 0; }
+    .row.over { background: #262B36; }
+    .row .label { flex: none; width: 64px; display: grid; place-items: center; font-size: 26px; font-weight: 900; color: #111; }
+    .row .cards { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; align-content: flex-start; }
+    .card { position: relative; width: 64px; height: 64px; border-radius: 10px; background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+      user-select: none; -webkit-user-select: none; touch-action: none; cursor: grab; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); flex: none; }
+    .card img { position: absolute; top: 3px; left: 50%; width: 46px; height: 46px; margin-left: -23px; pointer-events: none; }
+    .card small { position: relative; font-size: 9px; font-weight: 700; color: #fff; line-height: 1; padding-bottom: 4px; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card.picked { outline: 3px solid var(--primary); outline-offset: 1px; }
+    .card.dragging { position: fixed; z-index: 50; pointer-events: none; transform: scale(1.12) rotate(-3deg); box-shadow: 0 18px 40px rgba(0, 0, 0, .6); cursor: grabbing; }
+    .card.pop { animation: pop .35s cubic-bezier(.2, 1.6, .4, 1); }
+    @keyframes pop { from { transform: scale(.6); } to { transform: scale(1); } }
+    .tray { margin-top: 12px; background: #14171D; border-radius: 14px; padding: 10px; }
+    .tray-head { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .tray-head span { color: var(--muted); font-weight: 600; }
+    .tray .cards { display: flex; gap: 6px; flex-wrap: wrap; min-height: 64px; }
+    .done { display: none; margin-top: 12px; padding: 14px; border-radius: 14px; text-align: center; font-weight: 800;
+      background: linear-gradient(90deg, #7C5CFF, #B65CFF 55%, #FF7FA0); }
+    .done.show { display: block; animation: pop .4s cubic-bezier(.2, 1.6, .4, 1); }
+    .done span { display: block; font-weight: 600; font-size: 14px; opacity: .9; }
+
+    /* Hero */
+    .hero { padding-top: 24px; }
+    .hero .split { align-items: start; }
+    .try { color: var(--muted); font-size: 14px; margin: 10px 4px 0; text-align: center; }
+
+    /* Daily list banner and popular lists, as on the app's home screen. */
+    .daily { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: 20px; color: #fff; text-decoration: none;
+      background: linear-gradient(90deg, #7C5CFF, #B65CFF 55%, #FF7FA0); box-shadow: 0 20px 50px rgba(182, 92, 255, .3); }
+    .daily .emoji { font-size: 36px; }
+    .daily small { display: block; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; opacity: .9; }
+    .daily b { font-size: 22px; font-weight: 800; }
+    .daily .go { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: var(--primary); display: grid; place-items: center; font-size: 22px; font-weight: 900; }
+    .streak { display: inline-flex; align-items: center; gap: 6px; margin: 14px 0 18px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-weight: 700; font-size: 14px; }
+    .popular { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: flex; align-items: center; gap: 12px; }
+    .tile .emoji { width: 46px; height: 46px; border-radius: 12px; background: var(--surface-2); display: grid; place-items: center; font-size: 26px; flex: none; }
+    .tile b { display: block; font-size: 15px; line-height: 1.2; }
+    .tile span { color: var(--muted); font-size: 13px; }
+    .phone { width: min(300px, 78vw); margin: 0 auto; border-radius: 46px; padding: 10px; background: linear-gradient(145deg, #5A5F6E, #22252E 22%, #3B3F4A 50%, #1A1C22 78%, #4C505C);
+      box-shadow: 0 50px 90px rgba(0, 0, 0, .6), inset 0 0 0 3px #0A0A0D; }
+    .phone img { display: block; width: 100%; border-radius: 37px; }
+    .stack { position: relative; }
+    .stack .phone { position: relative; z-index: 1; }
+
+    /* AI section */
+    .prompt { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; font-size: 18px; font-weight: 700; }
+    .prompt .wand { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: linear-gradient(135deg, #7C5CFF, #FF7FA0); }
+    .prompt .typed::after { content: ""; display: inline-block; width: 2px; height: 1.1em; background: var(--primary-2); margin-left: 2px; vertical-align: -3px; animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .ai-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+    .ai-grid .card { width: auto; height: auto; aspect-ratio: 1; cursor: default; opacity: 0; transform: scale(.6); transition: opacity .3s, transform .45s cubic-bezier(.2, 1.6, .4, 1); }
+    .ai-grid .card.in { opacity: 1; transform: scale(1); }
+    .ai-grid .card img { width: 72%; height: auto; margin-left: -36%; top: 6%; }
+    .ai-grid .card small { font-size: 11px; padding-bottom: 7px; }
+    .ranks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .ranks span { padding: 8px 12px; border-radius: 10px; color: #111; font-weight: 800; font-size: 14px; opacity: 0; transform: translateY(8px); transition: .4s; }
+    .ranks.in span { opacity: 1; transform: none; }
+    .energy { display: inline-flex; align-items: center; gap: 10px; margin-top: 16px; padding: 8px 14px 8px 8px; border-radius: 999px; background: rgba(255, 212, 59, .1); border: 1px solid rgba(255, 212, 59, .35); font-weight: 700; font-size: 14px; color: #FFE58A; }
+    .energy img { width: 32px; height: 32px; }
+
+    /* Social section */
+    .agree { background: var(--surface); border: 2px solid var(--primary); border-radius: 20px; padding: 22px; text-align: center; }
+    .agree .pct { font-size: 64px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .agree p { margin: 6px 0 0; color: #D5DAE3; }
+    .duel { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 12px; font-weight: 700; }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; background: var(--surface-2); border: 2px solid var(--border); }
+    .votes { margin-top: 14px; display: grid; gap: 10px; }
+    .vote { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+    .vote-head { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    .vote-head span { color: var(--muted); font-weight: 600; }
+    .bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; transition: width 1s cubic-bezier(.2, .8, .2, 1); }
+    .code { margin-top: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 16px; text-align: center; }
+    .code small { display: block; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: 1.5px; }
+    .code b { display: block; font-size: 38px; font-weight: 900; letter-spacing: 6px; margin-top: 4px; }
+
+    .final { text-align: center; padding: 72px 16px 88px; }
+    .final h2 { margin-bottom: 10px; }
+    .final .lead { margin: 0 auto 26px; }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal, .ai-grid .card, .ranks span, .bar i { transition: none !important; } .card.pop, .done.show { animation: none; } }
   </style>
 </head>
 <body>
+  <div class="glow"></div>
+  <header class="top">
+    <a class="brand" href="/"><img src="/icon.png" alt=""><span><b>Tiercraft</b><span class="strip"><i></i><i></i><i></i><i></i><i></i></span></span></a>
+    <a class="btn small" href="https://apps.apple.com/app/id6822017061">Télécharger</a>
+  </header>
+
   <main>
-    <img class="icon" src="/icon.png" alt="">
-    <h1>Tiercraft</h1>
-    <div class="strip"><span style="background:#FF7F7F"></span><span style="background:#FFBF7F"></span><span style="background:#FFDF7F"></span><span style="background:#FFFF7F"></span><span style="background:#BFFF7F"></span></div>
-    <p>Créez vos tier lists, classez tout de S à D et partagez-les avec vos amis.</p>
-    <a class="btn" href="https://apps.apple.com/app/id6822017061">Télécharger sur l’App Store</a>
-    <p class="links"><a href="/support">Assistance</a> · <a href="/confidentialite">Confidentialité</a></p>
+    <section class="hero">
+      <div class="split">
+        <div>
+          <span class="eyebrow">Gratuit sur iPhone</span>
+          <h1>Classez tout,<br><span class="rainbow">de S à D.</span></h1>
+          <p class="lead">Pizza ou fondue ? Paris ou Biarritz ? Une tier list à remplir chaque jour, l’IA pour créer les vôtres, et vos amis pour comparer vos goûts.</p>
+          <a class="btn" href="https://apps.apple.com/app/id6822017061"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.51 2.68-1.27z"/></svg>Télécharger sur l’App Store</a>
+        </div>
+        <div>
+          <div class="board" id="demo">
+            <div class="board-head">Plats français <span id="count">0 / 6</span></div>
+            <div class="rows">
+            <div class="row" data-tier="S"><div class="label" style="background:var(--s)">S</div><div class="cards"></div></div>
+            <div class="row" data-tier="A"><div class="label" style="background:var(--a)">A</div><div class="cards"></div></div>
+            <div class="row" data-tier="B"><div class="label" style="background:var(--b)">B</div><div class="cards"></div></div>
+            <div class="row" data-tier="C"><div class="label" style="background:var(--c)">C</div><div class="cards"></div></div>
+            <div class="row" data-tier="D"><div class="label" style="background:var(--d)">D</div><div class="cards"></div></div>
+            </div>
+            <div class="tray">
+              <div class="tray-head">À classer <span>Glissez ou touchez une carte</span></div>
+              <div class="cards" id="tray"></div>
+            </div>
+            <div class="done" id="done">Classement terminé !<span>Dans l’app, découvrez si les autres joueurs sont d’accord.</span></div>
+          </div>
+          <p class="try">À vous : c’est une vraie tier list, essayez-la.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="reveal">
+      <div class="split flip">
+        <div>
+          <span class="eyebrow">Des tier lists à remplir</span>
+          <h2>Un nouveau défi <span class="rainbow">chaque jour.</span></h2>
+          <p class="lead">Chaque matin, une nouvelle tier list vous attend. Classez, validez, et découvrez le classement moyen de tous les joueurs.</p>
+          <ul class="points">
+            <li><span class="dot" style="background:var(--s)">S</span><span><b>La tier list du jour</b> : votre score de proximité avec les autres joueurs et vos choix les plus originaux.</span></li>
+            <li><span class="dot" style="background:var(--a)">A</span><span><b>Plus de vingt listes populaires</b> : fruits, films, jeux mobiles, destinations, fromages…</span></li>
+            <li><span class="dot" style="background:var(--b)">B</span><span><b>Changez d’avis quand vous voulez</b> : reclassez, validez à nouveau.</span></li>
+          </ul>
+        </div>
+        <div>
+          <a class="daily" href="https://apps.apple.com/app/id6822017061"><span class="emoji">🦸</span><span><small>TIER LIST DU JOUR</small><b>Super-héros</b></span><span class="go">→</span></a>
+          <div class="streak">🔥 Série de 12 jours</div>
+          <div class="popular">
+            <div class="tile"><span class="emoji">🍕</span><span><b>Garnitures de pizza</b><span>12 cartes</span></span></div>
+            <div class="tile"><span class="emoji">🎬</span><span><b>Genres de films</b><span>12 cartes</span></span></div>
+            <div class="tile"><span class="emoji">🍓</span><span><b>Fruits</b><span>12 cartes</span></span></div>
+            <div class="tile"><span class="emoji">✈️</span><span><b>Destinations</b><span>12 cartes</span></span></div>
+            <div class="tile"><span class="emoji">📱</span><span><b>Jeux mobiles</b><span>15 cartes</span></span></div>
+            <div class="tile"><span class="emoji">🧀</span><span><b>Fromages</b><span>12 cartes</span></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="reveal" id="ai">
+      <div class="split">
+        <div>
+          <span class="eyebrow">Créez avec l’IA</span>
+          <h2>Un thème suffit.<br><span class="ai-text">L’IA fait le reste.</span></h2>
+          <p class="lead">Tapez une idée : l’IA imagine les cartes, les dessine dans le style du jeu et baptise vos rangs. Il ne reste qu’à classer.</p>
+          <ul class="points">
+            <li><span class="dot" style="background:#A98BFF">1</span><span><b>Les cartes</b>, trouvées pour votre thème, vérifiées avant d’être ajoutées.</span></li>
+            <li><span class="dot" style="background:#D08BFF">2</span><span><b>Les illustrations</b>, toutes dessinées dans le même style.</span></li>
+            <li><span class="dot" style="background:#FF8BC0">3</span><span><b>Les noms de rangs</b>, avec le ton que vous choisissez.</span></li>
+          </ul>
+          <span class="energy"><img src="/img/energie.webp" alt="">De l’énergie offerte pour commencer</span>
+        </div>
+        <div>
+          <div class="prompt"><span class="wand">✨</span><span class="typed" id="typed"></span></div>
+          <div class="ai-grid" id="aiGrid"></div>
+          <div class="ranks" id="ranks">
+            <span style="background:var(--s)">J’y vis demain</span><span style="background:var(--a)">Coup de cœur</span><span style="background:var(--b)">Pour un week-end</span><span style="background:var(--c)">Pourquoi pas</span><span style="background:var(--d)">Bof</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="reveal" id="social">
+      <div class="split flip">
+        <div>
+          <span class="eyebrow">Entre amis</span>
+          <h2>Partagez.<br><span class="rainbow">Comparez. Débattez.</span></h2>
+          <p class="lead">Envoyez une tier list à vos amis, chacun la classe de son côté, puis comparez vos réponses carte par carte. Qui a les meilleurs goûts ?</p>
+          <ul class="points">
+            <li><span class="dot" style="background:var(--s)">S</span><span><b>Un code ou un lien</b> : vos amis ouvrent la liste dans Tiercraft et font leur classement.</span></li>
+            <li><span class="dot" style="background:var(--a)">A</span><span><b>Votre pourcentage d’accord</b> avec chaque ami et avec tous les joueurs.</span></li>
+            <li><span class="dot" style="background:var(--b)">B</span><span><b>Un profil sans e-mail</b> : un pseudo, un avatar, et c’est parti.</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="agree">
+            <div class="duel"><span class="avatar">🦊</span>Vous &amp; Léa<span class="avatar">🐼</span></div>
+            <div class="pct"><span id="pct">0</span> %</div>
+            <p>d’accord sur « Plats français »</p>
+          </div>
+          <div class="votes" id="votes"></div>
+          <div class="code"><small>CODE DE LA TIER LIST</small><b>K7F 3QX</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final reveal">
+      <div class="stack"><div class="phone"><img src="/img/app-accueil.webp" alt="L’accueil de Tiercraft : la tier list du jour et les listes populaires" loading="lazy"></div></div>
+      <h2 style="margin-top:40px">Votre première tier list<br><span class="rainbow">vous attend.</span></h2>
+      <p class="lead">Gratuit, sans publicité, sans compte e-mail.</p>
+      <a class="btn" href="https://apps.apple.com/app/id6822017061"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.51 2.68-1.27z"/></svg>Télécharger sur l’App Store</a>
+    </section>
   </main>
+
+  <footer>
+    <span>© 2026 Guillaume Fenard</span>
+    <nav><a href="/support">Assistance</a><a href="/confidentialite">Confidentialité</a><a href="mailto:broc.le.jeu@gmail.com">Contact</a></nav>
+  </footer>
+
+  <script>
+    const card = (id, label) => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `<img src="/img/cards/${id}.webp" alt=""><small>${label}</small>`;
+      return el;
+    };
+
+    // The playable tier list: drag a card onto a row, or tap a card then a row.
+    const DEMO = [['fondue', 'Fondue'], ['pizza', 'Pizza'], ['croque', 'Croque'], ['ratatouille', 'Ratatouille'], ['escargots', 'Escargots'], ['moules', 'Moules-frites']];
+    const tray = document.getElementById('tray');
+    const rows = [...document.querySelectorAll('#demo .row')];
+    const count = document.getElementById('count');
+    let picked = null;
+    const update = () => {
+      const placed = DEMO.length - tray.children.length;
+      count.textContent = `${placed} / ${DEMO.length}`;
+      document.getElementById('done').classList.toggle('show', placed === DEMO.length);
+    };
+    const place = (el, row) => {
+      row.querySelector('.cards').appendChild(el);
+      el.classList.remove('picked', 'pop'); void el.offsetWidth; el.classList.add('pop');
+      picked = null; update();
+    };
+    const rowAt = (x, y) => rows.find((r) => { const b = r.getBoundingClientRect(); return x >= b.left && x <= b.right && y >= b.top && y <= b.bottom; });
+    for (const [id, label] of DEMO) {
+      const el = card(id, label);
+      tray.appendChild(el);
+      el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const start = { x: e.clientX, y: e.clientY };
+        const box = el.getBoundingClientRect();
+        let ghost = null, over = null;
+        const move = (m) => {
+          if (!ghost && Math.hypot(m.clientX - start.x, m.clientY - start.y) < 6) return;
+          if (!ghost) { ghost = el.cloneNode(true); ghost.classList.add('dragging'); document.body.appendChild(ghost); el.style.opacity = '.3'; }
+          ghost.style.left = `${m.clientX - (start.x - box.left)}px`; ghost.style.top = `${m.clientY - (start.y - box.top)}px`;
+          const r = rowAt(m.clientX, m.clientY);
+          if (r !== over) { over?.classList.remove('over'); r?.classList.add('over'); over = r; }
+        };
+        const up = (u) => {
+          window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+          over?.classList.remove('over');
+          if (ghost) { ghost.remove(); el.style.opacity = ''; const r = rowAt(u.clientX, u.clientY); if (r) place(el, r); return; }
+          // A tap: pick the card, the next tapped row receives it.
+          document.querySelectorAll('.card.picked').forEach((c) => c.classList.remove('picked'));
+          picked = picked === el ? null : el;
+          picked?.classList.add('picked');
+        };
+        window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+      });
+    }
+    rows.forEach((r) => r.addEventListener('click', (e) => { if (picked && !e.target.closest('.card')) place(picked, r); }));
+    update();
+
+    // Sections come in as they scroll into view, and the AI and comparison play once.
+    const once = new Set();
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add('in');
+        if (e.target.id === 'ai' && !once.has('ai')) { once.add('ai'); playAi(); }
+        if (e.target.id === 'social' && !once.has('social')) { once.add('social'); playSocial(); }
+      }
+    }, { threshold: .25 });
+    document.querySelectorAll('.reveal').forEach((s) => io.observe(s));
+
+    function playAi() {
+      const theme = 'Villes de France';
+      const typed = document.getElementById('typed');
+      let i = 0;
+      const t = setInterval(() => {
+        typed.textContent = theme.slice(0, ++i);
+        if (i < theme.length) return;
+        clearInterval(t);
+        const grid = document.getElementById('aiGrid');
+        [['paris', 'Paris'], ['lyon', 'Lyon'], ['nice', 'Nice'], ['brest', 'Brest'], ['dijon', 'Dijon'], ['lille', 'Lille'], ['annecy', 'Annecy'], ['biarritz', 'Biarritz']]
+          .forEach(([id, label], k) => { const el = card(id, label); grid.appendChild(el); setTimeout(() => el.classList.add('in'), 250 + k * 140); });
+        setTimeout(() => document.getElementById('ranks').classList.add('in'), 1600);
+      }, 70);
+    }
+
+    function playSocial() {
+      const pct = document.getElementById('pct');
+      let v = 0;
+      const t = setInterval(() => { pct.textContent = v; if (v++ >= 72) clearInterval(t); }, 18);
+      const votes = document.getElementById('votes');
+      const COLORS = ['var(--s)', 'var(--a)', 'var(--b)', 'var(--c)', 'var(--d)'];
+      [['Fondue', 'Vous : S · Léa : S', [52, 26, 12, 6, 4]], ['Escargots', 'Vous : D · Léa : A', [8, 22, 25, 20, 25]]].forEach(([name, who, split]) => {
+        const el = document.createElement('div');
+        el.className = 'vote';
+        el.innerHTML = `<div class="vote-head">${name}<span>${who}</span></div><div class="bar">${split.map((_, k) => `<i style="background:${COLORS[k]}"></i>`).join('')}</div>`;
+        votes.appendChild(el);
+        requestAnimationFrame(() => setTimeout(() => el.querySelectorAll('i').forEach((i, k) => (i.style.width = `${split[k]}%`)), 100));
+      });
+    }
+  </script>
 </body>
 </html>

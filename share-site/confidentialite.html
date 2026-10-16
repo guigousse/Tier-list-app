@@ -5,27 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Politique de confidentialité · Tiercraft</title>
   <link rel="icon" href="/icon.png">
-  <style>
-    :root { color-scheme: dark; --bg: #0F1115; --surface: #181B22; --border: #2C313C; --text: #F2F4F8; --muted: #9AA3B2; --primary: #7C5CFF; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
-    header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    header img { width: 44px; height: 44px; border-radius: 10px; }
-    header a { color: var(--text); font-weight: 800; font-size: 20px; text-decoration: none; }
-    h1 { font-size: 28px; margin: 24px 0 4px; }
-    h2 { font-size: 19px; margin: 32px 0 8px; }
-    p, li { color: #D5DAE3; }
-    .muted { color: var(--muted); font-size: 14px; }
-    a { color: #A996FF; }
-    table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 15px; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { color: var(--muted); font-weight: 600; }
-  </style>
+  <meta name="theme-color" content="#0B0C12">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-  <main>
-    <header><img src="/icon.png" alt=""><a href="/">Tiercraft</a></header>
+  <div class="glow"></div>
+  <header class="top">
+    <a class="brand" href="/"><img src="/icon.png" alt=""><span><b>Tiercraft</b><span class="strip"><i></i><i></i><i></i><i></i><i></i></span></span></a>
+    <a class="btn small" href="https://apps.apple.com/app/id6822017061">Télécharger</a>
+  </header>
+  <main class="page">
     <h1>Politique de confidentialité</h1>
     <p class="muted">Dernière mise à jour : 16 octobre 2026</p>
 
@@ -72,5 +64,9 @@
     <h2>Vos droits</h2>
     <p>Vous pouvez effacer toutes vos données locales depuis Réglages → Effacer toutes les données, ou en supprimant l’app. <strong>Réglages → Supprimer mon profil</strong> efface immédiatement en ligne votre profil, vos amis, vos blocages, vos signalements et vos votes. Pour toute autre demande concernant les données en ligne (accès, rectification), écrivez-nous à <a href="mailto:broc.le.jeu@gmail.com">broc.le.jeu@gmail.com</a>. Le porte-monnaie d’énergie n’est pas effacé avec le profil, pour que vous gardiez l’énergie achetée : écrivez-nous pour le supprimer. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
   </main>
+  <footer>
+    <span>© 2026 Guillaume Fenard</span>
+    <nav><a href="/">Accueil</a><a href="/support">Assistance</a><a href="mailto:broc.le.jeu@gmail.com">Contact</a></nav>
+  </footer>
 </body>
 </html>
