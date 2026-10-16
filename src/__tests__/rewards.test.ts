@@ -1,5 +1,5 @@
 import { stickerSvg } from '../lib/stickers';
-import { chooseBadge, FORKS, knownBadges, pendingForks } from '../lib/badges';
+import { chooseBadge, FORKS, knownBadges, pendingForks, placeBadge } from '../lib/badges';
 import { useTierStore } from '../store/useTierStore';
 import { isArchived, type Mail } from '../store/useMail';
 import { milestones, stretchFill, trackState } from '../lib/rewards';
@@ -66,5 +66,27 @@ describe('badges', () => {
 describe('stickers', () => {
   it('has a drawing for every badge', () => {
     expect(FORKS.flatMap((f) => f.options).every((b) => stickerSvg(b.id).includes('<path') || stickerSvg(b.id).includes('<circle'))).toBe(true);
+  });
+});
+
+describe('badge slots on the profile', () => {
+  it('fills an empty slot', () => {
+    expect(placeBadge(['pizza'], 1, 'dog')).toEqual(['pizza', 'dog']);
+  });
+
+  it('replaces the badge of a slot', () => {
+    expect(placeBadge(['pizza', 'dog'], 0, 'mayo')).toEqual(['mayo', 'dog']);
+  });
+
+  it('swaps two slots when the badge is already shown elsewhere', () => {
+    expect(placeBadge(['pizza', 'dog', 'mayo'], 0, 'mayo')).toEqual(['mayo', 'dog', 'pizza']);
+  });
+
+  it('empties a slot and keeps the others in order', () => {
+    expect(placeBadge(['pizza', 'dog', 'mayo'], 1, null)).toEqual(['pizza', 'mayo']);
+  });
+
+  it('never shows more than 3 badges', () => {
+    expect(placeBadge(['pizza', 'dog', 'mayo'], 5, 'sea')).toEqual(['pizza', 'dog', 'mayo']);
   });
 });

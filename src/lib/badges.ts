@@ -133,6 +133,19 @@ export function chooseBadge(fork: Fork, badge: Badge): void {
   syncBadges();
 }
 
+/**
+ * Puts `id` in one of the 3 slots of the profile (null empties it). A badge already
+ * shown elsewhere swaps places, so it is never pinned twice.
+ */
+export function placeBadge(shown: string[], slot: number, id: string | null): string[] {
+  if (slot < 0 || slot > 2) return shown.slice(0, 3);
+  const slots: (string | null)[] = [0, 1, 2].map((i) => shown[i] ?? null);
+  const elsewhere = id ? slots.indexOf(id) : -1;
+  if (elsewhere >= 0) slots[elsewhere] = slots[slot];
+  slots[slot] = id;
+  return slots.filter((s): s is string => s !== null);
+}
+
 /** The badges shown on the profile, up to 3. */
 export function showBadges(ids: string[]): void {
   useTierStore.setState({ shownBadges: ids.slice(0, 3) });

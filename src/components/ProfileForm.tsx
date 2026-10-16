@@ -4,11 +4,14 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing } from '../constants/theme';
 import { decodeAvatar, encodeAvatar, isAvatarCode, randomAvatar } from '../lib/avatar';
+import { badgeById, knownBadges, showBadges } from '../lib/badges';
 import { saveProfile, socialError } from '../lib/social';
 import { useTierStore } from '../store/useTierStore';
 import { Avatar } from './Avatar';
 import { AvatarEditor } from './AvatarEditor';
+import { AvatarWithBadges } from './BadgeIcon';
 import { Clickable } from './Clickable';
+import { BadgeSlots } from './profile/BadgeSlots';
 import { Button, Field } from './ui';
 
 type Props = {
@@ -17,7 +20,10 @@ type Props = {
   submitLabel?: string;
 };
 
-/** Pseudo and avatar of the player's profile: creates it, or edits it. */
+/**
+ * The player's profile: creates it (pseudo and avatar), or edits it (pseudo and the
+ * 3 badges pinned on the avatar; the wardrobe has its own button on Profil).
+ */
 export function ProfileForm({ onSaved, submitLabel }: Props) {
   const profile = useTierStore((s) => s.profile);
   const [pseudo, setPseudo] = useState(profile?.pseudo ?? '');
@@ -31,6 +37,8 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
     setEditing(true);
   };
   const config = useMemo(() => decodeAvatar(avatar), [avatar]);
+  // Badges of older versions of the app are left out of the slots.
+  const [badges, setBadges] = useState(() => useTierStore.getState().shownBadges.filter((id) => badgeById(id)));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const valid = pseudo.trim().length >= 2;
@@ -38,6 +46,8 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
   const submit = async () => {
     setBusy(true);
     setError(null);
+    // Badges stay on this phone first: they are saved even offline.
+    if (profile) showBadges(badges);
     try {
       await saveProfile(pseudo, avatar);
       onSaved();
@@ -51,17 +61,22 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
   return (
     <View style={{ gap: spacing.lg }}>
       <View style={styles.preview}>
-        <Clickable
-          accessibilityRole="button"
-          accessibilityLabel="Personnaliser mon avatar"
-          onPress={edit}
-          style={({ pressed }) => [pressed && { opacity: 0.85 }]}
-        >
-          <Avatar avatar={avatar} seed={pseudo.trim() || '?'} size={112} />
-          <View style={styles.editBadge}>
-            <Ionicons name="color-palette" size={16} color={colors.primaryText} />
-          </View>
-        </Clickable>
+        {profile ? (
+          // Editing: the badges chosen below, pinned live; the look is changed in the wardrobe.
+          <AvatarWithBadges avatar={avatar} seed={profile.id} size={112} badges={knownBadges(badges)} />
+        ) : (
+          <Clickable
+            accessibilityRole="button"
+            accessibilityLabel="Personnaliser mon avatar"
+            onPress={edit}
+            style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+          >
+            <Avatar avatar={avatar} seed={pseudo.trim() || '?'} size={112} />
+            <View style={styles.editBadge}>
+              <Ionicons name="color-palette" size={16} color={colors.primaryText} />
+            </View>
+          </Clickable>
+        )}
         <Text style={styles.name} numberOfLines={1}>
           {pseudo.trim() || 'Votre pseudo'}
           <Text style={styles.tag}>{profile ? ` #${profile.tag}` : ' #····'}</Text>
@@ -78,7 +93,11 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
         autoCorrect={false}
         returnKeyType="done"
       />
-      <Button variant="secondary" icon="color-palette-outline" label="Personnaliser mon avatar" onPress={edit} />
+      {profile ? (
+        <BadgeSlots value={badges} onChange={setBadges} />
+      ) : (
+        <Button variant="secondary" icon="color-palette-outline" label="Personnaliser mon avatar" onPress={edit} />
+      )}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button
         label={busy ? 'Enregistrement…' : (submitLabel ?? (profile ? 'Enregistrer' : 'Créer mon profil'))}

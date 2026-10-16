@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
+import { AvatarEditor } from '../components/AvatarEditor';
 import { AvatarWithBadges } from '../components/BadgeIcon';
 import { MailBox } from '../components/MailBox';
 import { Clickable } from '../components/Clickable';
@@ -12,10 +13,11 @@ import { ProfileForm } from '../components/ProfileForm';
 import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
+import { decodeAvatar, DEFAULT_AVATAR, encodeAvatar, isAvatarCode, type AvatarConfig } from '../lib/avatar';
 import { useResponsive } from '../lib/layout';
 import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { knownBadges, usePendingBadges } from '../lib/badges';
-import { confirmReport, friendCode, parseFriendCode, socialError } from '../lib/social';
+import { confirmReport, friendCode, parseFriendCode, saveProfile, socialError } from '../lib/social';
 import { pullToRefresh } from '../lib/friendProfile';
 import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
@@ -64,6 +66,10 @@ export default function Social() {
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [editing, setEditing] = useState(false);
+  const [dressing, setDressing] = useState(false);
+  // A new wardrobe at each opening, starting from the current look.
+  const [wardrobe, setWardrobe] = useState(0);
+  const look = useMemo(() => (profile && isAvatarCode(profile.avatar) ? decodeAvatar(profile.avatar) : DEFAULT_AVATAR), [profile]);
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<Tab>(() => initialTab(params.tab));
   const unread = useUnreadMail();
@@ -108,6 +114,20 @@ export default function Social() {
   }
 
   const myCode = friendCode(profile);
+
+  const dress = () => {
+    setWardrobe((n) => n + 1);
+    setDressing(true);
+  };
+  const wear = async (c: AvatarConfig) => {
+    setDressing(false);
+    try {
+      await saveProfile(profile.pseudo, encodeAvatar(c));
+      load();
+    } catch (e) {
+      Alert.alert('Oups', socialError(e));
+    }
+  };
 
   const add = async () => {
     const parsed = parseFriendCode(code);
@@ -184,7 +204,9 @@ export default function Social() {
       ]}
     >
       <View style={styles.me}>
-        <AvatarWithBadges avatar={profile.avatar} seed={profile.id} size={64} badges={knownBadges(shownBadges)} />
+        <Clickable accessibilityRole="button" accessibilityLabel="Garde-robe : changer de tenue" onPress={dress} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+          <AvatarWithBadges avatar={profile.avatar} seed={profile.id} size={64} badges={knownBadges(shownBadges)} />
+        </Clickable>
         <View style={{ flex: 1, gap: 2 }}>
           {/* A tap copies the friend code, to send it. */}
           <Clickable
@@ -204,7 +226,10 @@ export default function Social() {
             {data ? `${data.me.completed} liste${data.me.completed > 1 ? 's' : ''} complétée${data.me.completed > 1 ? 's' : ''}` : 'Votre code ami : ' + myCode}
           </Text>
         </View>
-        <IconButton icon="create-outline" label="Modifier le profil" onPress={() => setEditing(true)} />
+        <View style={styles.meActions}>
+          <IconButton icon="shirt-outline" label="Garde-robe" onPress={dress} />
+          <IconButton icon="create-outline" label="Modifier le profil" onPress={() => setEditing(true)} />
+        </View>
       </View>
       {data?.me.hidden ? (
         <Text style={styles.warning}>Votre profil a été masqué après plusieurs signalements : les autres joueurs voient « Joueur signalé ».</Text>
@@ -237,16 +262,16 @@ export default function Social() {
             </Clickable>
           ))}
         </View>
-        {/* Rewards: apart, a gift. */}
+        {/* Rewards: apart, a trophy — the path is a climb, more than a present. */}
         <Clickable
           accessibilityRole="button"
           accessibilityLabel={pendingBadges ? `Récompenses, ${pendingBadges} badge${pendingBadges > 1 ? 's' : ''} à choisir` : 'Récompenses'}
           onPress={() => router.push('/rewards')}
-          style={({ pressed }) => [styles.gift, pressed && { opacity: 0.8 }]}
+          style={({ pressed }) => [styles.trophy, pressed && { opacity: 0.8 }]}
         >
-          <Ionicons name="gift" size={24} color={colors.primary} />
+          <Ionicons name="trophy" size={24} color="#FFC233" />
           {pendingBadges ? (
-            <View style={[styles.tabBadge, styles.giftBadge]}>
+            <View style={[styles.tabBadge, styles.trophyBadge]}>
               <Text style={styles.tabBadgeText}>{pendingBadges > 9 ? '9+' : pendingBadges}</Text>
             </View>
           ) : null}
@@ -378,6 +403,7 @@ export default function Social() {
           }}
         />
       </Sheet>
+      <AvatarEditor key={wardrobe} visible={dressing} initial={look} onClose={() => setDressing(false)} onDone={wear} />
     </ScrollView>
   );
 }
@@ -424,14 +450,15 @@ const styles = StyleSheet.create({
   rowMeta: { color: colors.textMuted, fontSize: 13 },
   respond: { flexDirection: 'row', gap: spacing.xs },
   tabRow: { flexDirection: 'row', gap: spacing.sm, marginTop: -spacing.sm },
-  gift: {
+  meActions: { flexDirection: 'row', gap: spacing.xs },
+  trophy: {
     width: 56,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  giftBadge: { position: 'absolute', top: -5, right: -5, borderWidth: 2, borderColor: colors.background },
+  trophyBadge: { position: 'absolute', top: -5, right: -5, borderWidth: 2, borderColor: colors.background },
   tabs: {
     flex: 1,
     flexDirection: 'row',
