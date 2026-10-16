@@ -60,3 +60,14 @@ puis les deux classements sont comparés. Le classement de l'expéditeur
 `set_sender_ranks(secret, mail, ranks)` quand l'expéditeur valide son classement
 (jamais à chaque carte déplacée). Les listes classées entre amis comptent dans
 `completed` (« listes complétées » des profils), une fois par liste.
+
+## Crédits du parcours des listes
+
+Le parcours des récompenses offre 5 crédits tous les 25 listes validées (listes
+populaires et tier lists du jour). L'app appelle `claim_list_credits(wallet,
+device_id)` juste après l'ouverture du portefeuille ; la fonction délègue à
+`wallet_milestones`, réservée au serveur, qui compte elle-même les votes de
+l'appareil et ne paie chaque palier qu'une fois par portefeuille et par appareil
+(table `credit_milestones`), aux seuls portefeuilles attestés par Apple. Le pas et
+le montant sont écrits en dur dans `wallet_milestones` et dans `src/lib/rewards.ts`
+(`CREDIT_EVERY`, `CREDIT_AMOUNT`) : les changer aux deux endroits.
