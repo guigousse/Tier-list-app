@@ -462,11 +462,6 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
         ) : (
           <Text style={styles.hint}>Ajoutez d’abord des cartes à la liste.</Text>
         )}
-        {cards.length ? (
-          <Text style={styles.hint}>
-            Les cartes sans image sont cochées : une image déjà dessinée dans la bibliothèque Tiercraft leur est reprise, sinon l’IA en dessine une. Touchez une carte déjà illustrée pour la redessiner : une nouvelle image s’ajoute à la bibliothèque, l’ancienne y reste. Les photos ne sont pas proposées.
-          </Text>
-        ) : null}
       </View>
 
       <View style={styles.total}>
