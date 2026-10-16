@@ -1,5 +1,5 @@
 import { FORKS } from '../lib/badges';
-import { crossedSteps, pendingCelebrations, TEAM_LINES, teamLine } from '../lib/milestoneEvents';
+import { crossedSteps, pendingCelebrations, replayListSteps, TEAM_LINES, teamLine } from '../lib/milestoneEvents';
 import { milestones } from '../lib/rewards';
 import { migrateStore } from '../store/useTierStore';
 
@@ -58,6 +58,21 @@ describe('what is left to celebrate', () => {
     // A list deleted then redone: 24 then 25 again, nothing new.
     expect(pendingCelebrations({ lists: 25, flame: 1 }, { lists: 24, flame: 1 }, {}).celebrated).toEqual({ lists: 25, flame: 1 });
     expect(pendingCelebrations({ lists: 25, flame: 1 }, { lists: 25, flame: 1 }, {}).events).toEqual([]);
+  });
+});
+
+describe('replaying the lists path (test tool)', () => {
+  it('forgets the lists steps and the VS chosen, keeps the flame', () => {
+    const reset = replayListSteps({ celebrated: { lists: 80, flame: 9 }, badgeChoices: { pet: 'cat' }, shownBadges: ['cat', 'old'] });
+    expect(reset).toEqual({ celebrated: { lists: 0, flame: 9 }, badgeChoices: {}, shownBadges: [] });
+    // Every lists step comes back, none of the flame.
+    const { events } = pendingCelebrations(reset.celebrated, { lists: 80, flame: 9 }, reset.badgeChoices);
+    expect(events.length).toBe(crossedSteps('lists', 0, 80, {}).length);
+    expect(events.every((e) => e.track === 'lists')).toBe(true);
+  });
+
+  it('nothing celebrated yet: the flame stays where the player is', () => {
+    expect(replayListSteps({ celebrated: null, badgeChoices: {}, shownBadges: [] }, 4).celebrated).toEqual({ lists: 0, flame: 4 });
   });
 });
 

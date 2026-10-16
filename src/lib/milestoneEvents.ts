@@ -70,3 +70,15 @@ export function pendingCelebrations(celebrated: Celebrated | null, won: Celebrat
   const events = [...crossedSteps('lists', celebrated.lists, won.lists, choices), ...crossedSteps('flame', celebrated.flame, won.flame, {})];
   return { events, celebrated: { lists: Math.max(celebrated.lists, won.lists), flame: Math.max(celebrated.flame, won.flame) } };
 }
+
+/**
+ * Test tool (long press on « Version » in Settings): the lists path is celebrated again
+ * from the start, its VS open again, while lists and flame stay as they are. The
+ * credits already paid aren't paid twice: the server pays each step once.
+ */
+export function replayListSteps(
+  state: { celebrated: Celebrated | null; badgeChoices: Record<string, string>; shownBadges: string[] },
+  flame = 0,
+) {
+  return { celebrated: { lists: 0, flame: state.celebrated?.flame ?? flame }, badgeChoices: {}, shownBadges: [] as string[] };
+}

@@ -33,7 +33,8 @@ export function MilestoneWatcher() {
   useEffect(() => {
     check();
     return useTierStore.subscribe((state, prev) => {
-      if (state.lists !== prev.lists) check();
+      // Celebrated set back (test tool in Settings): the steps come again.
+      if (state.lists !== prev.lists || state.celebrated !== prev.celebrated) check();
     });
   }, []);
 

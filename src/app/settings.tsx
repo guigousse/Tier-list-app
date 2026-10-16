@@ -13,6 +13,7 @@ import { useResponsive } from '../lib/layout';
 import * as Notifications from 'expo-notifications';
 import { syncPushToken } from '../lib/push';
 import { setDailyReminder } from '../lib/reminders';
+import { replayListSteps } from '../lib/milestoneEvents';
 import { deleteMyProfile, friendCode, socialError } from '../lib/social';
 import { SHARE_HOST } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
@@ -44,6 +45,12 @@ export default function Settings() {
   const count = useTierStore((s) => Object.keys(s.lists).length);
   const profile = useTierStore((s) => s.profile);
   const { updateSettings, clearAll } = useTierStore.getState();
+
+  const replaySteps = () =>
+    Alert.alert('Rejouer les paliers des listes ?', 'Les paliers déjà atteints seront fêtés à nouveau et les VS reproposés. Vos listes et votre flamme ne changent pas.', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Rejouer', onPress: () => useTierStore.setState(replayListSteps(useTierStore.getState())) },
+    ]);
 
   const confirmClear = () =>
     Alert.alert('Tout effacer ?', 'Toutes vos tier lists et leurs images seront supprimées. Cette action est irréversible.', [
@@ -176,7 +183,10 @@ export default function Settings() {
         />
         <Button variant="secondary" icon="help-circle-outline" label="Assistance" onPress={() => Linking.openURL(`https://${SHARE_HOST}/support`)} />
         <Row label="Version">
-          <Text style={styles.rowHint}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+          {/* Hidden test tool: a long press replays the steps of the lists path. */}
+          <Clickable onLongPress={replaySteps} delayLongPress={800} hitSlop={8}>
+            <Text style={styles.rowHint}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+          </Clickable>
         </Row>
       </View>
 
