@@ -7,9 +7,12 @@ function same(actual: unknown, expected: unknown) {
   }
 }
 
-Deno.test("barème : 1 crédit la carte et le rang, 8 la planche plus 1 l'image", () => {
+Deno.test("barème : 1 crédit la carte (5 au plus par génération) et le rang, 8 la planche plus 1 l'image", () => {
   same(CREDITS, { word: 1, tier: 1, sheet: 8, image: 1 });
-  same(charge("words", 10), 10);
+  same(charge("words", 1), 1);
+  same(charge("words", 3), 3);
+  same(charge("words", 10), 5);
+  same(charge("words", 20), 5);
   same(charge("tiers", 5), 5);
   same(charge("images", 3), 11);
   same(charge("images", 10), 18);

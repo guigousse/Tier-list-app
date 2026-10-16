@@ -23,6 +23,8 @@ import { splitEmoji } from './emoji';
  * Measured, a 5-card illustrated list pays for itself even with no icon reused.
  */
 export const CREDITS = { word: 1, tier: 1, sheet: 8, image: 1 };
+/** Cards written in one generation are paid 5 at most (supabase/functions/ai-generate/pricing.ts). */
+export const WORDS_CAP = 5;
 
 /** Icons on one sheet: beyond 20, Gemini's cells get too small to read (server: sheet.ts). */
 export const SHEET_MAX = 20;
@@ -43,9 +45,9 @@ export function imageCredits(count: number): number {
   return sheetSizes(count).length * CREDITS.sheet + Math.max(0, count) * CREDITS.image;
 }
 
-/** New cards, plus cards whose word is replaced: 1 credit each. */
+/** New cards, plus cards whose word is replaced: 1 credit each, 5 at most (one call). */
 export function wordCredits(count: number, replaced = 0): number {
-  return (count + replaced) * CREDITS.word;
+  return Math.min(count + replaced, WORDS_CAP) * CREDITS.word;
 }
 
 export function tierCredits(count: number): number {

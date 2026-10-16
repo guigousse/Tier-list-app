@@ -51,7 +51,8 @@ Deno.test("un échec rend tout ce qui avait été réservé", async () => {
 });
 
 Deno.test("sans assez de crédits, l'IA n'est même pas appelée", async () => {
-  const db = fakeDb(5);
+  // 10 cards cost 5 (the cap): 4 isn't enough.
+  const db = fakeDb(4);
   let called = false;
   let error: unknown;
   try {

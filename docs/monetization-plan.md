@@ -87,6 +87,17 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   call, effort low, ≈ 1 c€ whatever the tier count); a redrawn image counts as an
   image. Cards added by hand or renamed are read in the theme before drawing (one
   extra Opus call, ≈ 1 c€, not charged).
+- **Cartes écrites : 5 crédits au plus par génération** (2026-10-16). Un seul appel Opus
+  écrit toutes les cartes et son coût dépend peu de leur nombre (tarif Opus 5.5 : 4 $ /
+  20 $ le million de jetons en entrée / sortie) : ≈ 0,7 ¢ $ de fixe (consigne ≈ 650
+  jetons, bibliothèque de concepts ≈ 800 jetons aujourd'hui, ≈ 2 400 à 500 concepts) plus
+  ≈ 0,05 ¢ $ par carte écrite (≈ 25 jetons de sortie). Mesuré le 14 octobre : 12 cartes
+  ≈ 1,06 ¢ $. Soit ≈ 0,8 ¢ $ pour 1 carte, ≈ 1,7 ¢ $ pour 20 (≈ 2,3 ¢ $ à bibliothèque
+  pleine). 1 crédit par carte jusqu'à 5, puis plus rien : 5 crédits rapportent 4,0 c€
+  (pack 1 750) à 5,8 c€ (pack 60), au moins le double du pire coût, et une liste de 20
+  cartes ne coûte plus 20 crédits. Remplacer une seule carte reste à 1 crédit (≈ le
+  coût). Les cartes ajoutées et remplacées partent dans le même appel : le plafond
+  couvre les deux.
 - **Charge only what was delivered** (rule for when credits are real, 2026-10-15): the
   credits are taken on the server once the result is saved, per card or image actually
   received. A failed generation costs the player nothing, even when it cost us (a
