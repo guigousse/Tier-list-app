@@ -7,6 +7,7 @@ import { aiIconUri } from '../lib/aiIconFiles';
 import type { Template } from '../constants/presets';
 import { STICKERS, stickerLayout, type Sticker } from '../lib/stickerLayout';
 import { themeStickers, type Theme } from '../lib/themes';
+import { THEME_PREVIEWS } from '../constants/themePreviews';
 import { Clickable } from './Clickable';
 
 type Group = { theme: Theme; templates: Template[] };
@@ -65,7 +66,12 @@ function StickerView({
   return (
     <View style={[styles.sticker, place]}>
       {/* A soft shadow under the whole sticker, border included. */}
-      <Image source={source} style={[styles.layer, hero ? styles.heroShadow : styles.shadow]} tintColor={hero ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'} resizeMode="contain" />
+      <Image
+        source={source}
+        style={[styles.layer, hero ? styles.heroShadow : styles.shadow]}
+        tintColor={hero ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'}
+        resizeMode="contain"
+      />
       {(hero ? HERO_AROUND : AROUND).map((offset, i) => (
         <Image key={i} source={source} style={[styles.layer, { transform: offset }]} tintColor="#FFFFFF" resizeMode="contain" />
       ))}
@@ -74,8 +80,12 @@ function StickerView({
   );
 }
 
+/** Set by scripts/bake-theme-previews.cjs: the live collage is what gets baked. */
+const BAKING = (globalThis as { __BAKING_THEMES__?: boolean }).__BAKING_THEMES__ === true;
+
 const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons: Record<string, string>; onOpen: (key: string) => void }) {
   const { theme, templates } = group;
+  const baked = BAKING ? undefined : THEME_PREVIEWS[theme.key];
   const count = templates.length;
   // Measured, so the emoji waiting for their picture keep to the circle's scale.
   const [side, setSide] = useState(110);
@@ -88,15 +98,20 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
       onPress={() => onOpen(theme.key)}
       style={({ pressed }) => [styles.tile, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
     >
-      {/* What's inside, at a glance: the theme's cards as stickers packed in a circle. */}
-      <View style={styles.circle} onLayout={(e) => setSide(e.nativeEvent.layout.width)}>
-        {layout.map((sticker, i) => (
-          <StickerView key={cards[i].concept} sticker={sticker} concept={cards[i].concept} emoji={cards[i].emoji} icons={icons} side={side} hero={i === 0} />
-        ))}
-        {/* A light blur, a little darker, over the cards behind: the one in the middle stands out. */}
-        {/* Measured on a capture: 12 blurred the small cards past recognition; 5 (about one point) keeps them readable. */}
-        <BlurView intensity={5} tint="dark" style={[StyleSheet.absoluteFill, styles.veil, { zIndex: layout.length - 1 }]} />
-      </View>
+      {/* What's inside, at a glance: the theme's cards as stickers packed in a circle,
+          baked into the app (shown at once), or drawn live for a theme not baked yet. */}
+      {baked ? (
+        <Image source={baked} style={styles.baked} accessibilityIgnoresInvertColors />
+      ) : (
+        <View testID={`theme-circle-${theme.key}`} style={styles.circle} onLayout={(e) => setSide(e.nativeEvent.layout.width)}>
+          {layout.map((sticker, i) => (
+            <StickerView key={cards[i].concept} sticker={sticker} concept={cards[i].concept} emoji={cards[i].emoji} icons={icons} side={side} hero={i === 0} />
+          ))}
+          {/* A light blur, a little darker, over the cards behind: the one in the middle stands out. */}
+          {/* Measured on a capture: 12 blurred the small cards past recognition; 5 (about one point) keeps them readable. */}
+          <BlurView intensity={5} tint="dark" style={[StyleSheet.absoluteFill, styles.veil, { zIndex: layout.length - 1 }]} />
+        </View>
+      )}
       <Text style={styles.title} numberOfLines={2}>
         {theme.title}
       </Text>
@@ -136,6 +151,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     marginBottom: spacing.xs,
   },
+  baked: { width: '100%', aspectRatio: 1, marginBottom: spacing.xs },
   sticker: { position: 'absolute', aspectRatio: 1 },
   veil: { backgroundColor: 'rgba(12,12,20,0.22)' },
   layer: { position: 'absolute', top: '8%', left: '8%', width: '84%', height: '84%' },

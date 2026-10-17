@@ -66,3 +66,11 @@ describe('the sticker put forward in a theme’s circle', () => {
     });
   });
 });
+
+describe('the baked circles of the themes', () => {
+  it('every theme ships its circle in the app, shown at once', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { THEME_PREVIEWS } = require('../constants/themePreviews');
+    expect(Object.keys(THEME_PREVIEWS).sort()).toEqual(THEMES.map((t) => t.key).sort());
+  });
+});
