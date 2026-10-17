@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { memo, useMemo } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { Template } from '../constants/presets';
 import { colors, radius, spacing } from '../constants/theme';
-import { aiIconUri } from '../lib/aiIconFiles';
 import { openPopular } from '../lib/create';
 import { listCover } from '../lib/listCover';
 import { formatCount, toggleFavorite } from '../lib/popular';
 import { useCatalog } from '../store/useCatalog';
 import type { TierList } from '../store/types';
 import { Clickable } from './Clickable';
+import { Sticker } from './Sticker';
 
 const HEART = '#FF5C7A';
 
@@ -51,13 +51,7 @@ export const PopularRow = memo(function PopularRow({ template, list, completions
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
     >
       {/* Its favourite card: the one players rank S most often. */}
-      <View style={styles.emojiWrap}>
-        {cover.url ? (
-          <Image source={{ uri: aiIconUri(cover.url) }} style={styles.cover} resizeMode="contain" />
-        ) : (
-          <Text style={styles.emoji}>{cover.emoji}</Text>
-        )}
-      </View>
+      <Sticker url={cover.url} emoji={cover.emoji} size={52} />
       <View style={styles.body}>
         <Text numberOfLines={1} style={styles.title}>
           {template.title}
@@ -99,16 +93,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  emojiWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceAlt,
-  },
-  emoji: { fontSize: 28 },
-  cover: { width: 44, height: 44 },
   body: { flex: 1, gap: 2 },
   title: { color: colors.text, fontSize: 16, fontWeight: '700' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
