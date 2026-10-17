@@ -3,17 +3,50 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { aiIconUri } from '../lib/aiIconFiles';
+import { stickerLayout, type Sticker } from '../lib/stickerLayout';
 import type { Theme } from '../lib/themes';
 import { Clickable } from './Clickable';
 
 type Group = { theme: Theme; count: number };
 
-/** One card of a patchwork: its library image once drawn, its emoji until then. */
-function Patch({ concept, emoji, icons }: { concept: string; emoji: string; icons: Record<string, string> }) {
+// The white die-cut border of a sticker: the picture drawn eight times in white,
+// pushed a few points each way, under the picture itself.
+const OUTLINE = 2.5;
+const AROUND = [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => [
+  { translateX: OUTLINE * Math.cos((deg * Math.PI) / 180) },
+  { translateY: OUTLINE * Math.sin((deg * Math.PI) / 180) },
+]);
+
+/** One sticker of a theme's tile: its library image once drawn, its emoji on a round sticker until then. */
+function StickerView({ sticker, concept, emoji, icons }: { sticker: Sticker; concept: string; emoji: string; icons: Record<string, string> }) {
   const url = icons[concept];
+  const place = {
+    left: `${(sticker.x - sticker.size / 2) * 100}%`,
+    top: `${(sticker.y - sticker.size / 2) * 100}%`,
+    width: `${sticker.size * 100}%`,
+    zIndex: sticker.z,
+    transform: [{ rotate: `${sticker.rotate}deg` }],
+  } as const;
+  if (!url) {
+    return (
+      <View style={[styles.sticker, place]}>
+        <View style={styles.round}>
+          <Text style={styles.roundEmoji} adjustsFontSizeToFit numberOfLines={1}>
+            {emoji}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+  const source = { uri: aiIconUri(url) };
   return (
-    <View style={styles.patch}>
-      {url ? <Image source={{ uri: aiIconUri(url) }} style={styles.patchImage} resizeMode="contain" /> : <Text style={styles.patchEmoji}>{emoji}</Text>}
+    <View style={[styles.sticker, place]}>
+      {/* A soft shadow under the whole sticker, border included. */}
+      <Image source={source} style={[styles.layer, styles.shadow]} tintColor="rgba(0,0,0,0.45)" resizeMode="contain" />
+      {AROUND.map((offset, i) => (
+        <Image key={i} source={source} style={[styles.layer, { transform: offset }]} tintColor="#FFFFFF" resizeMode="contain" />
+      ))}
+      <Image source={source} style={styles.layer} resizeMode="contain" />
     </View>
   );
 }
@@ -27,10 +60,10 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
       onPress={() => onOpen(theme.key)}
       style={({ pressed }) => [styles.tile, pressed && { opacity: 0.85 }]}
     >
-      {/* What's inside, at a glance: nine cards of the theme. */}
+      {/* What's inside, at a glance: the theme's cards as stickers thrown on the tile. */}
       <View style={styles.mosaic}>
-        {theme.preview.map((p) => (
-          <Patch key={p.concept} concept={p.concept} emoji={p.emoji} icons={icons} />
+        {stickerLayout(theme.key, theme.preview.length).map((sticker, i) => (
+          <StickerView key={theme.preview[i].concept} sticker={sticker} concept={theme.preview[i].concept} emoji={theme.preview[i].emoji} icons={icons} />
         ))}
       </View>
       <Text style={styles.title} numberOfLines={1}>
@@ -71,22 +104,30 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   mosaic: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     aspectRatio: 1,
     borderRadius: radius.md,
+    // Stickers cut by the edges, as on a laptop lid.
     overflow: 'hidden',
+    backgroundColor: colors.background,
     marginBottom: 4,
   },
-  patch: {
-    width: '33.333%',
-    height: '33.333%',
+  sticker: { position: 'absolute', aspectRatio: 1 },
+  layer: { position: 'absolute', top: '8%', left: '8%', width: '84%', height: '84%' },
+  shadow: { transform: [{ translateX: 1.5 }, { translateY: 3 }, { scale: 1.06 }] },
+  round: {
+    flex: 1,
+    margin: '10%',
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
+    shadowOffset: { width: 1, height: 3 },
+    elevation: 3,
   },
-  patchImage: { width: '86%', height: '86%' },
-  patchEmoji: { fontSize: 24 },
+  roundEmoji: { fontSize: 28, textAlign: 'center', width: '80%' },
   title: { color: colors.text, fontSize: 15, fontWeight: '700' },
   count: { color: colors.textMuted, fontSize: 13 },
 });
