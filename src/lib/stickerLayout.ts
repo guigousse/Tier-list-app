@@ -1,6 +1,6 @@
 /**
- * Where the stickers of a theme's tile go: scattered like a laptop lid covered in
- * stickers, overlapping, tilted, some cut by the edges. Drawn from the theme's key, so
+ * Where the stickers of a theme's tile go: packed in a circle like a laptop lid
+ * covered in stickers, overlapping, tilted, cut by the rim. Drawn from the theme's key, so
  * a tile looks the same at every opening and no two themes look alike.
  */
 export type Sticker = {
@@ -32,15 +32,18 @@ function random(seed: string): () => number {
 export function stickerLayout(key: string, count: number): Sticker[] {
   const rand = random(key);
   const between = (min: number, max: number) => min + rand() * (max - min);
-  // One sticker per cell of a 3×3 grid, pushed off its centre: no corner stays empty,
-  // and neighbours overlap since each is wider than a third of the tile.
+  // One in the middle, the others in a ring around it, each a little off its place:
+  // close enough that together they cover the whole circle the tile is cut to.
+  const ring = Math.max(1, count - 1);
+  const turn = rand() * 360;
   const stickers = Array.from({ length: count }, (_, i) => {
-    const col = i % 3;
-    const row = Math.floor(i / 3) % 3;
+    if (i === 0) return { x: 0.5 + between(-0.03, 0.03), y: 0.5 + between(-0.03, 0.03), size: between(0.5, 0.56), rotate: between(-22, 22), z: 0 };
+    const angle = ((turn + ((i - 1) * 360) / ring + between(-8, 8)) * Math.PI) / 180;
+    const radius = between(0.29, 0.33);
     return {
-      x: Math.min(0.97, Math.max(0.03, (col + 0.5) / 3 + between(-0.12, 0.12))),
-      y: Math.min(0.97, Math.max(0.03, (row + 0.5) / 3 + between(-0.12, 0.12))),
-      size: between(0.46, 0.62),
+      x: 0.5 + radius * Math.cos(angle),
+      y: 0.5 + radius * Math.sin(angle),
+      size: between(0.58, 0.66),
       rotate: between(-22, 22),
       z: 0,
     };
