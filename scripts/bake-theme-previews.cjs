@@ -28,8 +28,12 @@ const SCALE = 4;
   await page.goto(URL, { waitUntil: 'networkidle' });
   // The catalogue answers, then every sticker image loads.
   await page.waitForFunction(() => document.querySelectorAll('[data-testid^="theme-circle-"]').length > 0, null, { timeout: 60_000 });
-  await page.waitForTimeout(4000);
-  await page.waitForFunction(() => [...document.images].every((img) => img.complete), null, { timeout: 60_000 });
+  // React Native Web draws images as backgrounds, not <img>: wait for the network to rest
+  // (the catalogue, then the ~170 sticker pictures), with a margin for the last paints.
+  await page.waitForLoadState('networkidle', { timeout: 120_000 });
+  await page.waitForTimeout(15_000);
+  await page.waitForLoadState('networkidle', { timeout: 120_000 });
+  await page.waitForTimeout(3000);
   const circles = await page.$$('[data-testid^="theme-circle-"]');
   for (const circle of circles) {
     const key = (await circle.getAttribute('data-testid')).replace('theme-circle-', '');
