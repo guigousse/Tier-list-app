@@ -45,13 +45,21 @@ export const useCatalog = create<CatalogState>()(
           fetchPastDailies(),
           fetchDiscovery(),
         ]);
-        set((state) => ({
-          templates: templates.status === 'fulfilled' ? templates.value : state.templates,
-          daily: daily.status === 'fulfilled' ? daily.value : state.daily,
-          stats: stats.status === 'fulfilled' ? stats.value : state.stats,
-          pastDailies: pastDailies.status === 'fulfilled' ? pastDailies.value : state.pastDailies,
-          discovery: discovery.status === 'fulfilled' ? discovery.value : state.discovery,
-        }));
+        set((state) => {
+          // Each return to the app asks again, and the answer is mostly the same: a part
+          // left equal keeps its object, so the screens reading it don't render again,
+          // and nothing at all changed means no update (nor a rewrite of the cache).
+          const keep = <K extends keyof CatalogState>(key: K, answer: PromiseSettledResult<CatalogState[K]>) =>
+            answer.status === 'fulfilled' && JSON.stringify(answer.value) !== JSON.stringify(state[key]) ? { [key]: answer.value } : {};
+          const changed = {
+            ...keep('templates', templates),
+            ...keep('daily', daily),
+            ...keep('stats', stats),
+            ...keep('pastDailies', pastDailies),
+            ...keep('discovery', discovery),
+          };
+          return Object.keys(changed).length ? changed : state;
+        });
       },
     }),
     {

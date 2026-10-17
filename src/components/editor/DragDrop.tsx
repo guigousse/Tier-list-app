@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -30,7 +30,8 @@ const MAX_SPEED = 14;
 type DragContextValue = {
   scrollRef: ReturnType<typeof useAnimatedRef<Animated.ScrollView>>;
   hoverZone: SharedValue<string>;
-  draggingId: string | null;
+  /** Id of the card being dragged ('' when none), read on the UI thread. */
+  draggedId: SharedValue<string>;
   cardSize: number;
   showLabels: boolean;
   /** Cards can't be dragged (validated daily tier list). */
@@ -98,6 +99,9 @@ export function DragProvider({ children, cardSize, showLabels, haptics, locked =
   const dragX = useSharedValue(0);
   const dragY = useSharedValue(0);
   const active = useSharedValue(false);
+  // A shared value, not state in the context: grabbing a card rendered every card of the
+  // editor again (twice, at the grab and the drop) only to dim the one picked up.
+  const draggedId = useSharedValue('');
   const rootOffset = useSharedValue({ x: 0, y: 0 });
   const zoneRects = useSharedValue<ZoneRect[]>([]);
   const scrollAtMeasure = useSharedValue(0);
@@ -180,11 +184,12 @@ export function DragProvider({ children, cardSize, showLabels, haptics, locked =
   const begin = useCallback(
     (card: Card) => {
       setDragging(card);
+      draggedId.set(card.id);
       autoScroll.setActive(true);
       if (haptics) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       measureAll();
     },
-    [autoScroll, haptics, measureAll],
+    [autoScroll, draggedId, haptics, measureAll],
   );
 
   const drop = useCallback(
@@ -192,6 +197,7 @@ export function DragProvider({ children, cardSize, showLabels, haptics, locked =
       active.set(false);
       autoScroll.setActive(false);
       setDragging(null);
+      draggedId.set('');
       if (!success) return;
       const m = measured.current;
       const delta = scrollOffset.value - m.scrollAt;
@@ -206,14 +212,14 @@ export function DragProvider({ children, cardSize, showLabels, haptics, locked =
       onMove(cardId, zone.id, insertionIndex(siblings, x, y));
       if (haptics) Haptics.selectionAsync().catch(() => {});
     },
-    [active, autoScroll, haptics, onMove, scrollOffset, viewport],
+    [active, autoScroll, draggedId, haptics, onMove, scrollOffset, viewport],
   );
 
   const value = useMemo<DragContextValue>(
     () => ({
       scrollRef,
       hoverZone,
-      draggingId: dragging?.id ?? null,
+      draggedId,
       cardSize,
       showLabels,
       locked,
@@ -232,7 +238,7 @@ export function DragProvider({ children, cardSize, showLabels, haptics, locked =
       dragY,
       active,
     }),
-    [scrollRef, hoverZone, dragging, cardSize, showLabels, locked, registerZone, registerCard, begin, drop, dragX, dragY, active, viewportHeight, contentHeight],
+    [scrollRef, hoverZone, draggedId, cardSize, showLabels, locked, registerZone, registerCard, begin, drop, dragX, dragY, active, viewportHeight, contentHeight],
   );
 
   const overlayStyle = useAnimatedStyle(() => ({
@@ -277,8 +283,9 @@ type DraggableProps = {
   onPress: (card: Card) => void;
 };
 
-export function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) {
-  const { registerCard, begin, drop, dragX, dragY, active, draggingId, cardSize, showLabels, locked } = useDrag();
+export const DraggableCard = memo(function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) {
+  const { registerCard, begin, drop, dragX, dragY, active, draggedId, cardSize, showLabels, locked } = useDrag();
+  const dimmed = useAnimatedStyle(() => ({ opacity: draggedId.value === card.id ? 0.25 : 1 }));
   const ref = useRef<View>(null);
   useEffect(() => registerCard(card.id, zone, ref, scrolls), [card.id, zone, registerCard, scrolls]);
 
@@ -317,20 +324,20 @@ export function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) 
 
   return (
     <GestureDetector gesture={gesture}>
-      <View
+      <Animated.View
         ref={ref}
         collapsable={false}
         accessible
         accessibilityRole="button"
         accessibilityLabel={card.label || 'Carte'}
         accessibilityHint={locked ? undefined : 'Touchez pour modifier ou déplacer, maintenez pour glisser'}
-        style={{ opacity: draggingId === card.id ? 0.25 : 1 }}
+        style={dimmed}
       >
         <CardView card={card} size={cardSize} showLabel={showLabels} />
-      </View>
+      </Animated.View>
     </GestureDetector>
   );
-}
+});
 
 export function useDragContext() {
   return useDrag();

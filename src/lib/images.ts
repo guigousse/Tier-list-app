@@ -6,10 +6,13 @@ import { newId } from './id';
 
 // Only the file name is persisted: the app container path changes between
 // iOS updates, so absolute URIs would break.
+// Looked up once: every card displayed asked the file system again (a native call).
+let images: Directory | null = null;
 function imagesDir(): Directory {
+  if (images) return images;
   const dir = new Directory(Paths.document, 'card-images');
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
-  return dir;
+  return (images = dir);
 }
 
 export function imageUri(name: string | undefined): string | undefined {

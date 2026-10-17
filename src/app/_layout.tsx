@@ -115,6 +115,9 @@ export default function RootLayout() {
               headerShadowVisible: false,
               headerBackButtonDisplayMode: 'minimal',
               contentStyle: { backgroundColor: colors.background },
+              // Screens under the one shown don't render: Accueil and Mes listes redrew at
+              // every card moved in the editor. They catch up when they come back.
+              freezeOnBlur: true,
             }}
           >
             <Stack.Screen name="index" options={{ headerShown: false }} />

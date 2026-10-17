@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { Template } from '../constants/presets';
@@ -10,9 +11,12 @@ import { Clickable } from './Clickable';
 
 const HEART = '#FF5C7A';
 
-/** « 13 oct. » for "2026-10-13". */
+const days = new Map<string, string>();
+/** « 13 oct. » for "2026-10-13" (each day formatted once: up to 366 rows). */
 function dayLabel(day: string): string {
-  return new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  let label = days.get(day);
+  if (!label) days.set(day, (label = new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })));
+  return label;
 }
 const SUCCESS = '#2EAD6B';
 
@@ -27,7 +31,7 @@ type Props = {
 };
 
 /** A popular tier list on one line: emoji, title, progress, favourites and completed rankings. */
-export function PopularRow({ template, list, completions, favorites, favorite }: Props) {
+export const PopularRow = memo(function PopularRow({ template, list, completions, favorites, favorite }: Props) {
   const validated = Boolean(list?.popular?.validatedAt ?? list?.daily?.validatedAt);
   const ranked = list ? Object.keys(list.cards).length - list.pool.length : 0;
   const progress = validated ? 'Validée' : list ? `En cours · ${ranked}/${template.items.length}` : `${template.items.length} cartes`;
@@ -70,7 +74,7 @@ export function PopularRow({ template, list, completions, favorites, favorite }:
       </View>
     </Clickable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: {

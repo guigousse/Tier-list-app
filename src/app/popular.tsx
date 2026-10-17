@@ -1,16 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, ScrollView, StyleSheet, Text, TextInput, View, type ListRenderItem } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
+import { usePopularCopies } from '../components/PopularList';
+import { PopularRow } from '../components/PopularRow';
+import type { Template } from '../constants/presets';
 import { Chip } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
-import { usePopularTemplates } from '../store/useCatalog';
+import { popularShown, searchIndex, type PopularFilter } from '../lib/popularSearch';
+import { useCatalog, usePopularTemplates } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 
-type Filter = 'all' | 'favorites' | 'todo' | 'started' | 'validated';
+type Filter = PopularFilter;
 type Sort = 'popular' | 'title';
 
 const FILTERS: { key: Filter; label: string }[] = [
@@ -20,9 +23,6 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'started', label: 'En cours' },
   { key: 'validated', label: 'Validées' },
 ];
-
-/** Lower case, without accents, for searching. */
-const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /** Every popular tier list, with search, filters and sorting. */
 export default function Popular() {
@@ -35,34 +35,30 @@ export default function Popular() {
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('popular');
 
-  const shown = useMemo(() => {
-    const q = fold(query.trim());
-    const result = templates.filter((t) => {
-      // Search the title and the cards.
-      if (q && !fold([t.title, ...t.items].join(' ')).includes(q)) return false;
-      const copy = copies(t);
-      switch (filter) {
-        case 'favorites':
-          return favorites.includes(t.key);
-        case 'todo':
-          return !copy;
-        case 'started':
-          return Boolean(copy && !isValidated(copy));
-        case 'validated':
-          return isValidated(copy);
-        default:
-          return true;
-      }
-    });
-    return sort === 'title' ? [...result].sort((a, b) => a.title.localeCompare(b.title, 'fr')) : result;
-  }, [templates, copies, favorites, query, filter, sort]);
+  const stats = useCatalog((s) => s.stats);
+  // Title and cards of every list folded once, not at every key typed.
+  const index = useMemo(() => searchIndex(templates), [templates]);
+  const shown = useMemo(
+    () => popularShown({ templates, index, copies, favorites, query, filter, sort }),
+    [templates, index, copies, favorites, query, filter, sort],
+  );
 
-  return (
-    <ScrollView
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
-    >
+  const renderItem = useCallback<ListRenderItem<Template>>(
+    ({ item: t }) => (
+      <PopularRow
+        template={t}
+        list={copies(t)}
+        completions={stats[t.key]?.completions ?? 0}
+        favorites={stats[t.key]?.favorites ?? 0}
+        favorite={favorites.includes(t.key)}
+      />
+    ),
+    [copies, stats, favorites],
+  );
+
+  // An element, not a component: the search field keeps its focus while typing.
+  const header = (
+    <View style={{ gap: spacing.md, marginBottom: spacing.md }}>
       <View style={styles.search}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
@@ -90,18 +86,33 @@ export default function Popular() {
           <Chip label="A → Z" selected={sort === 'title'} onPress={() => setSort('title')} />
         </View>
       </View>
-      {shown.length > 0 ? (
-        <PopularList templates={shown} />
-      ) : (
+    </View>
+  );
+
+  // Up to 366 past daily lists: only the rows on screen are built.
+  return (
+    <FlatList
+      data={shown}
+      keyExtractor={(t) => t.key}
+      renderItem={renderItem}
+      ListHeaderComponent={header}
+      ListEmptyComponent={
         <View style={styles.empty}>
           <Text style={styles.emptyText}>
             {filter === 'favorites' && !query ? 'Touchez le cœur d’une liste pour la retrouver ici.' : 'Aucune liste ne correspond.'}
           </Text>
         </View>
-      )}
-    </ScrollView>
+      }
+      ItemSeparatorComponent={Separator}
+      initialNumToRender={12}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      contentContainerStyle={[column, { padding: gutter, paddingBottom: insets.bottom + spacing.xl }]}
+    />
   );
 }
+
+const Separator = () => <View style={{ height: spacing.sm }} />;
 
 const styles = StyleSheet.create({
   search: {

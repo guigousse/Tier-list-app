@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
+import { AppState, type AppStateStatus } from 'react-native';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
 import { CLASSIC_TIERS, tierColorAt, type Template } from '../constants/presets';
@@ -9,6 +10,7 @@ import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
 import type { SharedList } from '../lib/share';
+import { debouncedJSONStorage } from './debouncedStorage';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 import { own } from '../lib/own';
 
@@ -200,6 +202,14 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
 }
 
 const STORE_KEY = 'tiercraft-store';
+
+const saveStorage = debouncedJSONStorage<Persisted>(() => AsyncStorage);
+
+/** Leaving the screen (app switcher, home, lock): what waits is written at once. */
+export function saveOnLeave(state: AppStateStatus): Promise<void> {
+  return state === 'active' ? Promise.resolve() : saveStorage.flush();
+}
+AppState.addEventListener('change', saveOnLeave);
 
 export const useTierStore = create<State>()(
   persist(
@@ -556,7 +566,7 @@ export const useTierStore = create<State>()(
       onRehydrateStorage: () => (_state, error) => {
         if (error) recoverFromHydrationError(error);
       },
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: saveStorage,
       partialize: (state) => ({
         lists: state.lists,
         settings: state.settings,
