@@ -16,7 +16,8 @@ alter table public.templates add constraint templates_concepts_match
 create or replace function public.get_card_icons(concepts text[])
  returns table(concept text, image text)
  language plpgsql
- stable
+ -- Volatile: the rate limit writes its counter (a stable function runs read-only).
+ volatile
  security definer
  set search_path to ''
 as $$
