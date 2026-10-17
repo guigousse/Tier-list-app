@@ -22,6 +22,7 @@ import { verifyAttestation } from "./appAttest.ts";
 import { WELCOME_BONUS } from "./pricing.ts";
 import { verifyTransaction } from "./purchase.ts";
 import { addClaude, type CostKind, costRow, type Meter, newMeter } from "./costs.ts";
+import { MAX_BODY, texts, trustForLibrary } from "./limits.ts";
 import { paid, WalletError } from "./wallet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
@@ -168,7 +169,10 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    // Every text of a request ends up in a prompt: a bounded request, a bounded bill.
+    const raw = await req.text();
+    if (raw.length > MAX_BODY) return json({ error: "too large" }, 413);
+    body = JSON.parse(raw);
   } catch {
     return json({ error: "bad request" }, 400);
   }
@@ -226,6 +230,8 @@ Deno.serve(async (req) => {
       });
       if (error) {
         if (error.message.includes("wallet")) throw new WalletError("wallet");
+        // Free TestFlight purchases: 2000 credits a month per wallet (wallet_purchase).
+        if (error.message.includes("sandbox limit")) return json({ error: "sandbox" }, 403);
         throw new Error(error.message);
       }
       const row = (data as { balance: number; credited: boolean }[])[0];
@@ -238,10 +244,11 @@ Deno.serve(async (req) => {
       const theme = String(body.theme ?? "").trim().slice(0, 80);
       // From 1: replacing a single card asks for a single word, and pays for one.
       const count = Math.min(20, Math.max(1, Math.round(Number(body.count) || 10)));
-      const existing = (Array.isArray(body.existing) ? body.existing : []).map(String).slice(0, 60);
+      const existing = texts(body.existing, 60, 40);
       if (!theme) return json({ error: "theme" }, 400);
-      await allow(deviceId, "words");
       const out = await tracked("words", (meter) => paid(db.rpc.bind(db), wallet, "words", count, async () => {
+        // The daily quota counts paid requests only: no wallet, no credits, no quota spent.
+        await allow(deviceId, "words");
         const drawn = await libraryHint();
         const result = await ask(
           CARDS_MODEL,
@@ -282,8 +289,8 @@ Deno.serve(async (req) => {
       const current = (Array.isArray(body.current) ? body.current : []).map((l) => String(l).slice(0, 50)).slice(0, 12);
       const cards = (Array.isArray(body.cards) ? body.cards : []).map((l) => String(l).slice(0, 40)).slice(0, 12);
       if (!theme || !(tone in TONES) || current.length === 0) return json({ error: "bad request" }, 400);
-      await allow(deviceId, "words");
       const out = await tracked("tiers", (meter) => paid(db.rpc.bind(db), wallet, "tiers", current.length, async () => {
+        await allow(deviceId, "words");
         const result = await ask(
           TIERS_MODEL,
           "low",
@@ -350,7 +357,10 @@ Deno.serve(async (req) => {
           await allow(deviceId, "icon");
           const { data: wish } = await db.from("icon_wishlist").select("concept, label").order("created_at").limit(40);
           const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
-          const plan = fillSheet(missing, pending as { concept: string; label: string }[]);
+          // The AI's own words for the concepts it proposed: those alone go to the library.
+          const { data: described } = await db.from("icon_wishlist").select("concept, label").in("concept", missing.map((c) => c.concept));
+          const wishlist = new Map<string, string>([...(described ?? []), ...pending].map((w: { concept: string; label: string }) => [w.concept, w.label]));
+          const { cards: plan, shared } = trustForLibrary(fillSheet(missing, pending as { concept: string; label: string }[]), wishlist);
           // A face Gemini refuses would lose the whole sheet: drawn again without the busts.
           const tiles = await drawWithFallback(plan, (cards) => drawSheet(cards, meter));
           const drawn: { concept: string; label: string; image: string }[] = [];
@@ -369,7 +379,7 @@ Deno.serve(async (req) => {
           if (drawn.length) {
             // A redrawn concept keeps its library image (other players' lists use it); the
             // new one is added beside it, and goes to the card that asked for it.
-            const fresh = drawn.filter((d) => !alreadyDrawn.has(d.concept));
+            const fresh = drawn.filter((d) => !alreadyDrawn.has(d.concept) && shared.has(d.concept));
             if (fresh.length) await db.from("card_icons").upsert(fresh, { onConflict: "concept" });
             await db.from("card_icon_images").insert(drawn);
             await db.from("icon_wishlist").delete().in("concept", drawn.map((d) => d.concept));

@@ -4,6 +4,8 @@
 // (cucumber, spinach, herbs) but almost never pure magenta.
 // Works on raw RGBA pixels, so it is tested without any image library.
 
+import { promptSafe } from "./limits.ts";
+
 export const KEY = [255, 0, 255];
 
 /** Background if this close to the key and connected to the sheet's edge. */
@@ -286,12 +288,14 @@ export function sheetPrompt(cards: { label: string; concept: string; theme?: str
   // The list's theme settles a homonym the concept alone might not: a "Rose" among colours.
   const list = cards
     .map((c, i) => {
+      // The player's words, quoted below, can't close the quotes or add a line.
+      const label = promptSafe(c.label);
       const what = c.symbol
-        ? `the single most emblematic object, building or creation associated with ${c.label}, with no person and no face`
+        ? `the single most emblematic object, building or creation associated with ${label}, with no person and no face`
         : isBust(c.concept)
-          ? `a friendly caricature bust (head and shoulders) of ${c.label}, recognizable by face, hairstyle and clothing`
+          ? `a friendly caricature bust (head and shoulders) of ${label}, recognizable by face, hairstyle and clothing`
           : c.concept.replace(/-/g, " ");
-      return `${i + 1}. ${what} (for a card named "${c.label}"${c.theme ? ` in a list about "${c.theme}"` : ""})`;
+      return `${i + 1}. ${what} (for a card named "${label}"${c.theme ? ` in a list about "${promptSafe(c.theme)}"` : ""})`;
     })
     .join("\n");
   const empty = cols * rows > cards.length ? `\nThe remaining ${cols * rows - cards.length} cell(s) at the end stay plain magenta.` : "";
