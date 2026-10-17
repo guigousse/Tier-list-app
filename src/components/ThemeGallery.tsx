@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from 'react';
+import { BlurView } from 'expo-blur';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing } from '../constants/theme';
@@ -47,7 +48,8 @@ function StickerView({
     left: `${(sticker.x - sticker.size / 2) * 100}%`,
     top: `${(sticker.y - sticker.size / 2) * 100}%`,
     width: `${sticker.size * 100}%`,
-    zIndex: sticker.z,
+    // The one put forward sits above the blur laid over the others.
+    zIndex: hero ? sticker.z + 1 : sticker.z,
     transform: [{ rotate: `${sticker.rotate}deg` }],
   } as const;
   if (!url) {
@@ -91,6 +93,8 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
         {layout.map((sticker, i) => (
           <StickerView key={cards[i].concept} sticker={sticker} concept={cards[i].concept} emoji={cards[i].emoji} icons={icons} side={side} hero={i === 0} />
         ))}
+        {/* A light blur, a little darker, over the cards behind: the one in the middle stands out. */}
+        <BlurView intensity={12} tint="dark" style={[StyleSheet.absoluteFill, { zIndex: layout.length - 1 }]} />
       </View>
       <Text style={styles.title} numberOfLines={2}>
         {theme.title}
