@@ -101,7 +101,10 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
       {/* What's inside, at a glance: the theme's cards as stickers packed in a circle,
           baked into the app (shown at once), or drawn live for a theme not baked yet. */}
       {baked ? (
-        <Image source={baked} style={styles.baked} accessibilityIgnoresInvertColors />
+        // The box sets the size: on iOS an image sized in percent drew at its own 444 points.
+        <View style={styles.baked}>
+          <Image source={baked} style={styles.bakedImage} resizeMode="contain" accessibilityIgnoresInvertColors />
+        </View>
       ) : (
         <View testID={`theme-circle-${theme.key}`} style={styles.circle} onLayout={(e) => setSide(e.nativeEvent.layout.width)}>
           {layout.map((sticker, i) => (
@@ -151,7 +154,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     marginBottom: spacing.xs,
   },
-  baked: { width: '100%', aspectRatio: 1, marginBottom: spacing.xs },
+  baked: { width: '100%', aspectRatio: 1, marginBottom: spacing.xs, borderRadius: 999, overflow: 'hidden' },
+  bakedImage: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   sticker: { position: 'absolute', aspectRatio: 1 },
   veil: { backgroundColor: 'rgba(12,12,20,0.22)' },
   layer: { position: 'absolute', top: '8%', left: '8%', width: '84%', height: '84%' },
