@@ -133,7 +133,7 @@ export default function ResultsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: spacing.xl }]}>
         <View style={{ gap: 4 }}>
-          <Text style={styles.kicker}>{list.daily ? `Tier list du jour · ${formatDay(list.daily.day)}` : 'Liste populaire'}</Text>
+          <Text style={styles.kicker}>{list.daily ? `Tier list du jour · ${formatDay(list.daily.day)}` : 'Liste publique'}</Text>
           <Text style={styles.title}>
             {list.emoji ?? list.daily?.emoji} {list.title}
           </Text>

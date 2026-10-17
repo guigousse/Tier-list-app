@@ -138,7 +138,7 @@ export default function Home() {
 
       <View style={{ gap: spacing.md }}>
         <View style={styles.sectionHead}>
-          <SectionTitle>Listes populaires</SectionTitle>
+          <SectionTitle>Listes publiques</SectionTitle>
           <View style={styles.discover} accessibilityRole="tablist">
             {(
               [

@@ -22,7 +22,7 @@ describe('legal texts', () => {
 describe('legal texts follow the latest features', () => {
   it('cover popular list views, badges and the energy kept after deleting the profile', () => {
     const t = text(PRIVACY);
-    expect(t).toContain('ouvrez une liste populaire');
+    expect(t).toContain('ouvrez une liste publique');
     expect(t).toContain('badges');
     expect(t).toContain('porte-monnaie d’énergie n’est pas effacé');
   });

@@ -66,7 +66,7 @@ export function ProfileRewards() {
             onChoose={chooseBadge}
           />
         </View>
-        <Text style={styles.foot}>Tier lists du jour et listes populaires validées. Aux VS, choisissez votre camp : l’autre badge disparaît !</Text>
+        <Text style={styles.foot}>Tier lists du jour et listes publiques validées. Aux VS, choisissez votre camp : l’autre badge disparaît !</Text>
       </View>
 
       <View style={styles.section}>

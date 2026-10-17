@@ -123,7 +123,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="lists" options={{ title: 'Mes listes' }} />
             <Stack.Screen name="templates" options={{ title: 'Modèles de liste' }} />
-            <Stack.Screen name="popular" options={{ title: 'Listes populaires' }} />
+            <Stack.Screen name="popular" options={{ title: 'Listes publiques' }} />
             <Stack.Screen name="social" options={{ title: 'Profil' }} />
             <Stack.Screen name="rewards" options={{ title: 'Récompenses' }} />
             <Stack.Screen name="legal/[doc]" options={{ title: '' }} />
