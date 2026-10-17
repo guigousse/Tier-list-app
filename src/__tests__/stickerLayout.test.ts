@@ -16,8 +16,8 @@ describe('the sticker bomb of a theme', () => {
         expect(stickers.some((s) => Math.floor(s.y * 3) === third)).toBe(true);
       }
       for (const s of stickers) {
-        expect(s.size).toBeGreaterThanOrEqual(0.38);
-        expect(s.size).toBeLessThanOrEqual(0.56);
+        expect(s.size).toBeGreaterThanOrEqual(0.45);
+        expect(s.size).toBeLessThanOrEqual(0.62);
         expect(Math.abs(s.rotate)).toBeLessThanOrEqual(22);
       }
       // Big enough to overlap: three across take more than the tile's width.

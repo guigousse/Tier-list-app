@@ -40,7 +40,7 @@ export function stickerLayout(key: string, count: number): Sticker[] {
     return {
       x: Math.min(0.97, Math.max(0.03, (col + 0.5) / 3 + between(-0.12, 0.12))),
       y: Math.min(0.97, Math.max(0.03, (row + 0.5) / 3 + between(-0.12, 0.12))),
-      size: between(0.4, 0.56),
+      size: between(0.46, 0.62),
       rotate: between(-22, 22),
       z: 0,
     };

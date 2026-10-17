@@ -31,9 +31,7 @@ function StickerView({ sticker, concept, emoji, icons }: { sticker: Sticker; con
     return (
       <View style={[styles.sticker, place]}>
         <View style={styles.round}>
-          <Text style={styles.roundEmoji} adjustsFontSizeToFit numberOfLines={1}>
-            {emoji}
-          </Text>
+          <Text style={styles.roundEmoji}>{emoji}</Text>
         </View>
       </View>
     );
@@ -116,7 +114,8 @@ const styles = StyleSheet.create({
   shadow: { transform: [{ translateX: 1.5 }, { translateY: 3 }, { scale: 1.06 }] },
   round: {
     flex: 1,
-    margin: '10%',
+    // Smaller than a drawn sticker: the emoji only waits for its picture.
+    margin: '20%',
     borderRadius: 999,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 1, height: 3 },
     elevation: 3,
   },
-  roundEmoji: { fontSize: 28, textAlign: 'center', width: '80%' },
+  roundEmoji: { fontSize: 30, textAlign: 'center' },
   title: { color: colors.text, fontSize: 15, fontWeight: '700' },
   count: { color: colors.textMuted, fontSize: 13 },
 });
