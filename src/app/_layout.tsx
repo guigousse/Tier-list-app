@@ -10,6 +10,7 @@ import { colors } from '../constants/theme';
 import { openWallet } from '../lib/credits';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
+import { coverUrls, preloadCovers } from '../lib/preload';
 import { restoreProgress } from '../lib/progress';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
 import { preloadSounds } from '../lib/sound';
@@ -108,6 +109,13 @@ export default function RootLayout() {
     const store = useTierStore.getState();
     syncAllCopies(Object.values(store.lists), templates, icons, store.syncPopular);
   }, [hydrated, templates, icons]);
+
+  // The pictures of the public lists copied to the device ahead: the page shows them at once.
+  const tops = useCatalog((s) => s.tops);
+  useEffect(() => {
+    if (!hydrated || Platform.OS === 'web') return;
+    preloadCovers(coverUrls(templates, tops, icons));
+  }, [hydrated, templates, tops, icons]);
 
   if (!hydrated) return null;
 
