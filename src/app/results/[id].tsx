@@ -59,13 +59,13 @@ export default function ResultsScreen() {
       () =>
         Alert.alert(
           'Ne ratez aucune tier list du jour',
-          `Recevoir un rappel chaque jour à ${settings.reminderHour} h ? (modifiable dans les Réglages)`,
+          'Recevoir un rappel chaque jour à 12 h 30, quand elle sort ? (modifiable dans les Réglages)',
           [
             { text: 'Plus tard', style: 'cancel' },
             {
               text: 'Oui',
               onPress: async () => {
-                if (await setDailyReminder(true, settings.reminderHour)) useTierStore.getState().updateSettings({ dailyReminder: true });
+                if (await setDailyReminder(true)) useTierStore.getState().updateSettings({ dailyReminder: true });
               },
             },
           ],

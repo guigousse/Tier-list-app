@@ -13,6 +13,7 @@ import { restoreIdentity } from '../lib/identity';
 import { coverUrls, preloadCovers } from '../lib/preload';
 import { restoreProgress } from '../lib/progress';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
+import { syncDailyReminder } from '../lib/reminders';
 import { preloadSounds } from '../lib/sound';
 import { AppHeader } from '../components/AppHeader';
 import { MilestoneWatcher } from '../components/rewards/MilestoneWatcher';
@@ -47,6 +48,8 @@ export default function RootLayout() {
     SplashScreen.hideAsync().catch(() => {});
     // Sounds loaded now, so the first tap isn't silent.
     preloadSounds();
+    // The daily reminder back on the time the daily tier list comes out (12:30 in Paris).
+    syncDailyReminder();
     if (hydrationRecovered()) {
       Alert.alert(
         'Données illisibles',

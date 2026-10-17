@@ -6,8 +6,10 @@ https://supabase.com/dashboard/project/mefhdtpyhtvplpfleyhi
 
 ## Ajouter une tier list du jour
 
-Table `daily_lists` (Table Editor ou SQL Editor). L'app affiche la plus récente
-dont la date est passée ; celles datées dans le futur restent cachées.
+Table `daily_lists` (Table Editor ou SQL Editor). La liste d'un jour sort à
+**12 h 30 heure de Paris**, pour tous les joueurs quel que soit leur fuseau
+(`src/lib/dailyClock.ts`) : jusque-là, c'est encore celle de la veille. Le rappel
+quotidien sonne à cette heure-là. Celles datées dans le futur restent cachées.
 
 ```sql
 insert into public.daily_lists (day, title, emoji, description, items) values

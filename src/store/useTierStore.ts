@@ -22,9 +22,8 @@ export type Settings = {
   haptics: boolean;
   /** Click sound on buttons. */
   sounds: boolean;
-  /** Daily local notification announcing the daily tier list, at `reminderHour`:00. */
+  /** Daily local notification announcing the daily tier list, when it comes out (12:30 in Paris). */
   dailyReminder: boolean;
-  reminderHour: number;
   /** Push notifications about friends: lists received, lists ranked, friends' rankings. */
   friendNotifications: boolean;
   /** Whether the reminder was already offered (after the first daily validation). */
@@ -126,7 +125,6 @@ const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   sounds: true,
   dailyReminder: false,
-  reminderHour: 18,
   friendNotifications: true,
   reminderAsked: false,
   onboarded: false,

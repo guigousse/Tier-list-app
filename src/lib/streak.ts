@@ -1,9 +1,11 @@
 import type { TierList } from '../store/types';
+import { dailyDay } from './dailyClock';
 
-/** "2026-10-13" for the local day `offset` days before `from`. */
+/** "2026-10-13" for the day `offset` days before the daily tier list's day at `from`. */
 function dayString(from: Date, offset: number): string {
-  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() - offset);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const [y, m, d] = dailyDay(from).split('-').map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d - offset));
+  return `${day.getUTCFullYear()}-${String(day.getUTCMonth() + 1).padStart(2, '0')}-${String(day.getUTCDate()).padStart(2, '0')}`;
 }
 
 /** Days whose daily tier list was validated: on the phone, and kept by the server (`more`). */

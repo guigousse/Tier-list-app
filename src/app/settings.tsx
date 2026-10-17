@@ -18,7 +18,6 @@ import { deleteMyProfile, friendCode, socialError } from '../lib/social';
 import { SHARE_HOST } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
 
-const REMINDER_HOURS = [9, 12, 18, 21];
 
 const SIZES: { key: CardSize; label: string }[] = [
   { key: 'small', label: 'Petite' },
@@ -113,11 +112,11 @@ export default function Settings() {
 
       <View style={styles.group}>
         <Text style={styles.groupTitle}>Tier list du jour</Text>
-        <Row label="Rappel quotidien" hint="Une notification quand la nouvelle tier list du jour vous attend">
+        <Row label="Rappel quotidien" hint="Une notification à 12 h 30, quand la nouvelle tier list du jour sort">
           <Switch
             value={settings.dailyReminder}
             onValueChange={async (on) => {
-              const ok = await setDailyReminder(on, settings.reminderHour);
+              const ok = await setDailyReminder(on);
               if (!ok) {
                 Alert.alert('Notifications désactivées', 'Autorisez les notifications de Tiercraft dans les Réglages de l’iPhone.');
                 return;
@@ -127,24 +126,6 @@ export default function Settings() {
             trackColor={{ true: colors.primary, false: colors.border }}
           />
         </Row>
-        {settings.dailyReminder ? (
-          <View style={styles.block}>
-            <Text style={styles.rowLabel}>Heure du rappel</Text>
-            <View style={styles.chips}>
-              {REMINDER_HOURS.map((h) => (
-                <Chip
-                  key={h}
-                  label={`${h} h`}
-                  selected={settings.reminderHour === h}
-                  onPress={() => {
-                    updateSettings({ reminderHour: h });
-                    setDailyReminder(true, h);
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
       </View>
 
       {profile ? (

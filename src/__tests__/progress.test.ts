@@ -11,7 +11,7 @@ const saveChoice = saveBadgeChoiceApi as jest.Mock;
 
 const daily = (day: string) => ({ daily: { day, emoji: '', cardIds: [], validatedAt: 1 } }) as unknown as TierList;
 const popular = () => ({ popular: { voteKey: 'popular:x', validatedAt: 1 } }) as unknown as TierList;
-const now = new Date(2026, 9, 13, 20);
+const now = new Date(Date.UTC(2026, 9, 13, 18)); // 13 October 2026, 20:00 in Paris
 
 describe('the flame with the days kept by the server', () => {
   it('days validated before a reinstall still count, with the local ones', () => {

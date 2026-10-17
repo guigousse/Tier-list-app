@@ -2,6 +2,7 @@ import type { TierList } from '../store/types';
 import type { TierTone } from './aiGenerate';
 import { parsePayload, toPayload, type SharedList } from './share';
 import type { Discovery } from './discover';
+import { dailyDay } from './dailyClock';
 
 /**
  * Tiercraft's Supabase project (tables and functions: see supabase/migrations).
@@ -244,12 +245,12 @@ export async function fetchCardIcons(concepts: string[]): Promise<Record<string,
 }
 
 /** Local calendar date, e.g. "2026-10-13". */
+/** Day of the daily tier list on show: it comes out at 12:30 Paris time (lib/dailyClock.ts). */
 export function today(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return dailyDay();
 }
 
-/** Most recent daily tier list up to today (local date), if any. */
+/** Most recent daily tier list up to today (the daily tier list's day), if any. */
 export async function fetchDaily(day = today()): Promise<DailyList | null> {
   const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items&day=lte.${day}&order=day.desc&limit=1`);
   const r = rows[0];
