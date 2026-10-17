@@ -34,3 +34,19 @@ describe('themes of the public tier lists', () => {
     for (const theme of THEMES) expect(theme.preview).toHaveLength(9);
   });
 });
+
+describe('images of the built-in lists', () => {
+  it('one concept per card, never twice in a list, written as the server writes them', () => {
+    // The server's own normalization (supabase/functions/ai-generate/concepts.ts): a
+    // concept written otherwise would miss its image in the library.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { normalizeConcept } = require('../../supabase/functions/ai-generate/concepts.ts');
+    for (const t of TEMPLATES) {
+      if (!t.concepts) continue;
+      expect(t.concepts).toHaveLength(t.items.length);
+      expect(new Set(t.concepts).size).toBe(t.concepts.length);
+      for (const c of t.concepts) expect(normalizeConcept(c)).toBe(c);
+    }
+    for (const theme of THEMES) for (const p of theme.preview) expect(normalizeConcept(p.concept)).toBe(p.concept);
+  });
+});

@@ -62,7 +62,7 @@ export const THEMES: Theme[] = [
       { concept: 'chess-knight', emoji: '♟️' },
       { concept: 'playing-card', emoji: '🃏' },
       { concept: 'smartphone', emoji: '📱' },
-      { concept: 'jigsaw-piece', emoji: '🧩' },
+      { concept: 'jigsaw', emoji: '🧩' },
       { concept: 'arcade-cabinet', emoji: '🕹️' },
       { concept: 'trophy', emoji: '🏆' },
       { concept: 'steam-locomotive', emoji: '🚂' },
@@ -108,7 +108,7 @@ export const THEMES: Theme[] = [
     emoji: '🎄',
     tags: ['seasons', 'holidays', 'christmas', 'halloween', 'winter'],
     preview: [
-      { concept: 'christmas-tree', emoji: '🎄' },
+      { concept: 'christma-tree', emoji: '🎄' },
       { concept: 'jack-o-lantern', emoji: '🎃' },
       { concept: 'snowflake', emoji: '❄️' },
       { concept: 'sun', emoji: '☀️' },
