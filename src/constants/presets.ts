@@ -98,6 +98,10 @@ export const TEMPLATES: Template[] = [
       ['🍑 Abricot', 'apricot'],
       ['🟣 Figue', 'fig'],
       ['🐉 Fruit du dragon', 'dragon-fruit'],
+      ['🟢 Durian', 'durian'],
+      ['🍋 Coing', 'quince'],
+      ['🍊 Pamplemousse', 'grapefruit'],
+      ['🔴 Groseille', 'redcurrant'],
     ],
   }),
   publicList({
@@ -127,6 +131,10 @@ export const TEMPLATES: Template[] = [
       ['🥮 Brownie', 'brownie'],
       ['🍓 Pavlova', 'pavlova'],
       ['🍮 Île flottante', 'floating-island'],
+      ['🥣 Gâteau de semoule', 'semolina-cake'],
+      ['🍮 Pudding', 'pudding'],
+      ['🍹 Baba au rhum', 'rum-baba'],
+      ['🍑 Fruits au sirop', 'canned-fruit'],
     ],
   }),
   publicList({
@@ -156,6 +164,11 @@ export const TEMPLATES: Template[] = [
       ['🦦 Loutre', 'otter'],
       ['🐻 Ours', 'brown-bear'],
       ['🦥 Paresseux', 'sloth'],
+      ['🕷️ Araignée', 'spider'],
+      ['🪳 Cafard', 'cockroach'],
+      ['🦟 Moustique', 'mosquito'],
+      ['🐀 Rat', 'rat'],
+      ['🪼 Méduse', 'jellyfish'],
     ],
   }),
   publicList({
@@ -214,6 +227,8 @@ export const TEMPLATES: Template[] = [
       ['💐 Fête des mères', 'flower-bouquet'],
       ['👔 Fête des pères', 'necktie'],
       ['🐟 Poisson d’avril', 'paper-fish'],
+      ['⏰ Changement d’heure', 'alarm-clock'],
+      ['🧾 Déclaration d’impôts', 'calculator'],
     ],
   }),
   publicList({
@@ -243,6 +258,10 @@ export const TEMPLATES: Template[] = [
       ['🥩 Steak frites', 'steak-fry-plate'],
       ['🥞 Galette', 'buckwheat-galette'],
       ['🍆 Ratatouille', 'ratatouille-pan'],
+      ['🌭 Andouillette', 'andouillette-sausage'],
+      ['🍲 Tripes', 'tripe-stew'],
+      ['🐮 Tête de veau', 'calf-head-plate'],
+      ['🥫 Raviolis en boîte', 'canned-ravioli'],
     ],
   }),
   publicList({
@@ -272,6 +291,9 @@ export const TEMPLATES: Template[] = [
       ['🌿 Poireau', 'leek'],
       ['🟣 Betterave', 'beetroot'],
       ['🌿 Artichaut', 'artichoke'],
+      ['⚪ Navet', 'turnip'],
+      ['🥬 Endive cuite', 'endive'],
+      ['🌿 Céleri', 'celery'],
     ],
   }),
   publicList({
@@ -301,6 +323,9 @@ export const TEMPLATES: Template[] = [
       ['🫧 Eau pétillante', 'sparkling-water'],
       ['🍎 Jus de pomme', 'apple-juice'],
       ['🍵 Matcha', 'matcha'],
+      ['🍅 Jus de tomate', 'tomato-juice'],
+      ['☕ Café soluble', 'instant-coffee-jar'],
+      ['🫙 Kombucha', 'kombucha-jar'],
     ],
   }),
   publicList({
@@ -330,6 +355,8 @@ export const TEMPLATES: Template[] = [
       ['🧀 Gouda', 'gouda'],
       ['🧀 Bleu d’Auvergne', 'bleu-d-auvergne'],
       ['🧀 Burrata', 'burrata'],
+      ['🧀 Cheddar en tranche', 'cheddar-square'],
+      ['🧀 Râpé en sachet', 'grated-cheese-bag'],
     ],
   }),
   publicList({
@@ -359,6 +386,8 @@ export const TEMPLATES: Template[] = [
       ['🥗 Salade de fruits', 'fruit-salad'],
       ['🥐 Pain aux raisins', 'pain-raisin'],
       ['🧀 Croque-monsieur', 'croque-monsieur'],
+      ['🍞 Biscottes', 'rusk'],
+      ['🥖 Pain rassis', 'stale-bread'],
     ],
   }),
   publicList({
@@ -417,6 +446,9 @@ export const TEMPLATES: Template[] = [
       ['⛵ Bataille navale', 'battleship'],
       ['🕵️ Codenames', 'spy-hat'],
       ['🦓 Dixit', 'dream-card'],
+      ['🪿 Jeu de l’oie', 'goose'],
+      ['🃏 Bataille', 'card-stack'],
+      ['🎱 Loto', 'bingo-card'],
     ],
   }),
   publicList({
@@ -446,6 +478,8 @@ export const TEMPLATES: Template[] = [
       ['🧸 Film pour enfants', 'teddy-bear'],
       ['🧟 Zombies', 'zombie-hand'],
       ['🕰️ Film en noir et blanc', 'film-reel'],
+      ['📺 Téléfilm de Noël', 'christma-tree'],
+      ['🦈 Nanar', 'shark'],
     ],
   }),
   publicList({
@@ -475,6 +509,8 @@ export const TEMPLATES: Template[] = [
       ['🎶 Blues', 'harmonica'],
       ['💃 Salsa', 'maraca'],
       ['🎧 Lo-fi', 'headphone'],
+      ['🛗 Musique d’ascenseur', 'elevator'],
+      ['📢 Jingle de pub', 'megaphone'],
     ],
   }),
   publicList({
@@ -504,6 +540,10 @@ export const TEMPLATES: Template[] = [
       ['🎵 Ukulélé', 'ukulele'],
       ['🔔 Xylophone', 'xylophone'],
       ['🎶 Cornemuse', 'bagpipe'],
+      ['🪈 Flûte à bec', 'recorder-flute'],
+      ['📯 Vuvuzela', 'vuvuzela'],
+      ['🔺 Triangle', 'musical-triangle'],
+      ['🎶 Kazoo', 'kazoo'],
     ],
   }),
   publicList({
@@ -533,6 +573,9 @@ export const TEMPLATES: Template[] = [
       ['🚐 Van aménagé', 'camper-van'],
       ['⛵ Voilier', 'sailboat'],
       ['🛼 Rollers', 'roller-skate'],
+      ['🛞 Monocycle', 'unicycle'],
+      ['🫏 Âne', 'donkey'],
+      ['🌙 Car de nuit', 'night-bus'],
     ],
   }),
   publicList({
@@ -562,6 +605,11 @@ export const TEMPLATES: Template[] = [
       ['🌱 Faire pousser les plantes', 'sprout'],
       ['🌤️ Contrôler la météo', 'storm-cloud'],
       ['🗝️ Traverser les murs', 'old-key'],
+      ['🐦 Parler aux pigeons', 'pigeon'],
+      ['✨ Briller dans le noir', 'light-stick'],
+      ['🤏 Rétrécir sans retour', 'shrinking-potion'],
+      ['👂 Tout entendre sans arrêt', 'ear'],
+      ['🤧 Éternuer des paillettes', 'glitter'],
     ],
   }),
   publicList({
@@ -591,6 +639,9 @@ export const TEMPLATES: Template[] = [
       ['🍳 Cuisiner', 'frying-pan'],
       ['🏰 Brocante', 'antique-vase'],
       ['🎲 Jeux de société', 'die'],
+      ['🛒 Courses', 'shopping-cart'],
+      ['🧺 Repassage', 'iron'],
+      ['📦 Aider à déménager', 'cardboard-box'],
     ],
   }),
   publicList({
@@ -620,6 +671,8 @@ export const TEMPLATES: Template[] = [
       ['🛠️ Technologie', 'wrench'],
       ['🍽️ Cantine', 'lunch-tray'],
       ['🔔 Récréation', 'school-bell'],
+      ['📝 Contrôle surprise', 'exam-paper'],
+      ['⏳ Heure de colle', 'big-clock'],
     ],
   }),
 ];
