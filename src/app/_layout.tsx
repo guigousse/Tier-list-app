@@ -15,9 +15,10 @@ import { onPushReceived, openPush, syncPushToken } from '../lib/push';
 import { preloadSounds } from '../lib/sound';
 import { AppHeader } from '../components/AppHeader';
 import { MilestoneWatcher } from '../components/rewards/MilestoneWatcher';
-import { useCatalog } from '../store/useCatalog';
+import { syncAllCopies } from '../lib/publicSync';
+import { useAllTemplates, useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
-import { hydrationRecovered, useHydrated } from '../store/useTierStore';
+import { hydrationRecovered, useHydrated, useTierStore } from '../store/useTierStore';
 import { openShop } from '../lib/shop';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -98,6 +99,15 @@ export default function RootLayout() {
     const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());
     return () => sub.remove();
   }, []);
+
+  // A public list enriched online (cards, tiers, images) reaches the copies already made.
+  const templates = useAllTemplates();
+  const icons = useCatalog((s) => s.icons);
+  useEffect(() => {
+    if (!hydrated) return;
+    const store = useTierStore.getState();
+    syncAllCopies(Object.values(store.lists), templates, icons, store.syncPopular);
+  }, [hydrated, templates, icons]);
 
   if (!hydrated) return null;
 

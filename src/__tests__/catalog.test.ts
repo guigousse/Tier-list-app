@@ -1,4 +1,4 @@
-import { fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates } from '../lib/api';
+import { fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates } from '../lib/api';
 import { useCatalog } from '../store/useCatalog';
 
 jest.mock('../lib/api', () => ({
@@ -7,6 +7,7 @@ jest.mock('../lib/api', () => ({
   fetchTemplateStats: jest.fn(),
   fetchPastDailies: jest.fn(),
   fetchDiscovery: jest.fn(),
+  fetchCardIcons: jest.fn(),
 }));
 
 const answer = () => {
@@ -15,6 +16,7 @@ const answer = () => {
   (fetchTemplateStats as jest.Mock).mockResolvedValue({ fruits: { completions: 3, favorites: 1 } });
   (fetchPastDailies as jest.Mock).mockResolvedValue([]);
   (fetchDiscovery as jest.Mock).mockResolvedValue({ tags: {}, trends: {} });
+  (fetchCardIcons as jest.Mock).mockResolvedValue({ kiwi: 'https://x/kiwi.png' });
 };
 
 describe('refreshing the catalogue when the app comes back', () => {
@@ -39,5 +41,15 @@ describe('refreshing the catalogue when the app comes back', () => {
     await useCatalog.getState().refresh();
     expect(useCatalog.getState().stats.fruits.completions).toBe(4);
     expect(useCatalog.getState().templates).toBe(templates);
+  });
+
+  it('asks the library images of the cards of every public list, published ones included', async () => {
+    answer();
+    (fetchTemplates as jest.Mock).mockResolvedValue([{ key: 'x', title: 'X', emoji: '🍎', items: ['Kiwi'], concepts: ['kiwi-online'] }]);
+    await useCatalog.getState().refresh();
+    const asked = (fetchCardIcons as jest.Mock).mock.calls.at(-1)[0] as string[];
+    expect(asked).toContain('kiwi-online');
+    expect(new Set(asked).size).toBe(asked.length);
+    expect(useCatalog.getState().icons).toEqual({ kiwi: 'https://x/kiwi.png' });
   });
 });

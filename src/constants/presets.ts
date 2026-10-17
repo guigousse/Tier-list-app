@@ -20,6 +20,13 @@ export type Template = {
   ranks?: number[];
   /** For a past daily tier list: its day (YYYY-MM-DD). */
   day?: string;
+  /**
+   * Per item: concept of its image in the shared AI library (English slug, as the
+   * server writes them: "red-apple"), drawn once and reused by every list.
+   */
+  concepts?: string[];
+  /** Grand theme the list is shown under in the gallery of public tier lists. */
+  theme?: string;
 };
 
 /** Ready-to-rank card sets, shown in the "Modèles" screen. */

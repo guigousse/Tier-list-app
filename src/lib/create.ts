@@ -6,6 +6,7 @@ import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
 import { downloadCardImage } from './images';
 import { recordTemplateView } from './api';
+import { copiesByKey } from './publicSync';
 
 /**
  * Creates a tier list (classic S → D tiers, or the template's) and opens it in the
@@ -31,10 +32,14 @@ export function openPopular(template: Template): void {
   const lists = Object.values(store.lists);
   // A past daily tier list played on its day: open that copy.
   const existing =
-    (template.day ? lists.find((l) => l.daily?.day === template.day) : undefined) ?? lists.find((l) => l.popular?.voteKey === voteKey);
+    (template.day ? lists.find((l) => l.daily?.day === template.day) : undefined) ??
+    copiesByKey(lists, () => voteKey).get(template.key);
   // Today's daily tier list (e.g. from a friend's profile): play it as the daily one.
-  const today = useCatalog.getState().daily;
-  const id = existing?.id ?? (template.day && template.day === today?.day ? store.createDailyList(today) : store.createPopularList(template));
+  const { daily: today, icons } = useCatalog.getState();
+  const id =
+    existing?.id ?? (template.day && template.day === today?.day ? store.createDailyList(today) : store.createPopularList(template, icons));
+  // Cards added to the list since the copy was made arrive to rank.
+  if (existing?.popular) store.syncPopular(existing.id, template, icons);
   router.push({ pathname: '/editor/[id]', params: { id } });
   // Counts in the trends (latest view per device).
   recordTemplateView(template.key, store.deviceId).catch(() => {});

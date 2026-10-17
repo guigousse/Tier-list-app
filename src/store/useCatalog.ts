@@ -4,8 +4,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
-import { fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import { fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
 import type { Discovery } from '../lib/discover';
+import type { IconLibrary } from '../lib/publicSync';
 
 /** Content published online (Supabase), cached so it shows offline too. */
 type CatalogState = {
@@ -17,6 +18,8 @@ type CatalogState = {
   stats: TemplateStats;
   /** Hidden theme tags and trend scores, for "Tendances" and "Pour toi". */
   discovery: Discovery;
+  /** Library images of the public lists' cards, by concept. */
+  icons: IconLibrary;
   /** Applies a change made on this device right away, before the next refresh. */
   bumpStat: (key: string, field: 'completions' | 'favorites', delta: number) => void;
   /** Fetches the latest templates and daily tier list; keeps the cache on failure. */
@@ -25,12 +28,13 @@ type CatalogState = {
 
 export const useCatalog = create<CatalogState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       templates: [],
       daily: null,
       pastDailies: [],
       stats: {},
       discovery: { tags: {}, trends: {} },
+      icons: {},
       bumpStat: (key, field, delta) =>
         set((state) => {
           const saved = state.stats[key];
@@ -45,6 +49,10 @@ export const useCatalog = create<CatalogState>()(
           fetchPastDailies(),
           fetchDiscovery(),
         ]);
+        // The concepts are known once the published templates are: asked in a second call.
+        const remote = templates.status === 'fulfilled' ? templates.value : get().templates;
+        const concepts = [...new Set([...TEMPLATES, ...remote].flatMap((t) => t.concepts ?? []).filter(Boolean))];
+        const [icons] = await Promise.allSettled([fetchCardIcons(concepts)]);
         set((state) => {
           // Each return to the app asks again, and the answer is mostly the same: a part
           // left equal keeps its object, so the screens reading it don't render again,
@@ -57,6 +65,7 @@ export const useCatalog = create<CatalogState>()(
             ...keep('stats', stats),
             ...keep('pastDailies', pastDailies),
             ...keep('discovery', discovery),
+            ...keep('icons', icons),
           };
           return Object.keys(changed).length ? changed : state;
         });
@@ -74,6 +83,7 @@ export const useCatalog = create<CatalogState>()(
         stats: state.stats,
         pastDailies: state.pastDailies,
         discovery: state.discovery,
+        icons: state.icons,
       }),
     },
   ),

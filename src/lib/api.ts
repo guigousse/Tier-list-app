@@ -193,17 +193,48 @@ export function fetchDailyResults(day: string): Promise<DailyResults> {
   return rpc<DailyResults>('get_daily_results', { day });
 }
 
-export type RemoteTemplate = { key: string; title: string; emoji: string; items: string[]; tiers?: string[] };
+export type RemoteTemplate = {
+  key: string;
+  title: string;
+  emoji: string;
+  items: string[];
+  tiers?: string[];
+  concepts?: string[];
+  theme?: string;
+};
 
 export type DailyList = { day: string; title: string; emoji: string; description?: string; items: string[] };
 
-type TemplateRow = { key: string; title: string; emoji: string; items: string[]; tiers: string[] | null };
-type DailyRow = Omit<TemplateRow, 'key' | 'tiers'> & { day: string; description: string | null };
+type TemplateRow = {
+  key: string;
+  title: string;
+  emoji: string;
+  items: string[];
+  tiers: string[] | null;
+  concepts: string[] | null;
+  theme: string | null;
+};
+type DailyRow = Omit<TemplateRow, 'key' | 'tiers' | 'concepts' | 'theme'> & { day: string; description: string | null };
 
 /** Templates published from the Supabase dashboard. */
 export async function fetchTemplates(): Promise<RemoteTemplate[]> {
-  const rows = await request<TemplateRow[]>('templates?select=key,title,emoji,items,tiers&order=sort.asc,created_at.asc');
-  return rows.map((r) => ({ key: r.key, title: r.title, emoji: r.emoji, items: r.items, tiers: r.tiers ?? undefined }));
+  const rows = await request<TemplateRow[]>('templates?select=key,title,emoji,items,tiers,concepts,theme&order=sort.asc,created_at.asc');
+  return rows.map((r) => ({
+    key: r.key,
+    title: r.title,
+    emoji: r.emoji,
+    items: r.items,
+    tiers: r.tiers ?? undefined,
+    concepts: r.concepts ?? undefined,
+    theme: r.theme ?? undefined,
+  }));
+}
+
+/** Images of the shared AI library already drawn for these concepts (free: nothing is drawn). */
+export async function fetchCardIcons(concepts: string[]): Promise<Record<string, string>> {
+  if (!concepts.length) return {};
+  const rows = await rpc<{ concept: string; image: string }[]>('get_card_icons', { concepts });
+  return Object.fromEntries((rows ?? []).map((r) => [r.concept, r.image]));
 }
 
 /** Local calendar date, e.g. "2026-10-13". */

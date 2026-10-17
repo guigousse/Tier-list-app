@@ -13,6 +13,7 @@ import type { SharedList } from '../lib/share';
 import { debouncedJSONStorage } from './debouncedStorage';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 import { own } from '../lib/own';
+import { publicTiers, syncedCopy, type IconLibrary } from '../lib/publicSync';
 
 /** The player's social profile. `secret` proves it is theirs to the server; never shown. */
 export type Profile = { id: string; secret: string; pseudo: string; tag: number; avatar: string };
@@ -108,8 +109,10 @@ type State = {
   createDailyList: (daily: DailyList) => string;
   /** Freezes the ranking of a daily tier list once every card is placed. */
   validateDaily: (listId: string) => boolean;
-  /** Creates the local copy of a popular tier list: classic S→D tiers, fixed cards. */
-  createPopularList: (template: Template) => string;
+  /** Creates the local copy of a public tier list: its tiers, fixed cards, library images. */
+  createPopularList: (template: Template, icons?: IconLibrary) => string;
+  /** Brings the copy up to the public list as it is now (cards added, tiers, images). */
+  syncPopular: (listId: string, template: Template, icons: IconLibrary) => void;
   /** Records the current ranking of a popular tier list as validated (can be done again). */
   validatePopular: (listId: string) => boolean;
   /** `ranks`: the popular ranking sent, marked sent only if it is still the one validated. */
@@ -496,10 +499,10 @@ export const useTierStore = create<State>()(
           return true;
         },
 
-        createPopularList: (template) => {
+        createPopularList: (template, icons = {}) => {
           const id = get().createList({
             title: template.title,
-            tierLabels: CLASSIC_TIERS,
+            tierLabels: publicTiers(template),
             cardLabels: template.items,
             cardRanks: template.ranks,
             emoji: template.emoji,
@@ -511,8 +514,16 @@ export const useTierStore = create<State>()(
             const popular = { key: template.key, voteKey: popularVoteKey(template), cardIds };
             return { lists: { ...state.lists, [id]: { ...list, popular } } };
           });
+          get().syncPopular(id, template, icons);
           return id;
         },
+
+        syncPopular: (listId, template, icons) =>
+          set((state) => {
+            const list = own(state.lists, listId);
+            const next = list && syncedCopy(list, template, icons);
+            return next ? { lists: { ...state.lists, [listId]: next } } : state;
+          }),
 
         validatePopular: (listId) => {
           const list = get().lists[listId];

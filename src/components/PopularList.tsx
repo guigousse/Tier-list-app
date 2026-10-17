@@ -3,7 +3,8 @@ import { View } from 'react-native';
 
 import type { Template } from '../constants/presets';
 import { spacing } from '../constants/theme';
-import { useCatalog } from '../store/useCatalog';
+import { copiesByKey } from '../lib/publicSync';
+import { useAllTemplates, useCatalog } from '../store/useCatalog';
 import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import type { TierList } from '../store/types';
 import { PopularRow } from './PopularRow';
@@ -14,12 +15,14 @@ import { PopularRow } from './PopularRow';
  */
 export function usePopularCopies(): (template: Template) => TierList | undefined {
   const lists = useTierStore((s) => s.lists);
+  const templates = useAllTemplates();
   return useMemo(() => {
     const all = Object.values(lists);
-    const popular = new Map(all.flatMap((l) => (l.popular ? [[l.popular.voteKey, l] as const] : [])));
+    const voteKeys = new Map(templates.map((t) => [t.key, popularVoteKey(t)]));
+    const popular = copiesByKey(all, (key) => voteKeys.get(key));
     const daily = new Map(all.flatMap((l) => (l.daily ? [[l.daily.day, l] as const] : [])));
-    return (t: Template) => (t.day ? daily.get(t.day) : undefined) ?? popular.get(popularVoteKey(t));
-  }, [lists]);
+    return (t: Template) => (t.day ? daily.get(t.day) : undefined) ?? popular.get(t.key);
+  }, [lists, templates]);
 }
 
 /** Whether the player validated their ranking of this copy. */
