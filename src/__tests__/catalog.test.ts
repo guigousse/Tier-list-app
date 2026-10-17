@@ -8,6 +8,7 @@ jest.mock('../lib/api', () => ({
   fetchPastDailies: jest.fn(),
   fetchDiscovery: jest.fn(),
   fetchCardIcons: jest.fn(),
+  fetchListTops: jest.fn(async () => ({ fruits: 2 })),
 }));
 
 const answer = () => {

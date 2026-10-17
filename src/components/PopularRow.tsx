@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { memo, useMemo } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import type { Template } from '../constants/presets';
 import { colors, radius, spacing } from '../constants/theme';
+import { aiIconUri } from '../lib/aiIconFiles';
 import { openPopular } from '../lib/create';
+import { listCover } from '../lib/listCover';
 import { formatCount, toggleFavorite } from '../lib/popular';
+import { useCatalog } from '../store/useCatalog';
 import type { TierList } from '../store/types';
 import { Clickable } from './Clickable';
 
@@ -33,6 +36,9 @@ type Props = {
 /** A popular tier list on one line: emoji, title, progress, favourites and completed rankings. */
 export const PopularRow = memo(function PopularRow({ template, list, completions, favorites, favorite }: Props) {
   const validated = Boolean(list?.popular?.validatedAt ?? list?.daily?.validatedAt);
+  const tops = useCatalog((s) => s.tops);
+  const icons = useCatalog((s) => s.icons);
+  const cover = useMemo(() => listCover(template, tops, icons), [template, tops, icons]);
   const ranked = list ? Object.keys(list.cards).length - list.pool.length : 0;
   const progress = validated ? 'Validée' : list ? `En cours · ${ranked}/${template.items.length}` : `${template.items.length} cartes`;
   const status = template.day ? `${progress} · du ${dayLabel(template.day)}` : progress;
@@ -44,8 +50,13 @@ export const PopularRow = memo(function PopularRow({ template, list, completions
       onPress={() => openPopular(template)}
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
     >
+      {/* Its favourite card: the one players rank S most often. */}
       <View style={styles.emojiWrap}>
-        <Text style={styles.emoji}>{template.emoji}</Text>
+        {cover.url ? (
+          <Image source={{ uri: aiIconUri(cover.url) }} style={styles.cover} resizeMode="contain" />
+        ) : (
+          <Text style={styles.emoji}>{cover.emoji}</Text>
+        )}
       </View>
       <View style={styles.body}>
         <Text numberOfLines={1} style={styles.title}>
@@ -97,6 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   emoji: { fontSize: 28 },
+  cover: { width: 44, height: 44 },
   body: { flex: 1, gap: 2 },
   title: { color: colors.text, fontSize: 16, fontWeight: '700' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

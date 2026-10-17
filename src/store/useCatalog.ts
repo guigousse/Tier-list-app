@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
 import { THEMES } from '../lib/themes';
-import { fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import { fetchListTops, fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
 import type { Discovery } from '../lib/discover';
 import type { IconLibrary } from '../lib/publicSync';
 
@@ -21,6 +21,8 @@ type CatalogState = {
   discovery: Discovery;
   /** Library images of the public lists' cards, by concept. */
   icons: IconLibrary;
+  /** Each public list's favourite card, its picture in the catalogue (src/lib/listCover.ts). */
+  tops: Record<string, number>;
   /** Applies a change made on this device right away, before the next refresh. */
   bumpStat: (key: string, field: 'completions' | 'favorites', delta: number) => void;
   /** Fetches the latest templates and daily tier list; keeps the cache on failure. */
@@ -36,6 +38,7 @@ export const useCatalog = create<CatalogState>()(
       stats: {},
       discovery: { tags: {}, trends: {} },
       icons: {},
+      tops: {},
       bumpStat: (key, field, delta) =>
         set((state) => {
           const saved = state.stats[key];
@@ -43,12 +46,13 @@ export const useCatalog = create<CatalogState>()(
           return { stats: { ...state.stats, [key]: { ...current, [field]: Math.max(0, current[field] + delta) } } };
         }),
       refresh: async () => {
-        const [templates, daily, stats, pastDailies, discovery] = await Promise.allSettled([
+        const [templates, daily, stats, pastDailies, discovery, tops] = await Promise.allSettled([
           fetchTemplates(),
           fetchDaily(),
           fetchTemplateStats(),
           fetchPastDailies(),
           fetchDiscovery(),
+          fetchListTops(),
         ]);
         // The concepts are known once the published templates are: asked in a second call.
         const remote = templates.status === 'fulfilled' ? templates.value : get().templates;
@@ -69,6 +73,7 @@ export const useCatalog = create<CatalogState>()(
             ...keep('pastDailies', pastDailies),
             ...keep('discovery', discovery),
             ...keep('icons', icons),
+            ...keep('tops', tops),
           };
           return Object.keys(changed).length ? changed : state;
         });
@@ -87,6 +92,7 @@ export const useCatalog = create<CatalogState>()(
         pastDailies: state.pastDailies,
         discovery: state.discovery,
         icons: state.icons,
+        tops: state.tops,
       }),
     },
   ),

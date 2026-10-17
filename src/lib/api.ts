@@ -230,6 +230,12 @@ export async function fetchTemplates(): Promise<RemoteTemplate[]> {
   }));
 }
 
+/** Each public list's favourite card (template key → index of the card most often ranked S). */
+export async function fetchListTops(): Promise<Record<string, number>> {
+  const rows = await rpc<{ template_key: string; top: number }[]>('get_list_tops', {});
+  return Object.fromEntries((rows ?? []).map((r) => [r.template_key, Number(r.top)]));
+}
+
 /** Images of the shared AI library already drawn for these concepts (free: nothing is drawn). */
 export async function fetchCardIcons(concepts: string[]): Promise<Record<string, string>> {
   if (!concepts.length) return {};
