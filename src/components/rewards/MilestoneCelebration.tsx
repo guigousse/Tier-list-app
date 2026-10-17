@@ -24,7 +24,7 @@ import { MANNEQUIN } from '../../lib/avatar';
 import { chooseBadge, type Badge } from '../../lib/badges';
 import { BURST, coinTimes, counterAt } from '../../lib/celebration';
 import { setBalance, useCredits, walletForRequest } from '../../lib/credits';
-import { teamLine, type Celebration } from '../../lib/milestoneEvents';
+import { creditsShow, teamLine, type Celebration } from '../../lib/milestoneEvents';
 import { PART_LABELS, withReward } from '../../lib/rewards';
 import { playCoin, playComplete, playPop, playSparkle, playThunder } from '../../lib/sound';
 import { useTierStore } from '../../store/useTierStore';
@@ -314,6 +314,7 @@ function CreditsReveal({
   const shown = useRevealed();
   const box = useRef<View>(null);
   const [collecting, setCollecting] = useState(false);
+  const [later, setLater] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
@@ -322,14 +323,15 @@ function CreditsReveal({
     setCollecting(true);
     const before = useCredits.getState().balance ?? 0;
     // The server pays the credits of the path; asked now, so the balance shows them.
-    let after = before + credits;
+    let claimed: number | null = null;
     try {
       const { deviceId } = useTierStore.getState();
-      after = await claimListCredits(deviceId, await walletForRequest());
+      claimed = await claimListCredits(deviceId, await walletForRequest());
     } catch {
-      // Offline: paid at the next launch; the show goes on with the amount won.
+      // Offline: paid at the next launch, and the counter doesn't pretend otherwise.
     }
-    const from = Math.max(0, Math.min(before, after - credits));
+    const { from, to: after, paid } = creditsShow(before, claimed, credits);
+    setLater(!paid);
     onCount(from);
     box.current?.measureInWindow((x, y, w, h) => {
       onBurst({ x: x + w / 2, y: y + h / 2 }, target ?? { x: x + w / 2, y: y - 240 });
@@ -359,7 +361,7 @@ function CreditsReveal({
         <EnergyIcon size={56} />
       </Animated.View>
       <Animated.View entering={FadeIn.delay(250)}>
-        <Text style={styles.name}>{credits} crédits d’énergie offerts</Text>
+        <Text style={styles.name}>{later ? 'Versés dès que la connexion revient' : `${credits} crédits d’énergie offerts`}</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(450)} style={styles.actions}>
         <Button label="Récupérer" icon="download-outline" onPress={collect} disabled={collecting} />

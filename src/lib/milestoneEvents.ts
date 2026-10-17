@@ -65,9 +65,16 @@ export type Celebrated = { lists: number; flame: number };
  * deleted then completed again doesn't celebrate its step twice. First time (`null`):
  * nothing, the player's progress counts as celebrated.
  */
-export function pendingCelebrations(celebrated: Celebrated | null, won: Celebrated, choices: Record<string, string>) {
+export function pendingCelebrations(
+  celebrated: Celebrated | null,
+  won: Celebrated,
+  choices: Record<string, string>,
+  { credits = true }: { credits?: boolean } = {},
+) {
   if (!celebrated) return { events: [] as Celebration[], celebrated: won };
-  const events = [...crossedSteps('lists', celebrated.lists, won.lists, choices), ...crossedSteps('flame', celebrated.flame, won.flame, {})];
+  const events = [...crossedSteps('lists', celebrated.lists, won.lists, choices), ...crossedSteps('flame', celebrated.flame, won.flame, {})]
+    // The server pays the path's credits to wallets Apple vouched for only: no "+5" it won't give.
+    .filter((e) => credits || e.kind !== 'credits');
   return { events, celebrated: { lists: Math.max(celebrated.lists, won.lists), flame: Math.max(celebrated.flame, won.flame) } };
 }
 
@@ -81,4 +88,14 @@ export function replayListSteps(
   flame = 0,
 ) {
   return { celebrated: { lists: 0, flame: state.celebrated?.flame ?? flame }, badgeChoices: {}, shownBadges: [] as string[] };
+}
+
+/**
+ * The balance counter when the credits of a step are collected. `claimed`: the balance
+ * the server answered (it may have paid them already, at launch: the counter then replays
+ * the last `credits`), or null offline: nothing shown that wasn't given.
+ */
+export function creditsShow(before: number, claimed: number | null, credits: number) {
+  if (claimed === null) return { from: before, to: before, paid: false };
+  return { from: Math.max(0, Math.min(before, claimed - credits)), to: claimed, paid: true };
 }

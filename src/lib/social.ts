@@ -7,7 +7,7 @@ import { popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
 import { blockPlayer, createProfile, deleteProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
 import { newId } from './id';
 import { syncBadges } from './badges';
-import { saveIdentity } from './identity';
+import { restoreIdentity, saveIdentity } from './identity';
 import { syncPushToken } from './push';
 
 const AVATAR_COLORS = ['#7C5CFF', '#FF7F7F', '#FFBF7F', '#4CC9C0', '#5AA9FF', '#B45CFF', '#2EAD6B', '#FF7FB0'];
@@ -49,6 +49,9 @@ export function socialError(e: unknown): string {
 
 /** Creates the player's profile, or updates it, and keeps it on the device. */
 export async function saveProfile(pseudo: string, avatar: string): Promise<void> {
+  // After a reinstall the Keychain may hold a profile that couldn't be fetched at launch
+  // (offline): that one is updated, rather than a second profile made.
+  if (!useTierStore.getState().profile) await restoreIdentity();
   const { profile, deviceId, setProfile } = useTierStore.getState();
   if (profile) {
     const saved = await updateProfile(profile.secret, pseudo, avatar);

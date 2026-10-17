@@ -34,6 +34,7 @@ import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
+import { own } from '../../lib/own';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
@@ -41,7 +42,7 @@ const noop = () => {};
 export default function EditorScreen() {
   // `edit`: a list just created opens in edit mode, to name it and add its cards.
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
-  const list = useTierStore((s) => (id ? s.lists[id] : undefined));
+  const list = useTierStore((s) => own(s.lists, id));
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
   const { cardSize } = useResponsive();

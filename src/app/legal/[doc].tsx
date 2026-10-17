@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../constants/theme';
 import { LEGAL_NOTICE, PRIVACY, type LegalSection } from '../../constants/legal';
 import { useResponsive } from '../../lib/layout';
+import { own } from '../../lib/own';
 
 const DOCS: Record<string, { title: string; updated: string; sections: LegalSection[] }> = {
   confidentialite: { title: 'Confidentialité', updated: '13 octobre 2026', sections: PRIVACY },
@@ -16,7 +17,7 @@ export default function Legal() {
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
-  const page = DOCS[doc ?? ''] ?? DOCS.confidentialite;
+  const page = own(DOCS, doc) ?? DOCS.confidentialite;
 
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>

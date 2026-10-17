@@ -18,6 +18,7 @@ import { MilestoneWatcher } from '../components/rewards/MilestoneWatcher';
 import { useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated } from '../store/useTierStore';
+import { openShop } from '../lib/shop';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -59,6 +60,8 @@ export default function RootLayout() {
       openWallet();
       // Same for the reward paths: the server kept the lists completed and the VS chosen.
       restoreProgress();
+      // A pack bought but not credited yet (connection lost): delivered now, as promised.
+      openShop();
     });
   }, [hydrated]);
 

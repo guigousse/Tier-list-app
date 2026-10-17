@@ -10,6 +10,7 @@ import { deleteCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
 import type { SharedList } from '../lib/share';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
+import { own } from '../lib/own';
 
 /** The player's social profile. `secret` proves it is theirs to the server; never shown. */
 export type Profile = { id: string; secret: string; pseudo: string; tag: number; avatar: string };
@@ -109,7 +110,8 @@ type State = {
   createPopularList: (template: Template) => string;
   /** Records the current ranking of a popular tier list as validated (can be done again). */
   validatePopular: (listId: string) => boolean;
-  markVoteSent: (listId: string) => void;
+  /** `ranks`: the popular ranking sent, marked sent only if it is still the one validated. */
+  markVoteSent: (listId: string, ranks?: number[]) => void;
   toggleTemplateFavorite: (key: string) => boolean;
   setProfile: (profile: Profile | null) => void;
   markMailViewed: (mailId: string) => void;
@@ -205,7 +207,7 @@ export const useTierStore = create<State>()(
       /** Applies `fn` to one list and bumps its `updatedAt`. */
       const patchList = (id: string, fn: (list: TierList) => Partial<TierList>) =>
         set((state) => {
-          const list = state.lists[id];
+          const list = own(state.lists, id);
           if (!list) return state;
           return {
             lists: { ...state.lists, [id]: { ...list, ...fn(list), updatedAt: Date.now() } },
@@ -352,7 +354,7 @@ export const useTierStore = create<State>()(
 
         markOpened: (id) =>
           set((state) => {
-            const list = state.lists[id];
+            const list = own(state.lists, id);
             if (!list) return state;
             return { lists: { ...state.lists, [id]: { ...list, openedAt: Date.now() } } };
           }),
@@ -511,10 +513,11 @@ export const useTierStore = create<State>()(
           return true;
         },
 
-        markVoteSent: (listId) =>
+        markVoteSent: (listId, ranks) =>
           set((state) => {
-            const list = state.lists[listId];
+            const list = own(state.lists, listId);
             if (list?.daily) return { lists: { ...state.lists, [listId]: { ...list, daily: { ...list.daily, voteSent: true } } } };
+            if (list?.popular && ranks && JSON.stringify(ranks) !== JSON.stringify(list.popular.validatedRanks)) return state;
             if (list?.popular) return { lists: { ...state.lists, [listId]: { ...list, popular: { ...list.popular, voteSent: true } } } };
             return state;
           }),

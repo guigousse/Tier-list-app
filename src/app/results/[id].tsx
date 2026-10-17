@@ -16,13 +16,14 @@ import { setDailyReminder } from '../../lib/reminders';
 import { dailyStreak } from '../../lib/streak';
 import type { Card } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
+import { own } from '../../lib/own';
 
 /** Average ranking of all players for a validated daily or popular tier list. */
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter, cardSize } = useResponsive();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const list = useTierStore((s) => (id ? s.lists[id] : undefined));
+  const list = useTierStore((s) => own(s.lists, id));
   const allLists = useTierStore((s) => s.lists);
   const [results, setResults] = useState<{ key: string; data?: DailyResults; failed?: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
