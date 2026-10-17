@@ -63,7 +63,7 @@ export default function Popular() {
     () =>
       groupByTheme(templates, tags).map((g) => ({
         theme: g.theme,
-        count: g.templates.length,
+        templates: g.templates,
       })),
     [templates, tags],
   );

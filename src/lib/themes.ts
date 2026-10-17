@@ -1,4 +1,5 @@
 import type { Template } from '../constants/presets';
+import { splitEmoji } from './emoji';
 
 /**
  * The grand themes the public tier lists are grouped under, shown as a gallery. Each
@@ -185,4 +186,26 @@ export function groupByTheme(templates: Template[], tags: Record<string, string[
     const lists = groups.get(theme.key)!;
     return lists.length ? [{ theme, templates: lists }] : [];
   });
+}
+
+/**
+ * The cards of a theme's circle: the one put forward first, then its patchwork and the
+ * cards of its lists, those already drawn in the library before those still waiting for
+ * their picture (shown as an emoji), each concept once, `count` at most.
+ */
+export function themeStickers(theme: Theme, templates: Template[], icons: Record<string, string>, count: number): { concept: string; emoji: string }[] {
+  const [hero, ...patchwork] = theme.preview;
+  const seen = new Set([hero.concept]);
+  const cards: { concept: string; emoji: string }[] = [];
+  const add = (concept: string, emoji: string) => {
+    if (!concept || seen.has(concept)) return;
+    seen.add(concept);
+    cards.push({ concept, emoji });
+  };
+  for (const p of patchwork) add(p.concept, p.emoji);
+  for (const t of templates) (t.concepts ?? []).forEach((concept, i) => add(concept, splitEmoji(t.items[i] ?? '').emoji || t.emoji));
+  // Drawn first, in their order: a circle full of pictures rather than of emoji.
+  const drawn = cards.filter((c) => icons[c.concept]);
+  const waiting = cards.filter((c) => !icons[c.concept]);
+  return [hero, ...drawn, ...waiting].slice(0, count);
 }

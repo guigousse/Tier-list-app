@@ -1,24 +1,27 @@
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing } from '../constants/theme';
 import { aiIconUri } from '../lib/aiIconFiles';
-import { stickerLayout, type Sticker } from '../lib/stickerLayout';
-import type { Theme } from '../lib/themes';
+import type { Template } from '../constants/presets';
+import { STICKERS, stickerLayout, type Sticker } from '../lib/stickerLayout';
+import { themeStickers, type Theme } from '../lib/themes';
 import { Clickable } from './Clickable';
 
-type Group = { theme: Theme; count: number };
+type Group = { theme: Theme; templates: Template[] };
 
-// The white die-cut border of a sticker: the picture drawn eight times in white,
-// pushed a few points each way, under the picture itself.
-const around = (outline: number) =>
-  [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => [
+// The white die-cut border of a sticker: the picture drawn in white several times,
+// pushed a few points each way, under the picture itself. Six ways for the small
+// cards (21 stickers a circle, 8 circles: the gallery stays light), eight for the
+// one put forward.
+const around = (outline: number, ways: number) =>
+  Array.from({ length: ways }, (_, i) => (i * 360) / ways).map((deg) => [
     { translateX: outline * Math.cos((deg * Math.PI) / 180) },
     { translateY: outline * Math.sin((deg * Math.PI) / 180) },
   ]);
-const AROUND = around(2);
+const AROUND = around(2, 6);
 // The sticker put forward stands out: a thicker border, a deeper shadow.
-const HERO_AROUND = around(3);
+const HERO_AROUND = around(3, 8);
 
 /**
  * One sticker of a theme's circle: its library image once drawn, its emoji on a round
@@ -70,9 +73,12 @@ function StickerView({
 }
 
 const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons: Record<string, string>; onOpen: (key: string) => void }) {
-  const { theme, count } = group;
+  const { theme, templates } = group;
+  const count = templates.length;
   // Measured, so the emoji waiting for their picture keep to the circle's scale.
   const [side, setSide] = useState(110);
+  const cards = useMemo(() => themeStickers(theme, templates, icons, STICKERS), [theme, templates, icons]);
+  const layout = useMemo(() => stickerLayout(theme.key, cards.length), [theme.key, cards.length]);
   return (
     <Clickable
       accessibilityRole="button"
@@ -82,8 +88,8 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
     >
       {/* What's inside, at a glance: the theme's cards as stickers packed in a circle. */}
       <View style={styles.circle} onLayout={(e) => setSide(e.nativeEvent.layout.width)}>
-        {stickerLayout(theme.key, theme.preview.length).map((sticker, i) => (
-          <StickerView key={theme.preview[i].concept} sticker={sticker} concept={theme.preview[i].concept} emoji={theme.preview[i].emoji} icons={icons} side={side} hero={i === 0} />
+        {layout.map((sticker, i) => (
+          <StickerView key={cards[i].concept} sticker={sticker} concept={cards[i].concept} emoji={cards[i].emoji} icons={icons} side={side} hero={i === 0} />
         ))}
       </View>
       <Text style={styles.title} numberOfLines={2}>

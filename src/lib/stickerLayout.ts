@@ -29,26 +29,31 @@ function random(seed: string): () => number {
   };
 }
 
-export function stickerLayout(key: string, count: number): Sticker[] {
+/** The sizes and places of the two rings, found by search against the coverage test. */
+// 1 + 7 + 13 = 21 cards: fewer leave holes at the rim once the ring cards are small.
+export const RINGS = { inner: 7, innerRadius: [0.22, 0.27], innerSize: [0.34, 0.4], outerRadius: [0.38, 0.42], outerSize: [0.36, 0.42], jitter: 6 };
+/** Cards in a theme's circle: the one put forward and the two rings. */
+export const STICKERS = 21;
+
+export function stickerLayout(key: string, count: number, rings: typeof RINGS = RINGS): Sticker[] {
   const rand = random(key);
   const between = (min: number, max: number) => min + rand() * (max - min);
-  // One in the middle, the others in a ring around it, each a little off its place:
-  // close enough that together they cover the whole circle the tile is cut to.
-  const ring = Math.max(1, count - 1);
+  // One put forward in the middle; the others small, scattered on two rings around it
+  // (the outer one cut by the rim), close enough that together they cover the circle.
+  const inner = Math.min(rings.inner, count - 1);
+  const outer = count - 1 - inner;
   const turn = rand() * 360;
-  const stickers = Array.from({ length: count }, (_, i) => {
-    // The first is put forward: in the middle, the biggest, nearly straight, on top.
-    if (i === 0) return { x: 0.5 + between(-0.01, 0.01), y: 0.5 + between(-0.01, 0.01), size: between(0.66, 0.72), rotate: between(-6, 6), z: 0 };
-    const angle = ((turn + ((i - 1) * 360) / ring + between(-8, 8)) * Math.PI) / 180;
-    const radius = between(0.29, 0.33);
-    return {
-      x: 0.5 + radius * Math.cos(angle),
-      y: 0.5 + radius * Math.sin(angle),
-      size: between(0.6, 0.65),
-      rotate: between(-22, 22),
-      z: 0,
-    };
-  });
+  const ring = (n: number, k: number, radius: number[], size: number[], shift: number) => {
+    const angle = ((turn + shift + (k * 360) / n + between(-rings.jitter, rings.jitter)) * Math.PI) / 180;
+    const r = between(radius[0], radius[1]);
+    return { x: 0.5 + r * Math.cos(angle), y: 0.5 + r * Math.sin(angle), size: between(size[0], size[1]), rotate: between(-26, 26), z: 0 };
+  };
+  const stickers: Sticker[] = [
+    { x: 0.5 + between(-0.01, 0.01), y: 0.5 + between(-0.01, 0.01), size: between(0.64, 0.7), rotate: between(-6, 6), z: 0 },
+    ...Array.from({ length: inner }, (_, k) => ring(inner, k, rings.innerRadius, rings.innerSize, 0)),
+    // Half a step round: the outer cards sit in the gaps of the inner ones.
+    ...Array.from({ length: outer }, (_, k) => ring(outer, k, rings.outerRadius, rings.outerSize, 180 / Math.max(1, outer))),
+  ];
   // The ring in a shuffled stacking order (Fisher-Yates on the heights), the first on top.
   const heights = stickers.slice(1).map((_, i) => i);
   for (let i = heights.length - 1; i > 0; i--) {
