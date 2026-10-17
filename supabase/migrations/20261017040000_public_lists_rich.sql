@@ -25,7 +25,7 @@ begin
   perform private.hit('get_card_icons', 300);
   return query
     select ci.concept, ci.image from public.card_icons ci
-    where ci.concept = any (get_card_icons.concepts[1:400]) and ci.image is not null;
+    where ci.concept = any (get_card_icons.concepts[1:1000]) and ci.image is not null;
 end;
 $$;
 revoke all on function public.get_card_icons(text[]) from public;

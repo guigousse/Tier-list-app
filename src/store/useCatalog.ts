@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
+import { THEMES } from '../lib/themes';
 import { fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
 import type { Discovery } from '../lib/discover';
 import type { IconLibrary } from '../lib/publicSync';
@@ -51,7 +52,9 @@ export const useCatalog = create<CatalogState>()(
         ]);
         // The concepts are known once the published templates are: asked in a second call.
         const remote = templates.status === 'fulfilled' ? templates.value : get().templates;
-        const concepts = [...new Set([...TEMPLATES, ...remote].flatMap((t) => t.concepts ?? []).filter(Boolean))];
+        const concepts = [
+          ...new Set([...[...TEMPLATES, ...remote].flatMap((t) => t.concepts ?? []), ...THEMES.flatMap((t) => t.preview.map((p) => p.concept))].filter(Boolean)),
+        ];
         const [icons] = await Promise.allSettled([fetchCardIcons(concepts)]);
         set((state) => {
           // Each return to the app asks again, and the answer is mostly the same: a part

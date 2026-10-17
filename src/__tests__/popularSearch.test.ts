@@ -2,8 +2,8 @@ import type { Template } from '../constants/presets';
 import { popularShown, searchIndex } from '../lib/popularSearch';
 import type { TierList } from '../store/types';
 
-const t = (key: string, title: string, items: string[]): Template => ({ key, title, emoji: '✨', items }) as Template;
-const templates = [t('fruits', 'Fruits', ['Pomme', 'Pêche']), t('cheeses', 'Fromages', ['Comté', 'Brie']), t('animals', 'Animaux', ['Chat'])];
+const t = (key: string, title: string, items: string[], theme?: string): Template => ({ key, title, emoji: '✨', items, theme }) as Template;
+const templates = [t('fruits', 'Fruits', ['Pomme', 'Pêche'], 'cuisine'), t('cheeses', 'Fromages', ['Comté', 'Brie'], 'cuisine'), t('animals', 'Animaux', ['Chat'], 'nature')];
 const validated = { popular: { validatedAt: 1 } } as unknown as TierList;
 const started = { popular: {} } as unknown as TierList;
 const copies = (x: Template) => (x.key === 'fruits' ? validated : x.key === 'cheeses' ? started : undefined);
@@ -36,5 +36,27 @@ describe('searching the popular tier lists', () => {
     // Only the query itself, once per key typed.
     expect(spy.mock.calls.length).toBe(4);
     spy.mockRestore();
+  });
+});
+
+describe('a grand theme opened in the gallery', () => {
+  const index = searchIndex(templates);
+  const inTheme = (theme: string, query = '') =>
+    popularShown({ templates, index, copies, favorites: [], query, filter: 'all', sort: 'popular', theme, tags: {} }).map((x) => x.key);
+
+  it('shows its lists only', () => {
+    expect(inTheme('cuisine')).toEqual(['fruits', 'cheeses']);
+    expect(inTheme('nature')).toEqual(['animals']);
+  });
+
+  it('a search stays inside the theme', () => {
+    expect(inTheme('cuisine', 'chat')).toEqual([]);
+    expect(inTheme('cuisine', 'brie')).toEqual(['cheeses']);
+  });
+
+  it('a list without a theme of its own is placed by its tags', () => {
+    const daily = t('daily-2026-10-13', 'Halloween', ['Citrouille']);
+    const shown = popularShown({ templates: [daily], index: searchIndex([daily]), copies, favorites: [], query: '', filter: 'all', sort: 'popular', theme: 'fetes', tags: { 'daily-2026-10-13': ['halloween', 'holidays'] } });
+    expect(shown.map((x) => x.key)).toEqual(['daily-2026-10-13']);
   });
 });

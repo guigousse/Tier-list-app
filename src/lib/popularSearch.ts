@@ -1,5 +1,6 @@
 import type { Template } from '../constants/presets';
 import type { TierList } from '../store/types';
+import { listTheme } from './themes';
 
 export type PopularFilter = 'all' | 'favorites' | 'todo' | 'started' | 'validated';
 
@@ -25,6 +26,8 @@ export function popularShown({
   query,
   filter,
   sort,
+  theme,
+  tags = {},
 }: {
   templates: Template[];
   index: Map<string, string>;
@@ -33,9 +36,13 @@ export function popularShown({
   query: string;
   filter: PopularFilter;
   sort: 'popular' | 'title';
+  /** A grand theme opened in the gallery: its lists only (placed by their tags if need be). */
+  theme?: string;
+  tags?: Record<string, string[]>;
 }): Template[] {
   const q = fold(query.trim());
   const result = templates.filter((t) => {
+    if (theme && listTheme(t, tags[t.key]) !== theme) return false;
     if (q && !(index.get(t.key) ?? '').includes(q)) return false;
     const copy = copies(t);
     switch (filter) {
