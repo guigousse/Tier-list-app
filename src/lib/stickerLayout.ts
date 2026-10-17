@@ -37,22 +37,23 @@ export function stickerLayout(key: string, count: number): Sticker[] {
   const ring = Math.max(1, count - 1);
   const turn = rand() * 360;
   const stickers = Array.from({ length: count }, (_, i) => {
-    if (i === 0) return { x: 0.5 + between(-0.03, 0.03), y: 0.5 + between(-0.03, 0.03), size: between(0.5, 0.56), rotate: between(-22, 22), z: 0 };
+    // The first is put forward: in the middle, the biggest, nearly straight, on top.
+    if (i === 0) return { x: 0.5 + between(-0.01, 0.01), y: 0.5 + between(-0.01, 0.01), size: between(0.66, 0.72), rotate: between(-6, 6), z: 0 };
     const angle = ((turn + ((i - 1) * 360) / ring + between(-8, 8)) * Math.PI) / 180;
     const radius = between(0.29, 0.33);
     return {
       x: 0.5 + radius * Math.cos(angle),
       y: 0.5 + radius * Math.sin(angle),
-      size: between(0.58, 0.66),
+      size: between(0.6, 0.65),
       rotate: between(-22, 22),
       z: 0,
     };
   });
-  // A shuffled stacking order (Fisher-Yates on the heights).
-  const heights = stickers.map((_, i) => i);
+  // The ring in a shuffled stacking order (Fisher-Yates on the heights), the first on top.
+  const heights = stickers.slice(1).map((_, i) => i);
   for (let i = heights.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
     [heights[i], heights[j]] = [heights[j], heights[i]];
   }
-  return stickers.map((s, i) => ({ ...s, z: heights[i] }));
+  return stickers.map((s, i) => ({ ...s, z: i === 0 ? count - 1 : heights[i - 1] }));
 }

@@ -50,3 +50,19 @@ describe('images of the built-in lists', () => {
     for (const theme of THEMES) for (const p of theme.preview) expect(normalizeConcept(p.concept)).toBe(p.concept);
   });
 });
+
+describe('the sticker put forward in a theme’s circle', () => {
+  it('is the card that says the theme best, first of its patchwork', () => {
+    const heroes = Object.fromEntries(THEMES.map((t) => [t.key, t.preview[0].concept]));
+    expect(heroes).toEqual({
+      cuisine: 'pizza',
+      voyages: 'airplane',
+      jeux: 'gamepad',
+      culture: 'film-clapperboard',
+      nature: 'panda',
+      fetes: 'christma-tree',
+      loisirs: 'soccer-ball',
+      imaginaire: 'dragon',
+    });
+  });
+});

@@ -11,17 +11,34 @@ type Group = { theme: Theme; count: number };
 
 // The white die-cut border of a sticker: the picture drawn eight times in white,
 // pushed a few points each way, under the picture itself.
-const OUTLINE = 2;
-const AROUND = [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => [
-  { translateX: OUTLINE * Math.cos((deg * Math.PI) / 180) },
-  { translateY: OUTLINE * Math.sin((deg * Math.PI) / 180) },
-]);
+const around = (outline: number) =>
+  [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => [
+    { translateX: outline * Math.cos((deg * Math.PI) / 180) },
+    { translateY: outline * Math.sin((deg * Math.PI) / 180) },
+  ]);
+const AROUND = around(2);
+// The sticker put forward stands out: a thicker border, a deeper shadow.
+const HERO_AROUND = around(3);
 
 /**
  * One sticker of a theme's circle: its library image once drawn, its emoji on a round
  * sticker until then. `side`: the circle's width in points, for the emoji's size.
  */
-function StickerView({ sticker, concept, emoji, icons, side }: { sticker: Sticker; concept: string; emoji: string; icons: Record<string, string>; side: number }) {
+function StickerView({
+  sticker,
+  concept,
+  emoji,
+  icons,
+  side,
+  hero,
+}: {
+  sticker: Sticker;
+  concept: string;
+  emoji: string;
+  icons: Record<string, string>;
+  side: number;
+  hero: boolean;
+}) {
   const url = icons[concept];
   const place = {
     left: `${(sticker.x - sticker.size / 2) * 100}%`,
@@ -33,7 +50,7 @@ function StickerView({ sticker, concept, emoji, icons, side }: { sticker: Sticke
   if (!url) {
     return (
       <View style={[styles.sticker, place]}>
-        <View style={styles.round}>
+        <View style={[styles.round, hero && styles.heroRound]}>
           <Text style={{ fontSize: Math.max(12, side * sticker.size * 0.34) }}>{emoji}</Text>
         </View>
       </View>
@@ -43,8 +60,8 @@ function StickerView({ sticker, concept, emoji, icons, side }: { sticker: Sticke
   return (
     <View style={[styles.sticker, place]}>
       {/* A soft shadow under the whole sticker, border included. */}
-      <Image source={source} style={[styles.layer, styles.shadow]} tintColor="rgba(0,0,0,0.45)" resizeMode="contain" />
-      {AROUND.map((offset, i) => (
+      <Image source={source} style={[styles.layer, hero ? styles.heroShadow : styles.shadow]} tintColor={hero ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'} resizeMode="contain" />
+      {(hero ? HERO_AROUND : AROUND).map((offset, i) => (
         <Image key={i} source={source} style={[styles.layer, { transform: offset }]} tintColor="#FFFFFF" resizeMode="contain" />
       ))}
       <Image source={source} style={styles.layer} resizeMode="contain" />
@@ -66,7 +83,7 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
       {/* What's inside, at a glance: the theme's cards as stickers packed in a circle. */}
       <View style={styles.circle} onLayout={(e) => setSide(e.nativeEvent.layout.width)}>
         {stickerLayout(theme.key, theme.preview.length).map((sticker, i) => (
-          <StickerView key={theme.preview[i].concept} sticker={sticker} concept={theme.preview[i].concept} emoji={theme.preview[i].emoji} icons={icons} side={side} />
+          <StickerView key={theme.preview[i].concept} sticker={sticker} concept={theme.preview[i].concept} emoji={theme.preview[i].emoji} icons={icons} side={side} hero={i === 0} />
         ))}
       </View>
       <Text style={styles.title} numberOfLines={2}>
@@ -111,6 +128,8 @@ const styles = StyleSheet.create({
   sticker: { position: 'absolute', aspectRatio: 1 },
   layer: { position: 'absolute', top: '8%', left: '8%', width: '84%', height: '84%' },
   shadow: { transform: [{ translateX: 1 }, { translateY: 2.5 }, { scale: 1.06 }] },
+  heroShadow: { transform: [{ translateX: 1.5 }, { translateY: 4 }, { scale: 1.08 }] },
+  heroRound: { margin: '12%', shadowOpacity: 0.55, shadowRadius: 3, shadowOffset: { width: 1, height: 4 } },
   round: {
     flex: 1,
     // Smaller than a drawn sticker: the emoji only waits for its picture.

@@ -34,4 +34,14 @@ describe('the sticker bomb of a theme', () => {
       expect(new Set(stickers.map((s) => s.z)).size).toBe(9);
     }
   });
+
+  it('puts the first sticker forward: in the middle, the biggest, nearly straight, on top of all', () => {
+    for (const key of KEYS) {
+      const [hero, ...ring] = stickerLayout(key, 9);
+      expect(Math.hypot(hero.x - 0.5, hero.y - 0.5)).toBeLessThan(0.02);
+      expect(Math.abs(hero.rotate)).toBeLessThanOrEqual(6);
+      expect(hero.size).toBeGreaterThan(Math.max(...ring.map((s) => s.size)));
+      expect(hero.z).toBeGreaterThan(Math.max(...ring.map((s) => s.z)));
+    }
+  });
 });

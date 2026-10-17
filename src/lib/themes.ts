@@ -12,7 +12,7 @@ export type Theme = {
   emoji: string;
   /** Hidden discovery tags (list_tags) that place a list without a theme of its own here. */
   tags: string[];
-  /** Nine cards of the patchwork, read row by row. */
+  /** Nine cards of the patchwork: the first, the one that says the theme best, is put forward in the middle. */
   preview: { concept: string; emoji: string }[];
 };
 
@@ -23,9 +23,9 @@ export const THEMES: Theme[] = [
     emoji: '🍽️',
     tags: ['food', 'drinks', 'savory', 'sweet', 'cooking', 'fast-food', 'healthy'],
     preview: [
+      { concept: 'pizza', emoji: '🍕' },
       { concept: 'strawberry', emoji: '🍓' },
       { concept: 'croissant', emoji: '🥐' },
-      { concept: 'pizza', emoji: '🍕' },
       { concept: 'broccoli', emoji: '🥦' },
       { concept: 'cheese-wheel', emoji: '🧀' },
       { concept: 'sushi', emoji: '🍣' },
@@ -40,9 +40,9 @@ export const THEMES: Theme[] = [
     emoji: '✈️',
     tags: ['travel', 'geography', 'transport'],
     preview: [
+      { concept: 'airplane', emoji: '✈️' },
       { concept: 'eiffel-tower', emoji: '🗼' },
       { concept: 'palm-tree', emoji: '🌴' },
-      { concept: 'airplane', emoji: '✈️' },
       { concept: 'snowy-mountain', emoji: '🏔️' },
       { concept: 'lighthouse', emoji: '🗽' },
       { concept: 'train', emoji: '🚆' },
@@ -142,9 +142,9 @@ export const THEMES: Theme[] = [
     emoji: '🦸',
     tags: ['fantasy', 'imagination'],
     preview: [
+      { concept: 'dragon', emoji: '🐉' },
       { concept: 'superhero-cape', emoji: '🦸' },
       { concept: 'unicorn', emoji: '🦄' },
-      { concept: 'dragon', emoji: '🐉' },
       { concept: 'magic-wand', emoji: '🪄' },
       { concept: 'rocket', emoji: '🚀' },
       { concept: 'ghost', emoji: '👻' },
