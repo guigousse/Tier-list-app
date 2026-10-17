@@ -10,6 +10,7 @@ import { colors } from '../constants/theme';
 import { openWallet } from '../lib/credits';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
+import { restoreProgress } from '../lib/progress';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
 import { preloadSounds } from '../lib/sound';
 import { AppHeader } from '../components/AppHeader';
@@ -56,6 +57,8 @@ export default function RootLayout() {
       syncPushToken();
       // The wallet after the identity: a reinstall finds its credits through the Keychain.
       openWallet();
+      // Same for the reward paths: the server kept the lists completed and the VS chosen.
+      restoreProgress();
     });
   }, [hydrated]);
 

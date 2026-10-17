@@ -29,7 +29,7 @@ import {
   type Unlock,
 } from '../lib/avatar';
 import { playTick } from '../lib/sound';
-import { bestStreak, completedCount } from '../lib/streak';
+import { useProgress as usePlayerProgress } from '../lib/progress';
 import { useTierStore } from '../store/useTierStore';
 import { AvatarDrawing } from './Avatar';
 import { Clickable } from './Clickable';
@@ -113,11 +113,8 @@ function lockFor(key: keyof AvatarConfig, option: Option, progress: Progress, in
 
 /** What the player has done so far, for locked items. */
 function useProgress(): Progress {
-  const lists = useTierStore((s) => s.lists);
-  return useMemo(() => {
-    const all = Object.values(lists);
-    return { bestStreak: bestStreak(all), completed: completedCount(all) };
-  }, [lists]);
+  const { bestStreak, completed } = usePlayerProgress();
+  return useMemo(() => ({ bestStreak, completed }), [bestStreak, completed]);
 }
 
 /**

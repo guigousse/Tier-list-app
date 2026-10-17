@@ -63,6 +63,12 @@ type State = {
    * then counts as celebrated: no flood of the steps passed before this feature.
    */
   celebrated: { lists: number; flame: number } | null;
+  /**
+   * Progress the server kept (src/lib/progress.ts): lists completed and days of the
+   * daily tier list played, counted from this device's votes. After a reinstall the
+   * phone's lists are gone; this keeps the reward paths where they were.
+   */
+  restored: { completed: number; days: string[] };
   /** Secret of this install's credits wallet (the balance itself lives on the server). */
   walletSecret: string | null;
   /** Apple vouched for this install once (App Attest): the welcome bonus was asked for. */
@@ -159,6 +165,7 @@ type Persisted = {
   badgeChoices?: Record<string, string>;
   shownBadges?: string[];
   celebrated?: { lists: number; flame: number } | null;
+  restored?: { completed: number; days: string[] };
   walletSecret?: string | null;
   walletAttested?: boolean;
 };
@@ -182,6 +189,10 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
   if (version < 6) {
     // v6: steps celebrated full screen. None: the first launch starts from the player's progress.
     data.celebrated = null;
+  }
+  if (version < 7) {
+    // v7: progress kept by the server. Nothing yet: it comes at the next launch.
+    data.restored = { completed: 0, days: [] };
   }
   return data;
 }
@@ -211,6 +222,7 @@ export const useTierStore = create<State>()(
         badgeChoices: {},
         shownBadges: [],
         celebrated: null,
+        restored: { completed: 0, days: [] },
         walletSecret: null,
         walletAttested: false,
 
@@ -534,7 +546,7 @@ export const useTierStore = create<State>()(
     {
       name: STORE_KEY,
       // Bump with every change to the persisted shape, and handle it in `migrate`.
-      version: 6,
+      version: 7,
       migrate: (persisted, version) => migrateStore(persisted, version),
       // Unreadable data (corrupted, or a migration that throws): keep a copy aside
       // and start from the defaults, rather than staying on a blank screen.
@@ -552,6 +564,7 @@ export const useTierStore = create<State>()(
         badgeChoices: state.badgeChoices,
         shownBadges: state.shownBadges,
         celebrated: state.celebrated,
+        restored: state.restored,
         walletSecret: state.walletSecret,
         walletAttested: state.walletAttested,
       }),
@@ -567,6 +580,7 @@ export const useTierStore = create<State>()(
           badgeChoices: p.badgeChoices ?? current.badgeChoices,
           shownBadges: p.shownBadges ?? current.shownBadges,
           celebrated: p.celebrated ?? current.celebrated,
+          restored: p.restored ?? current.restored,
           walletSecret: p.walletSecret ?? current.walletSecret,
           walletAttested: p.walletAttested ?? current.walletAttested,
           settings: { ...DEFAULT_SETTINGS, ...p.settings },

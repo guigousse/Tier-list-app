@@ -6,12 +6,17 @@ function dayString(from: Date, offset: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Days whose daily tier list was validated: on the phone, and kept by the server (`more`). */
+function validatedDays(lists: TierList[], more: string[]): Set<string> {
+  return new Set([...lists.filter((l) => l.daily?.validatedAt).map((l) => l.daily!.day), ...more]);
+}
+
 /**
  * Number of consecutive days, up to today, whose daily tier list was validated.
  * Today not being done yet doesn't break the streak (it counts from yesterday).
  */
-export function dailyStreak(lists: TierList[], now = new Date()): number {
-  const done = new Set(lists.filter((l) => l.daily?.validatedAt).map((l) => l.daily!.day));
+export function dailyStreak(lists: TierList[], now = new Date(), more: string[] = []): number {
+  const done = validatedDays(lists, more);
   let offset = done.has(dayString(now, 0)) ? 0 : 1;
   let streak = 0;
   while (done.has(dayString(now, offset))) {
@@ -22,8 +27,8 @@ export function dailyStreak(lists: TierList[], now = new Date()): number {
 }
 
 /** Longest run of consecutive days whose daily tier list was validated, ever. */
-export function bestStreak(lists: TierList[]): number {
-  const days = [...new Set(lists.filter((l) => l.daily?.validatedAt).map((l) => l.daily!.day))].sort();
+export function bestStreak(lists: TierList[], more: string[] = []): number {
+  const days = [...validatedDays(lists, more)].sort();
   let best = 0;
   let run = 0;
   let previous: Date | null = null;

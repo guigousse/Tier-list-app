@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 
 import { pendingCelebrations, type Celebration } from '../../lib/milestoneEvents';
-import { bestStreak, completedCount } from '../../lib/streak';
+import { playerProgress } from '../../lib/progress';
 import { useTierStore } from '../../store/useTierStore';
 import { MilestoneCelebration } from './MilestoneCelebration';
 
@@ -11,9 +11,9 @@ const useCelebrations = create<{ queue: Celebration[] }>(() => ({ queue: [] }));
 
 /** Steps newly crossed join the queue; they then count as celebrated. */
 function check() {
-  const { lists, celebrated, badgeChoices } = useTierStore.getState();
-  const all = Object.values(lists);
-  const won = { lists: completedCount(all), flame: bestStreak(all) };
+  const { lists, restored, celebrated, badgeChoices } = useTierStore.getState();
+  const progress = playerProgress(Object.values(lists), restored);
+  const won = { lists: progress.completed, flame: progress.bestStreak };
   const { events, celebrated: next } = pendingCelebrations(celebrated, won, badgeChoices);
   if (!celebrated || next.lists !== celebrated.lists || next.flame !== celebrated.flame) useTierStore.setState({ celebrated: next });
   if (events.length) {
@@ -34,7 +34,7 @@ export function MilestoneWatcher() {
     check();
     return useTierStore.subscribe((state, prev) => {
       // Celebrated set back (test tool in Settings): the steps come again.
-      if (state.lists !== prev.lists || state.celebrated !== prev.celebrated) check();
+      if (state.lists !== prev.lists || state.celebrated !== prev.celebrated || state.restored !== prev.restored) check();
     });
   }, []);
 

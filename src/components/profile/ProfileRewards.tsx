@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,7 +7,7 @@ import { chooseBadge, FORKS, pendingForks } from '../../lib/badges';
 import { openWallet } from '../../lib/credits';
 import { useResponsive } from '../../lib/layout';
 import { trackState } from '../../lib/rewards';
-import { bestStreak, completedCount, dailyStreak } from '../../lib/streak';
+import { useProgress } from '../../lib/progress';
 import { useTierStore } from '../../store/useTierStore';
 import { RewardPath } from './RewardPath';
 
@@ -19,7 +19,6 @@ import { RewardPath } from './RewardPath';
 export function ProfileRewards() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
-  const lists = useTierStore((s) => s.lists);
   const choices = useTierStore((s) => s.badgeChoices);
 
   // The server pays the credits of the steps reached when the wallet opens.
@@ -27,14 +26,7 @@ export function ProfileRewards() {
     openWallet();
   }, []);
 
-  const progress = useMemo(() => {
-    const all = Object.values(lists);
-    return {
-      completed: completedCount(all),
-      bestStreak: bestStreak(all),
-      streak: dailyStreak(all),
-    };
-  }, [lists]);
+  const progress = useProgress();
   const listsState = trackState('lists', progress);
   const flameState = trackState('flame', progress);
 

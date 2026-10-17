@@ -113,6 +113,19 @@ export function claimListCredits(deviceId: string, wallet: string): Promise<numb
 }
 
 /**
+ * What the server knows of this device's progress, to get it back after a reinstall:
+ * lists completed (its votes), days of the daily tier list played, VS chosen.
+ */
+export function restoreProgressApi(deviceId: string): Promise<{ completed: number; days: string[]; choices: Record<string, string> }> {
+  return rpc('restore_progress', { device_id: deviceId });
+}
+
+/** Keeps a VS choice on the server (once: the first choice stays). */
+export function saveBadgeChoiceApi(deviceId: string, fork: string, badge: string): Promise<void> {
+  return rpc('save_badge_choice', { device_id: deviceId, fork, badge });
+}
+
+/**
  * Credits an energy pack bought in the App Store: `transaction` is StoreKit's signed
  * transaction, checked by the server against Apple's certificates. `credited` is false
  * when it had already been credited.

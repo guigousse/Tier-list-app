@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 
 import { useTierStore } from '../store/useTierStore';
-import { setBadges } from './api';
-import { completedCount } from './streak';
+import { saveBadgeChoiceApi, setBadges } from './api';
+import { useProgress } from './progress';
 
 /**
  * Badges: won on the path of public tier lists, at forks between two divisive
@@ -109,9 +109,9 @@ export function pendingForks(completed: number, choices: Record<string, string>)
 
 /** Number of badges waiting to be chosen, for the badges on Profil. */
 export function usePendingBadges(): number {
-  const lists = useTierStore((s) => s.lists);
+  const { completed } = useProgress();
   const choices = useTierStore((s) => s.badgeChoices);
-  return useMemo(() => pendingForks(completedCount(Object.values(lists)), choices).length, [lists, choices]);
+  return useMemo(() => pendingForks(completed, choices).length, [completed, choices]);
 }
 
 /** Sends the badges shown on the profile to the server, for friends to see. */
@@ -131,6 +131,9 @@ export function chooseBadge(fork: Fork, badge: Badge): void {
     shownBadges: shownBadges.length < 3 ? [...shownBadges, badge.id] : shownBadges,
   });
   syncBadges();
+  // Kept on the server too, to come back after a reinstall (src/lib/progress.ts); the
+  // next launch sends it again if this fails.
+  saveBadgeChoiceApi(useTierStore.getState().deviceId, fork.id, badge.id).catch(() => {});
 }
 
 /**
