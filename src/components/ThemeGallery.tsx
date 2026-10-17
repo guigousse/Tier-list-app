@@ -94,7 +94,8 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
           <StickerView key={cards[i].concept} sticker={sticker} concept={cards[i].concept} emoji={cards[i].emoji} icons={icons} side={side} hero={i === 0} />
         ))}
         {/* A light blur, a little darker, over the cards behind: the one in the middle stands out. */}
-        <BlurView intensity={12} tint="dark" style={[StyleSheet.absoluteFill, { zIndex: layout.length - 1 }]} />
+        {/* Measured on a capture: 12 blurred the small cards past recognition; 5 (about one point) keeps them readable. */}
+        <BlurView intensity={5} tint="dark" style={[StyleSheet.absoluteFill, styles.veil, { zIndex: layout.length - 1 }]} />
       </View>
       <Text style={styles.title} numberOfLines={2}>
         {theme.title}
@@ -136,6 +137,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   sticker: { position: 'absolute', aspectRatio: 1 },
+  veil: { backgroundColor: 'rgba(12,12,20,0.22)' },
   layer: { position: 'absolute', top: '8%', left: '8%', width: '84%', height: '84%' },
   shadow: { transform: [{ translateX: 1 }, { translateY: 2.5 }, { scale: 1.06 }] },
   heroShadow: { transform: [{ translateX: 1.5 }, { translateY: 4 }, { scale: 1.08 }] },
