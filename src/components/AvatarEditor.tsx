@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
@@ -241,59 +241,44 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
   );
 }
 
-const STEP_DOT = 32;
-const STEP_CURRENT = 46;
+const STEP_DOT = 34;
+const STEP_CURRENT = 44;
+/** Every step gets the same room, so all six always show and nothing moves between steps. */
+const STEP_SLOT = 48;
 
 /**
- * Progress at the top: one icon per step. Steps done are violet, the current one
- * is bigger and glitters, the ones to come are greyed out.
+ * Progress at the top: one icon per step, all shown at once in fixed slots on a line.
+ * Steps done and the current one are violet, the ones to come greyed out; only the
+ * current one moves, with a slow breathing halo.
  */
 function StepTrail({ step }: { step: number }) {
   return (
     <View style={styles.trail} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={styles.trailTrack}>
+        <View style={[styles.trailDone, { width: `${(step / (STEPS.length - 1)) * 100}%` }]} />
+      </View>
       {STEPS.map((s, i) => (
-        <View key={s.title} style={[styles.trailPart, i === 0 && { flexGrow: 0 }]}>
-          {i > 0 ? <View style={[styles.trailLine, i <= step && styles.trailLineDone]} /> : null}
-          <StepDot icon={s.icon} state={i < step ? 'done' : i === step ? 'current' : 'todo'} />
-        </View>
+        <StepDot key={s.title} icon={s.icon} state={i < step ? 'done' : i === step ? 'current' : 'todo'} />
       ))}
     </View>
   );
 }
 
 function StepDot({ icon, state }: { icon: StepIcon; state: 'done' | 'current' | 'todo' }) {
-  const reduceMotion = useReducedMotion();
-  const pop = useSharedValue(1);
   const current = state === 'current';
-
-  useEffect(() => {
-    if (!current || reduceMotion) return;
-    pop.value = withSequence(withTiming(0.8, { duration: 90 }), withSpring(1, { damping: 8, stiffness: 240 }));
-  }, [current, reduceMotion, pop]);
-
-  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
   const size = current ? STEP_CURRENT : STEP_DOT;
-
   return (
-    <View style={[styles.dotSlot, { width: size + (current ? 12 : 0) }]}>
-      {current ? <Glitter /> : null}
-      <Animated.View style={[styles.dot, { width: size, height: size, borderRadius: size / 2 }, state !== 'todo' && styles.dotDone, current && styles.dotCurrent, popStyle]}>
-        <MaterialCommunityIcons name={icon} size={current ? 26 : 17} color={state === 'todo' ? colors.textMuted : colors.primaryText} />
-        {current ? <Sweep /> : null}
-      </Animated.View>
+    <View style={styles.dotSlot}>
+      {current ? <Halo /> : null}
+      <View style={[styles.dot, { width: size, height: size, borderRadius: size / 2 }, state !== 'todo' && styles.dotDone, current && styles.dotCurrent]}>
+        <MaterialCommunityIcons name={icon} size={current ? 24 : 18} color={state === 'todo' ? colors.textMuted : colors.primaryText} />
+      </View>
     </View>
   );
 }
 
-/** Where the little stars twinkle around the current step, from its centre. */
-const STARS = [
-  { x: -24, y: -20, size: 13, delay: 0 },
-  { x: 24, y: -15, size: 10, delay: 500 },
-  { x: 20, y: 21, size: 11, delay: 1000 },
-];
-
-/** Glitter around the current step: a breathing violet halo and twinkling stars. */
-function Glitter() {
+/** A violet halo breathing slowly behind the current step. */
+function Halo() {
   const reduceMotion = useReducedMotion();
   const breath = useSharedValue(0);
 
@@ -302,71 +287,16 @@ function Glitter() {
     breath.value = withRepeat(withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.quad) }), -1, true);
   }, [reduceMotion, breath]);
 
-  const haloStyle = useAnimatedStyle(() => ({ opacity: 0.35 - breath.value * 0.2, transform: [{ scale: 1.05 + breath.value * 0.3 }] }));
-
-  return (
-    <>
-      <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
-      {STARS.map((s) => (
-        <Star key={s.delay} {...s} still={reduceMotion} />
-      ))}
-    </>
-  );
-}
-
-/** A light sweep across the current step's icon, now and then. */
-function Sweep() {
-  const reduceMotion = useReducedMotion();
-  const sweep = useSharedValue(0);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    sweep.value = withRepeat(withSequence(withTiming(1, { duration: 700, easing: Easing.inOut(Easing.quad) }), withDelay(1300, withTiming(0, { duration: 0 }))), -1);
-  }, [reduceMotion, sweep]);
-
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: -STEP_CURRENT + sweep.value * STEP_CURRENT * 2 }, { rotate: '25deg' }] }));
-
-  // Clipped inside the dot, which keeps its shadow (iOS drops it on a clipped view).
-  return (
-    <View pointerEvents="none" style={styles.sweepClip}>
-      <Animated.View style={[styles.sweep, style]} />
-    </View>
-  );
-}
-
-function Star({ x, y, size, delay, still }: { x: number; y: number; size: number; delay: number; still: boolean }) {
-  const twinkle = useSharedValue(still ? 1 : 0);
-
-  useEffect(() => {
-    if (still) return;
-    twinkle.value = withDelay(
-      delay,
-      withRepeat(withSequence(withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) }), withTiming(0, { duration: 450, easing: Easing.in(Easing.quad) }), withTiming(0, { duration: 600 })), -1),
-    );
-  }, [still, delay, twinkle]);
-
-  const style = useAnimatedStyle(() => ({ opacity: twinkle.value, transform: [{ scale: 0.4 + twinkle.value * 0.6 }, { rotate: `${twinkle.value * 45}deg` }] }));
-
-  return (
-    <Animated.View pointerEvents="none" style={[styles.star, { marginLeft: x - size / 2, marginTop: y - size / 2 }, style]}>
-      <Ionicons name="sparkles" size={size} color="#EFE9FF" />
-    </Animated.View>
-  );
+  const style = useAnimatedStyle(() => ({ opacity: 0.4 - breath.value * 0.25, transform: [{ scale: 1 + breath.value * 0.12 }] }));
+  return <Animated.View pointerEvents="none" style={[styles.halo, style]} />;
 }
 
 /** The avatar in the middle: swipe it left or right for the next or previous item. */
 function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: AvatarConfig; locked: boolean; onPrevious: () => void; onNext: () => void; label: string }) {
-  const reduceMotion = useReducedMotion();
   const { width, height } = useWindowDimensions();
-  // As big as the screen allows, beside the arrows and above the carousel.
-  const size = Math.min(width - 132, height * 0.34, 280);
+  // As big as the screen allows, above the carousel.
+  const size = Math.min(width - 2 * spacing.lg, height * 0.34, 280);
   const shift = useSharedValue(0);
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    scale.value = withSequence(withTiming(0.95, { duration: 70 }), withSpring(1, { damping: 9, stiffness: 260 }));
-  }, [config, reduceMotion, scale]);
 
   // Callbacks on the JS thread: no worklet needed for a swipe.
   const swipe = Gesture.Pan()
@@ -379,14 +309,13 @@ function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: Av
     .onEnd((e) => {
       if (e.translationX < -40 || e.velocityX < -600) onNext();
       else if (e.translationX > 40 || e.velocityX > 600) onPrevious();
-      shift.value = withSpring(0, { damping: 14, stiffness: 220 });
+      shift.value = withTiming(0, { duration: 150 });
     });
 
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: shift.value }, { scale: scale.value }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: shift.value }] }));
 
   return (
     <View style={styles.swipeRow}>
-      <Arrow icon="chevron-back" label="Précédent" onPress={onPrevious} />
       <GestureDetector gesture={swipe}>
         <Animated.View
           style={[styles.avatar, { borderRadius: size / 2 }, style]}
@@ -402,17 +331,7 @@ function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: Av
           </View>
         </Animated.View>
       </GestureDetector>
-      <Arrow icon="chevron-forward" label="Suivant" onPress={onNext} />
     </View>
-  );
-}
-
-/** Previous / next arrow beside the avatar (silent itself: the change ticks). */
-function Arrow({ icon, label, onPress }: { icon: 'chevron-back' | 'chevron-forward'; label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={10} onPress={onPress} style={({ pressed }) => [styles.arrow, pressed && { opacity: 0.5 }]}>
-      <Ionicons name={icon} size={28} color={colors.textMuted} />
-    </Pressable>
   );
 }
 
@@ -534,25 +453,19 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md },
   stepCount: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
-  trail: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  trailPart: { flexDirection: 'row', alignItems: 'center', flexGrow: 1 },
-  trailLine: { flex: 1, height: 3, borderRadius: 1.5, marginHorizontal: 2, backgroundColor: colors.border },
-  trailLineDone: { backgroundColor: colors.primary },
-  // As tall as the current dot and its stars, so the title doesn't move when the step changes.
-  dotSlot: { height: STEP_CURRENT + 16, alignItems: 'center', justifyContent: 'center' },
-  dot: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.border, opacity: 0.7 },
-  dotDone: { backgroundColor: colors.primary, borderColor: colors.primary, opacity: 1 },
-  dotCurrent: { borderColor: '#C9B8FF', borderWidth: 2, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
-  halo: { position: 'absolute', width: STEP_CURRENT, height: STEP_CURRENT, borderRadius: STEP_CURRENT / 2, backgroundColor: colors.primary },
-  sweepClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: STEP_CURRENT / 2, overflow: 'hidden' },
-  sweep: { position: 'absolute', top: -STEP_CURRENT / 2, width: STEP_CURRENT * 0.3, height: STEP_CURRENT * 2, backgroundColor: 'rgba(255,255,255,0.4)' },
-  // Above the dot, whose elevation would hide them on Android.
-  star: { position: 'absolute', left: '50%', top: '50%', zIndex: 2, elevation: 9 },
+  trail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginTop: spacing.sm },
+  // The line runs from the first icon's centre to the last's; violet up to the current step.
+  trailTrack: { position: 'absolute', left: spacing.lg + STEP_SLOT / 2, right: spacing.lg + STEP_SLOT / 2, height: 3, borderRadius: 1.5, backgroundColor: colors.border },
+  trailDone: { height: 3, borderRadius: 1.5, backgroundColor: colors.primary },
+  dotSlot: { width: STEP_SLOT, height: STEP_CURRENT + 12, alignItems: 'center', justifyContent: 'center' },
+  dot: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.border },
+  dotDone: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dotCurrent: { borderColor: '#C9B8FF', borderWidth: 2 },
+  halo: { position: 'absolute', width: STEP_CURRENT + 10, height: STEP_CURRENT + 10, borderRadius: (STEP_CURRENT + 10) / 2, backgroundColor: colors.primary },
   title: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginTop: spacing.lg },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   swipeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   avatar: { shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 22, shadowOffset: { width: 0, height: 10 } },
-  arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   caption: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md },
   itemLabel: { color: colors.text, fontSize: 18, fontWeight: '700' },
   itemCount: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginLeft: spacing.xs },
