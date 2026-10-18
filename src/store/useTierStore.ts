@@ -33,6 +33,8 @@ export type Settings = {
   onboarded: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
+  /** Usage statistics (Firebase Analytics): asked once, changed in the settings. */
+  analyticsConsent: 'unknown' | 'granted' | 'denied';
 };
 
 type NewListInput = {
@@ -131,6 +133,7 @@ const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   cardSize: 'medium',
   showCardLabels: true,
+  analyticsConsent: 'unknown',
 };
 
 /** Tier index (0 = S …) of each card of `cardIds`, or null if one isn't ranked. */
