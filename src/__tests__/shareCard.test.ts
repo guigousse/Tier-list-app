@@ -1,4 +1,4 @@
-import { fitCards, SHARE_CARD } from '../lib/shareCard';
+import { fitCards, labelFontSize, SHARE_CARD } from '../lib/shareCard';
 
 // Room for the ranking inside the 9:16 picture (src/components/ShareCard.tsx).
 const rowsFit = (perTier: number[], size: number) => {
@@ -19,5 +19,20 @@ describe('the cards of a shared ranking', () => {
 
   it('a few cards stay a readable size, not giant', () => {
     expect(fitCards([1, 1, 0, 0, 0])).toBe(SHARE_CARD.maxCard);
+  });
+});
+
+describe('the label of a tier in the picture', () => {
+  it('a short label keeps the full size', () => {
+    expect(labelFontSize('S')).toBe(15);
+  });
+
+  it('a long word shrinks so it never breaks in the middle', () => {
+    for (const label of ['Délicieux', 'Correct', 'Incroyable', 'Immangeable']) {
+      const size = labelFontSize(label);
+      // Bold glyphs average about 0.62 em: the longest word fits the label's inner width.
+      expect(Math.max(...label.split(/\s+/).map((w) => w.length)) * size * 0.62).toBeLessThanOrEqual(SHARE_CARD.labelWidth - 8);
+      expect(size).toBeGreaterThanOrEqual(8);
+    }
   });
 });
