@@ -8,6 +8,7 @@ import { aiIcons, aiTiers, aiWords } from './api';
 import { creditsError, setBalance, walletForRequest } from './credits';
 import { cardIconFor } from './cardIcons';
 import { splitEmoji } from './emoji';
+import { t } from './i18n/useT';
 
 /**
  * AI generation of a tier list's cards, in two steps: the words first (cards added at
@@ -90,10 +91,10 @@ export function aiError(e: unknown): string {
   const short = creditsError(e);
   if (short) return short;
   const m = e instanceof Error ? e.message : '';
-  if (m === 'quota') return 'Limite de générations atteinte pour aujourd’hui : réessayez demain.';
-  if (m === 'theme refused') return 'Ce thème ne peut pas être généré : essayez-en un autre.';
-  if (m === 'busy' || m === 'ai unavailable' || m === 'server') return 'L’IA est indisponible pour le moment : réessayez dans un instant.';
-  return 'Pas de connexion : réessayez dans un instant.';
+  if (m === 'quota') return t('editor.ai.quota');
+  if (m === 'theme refused') return t('editor.ai.refused');
+  if (m === 'busy' || m === 'ai unavailable' || m === 'server') return t('editor.ai.unavailable');
+  return t('editor.ai.offline');
 }
 
 /** Cards whose word can be replaced: all but photos, which are the player's own. */

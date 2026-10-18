@@ -15,6 +15,7 @@ import type { SharedList } from '../lib/share';
 import { debouncedJSONStorage } from './debouncedStorage';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 import { own } from '../lib/own';
+import { t } from '../lib/i18n/useT';
 import { publicTiers, syncedCopy, type IconLibrary } from '../lib/publicSync';
 
 /** The player's social profile. `secret` proves it is theirs to the server; never shown. */
@@ -265,7 +266,7 @@ export const useTierStore = create<State>()(
           });
           const list: TierList = {
             id: newId(),
-            title: clampTitle(title) || 'Ma tier list',
+            title: clampTitle(title) || t('app.list.defaultTitle'),
             tiers,
             cards,
             placement,
@@ -297,7 +298,7 @@ export const useTierStore = create<State>()(
           }
           const list: TierList = {
             id: newId(),
-            title: clampTitle(shared.title) || 'Ma tier list',
+            title: clampTitle(shared.title) || t('app.list.defaultTitle'),
             tiers,
             cards,
             placement,
@@ -370,7 +371,7 @@ export const useTierStore = create<State>()(
           return copy.id;
         },
 
-        renameList: (id, title) => patchList(id, () => ({ title: clampTitle(title) || 'Sans titre' })),
+        renameList: (id, title) => patchList(id, () => ({ title: clampTitle(title) || t('app.list.untitled') })),
 
         toggleFavorite: (id) => patchList(id, (l) => ({ favorite: !l.favorite })),
 

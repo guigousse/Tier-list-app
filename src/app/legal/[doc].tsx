@@ -4,12 +4,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../constants/theme';
 import { LEGAL_NOTICE, PRIVACY, type LegalSection } from '../../constants/legal';
+import { useT } from '../../lib/i18n/useT';
 import { useResponsive } from '../../lib/layout';
 import { own } from '../../lib/own';
 
+// Title as a text key, date as a day: both written in the player's language at render.
 const DOCS: Record<string, { title: string; updated: string; sections: LegalSection[] }> = {
-  confidentialite: { title: 'Confidentialité', updated: '13 octobre 2026', sections: PRIVACY },
-  mentions: { title: 'Mentions légales', updated: '13 octobre 2026', sections: LEGAL_NOTICE },
+  confidentialite: { title: 'app.legal.privacy', updated: '2026-10-13', sections: PRIVACY },
+  mentions: { title: 'app.settings.legal', updated: '2026-10-13', sections: LEGAL_NOTICE },
 };
 
 /** Privacy policy and legal notice, readable offline inside the app. */
@@ -17,12 +19,15 @@ export default function Legal() {
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t, locale } = useT();
   const page = own(DOCS, doc) ?? DOCS.confidentialite;
 
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
-      <Stack.Screen options={{ title: page.title }} />
-      <Text style={styles.updated}>Dernière mise à jour : {page.updated}</Text>
+      <Stack.Screen options={{ title: t(page.title) }} />
+      <Text style={styles.updated}>
+        {t('app.legal.updated', { date: new Date(`${page.updated}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
+      </Text>
       {page.sections.map((s) => (
         <View key={s.title} style={styles.section}>
           <Text style={styles.title}>{s.title}</Text>

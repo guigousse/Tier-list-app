@@ -6,19 +6,16 @@ import { colors, radius, readableTextColor, spacing } from '../../constants/them
 import { aiBusy, CREDITS, generateImages, generateTiers, generateWords, imageChoices, replaceableCards, imageCredits, MIN_IMAGES, sheetSizes, tierCredits, type TierTone, useAiJob, wordCredits } from '../../lib/aiGenerate';
 import { openWallet, useCredits } from '../../lib/credits';
 import { useTierStore } from '../../store/useTierStore';
+import type { Params } from '../../lib/i18n';
+import { useT } from '../../lib/i18n/useT';
 import { Clickable } from '../Clickable';
 import { CardView } from '../CardView';
 import { EnergyAmount } from '../Energy';
 import { Button, Field, Sheet } from '../ui';
 
 const COUNTS = [5, 8, 10, 12, 15, 20];
-const TONES: { tone: TierTone; label: string }[] = [
-  { tone: 'humour', label: 'Humour' },
-  { tone: 'serieux', label: 'Sérieux' },
-  { tone: 'fantaisiste', label: 'Fantaisiste' },
-  { tone: 'enfantin', label: 'Enfantin' },
-  { tone: 'vulgaire', label: 'Vulgaire' },
-];
+// Labels looked up when shown: each tone's text key is `editor.ai.tone.<tone>`.
+const TONES: TierTone[] = ['humour', 'serieux', 'fantaisiste', 'enfantin', 'vulgaire'];
 
 type Props = { visible: boolean; onClose: () => void; listId: string };
 type Panel = { title: string; footer: ReactNode; body: ReactNode };
@@ -45,21 +42,20 @@ function useJobView(visible: boolean, listId: string, kind: Mode, onOpen?: () =>
   return { job, running, busy, showJob: showJob && job ? job : null, setShowJob };
 }
 
-const credits = (n: number) => `${n} crédit${n > 1 ? 's' : ''}`;
-
 /** The balance the server last gave (null: not known yet, the server decides). */
 const short = (cost: number, balance: number | null) => balance !== null && cost > balance;
 
 function Balance({ cost }: { cost: number }) {
   const balance = useCredits((s) => s.balance);
+  const { t } = useT();
   return (
     <>
       <View style={[styles.recap, styles.recapTotal]}>
-        <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>Coût</Text>
+        <Text style={[styles.recapText, { color: colors.text, fontWeight: '800' }]}>{t('editor.ai.cost')}</Text>
         <EnergyAmount amount={cost} size={18} style={[styles.recapValue, { fontSize: 18 }, short(cost, balance) && { color: colors.danger }]} />
       </View>
       <View style={styles.recap}>
-        <Text style={styles.recapText}>Votre solde</Text>
+        <Text style={styles.recapText}>{t('editor.ai.balance')}</Text>
         <EnergyAmount amount={balance} style={styles.recapValue} />
       </View>
     </>
@@ -69,11 +65,12 @@ function Balance({ cost }: { cost: number }) {
 function Footer({ label, cost, ready, busy, onPress, note }: { label: string; cost: number; ready: boolean; busy: boolean; onPress: () => void; note?: string }) {
   const balance = useCredits((s) => s.balance);
   const affordable = !short(cost, balance);
+  const { t } = useT();
   return (
     <View style={styles.footer}>
       {note ? <Text style={styles.short}>{note}</Text> : null}
-      {busy ? <Text style={styles.short}>Une génération est déjà en cours pour cette liste.</Text> : null}
-      {!affordable ? <Text style={styles.short}>Solde insuffisant : il manque {credits(cost - (balance ?? 0))}.</Text> : null}
+      {busy ? <Text style={styles.short}>{t('editor.ai.busy')}</Text> : null}
+      {!affordable ? <Text style={styles.short}>{t('editor.ai.short', { count: cost - (balance ?? 0) })}</Text> : null}
       <Button
         label={`${label} ·`}
         icon="sparkles"
@@ -92,6 +89,7 @@ function Footer({ label, cost, ready, busy, onPress, note }: { label: string; co
  */
 function useWordsPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
   const list = useTierStore((s) => s.lists[listId]);
+  const { t } = useT();
   const [theme, setTheme] = useState(title);
   const [count, setCount] = useState(10);
   // Cards whose word the player wants replaced: none to start with.
@@ -111,55 +109,53 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
 
   if (showJob && job) {
     return {
-      title: 'Génération des cartes',
-      footer: <Button label={running ? 'Continuer en arrière-plan' : 'Vérifier les cartes'} onPress={onClose} />,
+      title: t('editor.ai.wordsJob'),
+      footer: <Button label={running ? t('editor.ai.background') : t('editor.ai.checkCards')} onPress={onClose} />,
       body:
         job.phase === 'working' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.statusText}>L’IA imagine vos cartes…</Text>
+            <Text style={styles.statusText}>{t('editor.ai.wordsWorking')}</Text>
           </View>
         ) : job.phase === 'error' ? (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.error}>{job.error}</Text>
-            <Button variant="secondary" label="Modifier ma demande" icon="arrow-back" onPress={() => setShowJob(false)} />
+            <Button variant="secondary" label={t('editor.ai.editRequest')} icon="arrow-back" onPress={() => setShowJob(false)} />
           </View>
         ) : (
           <View style={{ gap: spacing.md }}>
             <View style={styles.status}>
               <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />
-              <Text style={styles.statusText}>{wordsDone(job.cards, job.replaced ?? 0)}</Text>
+              <Text style={styles.statusText}>{wordsDone(t, job.cards, job.replaced ?? 0)}</Text>
             </View>
-            <Text style={styles.hint}>
-              Vérifiez les cartes : modifiez ou supprimez celles qui ne vous plaisent pas. Ensuite, l’onglet Images les illustrera.
-            </Text>
+            <Text style={styles.hint}>{t('editor.ai.wordsCheckHint')}</Text>
           </View>
         ),
     };
   }
 
   return {
-    title: 'Générer les cartes',
-    footer: <Footer label="Générer" cost={cost} ready={theme.trim().length > 0 && cost > 0} busy={busy} onPress={start} />,
+    title: t('editor.ai.wordsTitle'),
+    footer: <Footer label={t('editor.ai.generate')} cost={cost} ready={theme.trim().length > 0 && cost > 0} busy={busy} onPress={start} />,
     body: (
       <>
       <View style={styles.section}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>Thème de la liste</Text>
+          <Text style={styles.sectionTitle}>{t('editor.ai.theme')}</Text>
         </View>
-        <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={60} returnKeyType="done" />
-        <Text style={styles.hint}>La liste prendra ce thème pour titre.</Text>
+        <Field value={theme} onChangeText={setTheme} placeholder={t('editor.ai.themePlaceholder')} maxLength={60} returnKeyType="done" />
+        <Text style={styles.hint}>{t('editor.ai.themeHint')}</Text>
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHead}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Nouvelles cartes</Text>
+            <Text style={styles.sectionTitle}>{t('editor.ai.newCards')}</Text>
           </View>
           <View style={styles.stepper}>
             <Clickable
               accessibilityRole="button"
-              accessibilityLabel="Une carte de moins"
+              accessibilityLabel={t('editor.ai.oneLess')}
               onPress={() => setCount(count <= 3 ? 0 : count - 1)}
               style={styles.stepperButton}
             >
@@ -168,7 +164,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
             <Text style={styles.count}>{count}</Text>
             <Clickable
               accessibilityRole="button"
-              accessibilityLabel="Une carte de plus"
+              accessibilityLabel={t('editor.ai.oneMore')}
               onPress={() => setCount(count === 0 ? 3 : Math.min(20, count + 1))}
               style={styles.stepperButton}
             >
@@ -179,7 +175,7 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
         <View style={styles.chips}>
           {[0, ...COUNTS].map((n) => (
             <Clickable key={n} accessibilityRole="button" onPress={() => setCount(n)} style={[styles.chip, n === count && styles.chipOn]}>
-              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n || 'Aucune'}</Text>
+              <Text style={[styles.chipText, n === count && { color: colors.primaryText }]}>{n || t('editor.ai.none')}</Text>
             </Clickable>
           ))}
         </View>
@@ -188,10 +184,10 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
       {candidates.length ? (
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Cartes à remplacer · {replace.length}</Text>
+            <Text style={styles.sectionTitle}>{t('editor.ai.toReplace', { n: replace.length })}</Text>
             {replace.length ? (
               <Clickable accessibilityRole="button" onPress={() => setPicked([])}>
-                <Text style={styles.link}>Aucune</Text>
+                <Text style={styles.link}>{t('editor.ai.none')}</Text>
               </Clickable>
             ) : null}
           </View>
@@ -215,26 +211,24 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
               );
             })}
           </View>
-          <Text style={styles.hint}>
-            Touchez une carte pour que l’IA lui trouve un autre mot du thème. Elle garde sa place et sa couleur ; son image s’efface, l’onglet Images dessinera la nouvelle.
-          </Text>
+          <Text style={styles.hint}>{t('editor.ai.replaceHint')}</Text>
         </View>
       ) : null}
 
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>Total</Text>
+          <Text style={styles.sectionTitle}>{t('editor.ai.total')}</Text>
         </View>
         <View style={styles.recap}>
           <Text style={styles.recapText}>
-            {[count ? `${count} nouvelle${count > 1 ? 's' : ''} carte${count > 1 ? 's' : ''}` : '', replace.length ? `${replace.length} remplacée${replace.length > 1 ? 's' : ''}` : '']
+            {[count ? t('editor.ai.newCount', { count }) : '', replace.length ? t('editor.ai.replacedCount', { count: replace.length }) : '']
               .filter(Boolean)
-              .join(' et ')}{' '}
-            · prix fixe
+              .join(t('editor.ai.and'))}{' '}
+            {t('editor.ai.fixedPrice')}
           </Text>
           <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
         </View>
-        <Text style={styles.hint}>Les images se génèrent ensuite, une fois les cartes vérifiées.</Text>
+        <Text style={styles.hint}>{t('editor.ai.imagesLater')}</Text>
         <Balance cost={cost} />
       </View>
       </>
@@ -242,11 +236,11 @@ function useWordsPanel({ visible, onClose, listId, title }: Props & { title: str
   };
 }
 
-function wordsDone(cards: number, replaced: number): string {
+function wordsDone(t: (key: string, params?: Params) => string, cards: number, replaced: number): string {
   const parts = [];
-  if (cards) parts.push(`${cards} carte${cards > 1 ? 's' : ''} ajoutée${cards > 1 ? 's' : ''}`);
-  if (replaced) parts.push(`${replaced} remplacée${replaced > 1 ? 's' : ''}`);
-  return parts.join(' · ') || 'Aucune carte reçue';
+  if (cards) parts.push(t('editor.ai.cardsAdded', { count: cards }));
+  if (replaced) parts.push(t('editor.ai.replacedCount', { count: replaced }));
+  return parts.join(' · ') || t('editor.ai.noCards');
 }
 
 /**
@@ -255,6 +249,7 @@ function wordsDone(cards: number, replaced: number): string {
  */
 function useTiersPanel({ visible, onClose, listId, title }: Props & { title: string }): Panel {
   const tiers = useTierStore((s) => s.lists[listId]?.tiers) ?? [];
+  const { t } = useT();
   const [theme, setTheme] = useState(title);
   const [tone, setTone] = useState<TierTone>('humour');
   const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'tiers', () => setTheme(title));
@@ -266,88 +261,86 @@ function useTiersPanel({ visible, onClose, listId, title }: Props & { title: str
 
   if (showJob && job) {
     return {
-      title: 'Noms des rangs',
-      footer: <Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />,
+      title: t('editor.ai.tiersJob'),
+      footer: <Button label={running ? t('editor.ai.background') : t('editor.done')} onPress={onClose} />,
       body:
         job.phase === 'working' ? (
           <View style={styles.status}>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.statusText}>L’IA baptise vos rangs…</Text>
+            <Text style={styles.statusText}>{t('editor.ai.tiersWorking')}</Text>
           </View>
         ) : job.phase === 'error' ? (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.error}>{job.error}</Text>
-            <Button variant="secondary" label="Modifier ma demande" icon="arrow-back" onPress={() => setShowJob(false)} />
+            <Button variant="secondary" label={t('editor.ai.editRequest')} icon="arrow-back" onPress={() => setShowJob(false)} />
           </View>
         ) : (
           <View style={{ gap: spacing.md }}>
             <View style={styles.status}>
               <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />
-              <Text style={styles.statusText}>
-                {job.tiers} rang{(job.tiers ?? 0) > 1 ? 's' : ''} renommé{(job.tiers ?? 0) > 1 ? 's' : ''}
-              </Text>
+              <Text style={styles.statusText}>{t('editor.ai.tiersRenamed', { count: job.tiers ?? 0 })}</Text>
             </View>
             <View style={styles.tierPreview}>
-              {tiers.map((t) => (
-                <View key={t.id} style={[styles.tierChip, { backgroundColor: t.color }]}>
-                  <Text style={[styles.tierChipText, { color: readableTextColor(t.color) }]}>{t.label}</Text>
+              {tiers.map((tier) => (
+                <View key={tier.id} style={[styles.tierChip, { backgroundColor: tier.color }]}>
+                  <Text style={[styles.tierChipText, { color: readableTextColor(tier.color) }]}>{tier.label}</Text>
                 </View>
               ))}
             </View>
-            <Text style={styles.hint}>Un nom ne vous plaît pas ? Touchez le rang pour le modifier, ou relancez dans un autre ton.</Text>
-            <Button variant="secondary" label="Essayer un autre ton" icon="refresh" onPress={() => setShowJob(false)} />
+            <Text style={styles.hint}>{t('editor.ai.tiersDoneHint')}</Text>
+            <Button variant="secondary" label={t('editor.ai.otherTone')} icon="refresh" onPress={() => setShowJob(false)} />
           </View>
         ),
     };
   }
 
   return {
-    title: 'Renommer les rangs',
-    footer: <Footer label="Renommer" cost={cost} ready={theme.trim().length > 0 && tiers.length > 0} busy={busy} onPress={start} />,
+    title: t('editor.ai.tiersTitle'),
+    footer: <Footer label={t('editor.rename')} cost={cost} ready={theme.trim().length > 0 && tiers.length > 0} busy={busy} onPress={start} />,
     body: (
       <>
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Thème de la liste</Text>
+            <Text style={styles.sectionTitle}>{t('editor.ai.theme')}</Text>
           </View>
-          <Field value={theme} onChangeText={setTheme} placeholder="Ex. : Pizzas, films de Noël, métiers de rêve…" maxLength={60} returnKeyType="done" />
-          <Text style={styles.hint}>Les noms s’inspirent du thème et des cartes de la liste, du meilleur rang au moins bon.</Text>
+          <Field value={theme} onChangeText={setTheme} placeholder={t('editor.ai.themePlaceholder')} maxLength={60} returnKeyType="done" />
+          <Text style={styles.hint}>{t('editor.ai.tiersThemeHint')}</Text>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Ton</Text>
+            <Text style={styles.sectionTitle}>{t('editor.ai.tone')}</Text>
           </View>
           <View style={styles.chips}>
-            {TONES.map((t) => (
+            {TONES.map((option) => (
               <Clickable
-                key={t.tone}
+                key={option}
                 accessibilityRole="button"
-                accessibilityState={{ selected: t.tone === tone }}
-                onPress={() => setTone(t.tone)}
-                style={[styles.chip, t.tone === tone && styles.chipOn]}
+                accessibilityState={{ selected: option === tone }}
+                onPress={() => setTone(option)}
+                style={[styles.chip, option === tone && styles.chipOn]}
               >
-                <Text style={[styles.chipText, t.tone === tone && { color: colors.primaryText }]}>{t.label}</Text>
+                <Text style={[styles.chipText, option === tone && { color: colors.primaryText }]}>{t(`editor.ai.tone.${option}`)}</Text>
               </Clickable>
             ))}
           </View>
           <View style={styles.tierPreview}>
-            {tiers.map((t) => (
-              <View key={t.id} style={[styles.tierChip, { backgroundColor: t.color }]}>
-                <Text style={[styles.tierChipText, { color: readableTextColor(t.color) }]}>{t.label}</Text>
+            {tiers.map((tier) => (
+              <View key={tier.id} style={[styles.tierChip, { backgroundColor: tier.color }]}>
+                <Text style={[styles.tierChipText, { color: readableTextColor(tier.color) }]}>{tier.label}</Text>
               </View>
             ))}
           </View>
-          <Text style={styles.hint}>Des noms courts, d’un ou deux mots. Le titre et les cartes ne changent pas.</Text>
+          <Text style={styles.hint}>{t('editor.ai.toneHint')}</Text>
         </View>
 
         <View style={styles.total}>
           <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Total</Text>
+            <Text style={styles.sectionTitle}>{t('editor.ai.total')}</Text>
           </View>
           <View style={styles.recap}>
             <Text style={styles.recapText}>
-              {tiers.length} rang{tiers.length > 1 ? 's' : ''} renommé{tiers.length > 1 ? 's' : ''} · prix fixe
+              {t('editor.ai.tiersRenamed', { count: tiers.length })} {t('editor.ai.fixedPrice')}
             </Text>
             <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
           </View>
@@ -366,6 +359,7 @@ function useTiersPanel({ visible, onClose, listId, title }: Props & { title: str
  */
 function useImagesPanel({ visible, onClose, listId }: Props): Panel {
   const list = useTierStore((s) => s.lists[listId]);
+  const { t, locale } = useT();
   // Bare cards left out, illustrated cards picked: a card added meanwhile starts right.
   const [toggled, setToggled] = useState<string[]>([]);
   const { job, running, busy, showJob, setShowJob } = useJobView(visible, listId, 'images', () => setToggled([]));
@@ -385,15 +379,15 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
   if (showJob && job) {
     const progress = job.cards ? (job.icons + job.failed) / job.cards : 1;
     return {
-      title: 'Préparation des images',
-      footer: <Button label={running ? 'Continuer en arrière-plan' : 'Terminé'} onPress={onClose} />,
+      title: t('editor.ai.imagesJob'),
+      footer: <Button label={running ? t('editor.ai.background') : t('editor.done')} onPress={onClose} />,
       body: (
         <View style={{ gap: spacing.sm }}>
           <View style={styles.status}>
             {running ? <ActivityIndicator color={colors.primary} /> : <Ionicons name="checkmark-circle" size={22} color="#2EAD6B" />}
             <Text style={styles.statusText}>
-              Images : {job.icons} / {job.cards}
-              {job.failed ? ` · ${job.failed} sans image` : ''}
+              {t('editor.ai.imagesProgress', { done: job.icons, total: job.cards })}
+              {job.failed ? ` · ${t('editor.ai.withoutImage', { failed: job.failed })}` : ''}
             </Text>
           </View>
           <View style={styles.bar}>
@@ -401,40 +395,36 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
           </View>
           {job.error ? <Text style={styles.error}>{job.error}</Text> : null}
           {running ? (
-            <Text style={styles.hint}>
-              Les images déjà dessinées dans la bibliothèque Tiercraft sont reprises, les autres sont dessinées par l’IA, toutes dans le même style. Comptez jusqu’à une trentaine de secondes : vous pouvez fermer, elles arriveront quand même.
-            </Text>
+            <Text style={styles.hint}>{t('editor.ai.imagesWorkingHint')}</Text>
           ) : null}
         </View>
       ),
     };
   }
 
-  const perImage = n ? (cost / n).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0';
+  const perImage = n ? (cost / n).toLocaleString(locale, { maximumFractionDigits: 1 }) : '0';
   // Beyond 20, a second sheet: said, or the jump in price would look like a mistake.
   const sheets = sheetSizes(n);
   const allOn = n === cards.length;
   const note =
     cards.length < MIN_IMAGES
-      ? `Il faut au moins ${MIN_IMAGES} cartes pour préparer des images.`
+      ? t('editor.ai.minCards', { min: MIN_IMAGES })
       : n < MIN_IMAGES
-        ? `Sélectionnez au moins ${MIN_IMAGES} cartes.`
+        ? t('editor.ai.minSelect', { min: MIN_IMAGES })
         : undefined;
   // Everything on, or back to the start: the bare cards on, the illustrated ones aside.
   const selectAll = () => setToggled(allOn ? [] : toRedraw.map((c) => c.id));
   return {
-    title: 'Préparer les images',
-    footer: <Footer label="Préparer" cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />,
+    title: t('editor.ai.imagesTitle'),
+    footer: <Footer label={t('editor.ai.prepare')} cost={cost} ready={n >= MIN_IMAGES} busy={busy} note={note} onPress={start} />,
     body: (
       <>
       <View style={styles.section}>
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>
-            Cartes à illustrer · {n} / {cards.length}
-          </Text>
+          <Text style={styles.sectionTitle}>{t('editor.ai.toIllustrate', { n, total: cards.length })}</Text>
           {cards.length ? (
             <Clickable accessibilityRole="button" onPress={selectAll}>
-              <Text style={styles.link}>{allOn ? 'Réinitialiser' : 'Tout sélectionner'}</Text>
+              <Text style={styles.link}>{allOn ? t('editor.reset') : t('editor.ai.selectAll')}</Text>
             </Clickable>
           ) : null}
         </View>
@@ -460,24 +450,24 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
             })}
           </View>
         ) : (
-          <Text style={styles.hint}>Ajoutez d’abord des cartes à la liste.</Text>
+          <Text style={styles.hint}>{t('editor.ai.addCardsFirst')}</Text>
         )}
       </View>
 
       <View style={styles.total}>
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>Total</Text>
+          <Text style={styles.sectionTitle}>{t('editor.ai.total')}</Text>
         </View>
         <View style={styles.recap}>
           <Text style={styles.recapText}>
-            {n} image{n > 1 ? 's' : ''}
-            {redrawn ? ` dont ${redrawn} redessinée${redrawn > 1 ? 's' : ''}` : ''} · {perImage} crédits l’image
+            {t('editor.ai.imageCount', { count: n })}
+            {redrawn ? ` ${t('editor.ai.redrawn', { count: redrawn })}` : ''} · {t('editor.ai.perImage', { price: perImage })}
           </Text>
           <EnergyAmount amount={cost} size={14} style={styles.recapValue} />
         </View>
         {sheets.length > 1 ? (
           <Text style={styles.hint}>
-            {sheets.length} planches de {sheets.join(' + ')} images, préparées en même temps : une planche en tient 20 au plus, et chacune compte sa part fixe de {CREDITS.sheet} crédits.
+            {t('editor.ai.sheets', { sheets: sheets.length, sizes: sheets.join(' + '), credits: CREDITS.sheet })}
           </Text>
         ) : null}
         <Balance cost={cost} />
@@ -495,6 +485,7 @@ function useImagesPanel({ visible, onClose, listId }: Props): Panel {
 export function AiSheet({ visible, onClose, listId, title }: Props & { title: string }) {
   const list = useTierStore((s) => s.lists[listId]);
   const running = useAiJob((s) => (aiBusy(s.job, listId) ? s.job!.kind : null));
+  const { t } = useT();
   const [mode, setMode] = useState<Mode>('words');
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
@@ -511,26 +502,26 @@ export function AiSheet({ visible, onClose, listId, title }: Props & { title: st
   const tiers = useTiersPanel({ visible, onClose, listId, title });
   const panel = mode === 'words' ? words : mode === 'images' ? images : tiers;
   const tabs: { mode: Mode; label: string; icon: 'text' | 'image' | 'reorder-four' }[] = [
-    { mode: 'words', label: 'Texte', icon: 'text' },
-    { mode: 'images', label: 'Images', icon: 'image' },
-    { mode: 'tiers', label: 'Rangs', icon: 'reorder-four' },
+    { mode: 'words', label: t('editor.ai.tabText'), icon: 'text' },
+    { mode: 'images', label: t('editor.ai.tabImages'), icon: 'image' },
+    { mode: 'tiers', label: t('editor.ai.tabTiers'), icon: 'reorder-four' },
   ];
   return (
     <Sheet visible={visible} onClose={onClose} title={panel.title} footer={panel.footer}>
       <View style={styles.tabs} accessibilityRole="tablist">
-        {tabs.map((t) => {
-          const on = t.mode === mode;
+        {tabs.map((tab) => {
+          const on = tab.mode === mode;
           return (
             <Clickable
-              key={t.mode}
+              key={tab.mode}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              onPress={() => setMode(t.mode)}
+              onPress={() => setMode(tab.mode)}
               style={[styles.tab, on && styles.tabOn]}
             >
-              <Ionicons name={t.icon} size={18} color={on ? colors.primaryText : colors.text} />
-              <Text style={[styles.tabText, on && { color: colors.primaryText }]}>{t.label}</Text>
-              {running === t.mode ? <ActivityIndicator size="small" color={on ? colors.primaryText : colors.primary} /> : null}
+              <Ionicons name={tab.icon} size={18} color={on ? colors.primaryText : colors.text} />
+              <Text style={[styles.tabText, on && { color: colors.primaryText }]}>{tab.label}</Text>
+              {running === tab.mode ? <ActivityIndicator size="small" color={on ? colors.primaryText : colors.primary} /> : null}
             </Clickable>
           );
         })}

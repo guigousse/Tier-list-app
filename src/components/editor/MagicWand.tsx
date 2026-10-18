@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
+import { useT } from '../../lib/i18n/useT';
 import { playSparkle } from '../../lib/sound';
 
 const SIZE = 58;
@@ -18,6 +19,7 @@ export function MagicWand({ onPress, busy = false }: { onPress: () => void; busy
   const sweep = useSharedValue(0);
   const breath = useSharedValue(0);
   const spin = useSharedValue(0);
+  const { t } = useT();
   useEffect(() => {
     sweep.value = withRepeat(withSequence(withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }), withDelay(1800, withTiming(0, { duration: 0 }))), -1);
     breath.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }), -1, true);
@@ -37,7 +39,7 @@ export function MagicWand({ onPress, busy = false }: { onPress: () => void; busy
       </Animated.View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Générer avec l’IA : cartes, images et rangs"
+        accessibilityLabel={t('editor.wand')}
         onPress={() => {
           playSparkle();
           onPress();

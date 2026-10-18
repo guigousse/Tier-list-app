@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../constants/theme';
+import { useT } from '../../lib/i18n/useT';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card } from '../../store/types';
 import { DraggableCard, useDragContext, useDropZone } from './DragDrop';
@@ -25,18 +26,19 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: P
   const { ref, highlight } = useDropZone(POOL, false);
   const { cardSize } = useDragContext();
   const { isCompact } = useResponsive();
+  const { t } = useT();
 
   return (
     <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: (bottomInset ? insets.bottom : 0) + spacing.sm }]}>
       <Animated.View style={[StyleSheet.absoluteFill, highlight]} pointerEvents="none" />
       <View style={styles.header}>
         <Text numberOfLines={1} style={styles.title}>
-          À classer · {cards.length}
+          {t('editor.toRank')} · {cards.length}
           <Text style={styles.muted}> / {total}</Text>
         </Text>
         {isCompact ? null : (
           <Text numberOfLines={1} style={[styles.muted, styles.hint]}>
-            Touchez ou glissez une carte
+            {t('editor.tray.hint')}
           </Text>
         )}
       </View>
@@ -48,12 +50,12 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: P
         {onAdd ? (
         <Clickable
           accessibilityRole="button"
-          accessibilityLabel="Ajouter des cartes"
+          accessibilityLabel={t('editor.addCards')}
           onPress={onAdd}
           style={({ pressed }) => [styles.add, { width: cardSize, height: cardSize, opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="add" size={28} color={colors.primary} />
-          <Text style={styles.addLabel}>Ajouter</Text>
+          <Text style={styles.addLabel}>{t('editor.cardSheet.add')}</Text>
         </Clickable>
         ) : null}
         {cards.map((c) => (
@@ -61,7 +63,7 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true }: P
         ))}
         {cards.length === 0 && total > 0 ? (
           <View style={[styles.done, { height: cardSize }]}>
-            <Text style={styles.muted}>🎉 Toutes les cartes sont classées</Text>
+            <Text style={styles.muted}>{t('editor.tray.allRanked')}</Text>
           </View>
         ) : null}
       </ScrollView>

@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
+import { useT } from '../lib/i18n/useT';
 import { playClick } from '../lib/sound';
 import { SHEET_MAX_WIDTH } from '../lib/layout';
 
@@ -87,9 +88,10 @@ export function IconButton({ icon, onPress, label, color = colors.text, size = 2
 }
 
 export function Field({ label, ...props }: TextInputProps & { label?: string }) {
+  const { upper } = useT();
   return (
     <View style={{ gap: spacing.xs }}>
-      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
+      {label ? <Text style={styles.fieldLabel}>{upper(label)}</Text> : null}
       <TextInput
         placeholderTextColor={colors.textMuted}
         selectionColor={colors.primary}
@@ -122,16 +124,17 @@ type SheetProps = {
 /** Bottom sheet built on the native modal. */
 export function Sheet({ visible, onClose, title, children, footer, headerRight }: SheetProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useT();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetRoot}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fermer" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('app.close')} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
           <View style={styles.sheetHandle} />
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>{title}</Text>
             {headerRight}
-            <IconButton icon="close" label="Fermer" onPress={onClose} color={colors.textMuted} />
+            <IconButton icon="close" label={t('app.close')} onPress={onClose} color={colors.textMuted} />
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.md }}>
             {children}
@@ -214,7 +217,8 @@ export const styles = StyleSheet.create({
   },
   buttonLabel: { fontSize: 16, fontWeight: '600' },
   iconButton: { padding: 6, borderRadius: radius.sm },
-  fieldLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Capitals through upper(), not textTransform: Greek capitals drop their accents.
+  fieldLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
   input: {
     backgroundColor: colors.surfaceAlt,
     color: colors.text,

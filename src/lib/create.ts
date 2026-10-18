@@ -4,6 +4,7 @@ import { CLASSIC_TIERS, type Template } from '../constants/presets';
 import { useCatalog } from '../store/useCatalog';
 import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
+import { t } from './i18n/useT';
 import { downloadCardImage } from './images';
 import { recordTemplateView } from './api';
 import { copiesByKey } from './publicSync';
@@ -15,7 +16,8 @@ import { copiesByKey } from './publicSync';
 export function createAndOpen(template?: Template): void {
   const store = useTierStore.getState();
   const id = store.createList({
-    title: template?.title ?? 'Nouvelle tier list',
+    // A default title is text the player can rename: written in the language of the moment.
+    title: template?.title ?? t('editor.newList'),
     tierLabels: template?.tiers ?? CLASSIC_TIERS,
     cardLabels: template?.items,
     cardRanks: template?.ranks,
@@ -59,7 +61,7 @@ async function attachAppIcons(listId: string, template: Template): Promise<void>
       if (!url || !cardId) return;
       try {
         const imageName = await downloadCardImage(url);
-        useTierStore.getState().updateCard(listId, cardId, { imageName, imageCredit: 'Icône : App Store' });
+        useTierStore.getState().updateCard(listId, cardId, { imageName, imageCredit: t('editor.appStoreCredit') });
       } catch {
         // Keep the card with its name only.
       }

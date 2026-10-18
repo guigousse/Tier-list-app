@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing } from '../constants/theme';
 import { aiIconUri } from '../lib/aiIconFiles';
+import { useT } from '../lib/i18n/useT';
 import type { Template } from '../constants/presets';
 import { STICKERS, stickerLayout, type Sticker } from '../lib/stickerLayout';
 import { themeStickers, type Theme } from '../lib/themes';
@@ -84,6 +85,7 @@ function StickerView({
 const BAKING = (globalThis as { __BAKING_THEMES__?: boolean }).__BAKING_THEMES__ === true;
 
 const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons: Record<string, string>; onOpen: (key: string) => void }) {
+  const { t } = useT();
   const { theme, templates } = group;
   const baked = BAKING ? undefined : THEME_PREVIEWS[theme.key];
   const count = templates.length;
@@ -94,7 +96,7 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={`${theme.title}, ${count} liste${count > 1 ? 's' : ''}`}
+      accessibilityLabel={`${theme.title}, ${t('app.listCount', { count })}`}
       onPress={() => onOpen(theme.key)}
       style={({ pressed }) => [styles.tile, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
     >
@@ -118,9 +120,7 @@ const Tile = memo(function Tile({ group, icons, onOpen }: { group: Group; icons:
       <Text style={styles.title} numberOfLines={2}>
         {theme.title}
       </Text>
-      <Text style={styles.count}>
-        {count} liste{count > 1 ? 's' : ''}
-      </Text>
+      <Text style={styles.count}>{t('app.listCount', { count })}</Text>
     </Clickable>
   );
 });

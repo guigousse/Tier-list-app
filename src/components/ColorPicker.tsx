@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { colors, isValidHex, PALETTE, readableTextColor, spacing } from '../constants/theme';
+import { useT } from '../lib/i18n/useT';
 import { Field } from './ui';
 import { Clickable } from './Clickable';
 
@@ -15,6 +16,7 @@ type Props = {
 export function ColorPicker({ value, onChange, palette = PALETTE }: Props) {
   /** Text being typed in the hex field; null shows the current value. */
   const [draft, setDraft] = useState<string | null>(null);
+  const { t } = useT();
   const hex = draft ?? value;
 
   return (
@@ -26,7 +28,7 @@ export function ColorPicker({ value, onChange, palette = PALETTE }: Props) {
             <Clickable
               key={c}
               accessibilityRole="button"
-              accessibilityLabel={`Couleur ${c}`}
+              accessibilityLabel={t('editor.colorA11y', { color: c })}
               accessibilityState={{ selected }}
               onPress={() => {
                 setDraft(null);
@@ -48,8 +50,8 @@ export function ColorPicker({ value, onChange, palette = PALETTE }: Props) {
             autoCorrect={false}
             maxLength={7}
             placeholder="#FF7F7F"
-            onChangeText={(t) => {
-              const next = t.startsWith('#') ? t : `#${t}`;
+            onChangeText={(text) => {
+              const next = text.startsWith('#') ? text : `#${text}`;
               setDraft(next);
               if (isValidHex(next)) onChange(next.toUpperCase());
             }}

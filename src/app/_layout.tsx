@@ -22,6 +22,7 @@ import { useAllTemplates, useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated, useTierStore } from '../store/useTierStore';
 import { openShop } from '../lib/shop';
+import { t as translateNow, useT } from '../lib/i18n/useT';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -42,6 +43,8 @@ const theme = {
 
 export default function RootLayout() {
   const hydrated = useHydrated();
+  // Screen titles read at render: they follow a language changed in the settings.
+  const { t } = useT();
 
   useEffect(() => {
     if (!hydrated) return;
@@ -51,10 +54,8 @@ export default function RootLayout() {
     // The daily reminder back on the time the daily tier list comes out (12:30 in Paris).
     syncDailyReminder();
     if (hydrationRecovered()) {
-      Alert.alert(
-        'Données illisibles',
-        'Vos tier lists enregistrées n’ont pas pu être chargées. Une copie a été mise de côté : contactez l’assistance pour la récupérer.',
-      );
+      // Read once the saved settings are back: the alert speaks the player's language.
+      Alert.alert(translateNow('app.unreadableTitle'), translateNow('app.unreadableBody'));
     }
     // Profile and device id kept in the Keychain (back after a reinstall).
     restoreIdentity().then(() => {
@@ -142,20 +143,20 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="lists" options={{ title: 'Mes listes' }} />
-            <Stack.Screen name="templates" options={{ title: 'Modèles de liste' }} />
-            <Stack.Screen name="popular" options={{ title: 'Listes publiques' }} />
-            <Stack.Screen name="social" options={{ title: 'Profil' }} />
-            <Stack.Screen name="rewards" options={{ title: 'Récompenses' }} />
+            <Stack.Screen name="lists" options={{ title: t('app.title.lists') }} />
+            <Stack.Screen name="templates" options={{ title: t('app.title.templates') }} />
+            <Stack.Screen name="popular" options={{ title: t('app.title.popular') }} />
+            <Stack.Screen name="social" options={{ title: t('app.title.social') }} />
+            <Stack.Screen name="rewards" options={{ title: t('app.title.rewards') }} />
             <Stack.Screen name="legal/[doc]" options={{ title: '' }} />
             <Stack.Screen name="friend/[id]" options={{ title: '' }} />
             <Stack.Screen name="mail/[id]" options={{ title: '' }} />
-            <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
-            <Stack.Screen name="import" options={{ title: 'Importer une tier list', presentation: 'modal' }} />
+            <Stack.Screen name="settings" options={{ title: t('app.title.settings') }} />
+            <Stack.Screen name="import" options={{ title: t('app.title.import'), presentation: 'modal' }} />
             <Stack.Screen name="s/[code]" options={{ headerShown: false }} />
-            <Stack.Screen name="results/[id]" options={{ title: 'Résultats' }} />
-            <Stack.Screen name="history" options={{ title: 'Historique' }} />
-            <Stack.Screen name="store" options={{ title: 'Énergie' }} />
+            <Stack.Screen name="results/[id]" options={{ title: t('app.title.results') }} />
+            <Stack.Screen name="history" options={{ title: t('app.title.history') }} />
+            <Stack.Screen name="store" options={{ title: t('app.title.store') }} />
             <Stack.Screen
               name="welcome"
               options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}

@@ -33,6 +33,7 @@ import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
 import { own } from '../../lib/own';
 import { MAX_TITLE } from '../../lib/listTitle';
+import { useT } from '../../lib/i18n/useT';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
@@ -44,6 +45,7 @@ export default function EditorScreen() {
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
   const { cardSize } = useResponsive();
+  const { t } = useT();
 
   useEffect(() => {
     if (id) useTierStore.getState().markOpened(id);
@@ -56,8 +58,8 @@ export default function EditorScreen() {
   if (!list) {
     return (
       <View style={styles.missing}>
-        <Text style={styles.missingText}>Cette tier list n’existe plus.</Text>
-        <Button label="Retour à l’accueil" onPress={() => router.dismissTo('/')} />
+        <Text style={styles.missingText}>{t('editor.missing')}</Text>
+        <Button label={t('editor.backHome')} onPress={() => router.dismissTo('/')} />
       </View>
     );
   }
@@ -77,6 +79,7 @@ export default function EditorScreen() {
 
 function Editor({ list, editing, setEditing }: { list: TierList; editing: boolean; setEditing: (on: boolean) => void }) {
   const insets = useSafeAreaInsets();
+  const { t } = useT();
   const store = useTierStore.getState();
   const { scrollRef, viewportRef, onScrollLayout, onContentSize } = useDragContext();
 
@@ -144,7 +147,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
     try {
       await validateSentRanks(list.id);
     } catch (e) {
-      Alert.alert('Oups', socialError(e));
+      Alert.alert(t('editor.oops'), socialError(e));
     } finally {
       setSending(false);
     }
@@ -158,9 +161,9 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
   };
 
   const confirmReset = () =>
-    Alert.alert('Réinitialiser le classement ?', 'Toutes les cartes retournent dans la barre du bas.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Réinitialiser', style: 'destructive', onPress: () => store.resetPlacement(list.id) },
+    Alert.alert(t('editor.resetTitle'), t('editor.resetBody'), [
+      { text: t('editor.cancel'), style: 'cancel' },
+      { text: t('editor.reset'), style: 'destructive', onPress: () => store.resetPlacement(list.id) },
     ]);
 
   const showComparison = () => mail && router.push({ pathname: '/mail/[id]', params: { id: mail.id } });
@@ -177,7 +180,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
       await useMail.getState().refresh();
       showComparison();
     } catch (e) {
-      Alert.alert('Oups', socialError(e));
+      Alert.alert(t('editor.oops'), socialError(e));
     } finally {
       setSending(false);
     }
@@ -185,17 +188,17 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
 
   const confirmValidate = () =>
     mail
-      ? Alert.alert('Envoyer votre classement ?', `${mail.from} le verra, et vous découvrirez le sien. Vous ne pourrez plus le modifier.`, [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Envoyer', onPress: sendRanking },
+      ? Alert.alert(t('editor.sendTitle'), t('editor.sendBody', { name: mail.from }), [
+          { text: t('editor.cancel'), style: 'cancel' },
+          { text: t('editor.send'), onPress: sendRanking },
         ])
       : Alert.alert(
-      'Valider votre classement ?',
-      'Il comptera dans le classement moyen des joueurs. Vous pourrez le modifier et le valider à nouveau plus tard.',
+      t('editor.validateTitle'),
+      t('editor.validateBody'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('editor.cancel'), style: 'cancel' },
         {
-          text: 'Valider',
+          text: t('editor.validate'),
           onPress: () => {
             const first = !list.popular?.validatedAt;
             const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
@@ -210,10 +213,10 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
     );
 
   const confirmDelete = () =>
-    Alert.alert('Supprimer la tier list ?', `« ${list.title} » sera définitivement supprimée.`, [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('editor.deleteTitle'), t('editor.deleteBody', { title: list.title }), [
+      { text: t('editor.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer',
+        text: t('editor.delete'),
         style: 'destructive',
         onPress: () => {
           router.back();
@@ -227,42 +230,42 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
 
   const menuActions: MenuAction[] = fixed
     ? [
-        ...(mail?.answeredAt ? [{ label: 'Voir la comparaison', icon: 'git-compare-outline', onPress: showComparison } as const] : []),
-        ...(!mail && ranked?.validatedAt ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
-        ...(validated ? [] : [{ label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset } as const]),
-        { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+        ...(mail?.answeredAt ? [{ label: t('editor.seeComparison'), icon: 'git-compare-outline', onPress: showComparison } as const] : []),
+        ...(!mail && ranked?.validatedAt ? [{ label: t('editor.seeAverage'), icon: 'people-outline', onPress: showResults } as const] : []),
+        ...(validated ? [] : [{ label: t('editor.resetRanking'), icon: 'refresh-outline', onPress: confirmReset } as const]),
+        { label: t('editor.deleteList'), icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ]
     : [
         ...(editable
           ? ([
-              { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
-              { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+              { label: t('editor.addCards'), icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
+              { label: t('editor.addTier'), icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
             ] as const)
-          : ([{ label: 'Modifier la liste', icon: 'create-outline', onPress: () => setEditing(true) }] as const)),
+          : ([{ label: t('editor.editList'), icon: 'create-outline', onPress: () => setEditing(true) }] as const)),
         {
-          label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+          label: list.favorite ? t('editor.removeFavorite') : t('editor.addFavorite'),
           icon: list.favorite ? 'star' : 'star-outline',
           onPress: () => store.toggleFavorite(list.id),
         },
         {
-          label: 'Dupliquer',
+          label: t('editor.duplicate'),
           icon: 'copy-outline',
           onPress: () => {
             const copy = store.duplicateList(list.id);
             if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy, edit: '1' } });
           },
         },
-        { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
-        { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+        { label: t('editor.resetRanking'), icon: 'refresh-outline', onPress: confirmReset },
+        { label: t('editor.deleteList'), icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.xs }]}>
-        <IconButton icon="chevron-back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
+        <IconButton icon="chevron-back" label={t('editor.back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
         <Clickable
           accessibilityRole="button"
-          accessibilityHint={editable ? 'Renommer' : undefined}
+          accessibilityHint={editable ? t('editor.rename') : undefined}
           disabled={!editable}
           style={styles.titleWrap}
           onPress={() => {
@@ -275,8 +278,8 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           </Text>
           {editable ? <Ionicons name="pencil" size={14} color={colors.textMuted} /> : null}
         </Clickable>
-        {fixed || editing ? null : <IconButton icon="create-outline" label="Modifier la liste" onPress={() => setEditing(true)} />}
-        <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
+        {fixed || editing ? null : <IconButton icon="create-outline" label={t('editor.editList')} onPress={() => setEditing(true)} />}
+        <IconButton icon="ellipsis-horizontal-circle-outline" label={t('editor.options')} onPress={() => setMenuOpen(true)} />
       </View>
       <TierStrip style={styles.strip} />
 
@@ -300,7 +303,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           </View>
           {!editable ? null : (
             <View style={styles.below}>
-              <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
+              <Button label={t('editor.addTier')} icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
             </View>
           )}
         </AnimatedScrollView>
@@ -314,8 +317,8 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
 
       {validated && mail ? (
         <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Text style={styles.dailyText}>Classement envoyé à {mail.from}</Text>
-          <Button label="Voir la comparaison" icon="git-compare-outline" onPress={showComparison} />
+          <Text style={styles.dailyText}>{t('editor.sentTo', { name: mail.from })}</Text>
+          <Button label={t('editor.seeComparison')} icon="git-compare-outline" onPress={showComparison} />
         </View>
       ) : (
         <>
@@ -328,41 +331,41 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           />
           {editable ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-              <Text style={styles.dailyText}>Mode édition · titre, rangs et cartes</Text>
-              <Button label="Enregistrer" icon="checkmark" onPress={save} disabled={total === 0} />
-              {total === 0 ? <Text style={styles.dailyText}>Ajoutez des cartes pour enregistrer la liste.</Text> : null}
+              <Text style={styles.dailyText}>{t('editor.editMode')}</Text>
+              <Button label={t('editor.save')} icon="checkmark" onPress={save} disabled={total === 0} />
+              {total === 0 ? <Text style={styles.dailyText}>{t('editor.addCardsToSave')}</Text> : null}
             </View>
           ) : !fixed && sentState === 'sent' ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-              <Text style={styles.dailyText}>✓ Classement envoyé à vos amis · déplacez des cartes pour le modifier</Text>
+              <Text style={styles.dailyText}>{t('editor.sentToFriends')}</Text>
             </View>
           ) : !fixed && sentState === 'pending' ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
               <Button
-                label={sending ? 'Envoi…' : 'Valider mon classement'}
+                label={sending ? t('editor.sending') : t('editor.validateMine')}
                 icon="checkmark-done"
                 onPress={validateOwn}
                 disabled={list.pool.length > 0 || sending}
               />
               <Text style={styles.dailyText}>
-                {list.pool.length > 0 ? 'Classez toutes les cartes pour valider.' : 'Vos amis compareront avec ce classement.'}
+                {list.pool.length > 0 ? t('editor.rankAll') : t('editor.friendsCompare')}
               </Text>
             </View>
           ) : upToDate ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-              <Text style={styles.dailyText}>✓ Classement validé · déplacez des cartes pour le modifier</Text>
-              <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
+              <Text style={styles.dailyText}>{t('editor.validated')}</Text>
+              <Button label={t('editor.seeAverage')} icon="people-outline" onPress={showResults} />
             </View>
           ) : fixed ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-              {mail ? <Text style={styles.dailyText}>Liste envoyée par {mail.from}</Text> : null}
+              {mail ? <Text style={styles.dailyText}>{t('editor.sentBy', { name: mail.from })}</Text> : null}
               <Button
-                label={mail ? (sending ? 'Envoi…' : `Envoyer mon classement à ${mail.from}`) : ranked?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
+                label={mail ? (sending ? t('editor.sending') : t('editor.sendMineTo', { name: mail.from })) : ranked?.validatedAt ? t('editor.validateChanges') : t('editor.validateMine')}
                 icon={mail ? 'paper-plane' : 'checkmark-done'}
                 onPress={confirmValidate}
                 disabled={list.pool.length > 0 || sending}
               />
-              {list.pool.length > 0 ? <Text style={styles.dailyText}>Classez toutes les cartes pour valider.</Text> : null}
+              {list.pool.length > 0 ? <Text style={styles.dailyText}>{t('editor.rankAll')}</Text> : null}
             </View>
           ) : null}
         </>
@@ -403,7 +406,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
       <ActionSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        title="Options"
+        title={t('editor.options')}
         actions={menuActions}
       />
 
@@ -417,10 +420,10 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
       <Sheet
         visible={renaming}
         onClose={() => setRenaming(false)}
-        title="Renommer"
+        title={t('editor.rename')}
         footer={
           <Button
-            label="Enregistrer"
+            label={t('editor.save')}
             onPress={() => {
               store.renameList(list.id, title);
               setRenaming(false);
@@ -428,7 +431,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           />
         }
       >
-        <Field value={title} onChangeText={setTitle} autoFocus placeholder="Titre" maxLength={MAX_TITLE} />
+        <Field value={title} onChangeText={setTitle} autoFocus placeholder={t('editor.titlePlaceholder')} maxLength={MAX_TITLE} />
       </Sheet>
     </View>
   );

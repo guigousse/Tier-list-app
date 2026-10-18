@@ -28,6 +28,7 @@ export function popularShown({
   sort,
   theme,
   tags = {},
+  locale = 'fr',
 }: {
   templates: Template[];
   index: Map<string, string>;
@@ -39,6 +40,8 @@ export function popularShown({
   /** A grand theme opened in the gallery: its lists only (placed by their tags if need be). */
   theme?: string;
   tags?: Record<string, string[]>;
+  /** The alphabet A → Z follows: the app's language. */
+  locale?: string;
 }): Template[] {
   const q = fold(query.trim());
   const result = templates.filter((t) => {
@@ -58,5 +61,5 @@ export function popularShown({
         return true;
     }
   });
-  return sort === 'title' ? [...result].sort((a, b) => a.title.localeCompare(b.title, 'fr')) : result;
+  return sort === 'title' ? [...result].sort((a, b) => a.title.localeCompare(b.title, locale)) : result;
 }

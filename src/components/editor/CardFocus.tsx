@@ -8,6 +8,7 @@ import { POOL, type Card, type Tier, type Zone } from '../../store/types';
 import { CardView } from '../CardView';
 import { Clickable } from '../Clickable';
 import { IconButton } from '../ui';
+import { useT } from '../../lib/i18n/useT';
 
 type Props = {
   card: Card | null;
@@ -22,6 +23,7 @@ type Props = {
 /** A card shown in the middle of the screen with the tiers below, to place it in one tap (daily tier list). */
 export function CardFocus({ card, zone, tiers, onClose, onPlace }: Props) {
   const insets = useSafeAreaInsets();
+  const { t, upper } = useT();
   const { width, height } = useWindowDimensions();
   const size = Math.round(Math.min(width * 0.62, height * 0.36, 300));
 
@@ -33,10 +35,10 @@ export function CardFocus({ card, zone, tiers, onClose, onPlace }: Props) {
   return (
     <Modal visible={card !== null} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.root}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fermer" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('editor.close')} />
         <View style={[styles.top, { paddingTop: insets.top + spacing.sm }]} pointerEvents="box-none">
           <View />
-          <IconButton icon="close" label="Fermer" color="#FFFFFF" size={26} onPress={onClose} />
+          <IconButton icon="close" label={t('editor.close')} color="#FFFFFF" size={26} onPress={onClose} />
         </View>
 
         {card ? (
@@ -52,41 +54,41 @@ export function CardFocus({ card, zone, tiers, onClose, onPlace }: Props) {
             ) : null}
             {card.imageName && card.imageCredit ? (
               <Text numberOfLines={2} style={styles.credit}>
-                Image : {card.imageCredit}
+                {t('editor.focus.imageCredit', { credit: card.imageCredit })}
               </Text>
             ) : null}
           </View>
         ) : null}
 
         <Animated.View entering={FadeInDown.delay(80)} style={[styles.bottom, { paddingBottom: insets.bottom + spacing.lg }]}>
-          <Text style={styles.hint}>Placer dans</Text>
+          <Text style={styles.hint}>{upper(t('editor.focus.placeIn'))}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-            {tiers.map((t) => {
-              const current = zone === t.id;
+            {tiers.map((tier) => {
+              const current = zone === tier.id;
               return (
                 <Clickable
-                  key={t.id}
+                  key={tier.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Placer dans ${t.label}`}
+                  accessibilityLabel={t('editor.focus.placeInTier', { tier: tier.label })}
                   accessibilityState={{ selected: current }}
-                  onPress={() => place(t.id)}
-                  style={({ pressed }) => [styles.tier, { backgroundColor: t.color }, current && styles.current, pressed && { transform: [{ scale: 0.94 }] }]}
+                  onPress={() => place(tier.id)}
+                  style={({ pressed }) => [styles.tier, { backgroundColor: tier.color }, current && styles.current, pressed && { transform: [{ scale: 0.94 }] }]}
                 >
-                  <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.4} style={[styles.tierText, { color: readableTextColor(t.color) }]}>
-                    {t.label}
+                  <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.4} style={[styles.tierText, { color: readableTextColor(tier.color) }]}>
+                    {tier.label}
                   </Text>
                 </Clickable>
               );
             })}
             <Clickable
               accessibilityRole="button"
-              accessibilityLabel="Remettre dans les cartes à classer"
+              accessibilityLabel={t('editor.focus.backToPool')}
               accessibilityState={{ selected: zone === POOL }}
               onPress={() => place(POOL)}
               style={({ pressed }) => [styles.tier, styles.pool, zone === POOL && styles.current, pressed && { transform: [{ scale: 0.94 }] }]}
             >
               <Ionicons name="albums-outline" size={20} color={colors.text} />
-              <Text style={styles.poolText}>À classer</Text>
+              <Text style={styles.poolText}>{t('editor.toRank')}</Text>
             </Clickable>
           </ScrollView>
         </Animated.View>
@@ -105,7 +107,7 @@ const styles = StyleSheet.create({
   label: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', textAlign: 'center' },
   credit: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: -spacing.sm },
   bottom: { gap: spacing.sm },
-  hint: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
+  hint: { color: colors.textMuted, fontSize: 13, fontWeight: '600', letterSpacing: 0.5, textAlign: 'center' },
   carousel: { gap: spacing.sm, paddingHorizontal: spacing.lg, flexGrow: 1, justifyContent: 'center' },
   tier: { width: TIER_SIZE, height: TIER_SIZE, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 6 },
   current: { borderWidth: 3, borderColor: '#FFFFFF' },

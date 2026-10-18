@@ -15,6 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { useT } from '../../lib/i18n/useT';
 import type { Card, Zone } from '../../store/types';
 import { CardView } from '../CardView';
 
@@ -285,6 +286,7 @@ type DraggableProps = {
 
 export const DraggableCard = memo(function DraggableCard({ card, zone, scrolls, onPress }: DraggableProps) {
   const { registerCard, begin, drop, dragX, dragY, active, draggedId, cardSize, showLabels, locked } = useDrag();
+  const { t } = useT();
   const dimmed = useAnimatedStyle(() => ({ opacity: draggedId.value === card.id ? 0.25 : 1 }));
   const ref = useRef<View>(null);
   useEffect(() => registerCard(card.id, zone, ref, scrolls), [card.id, zone, registerCard, scrolls]);
@@ -329,8 +331,8 @@ export const DraggableCard = memo(function DraggableCard({ card, zone, scrolls, 
         collapsable={false}
         accessible
         accessibilityRole="button"
-        accessibilityLabel={card.label || 'Carte'}
-        accessibilityHint={locked ? undefined : 'Touchez pour modifier ou déplacer, maintenez pour glisser'}
+        accessibilityLabel={card.label || t('editor.card')}
+        accessibilityHint={locked ? undefined : t('editor.dragHint')}
         style={dimmed}
       >
         <CardView card={card} size={cardSize} showLabel={showLabels} />

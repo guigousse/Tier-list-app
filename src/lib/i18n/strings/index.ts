@@ -3,6 +3,8 @@ import { el } from '../el';
 import { en } from '../en';
 import { es } from '../es';
 import { fr } from '../fr';
+import { app } from './app';
+import { editor } from './editor';
 import { play } from './play';
 import { social } from './social';
 
@@ -10,7 +12,7 @@ import { social } from './social';
 export type Strings = Record<Language, Catalog>;
 
 // One module per part of the app (keys prefixed by its name), merged here.
-const MODULES: Strings[] = [{ fr, en, es, el }, play, social];
+const MODULES: Strings[] = [{ fr, en, es, el }, app, editor, play, social];
 
 export const CATALOGS: Record<Language, Catalog> = {
   fr: Object.assign({}, ...MODULES.map((m) => m.fr)),

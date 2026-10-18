@@ -4,6 +4,7 @@ import { create } from 'zustand';
 
 import { useTierStore } from '../store/useTierStore';
 import { aiChallenge, aiWallet, claimListCredits, type Attestation } from './api';
+import { t } from './i18n/useT';
 import { newId } from './id';
 import { saveIdentity } from './identity';
 
@@ -85,8 +86,8 @@ export async function walletForRequest(): Promise<string> {
 /** The message for a generation refused for lack of credits, or null for another error. */
 export function creditsError(e: unknown): string | null {
   if (!(e instanceof Error)) return null;
-  if (e.message === 'credits') return 'Pas assez de crédits pour cette génération.';
+  if (e.message === 'credits') return t('app.credits.notEnough');
   // The server stops a wallet refunded twice after spending its energy (wallet_hold).
-  if (e.message === 'blocked') return 'Génération IA suspendue après des remboursements d’achats : contactez le support.';
+  if (e.message === 'blocked') return t('app.credits.blocked');
   return null;
 }
