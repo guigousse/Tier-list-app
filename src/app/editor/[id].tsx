@@ -32,6 +32,7 @@ import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
 import { own } from '../../lib/own';
+import { track } from '../../lib/analytics';
 import { MAX_TITLE } from '../../lib/listTitle';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -200,6 +201,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
             const first = !list.popular?.validatedAt;
             const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
             if (!ok) return;
+            track('list_validated', { kind: daily ? 'daily' : 'public', first: first ? 1 : 0 });
             // Count this player's first completed ranking right away (stats refresh later).
             if (list.popular && first) useCatalog.getState().bumpStat(list.popular.key, 'completions', 1);
             syncDailyVotes();

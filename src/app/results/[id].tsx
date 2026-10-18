@@ -15,6 +15,7 @@ import { colors, radius, readableTextColor, spacing } from '../../constants/them
 import { fetchDailyResults, fetchListResults, type DailyResults } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
 import { formatDay, plural } from '../../lib/format';
+import { track } from '../../lib/analytics';
 import { fitText } from '../../lib/fitText';
 import { useResponsive } from '../../lib/layout';
 import { setDailyReminder } from '../../lib/reminders';
@@ -144,6 +145,7 @@ export default function ResultsScreen() {
       // 360 × 640 points at the screen's scale: 1080 × 1920 on an iPhone, a story's size.
       const uri = await captureRef(shareCard, { format: 'png', quality: 1, result: 'tmpfile' });
       await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: list.title });
+      track('share_image', { kind: list.daily ? 'daily' : list.popular ? 'public' : 'personal' });
     } catch {
       Alert.alert('Partage impossible', 'L’image n’a pas pu être créée.');
     }

@@ -79,7 +79,14 @@
           }
         }
       ],
-      "@react-native-firebase/analytics",
+      [
+        "@react-native-firebase/analytics",
+        {
+          "ios": {
+            "withoutAdIdSupport": true
+          }
+        }
+      ],
       [
         "expo-build-properties",
         {

@@ -1,4 +1,4 @@
-import { DarkTheme, SplashScreen, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, SplashScreen, Stack, ThemeProvider, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/theme';
+import { applyConsent, trackScreen } from '../lib/analytics';
 import { openWallet } from '../lib/credits';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
@@ -69,6 +70,17 @@ export default function RootLayout() {
       openShop();
     });
   }, [hydrated]);
+
+  // Usage statistics follow the player's answer, and see each screen by its route.
+  const consent = useTierStore((s) => s.settings.analyticsConsent);
+  useEffect(() => {
+    if (hydrated) applyConsent(consent);
+  }, [hydrated, consent]);
+  const segments = useSegments();
+  const route = segments.join('/');
+  useEffect(() => {
+    if (hydrated) trackScreen(route ? route.split('/') : []);
+  }, [hydrated, route, consent]);
 
   // Notifications about friends: a tap opens the comparison; one arriving while the
   // app is open refreshes the inbox.

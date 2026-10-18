@@ -34,6 +34,7 @@ export const PRIVACY: LegalSection[] = [
       'Quand vous créez avec l’IA : le thème saisi, les noms des cartes et des rangs (jamais les photos) et l’identifiant aléatoire, pour générer le résultat et limiter l’usage par appareil. Les images générées sont conservées, sans lien avec vous, pour être réutilisées.',
       'Quand vous utilisez ou achetez de l’énergie : un porte-monnaie anonyme (clé aléatoire gardée dans le trousseau), son solde et ses mouvements ; pour un achat, la transaction signée par Apple ; pour l’énergie offerte, une attestation App Attest qui prouve que l’app est authentique. En cas de demande de remboursement, Apple peut nous demander quelle part du pack a été utilisée : nous lui indiquons ce pourcentage, rien d’autre.',
       'À chaque échange avec le serveur : votre adresse IP, conservée moins de 24 heures, pour limiter les abus.',
+      'Statistiques d’usage, seulement si vous l’acceptez : les écrans ouverts, la durée et la fréquence d’utilisation, les listes validées et partagées (leur type, jamais leur contenu), le modèle de l’appareil et la version de l’app, reliés à un identifiant d’installation propre à Google Analytics pour Firebase. Sans votre accord, rien n’est mesuré. Vous changez d’avis dans Réglages → Statistiques d’usage.',
     ],
   },
   {
@@ -45,6 +46,7 @@ export const PRIVACY: LegalSection[] = [
       'Vercel : site de l’app et pages des liens de partage.',
       'Wikimedia et App Store : quand vous cherchez une image, le nom de la carte leur est envoyé ; les modèles avec des icônes d’apps interrogent l’App Store. Aucune donnée personnelle n’est transmise.',
       'Expo : téléchargement des mises à jour de l’app.',
+      'Google Analytics pour Firebase : statistiques d’usage, seulement si vous l’acceptez, sans identifiant publicitaire ni partage avec la publicité de Google. Les données peuvent être traitées hors de l’Union européenne, sous les garanties prévues par le RGPD, et sont conservées 2 mois.',
     ],
   },
   {

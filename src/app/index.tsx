@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AvatarWithBadges } from '../components/BadgeIcon';
+import { AnalyticsConsent } from '../components/AnalyticsConsent';
 import { DailyCard } from '../components/DailyCard';
 import { EnergyPill } from '../components/Energy';
 import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
@@ -176,6 +177,7 @@ export default function Home() {
         </View>
       ) : null}
       </ScrollView>
+      <AnalyticsConsent />
     </View>
   );
 }

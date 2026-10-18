@@ -33,3 +33,12 @@ describe('legal texts follow the latest features', () => {
     expect(titles).toContain('Énergie et achats');
   });
 });
+
+describe('usage statistics', () => {
+  it('say what Firebase measures, only with consent, and how to change it', () => {
+    const t = text(PRIVACY);
+    expect(t).toContain('Google Analytics pour Firebase');
+    expect(t).toContain('seulement si vous l’acceptez');
+    expect(t).toContain('Réglages → Statistiques d’usage');
+  });
+});

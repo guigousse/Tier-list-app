@@ -1,6 +1,6 @@
 import * as firebase from '@react-native-firebase/analytics';
 
-import { applyConsent, screenName, track, trackScreen } from '../lib/analytics';
+import { applyConsent, screenName, shouldAskConsent, track, trackScreen } from '../lib/analytics';
 import { useTierStore } from '../store/useTierStore';
 
 jest.mock('@react-native-firebase/analytics', () => ({
@@ -57,5 +57,15 @@ describe('the name of a screen', () => {
   it('the route, not the list it shows: no id, no title', () => {
     expect(screenName(['editor', '[id]'])).toBe('editor/[id]');
     expect(screenName([])).toBe('index');
+  });
+});
+
+describe('when the question is asked', () => {
+  const base = useTierStore.getState().settings;
+  it('once the welcome screens are seen, until the player answers', () => {
+    expect(shouldAskConsent({ ...base, onboarded: false, analyticsConsent: 'unknown' })).toBe(false);
+    expect(shouldAskConsent({ ...base, onboarded: true, analyticsConsent: 'unknown' })).toBe(true);
+    expect(shouldAskConsent({ ...base, onboarded: true, analyticsConsent: 'denied' })).toBe(false);
+    expect(shouldAskConsent({ ...base, onboarded: true, analyticsConsent: 'granted' })).toBe(false);
   });
 });

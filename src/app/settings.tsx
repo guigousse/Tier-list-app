@@ -148,6 +148,17 @@ export default function Settings() {
       ) : null}
 
       <View style={styles.group}>
+        <Text style={styles.groupTitle}>Confidentialité</Text>
+        <Row label="Statistiques d’usage" hint="Mesure de l’audience, sans votre nom ni votre e-mail (Google Analytics pour Firebase) : écrans ouverts, durée des parties. Jamais de publicité ni le contenu de vos listes.">
+          <Switch
+            value={settings.analyticsConsent === 'granted'}
+            onValueChange={(on) => updateSettings({ analyticsConsent: on ? 'granted' : 'denied' })}
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </Row>
+      </View>
+
+      <View style={styles.group}>
         <Text style={styles.groupTitle}>À propos</Text>
         <Button variant="secondary" icon="play-circle-outline" label="Revoir la présentation" onPress={() => router.push('/welcome')} />
         <Button

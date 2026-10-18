@@ -13,6 +13,8 @@ let firebase: Firebase | null | undefined;
 function native(): Firebase | null {
   if (firebase === undefined) {
     try {
+      // A static import would load the native module on the web build too.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       firebase = Platform.OS === 'web' ? null : (require('@react-native-firebase/analytics') as Firebase);
     } catch {
       firebase = null;
@@ -53,4 +55,9 @@ export function trackScreen(segments: string[]) {
   if (!fb || !granted()) return;
   const name = screenName(segments);
   fb.logScreenView(fb.getAnalytics(), { screen_name: name, screen_class: name }).catch(() => {});
+}
+
+/** The question comes after the welcome screens, and only until it is answered. */
+export function shouldAskConsent(settings: { onboarded: boolean; analyticsConsent: Consent }): boolean {
+  return settings.onboarded && settings.analyticsConsent === 'unknown';
 }
