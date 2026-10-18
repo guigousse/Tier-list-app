@@ -177,7 +177,8 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
           </Text>
           <IconButton icon="dice-outline" label="Avatar au hasard" onPress={() => setConfig(randomAvatar())} color={colors.textMuted} />
         </View>
-        <StepTrail step={step} />
+        {/* A locked item tried on keeps the player from going further, as « Suivant » does. */}
+        <StepTrail step={step} onSelect={(i) => (i <= step || !blocking ? goTo(i) : undefined)} />
 
         <Text style={styles.title}>{current.title}</Text>
 
@@ -249,16 +250,26 @@ const STEP_SLOT = 48;
 /**
  * Progress at the top: one icon per step, all shown at once in fixed slots on a line.
  * Steps done and the current one are violet, the ones to come greyed out; only the
- * current one moves, with a slow breathing halo.
+ * current one moves, with a slow breathing halo. A tap on an icon goes to its step.
  */
-function StepTrail({ step }: { step: number }) {
+function StepTrail({ step, onSelect }: { step: number; onSelect: (step: number) => void }) {
   return (
-    <View style={styles.trail} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <View style={styles.trail}>
       <View style={styles.trailTrack}>
         <View style={[styles.trailDone, { width: `${(step / (STEPS.length - 1)) * 100}%` }]} />
       </View>
       {STEPS.map((s, i) => (
-        <StepDot key={s.title} icon={s.icon} state={i < step ? 'done' : i === step ? 'current' : 'todo'} />
+        <Pressable
+          key={s.title}
+          accessibilityRole="button"
+          accessibilityLabel={`Étape ${i + 1} : ${s.title}`}
+          accessibilityState={{ selected: i === step }}
+          hitSlop={4}
+          onPress={() => i !== step && onSelect(i)}
+          style={({ pressed }) => pressed && { opacity: 0.7 }}
+        >
+          <StepDot icon={s.icon} state={i < step ? 'done' : i === step ? 'current' : 'todo'} />
+        </Pressable>
       ))}
     </View>
   );
