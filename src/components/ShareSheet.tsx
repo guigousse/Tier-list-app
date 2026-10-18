@@ -17,10 +17,12 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onShareImage?: () => void;
+  /** What the picture is for (« Image pour les réseaux sociaux »). */
+  imageLabel?: string;
 };
 
 /** Shares a tier list with a short code (stored online), or an offline link as a fallback. */
-export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
+export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }: Props) {
   const key = list ? `${list.id}:${list.updatedAt}` : '';
   const [state, setState] = useState<{ key: string; code?: string; error?: string }>({ key: '' });
   const [attempt, setAttempt] = useState(0);
@@ -129,7 +131,7 @@ export function ShareSheet({ list, visible, onClose, onShareImage }: Props) {
           <Text style={styles.hint}>Création du code…</Text>
         </View>
       )}
-      {onShareImage ? <Button variant="ghost" icon="image-outline" label="Partager en image" onPress={later(onShareImage)} /> : null}
+      {onShareImage ? <Button variant="ghost" icon="image-outline" label={imageLabel ?? 'Partager en image'} onPress={later(onShareImage)} /> : null}
     </Sheet>
   );
 }

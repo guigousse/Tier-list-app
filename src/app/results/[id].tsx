@@ -1,11 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { captureRef } from 'react-native-view-shot';
 
 import { CardView } from '../../components/CardView';
 import { Clickable } from '../../components/Clickable';
 import { FriendsResults } from '../../components/FriendsResults';
+import { ShareCard } from '../../components/ShareCard';
+import { ShareSheet } from '../../components/ShareSheet';
 import { Button } from '../../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
 import { fetchDailyResults, fetchListResults, type DailyResults } from '../../lib/api';
@@ -28,6 +32,8 @@ export default function ResultsScreen() {
   const [results, setResults] = useState<{ key: string; data?: DailyResults; failed?: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [tab, setTab] = useState<'all' | 'friends'>('all');
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareCard = useRef<View>(null);
 
   const ranked = list?.daily ?? list?.popular;
   // Results are fetched by daily date or popular statistics key.
@@ -125,6 +131,22 @@ export default function ResultsScreen() {
     null,
   );
   const tierLabel = (t: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, Math.round(t)))]?.label ?? '?';
+
+  // The player's own ranking, tier by tier, for the shared picture.
+  const myRows = list.tiers.map((_, t) => cards.filter((_, i) => mine[i] === t));
+  const shareImage = async () => {
+    try {
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert('Partage indisponible', 'Le partage n’est pas disponible sur cet appareil.');
+        return;
+      }
+      // 360 × 640 points at the screen's scale: 1080 × 1920 on an iPhone, a story's size.
+      const uri = await captureRef(shareCard, { format: 'png', quality: 1, result: 'tmpfile' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: list.title });
+    } catch {
+      Alert.alert('Partage impossible', 'L’image n’a pas pu être créée.');
+    }
+  };
 
   const edit = () => router.replace({ pathname: '/editor/[id]', params: { id: list.id } });
   const home = () => (router.canDismiss() ? router.dismissTo('/') : router.replace('/'));
@@ -242,8 +264,14 @@ export default function ResultsScreen() {
       </ScrollView>
       <View style={[styles.actions, { paddingBottom: insets.bottom + spacing.md }]}>
         <Button style={styles.action} variant="secondary" icon="arrow-back" label="Modifier" onPress={edit} />
+        <Button style={styles.action} variant="secondary" icon="share-outline" label="Partager" onPress={() => setShareOpen(true)} />
         <Button style={styles.action} icon="arrow-forward" label="Accueil" onPress={home} />
       </View>
+      {/* The picture for social networks, drawn off screen, captured when shared. */}
+      <View style={styles.offscreen} pointerEvents="none">
+        <ShareCard ref={shareCard} list={list} rows={myRows} agreement={data && data.votes > 1 && agreement !== null ? agreement : undefined} />
+      </View>
+      <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={shareImage} imageLabel="Image pour les réseaux sociaux" />
     </View>
   );
 }
@@ -296,5 +324,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   action: { flex: 1, paddingHorizontal: spacing.sm },
+  offscreen: { position: 'absolute', left: -2000, top: 0 },
   barText: { color: '#111', fontSize: 10, fontWeight: '800', lineHeight: 18 },
 });
