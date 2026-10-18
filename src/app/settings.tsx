@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Clickable } from '../components/Clickable';
+import { RegionSheet, useRegionName } from '../components/RegionPicker';
 import { Button, Chip } from '../components/ui';
 import { BROC_APP_STORE_URL } from '../constants/legal';
 import { colors, radius, spacing, type CardSize } from '../constants/theme';
+import { LANGUAGE_NAMES, LANGUAGES } from '../lib/i18n';
+import { useRegion, useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import * as Notifications from 'expo-notifications';
 import { syncPushToken } from '../lib/push';
@@ -41,6 +44,10 @@ export default function Settings() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const settings = useTierStore((s) => s.settings);
+  const { t, language } = useT();
+  const region = useRegion();
+  const regionName = useRegionName();
+  const [regionOpen, setRegionOpen] = useState(false);
   const count = useTierStore((s) => Object.keys(s.lists).length);
   const profile = useTierStore((s) => s.profile);
   const { updateSettings, clearAll } = useTierStore.getState();
@@ -77,6 +84,26 @@ export default function Settings() {
 
   return (
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
+      <View style={styles.group}>
+        <Text style={styles.groupTitle}>{t('settings.languageRegion')}</Text>
+        <Text style={styles.rowLabel}>{t('settings.language')}</Text>
+        <View style={styles.chips}>
+          <Chip label={t('settings.languageAuto')} selected={settings.language === 'auto'} onPress={() => updateSettings({ language: 'auto' })} />
+          {LANGUAGES.map((l) => (
+            <Chip key={l} label={LANGUAGE_NAMES[l]} selected={settings.language === l} onPress={() => updateSettings({ language: l })} />
+          ))}
+        </View>
+        {settings.language === 'auto' ? (
+          <Text style={styles.rowHint}>{t('settings.languageAutoHint', { language: LANGUAGE_NAMES[language] })}</Text>
+        ) : null}
+        <Clickable accessibilityRole="button" onPress={() => setRegionOpen(true)} style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
+          <Row label={t('settings.region')} hint={t('settings.regionHint')}>
+            <Text style={styles.regionValue}>{regionName(region)}</Text>
+          </Row>
+        </Clickable>
+        <RegionSheet visible={regionOpen} onClose={() => setRegionOpen(false)} />
+      </View>
+
       <View style={styles.group}>
         <Text style={styles.groupTitle}>Éditeur</Text>
         <Row label="Retour haptique" hint="Vibration légère lors du glisser-déposer">
@@ -213,6 +240,7 @@ const styles = StyleSheet.create({
   rowLabel: { color: colors.text, fontSize: 16 },
   rowHint: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  regionValue: { color: colors.text, fontSize: 15, fontWeight: '600' },
   danger: { borderColor: colors.danger, backgroundColor: 'rgba(255, 92, 108, 0.1)' },
   promo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   promoEmoji: { fontSize: 28 },

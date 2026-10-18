@@ -1,3 +1,4 @@
+import type { Language } from '../lib/i18n';
 import { clampTitle, MAX_TITLE } from '../lib/listTitle';
 import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,6 +34,12 @@ export type Settings = {
   onboarded: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
+  /** The app's language: the phone's by default ('auto'), English when the app doesn't speak it. */
+  language: Language | 'auto';
+  /** The player's region (ISO country code) for the lists put forward: the phone's by default, 'world' for none. */
+  region: string | 'auto' | 'world';
+  /** Whether the region was confirmed once, after the welcome screens. */
+  regionAsked: boolean;
 };
 
 type NewListInput = {
@@ -131,6 +138,9 @@ const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   cardSize: 'medium',
   showCardLabels: true,
+  language: 'auto',
+  region: 'auto',
+  regionAsked: false,
 };
 
 /** Tier index (0 = S …) of each card of `cardIds`, or null if one isn't ranked. */
