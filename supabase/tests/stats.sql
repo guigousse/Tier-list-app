@@ -30,6 +30,15 @@ begin
     raise exception 'FAIL: team pairs';
   end if;
 
+  -- The cards of the built-in lists have their names (20261018020000_stats_names.sql).
+  if exists (select 1 from stats.cards c join stats.builtin_cards b on b.key = c.list_key where c.card like '#%') then
+    raise exception 'FAIL: a built-in card without its name';
+  end if;
+  -- TestFlight purchases are never revenue.
+  if exists (select 1 from stats.purchases where environment <> 'Production' and revenue_eur is not null) then
+    raise exception 'FAIL: sandbox revenue';
+  end if;
+
   -- One JSON with every block.
   d := stats.dashboard();
   if (select count(*) from jsonb_object_keys(d)) <> 17 then raise exception 'FAIL: dashboard keys %', (select count(*) from jsonb_object_keys(d)); end if;
