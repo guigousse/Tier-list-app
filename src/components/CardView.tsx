@@ -107,9 +107,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(12,12,20,0.6)',
+    // Light enough to see the picture through; the text's shadow keeps it readable.
+    backgroundColor: 'rgba(12,12,20,0.32)',
     paddingVertical: 2,
     paddingHorizontal: 3,
   },
-  captionText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
+  captionText: {
+    color: '#fff',
+    fontWeight: '700',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.85)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 });
