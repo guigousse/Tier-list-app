@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
@@ -52,9 +52,12 @@ const EYES_ZOOM: AvatarZoom = { x: 36, y: 40, size: 48 };
 const MOUTH_ZOOM: AvatarZoom = { x: 40, y: 56, size: 40 };
 const BEARD_ZOOM: AvatarZoom = { x: 30, y: 46, size: 60 };
 
-const STEPS: { title: string; categories: Category[] }[] = [
+type StepIcon = keyof typeof MaterialCommunityIcons.glyphMap;
+
+const STEPS: { title: string; icon: StepIcon; categories: Category[] }[] = [
   {
     title: 'Visage',
+    icon: 'face-man-outline',
     categories: [
       { key: 'face', label: 'Forme', items: FACES, thumb: 'avatar' },
       { key: 'skin', label: 'Peau', items: SKINS, thumb: 'swatch' },
@@ -62,6 +65,7 @@ const STEPS: { title: string; categories: Category[] }[] = [
   },
   {
     title: 'Coiffure',
+    icon: 'content-cut',
     categories: [
       { key: 'hair', label: 'Coupe', items: HAIR_STYLES, thumb: 'avatar' },
       { key: 'hairColor', label: 'Couleur', items: HAIR_COLORS, thumb: 'swatch' },
@@ -69,6 +73,7 @@ const STEPS: { title: string; categories: Category[] }[] = [
   },
   {
     title: 'Yeux',
+    icon: 'eye-outline',
     categories: [
       { key: 'eyeShape', label: 'Forme', items: EYE_SHAPES, thumb: 'avatar', zoom: EYES_ZOOM },
       { key: 'eyes', label: 'Couleur', items: EYE_COLORS, thumb: 'eye' },
@@ -77,6 +82,7 @@ const STEPS: { title: string; categories: Category[] }[] = [
   },
   {
     title: 'Bouche et barbe',
+    icon: 'mustache',
     categories: [
       { key: 'mouth', label: 'Bouche', items: MOUTHS, thumb: 'avatar', zoom: MOUTH_ZOOM },
       { key: 'beard', label: 'Pilosité', items: BEARDS, thumb: 'avatar', zoom: BEARD_ZOOM },
@@ -84,12 +90,13 @@ const STEPS: { title: string; categories: Category[] }[] = [
   },
   {
     title: 'Accessoires',
+    icon: 'hat-fedora',
     categories: [
       { key: 'hat', label: 'Chapeau', items: HATS, thumb: 'avatar' },
       { key: 'glasses', label: 'Lunettes', items: GLASSES, thumb: 'avatar' },
     ],
   },
-  { title: 'Fond', categories: [{ key: 'bg', label: 'Fond', items: BACKGROUNDS, thumb: 'swatch' }] },
+  { title: 'Fond', icon: 'image-filter-hdr', categories: [{ key: 'bg', label: 'Fond', items: BACKGROUNDS, thumb: 'swatch' }] },
 ];
 
 /** Thumbnails of avatars: hairstyles are shown without a hat, to see them. */
@@ -170,11 +177,7 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
           </Text>
           <IconButton icon="dice-outline" label="Avatar au hasard" onPress={() => setConfig(randomAvatar())} color={colors.textMuted} />
         </View>
-        <View style={styles.progress} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {STEPS.map((s, i) => (
-            <View key={s.title} style={[styles.progressPart, i <= step && styles.progressDone]} />
-          ))}
-        </View>
+        <StepTrail step={step} />
 
         <Text style={styles.title}>{current.title}</Text>
 
@@ -235,6 +238,119 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
         </View>
       </GestureHandlerRootView>
     </Modal>
+  );
+}
+
+const STEP_DOT = 32;
+const STEP_CURRENT = 46;
+
+/**
+ * Progress at the top: one icon per step. Steps done are violet, the current one
+ * is bigger and glitters, the ones to come are greyed out.
+ */
+function StepTrail({ step }: { step: number }) {
+  return (
+    <View style={styles.trail} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {STEPS.map((s, i) => (
+        <View key={s.title} style={[styles.trailPart, i === 0 && { flexGrow: 0 }]}>
+          {i > 0 ? <View style={[styles.trailLine, i <= step && styles.trailLineDone]} /> : null}
+          <StepDot icon={s.icon} state={i < step ? 'done' : i === step ? 'current' : 'todo'} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function StepDot({ icon, state }: { icon: StepIcon; state: 'done' | 'current' | 'todo' }) {
+  const reduceMotion = useReducedMotion();
+  const pop = useSharedValue(1);
+  const current = state === 'current';
+
+  useEffect(() => {
+    if (!current || reduceMotion) return;
+    pop.value = withSequence(withTiming(0.8, { duration: 90 }), withSpring(1, { damping: 8, stiffness: 240 }));
+  }, [current, reduceMotion, pop]);
+
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
+  const size = current ? STEP_CURRENT : STEP_DOT;
+
+  return (
+    <View style={[styles.dotSlot, { width: size + (current ? 12 : 0) }]}>
+      {current ? <Glitter /> : null}
+      <Animated.View style={[styles.dot, { width: size, height: size, borderRadius: size / 2 }, state !== 'todo' && styles.dotDone, current && styles.dotCurrent, popStyle]}>
+        <MaterialCommunityIcons name={icon} size={current ? 26 : 17} color={state === 'todo' ? colors.textMuted : colors.primaryText} />
+        {current ? <Sweep /> : null}
+      </Animated.View>
+    </View>
+  );
+}
+
+/** Where the little stars twinkle around the current step, from its centre. */
+const STARS = [
+  { x: -24, y: -20, size: 13, delay: 0 },
+  { x: 24, y: -15, size: 10, delay: 500 },
+  { x: 20, y: 21, size: 11, delay: 1000 },
+];
+
+/** Glitter around the current step: a breathing violet halo and twinkling stars. */
+function Glitter() {
+  const reduceMotion = useReducedMotion();
+  const breath = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    breath.value = withRepeat(withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.quad) }), -1, true);
+  }, [reduceMotion, breath]);
+
+  const haloStyle = useAnimatedStyle(() => ({ opacity: 0.35 - breath.value * 0.2, transform: [{ scale: 1.05 + breath.value * 0.3 }] }));
+
+  return (
+    <>
+      <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
+      {STARS.map((s) => (
+        <Star key={s.delay} {...s} still={reduceMotion} />
+      ))}
+    </>
+  );
+}
+
+/** A light sweep across the current step's icon, now and then. */
+function Sweep() {
+  const reduceMotion = useReducedMotion();
+  const sweep = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    sweep.value = withRepeat(withSequence(withTiming(1, { duration: 700, easing: Easing.inOut(Easing.quad) }), withDelay(1300, withTiming(0, { duration: 0 }))), -1);
+  }, [reduceMotion, sweep]);
+
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: -STEP_CURRENT + sweep.value * STEP_CURRENT * 2 }, { rotate: '25deg' }] }));
+
+  // Clipped inside the dot, which keeps its shadow (iOS drops it on a clipped view).
+  return (
+    <View pointerEvents="none" style={styles.sweepClip}>
+      <Animated.View style={[styles.sweep, style]} />
+    </View>
+  );
+}
+
+function Star({ x, y, size, delay, still }: { x: number; y: number; size: number; delay: number; still: boolean }) {
+  const twinkle = useSharedValue(still ? 1 : 0);
+
+  useEffect(() => {
+    if (still) return;
+    twinkle.value = withDelay(
+      delay,
+      withRepeat(withSequence(withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) }), withTiming(0, { duration: 450, easing: Easing.in(Easing.quad) }), withTiming(0, { duration: 600 })), -1),
+    );
+  }, [still, delay, twinkle]);
+
+  const style = useAnimatedStyle(() => ({ opacity: twinkle.value, transform: [{ scale: 0.4 + twinkle.value * 0.6 }, { rotate: `${twinkle.value * 45}deg` }] }));
+
+  return (
+    <Animated.View pointerEvents="none" style={[styles.star, { marginLeft: x - size / 2, marginTop: y - size / 2 }, style]}>
+      <Ionicons name="sparkles" size={size} color="#EFE9FF" />
+    </Animated.View>
   );
 }
 
@@ -418,9 +534,20 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md },
   stepCount: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
-  progress: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  progressPart: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  progressDone: { backgroundColor: colors.primary },
+  trail: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.sm },
+  trailPart: { flexDirection: 'row', alignItems: 'center', flexGrow: 1 },
+  trailLine: { flex: 1, height: 3, borderRadius: 1.5, marginHorizontal: 2, backgroundColor: colors.border },
+  trailLineDone: { backgroundColor: colors.primary },
+  // As tall as the current dot and its stars, so the title doesn't move when the step changes.
+  dotSlot: { height: STEP_CURRENT + 16, alignItems: 'center', justifyContent: 'center' },
+  dot: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.border, opacity: 0.7 },
+  dotDone: { backgroundColor: colors.primary, borderColor: colors.primary, opacity: 1 },
+  dotCurrent: { borderColor: '#C9B8FF', borderWidth: 2, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  halo: { position: 'absolute', width: STEP_CURRENT, height: STEP_CURRENT, borderRadius: STEP_CURRENT / 2, backgroundColor: colors.primary },
+  sweepClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: STEP_CURRENT / 2, overflow: 'hidden' },
+  sweep: { position: 'absolute', top: -STEP_CURRENT / 2, width: STEP_CURRENT * 0.3, height: STEP_CURRENT * 2, backgroundColor: 'rgba(255,255,255,0.4)' },
+  // Above the dot, whose elevation would hide them on Android.
+  star: { position: 'absolute', left: '50%', top: '50%', zIndex: 2, elevation: 9 },
   title: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginTop: spacing.lg },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   swipeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
