@@ -1,3 +1,4 @@
+import { fitText } from '../../lib/fitText';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +34,16 @@ const LINE = 8;
 const MANNEQUIN_SIZE = 56;
 const STICKER = 52;
 const STICKER_BOX = 72;
+// Names whole rather than « Chapeau d… »: a reward's name shrinks to hold on its card's
+// line (card 84 wide, less border and padding); a badge's pill takes a second line
+// (« Team / Montagne »), narrower by its tick once chosen.
+const CARD_TEXT = COL - 8 - 2 - 8;
+const titleFit = (label: string, width: number) => fitText(label, width, { maxLines: 1, max: 11, min: 8 });
+const stickerFit = (label: string, mine: boolean) => {
+  const width = STICKER_BOX - 14 - (mine ? 13 : 0);
+  const one = fitText(label, width, { maxLines: 1, max: 10, min: 8.5 });
+  return one.fits ? one : fitText(label, width, { maxLines: 2, max: 10, min: 8 });
+};
 /** How long the losing sticker takes to pop. */
 const POP_MS = 420;
 
@@ -129,8 +140,8 @@ function ForkSticker({
       ) : (
         <View style={[styles.stickerLabel, mine && styles.stickerLabelMine]}>
           {mine ? <Ionicons name="checkmark" size={10} color="#FFFFFF" /> : null}
-          <Text numberOfLines={1} style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }]}>
-            {badge.label}
+          <Text style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }, { fontSize: stickerFit(badge.label, mine).fontSize }]}>
+            {stickerFit(badge.label, mine).lines.join('\n')}
           </Text>
         </View>
       )}
@@ -353,7 +364,7 @@ export function RewardPath({
                       {item ? (
                         <>
                           <RewardDrawing reward={item} size={MANNEQUIN_SIZE} />
-                          <Text numberOfLines={1} style={styles.cardTitle}>
+                          <Text numberOfLines={1} style={[styles.cardTitle, { fontSize: titleFit(item.label, CARD_TEXT).fontSize }]}>
                             {item.label}
                           </Text>
                         </>
@@ -404,7 +415,7 @@ export function RewardPath({
               {open.rewards.map((r) => (
                 <View key={`${r.part}-${r.id}`} style={styles.sheetItem}>
                   <RewardDrawing reward={r} size={80} />
-                  <Text numberOfLines={1} style={styles.cardTitle}>
+                  <Text numberOfLines={1} style={[styles.cardTitle, { fontSize: titleFit(r.label, 96).fontSize }]}>
                     {r.label}
                   </Text>
                   <Text numberOfLines={1} style={styles.sheetMeta}>
@@ -460,15 +471,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     maxWidth: STICKER_BOX,
-    height: 22,
+    minHeight: 22,
     paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 11,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
   stickerLabelMine: { backgroundColor: '#2EAD6B', borderColor: '#7BE495' },
-  stickerLabelText: { flexShrink: 1, color: colors.text, fontSize: 10, fontWeight: '700' },
+  stickerLabelText: { flexShrink: 1, color: colors.text, fontWeight: '700', textAlign: 'center' },
   shard: { position: 'absolute', width: 8, height: 8, borderRadius: 4 },
   ask: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 22, paddingHorizontal: 10, borderRadius: 11 },
   askText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },

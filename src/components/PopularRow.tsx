@@ -52,30 +52,32 @@ export const PopularRow = memo(function PopularRow({ template, list, completions
     >
       {/* Its favourite card: the one players rank S most often. */}
       <Sticker url={cover.url} emoji={cover.emoji} size={52} />
+      {/* The title has the row's whole width; the counters sit under it, beside the status:
+          beside the title, they cut « Garnitures de pizza » to « Garnitures d… ». */}
       <View style={styles.body}>
         <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
           {template.title}
         </Text>
         <View style={styles.statusRow}>
           {validated ? <Ionicons name="checkmark-circle" size={14} color={SUCCESS} /> : null}
-          <Text numberOfLines={1} style={[styles.status, validated && { color: SUCCESS }]}>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.status, validated && { color: SUCCESS }]}>
             {status}
           </Text>
+          <Clickable
+            accessibilityRole="button"
+            accessibilityLabel={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            hitSlop={8}
+            onPress={() => toggleFavorite(template.key)}
+            style={styles.stat}
+          >
+            <Text style={[styles.count, favorite && { color: HEART }]}>{formatCount(favorites)}</Text>
+            <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={16} color={favorite ? HEART : colors.textMuted} />
+          </Clickable>
+          <View style={styles.stat} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Text style={styles.count}>{formatCount(completions)}</Text>
+            <Ionicons name="checkmark-done" size={16} color={colors.textMuted} />
+          </View>
         </View>
-      </View>
-      <Clickable
-        accessibilityRole="button"
-        accessibilityLabel={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        hitSlop={8}
-        onPress={() => toggleFavorite(template.key)}
-        style={styles.stat}
-      >
-        <Text style={[styles.count, favorite && { color: HEART }]}>{formatCount(favorites)}</Text>
-        <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={18} color={favorite ? HEART : colors.textMuted} />
-      </Clickable>
-      <View style={styles.stat} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={styles.count}>{formatCount(completions)}</Text>
-        <Ionicons name="checkmark-done" size={18} color={colors.textMuted} />
       </View>
     </Clickable>
   );
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   title: { color: colors.text, fontSize: 16, fontWeight: '700' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  status: { color: colors.textMuted, fontSize: 13 },
-  stat: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 58, justifyContent: 'flex-end' },
-  count: { color: colors.textMuted, fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  status: { flex: 1, color: colors.textMuted, fontSize: 13 },
+  stat: { flexDirection: 'row', alignItems: 'center', gap: 3, minWidth: 40, justifyContent: 'flex-end' },
+  count: { color: colors.textMuted, fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'] },
 });
