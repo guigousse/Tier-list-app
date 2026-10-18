@@ -1,4 +1,5 @@
 import {
+  canReachStep,
   avatarSvg,
   decodeAvatar,
   DEFAULT_AVATAR,
@@ -84,5 +85,18 @@ describe('unlocks', () => {
     expect(alien).toContain('#9FE07F');
     const plain = avatarSvg(MANNEQUIN, 'u');
     expect(plain).toContain(SKINS.find((s) => s.id === MANNEQUIN.skin)!.fill);
+  });
+});
+
+describe('the steps of the avatar editor, with a locked item tried on', () => {
+  it('nothing tried on: every step is reachable', () => {
+    expect([0, 3, 5].map((s) => canReachStep(s, -1))).toEqual([true, true, true]);
+  });
+
+  it('the step of the locked item stays reachable, to take it off; the ones after are not', () => {
+    // Tried on a locked hat (step 4), then went back to the face (step 0).
+    expect(canReachStep(4, 4)).toBe(true);
+    expect(canReachStep(2, 4)).toBe(true);
+    expect(canReachStep(5, 4)).toBe(false);
   });
 });

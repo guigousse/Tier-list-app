@@ -783,3 +783,12 @@ ${layer('hat', hat(c.hat))}
 </g>
 </svg>`;
 }
+
+/**
+ * Whether the avatar editor may go to `step` while a locked item is tried on in
+ * `blockingStep` (-1: none). Its own step always stays reachable: going back past it
+ * once shut the player out of the only place to take it off.
+ */
+export function canReachStep(step: number, blockingStep: number): boolean {
+  return blockingStep < 0 || step <= blockingStep;
+}

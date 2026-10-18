@@ -19,6 +19,7 @@ import {
   HAIR_STYLES,
   HATS,
   MOUTHS,
+  canReachStep,
   isUnlocked,
   randomAvatar,
   SKINS,
@@ -159,13 +160,17 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
     setConfig((c) => ({ ...c, [category.key]: next.id }));
   };
 
+  // Its own step stays open (lib/avatar.ts canReachStep); going there shows its part.
+  const blockingStep = blocking ? STEPS.findIndex((s) => s.categories.includes(blocking)) : -1;
+
   const goTo = (nextStep: number) => {
     setStep(nextStep);
-    setTab(0);
+    setTab(nextStep === blockingStep && blocking ? STEPS[nextStep].categories.indexOf(blocking) : 0);
   };
 
   const lock = lockOf(category.key, item);
   const last = step === STEPS.length - 1;
+  const forwardLocked = last ? Boolean(blocking) : !canReachStep(step + 1, blockingStep);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={onClose}>
@@ -177,8 +182,8 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
           </Text>
           <IconButton icon="dice-outline" label="Avatar au hasard" onPress={() => setConfig(randomAvatar())} color={colors.textMuted} />
         </View>
-        {/* A locked item tried on keeps the player from going further, as « Suivant » does. */}
-        <StepTrail step={step} onSelect={(i) => (i <= step || !blocking ? goTo(i) : undefined)} />
+        {/* Past the step of a locked item tried on, the way is shut, as for « Suivant »; its own step stays open. */}
+        <StepTrail step={step} onSelect={(i) => (canReachStep(i, blockingStep) ? goTo(i) : undefined)} />
 
         <Text style={styles.title}>{current.title}</Text>
 
@@ -230,9 +235,9 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
           {step > 0 ? <Button variant="secondary" icon="chevron-back" label="Retour" onPress={() => goTo(step - 1)} style={{ flex: 1 }} /> : null}
           <Button
-            icon={blocking ? 'lock-closed' : last ? 'checkmark' : 'chevron-forward'}
-            label={blocking ? `${blocking.label} à débloquer` : last ? 'Terminer' : 'Suivant'}
-            disabled={Boolean(blocking)}
+            icon={forwardLocked ? 'lock-closed' : last ? 'checkmark' : 'chevron-forward'}
+            label={forwardLocked && blocking ? `${blocking.label} à débloquer` : last ? 'Terminer' : 'Suivant'}
+            disabled={forwardLocked}
             onPress={() => (last ? onDone(config) : goTo(step + 1))}
             style={{ flex: 2 }}
           />
