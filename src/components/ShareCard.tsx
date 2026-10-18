@@ -1,8 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { Ref } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, readableTextColor } from '../constants/theme';
-import { SHARE_HOST } from '../lib/share';
 import { fitCards, labelFontSize, SHARE_CARD } from '../lib/shareCard';
 import type { Card, TierList } from '../store/types';
 import { CardView } from './CardView';
@@ -20,7 +20,7 @@ type Props = {
 
 /**
  * The ranking as a picture for social networks: a 9:16 story with the list's title, the
- * player's tiers and the Tiercraft band at the bottom (the watermark: icon, name, site).
+ * player's tiers and the Tiercraft band at the bottom (the watermark: icon, name, the App Store).
  * Drawn off screen and captured at 3× (1080 × 1920) by the results page.
  */
 export function ShareCard({ ref, list, rows, agreement }: Props) {
@@ -67,9 +67,15 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
           <Text style={styles.tagline} numberOfLines={1}>
             Classe, compare avec tes amis
           </Text>
-          <Text style={styles.site} numberOfLines={1}>
-            {SHARE_HOST}
-          </Text>
+          {/* Where to get it: the store, not the site the share links point to. */}
+          <View style={styles.store}>
+            <View style={styles.storeIcon}>
+              <Ionicons name="logo-apple-appstore" size={12} color="#FFFFFF" />
+            </View>
+            <Text style={styles.storeText} numberOfLines={1}>
+              Disponible gratuitement sur l’App Store
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -113,5 +119,8 @@ const styles = StyleSheet.create({
   bandText: { flex: 1, minWidth: 0 },
   brand: { color: colors.text, fontSize: 16, fontWeight: '800' },
   tagline: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  site: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 1 },
+  store: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+  // The App Store's own blue, behind its glyph.
+  storeIcon: { width: 17, height: 17, borderRadius: 4, backgroundColor: '#1D8CF8', alignItems: 'center', justifyContent: 'center' },
+  storeText: { color: colors.text, fontSize: 12, fontWeight: '700', flexShrink: 1 },
 });
