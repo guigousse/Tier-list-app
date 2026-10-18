@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, readableTextColor, spacing } from '../constants/theme';
 import { fetchFriendsVotes, type PublicProfile } from '../lib/api';
+import { useT } from '../lib/i18n/useT';
 import { agreement, socialError } from '../lib/social';
 import type { Card, TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
@@ -26,6 +27,7 @@ type Props = {
 
 /** "Amis" tab of the results: each friend who ranked this list, compared with the player. */
 export function FriendsResults({ list, voteKey, mine, cards }: Props) {
+  const { t } = useT();
   const secret = useTierStore((s) => s.profile?.secret);
   const [votes, setVotes] = useState<FriendVote[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +47,8 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
   if (!secret) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Créez votre profil de joueur pour comparer vos classements avec vos amis.</Text>
-        <Button label="Créer mon profil" icon="person-add-outline" onPress={() => router.push('/social')} />
+        <Text style={styles.emptyText}>{t('social.createProfileToCompare')}</Text>
+        <Button label={t('social.createProfile')} icon="person-add-outline" onPress={() => router.push('/social')} />
       </View>
     );
   }
@@ -54,16 +56,16 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
   if (!votes) return <ActivityIndicator color={colors.primary} />;
 
   const average = votes.length ? Math.round(votes.reduce((s, v) => s + v.score, 0) / votes.length) : null;
-  const tier = (t: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, t))];
+  const tier = (rank: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, rank))];
   const invite = (
     <>
       <Button
         variant={votes.length ? 'secondary' : 'primary'}
         icon="paper-plane-outline"
-        label={sentCount ? `Envoyée à ${sentCount} ami${sentCount > 1 ? 's' : ''}` : 'Envoyer cette liste à mes amis'}
+        label={sentCount ? t('social.sentToFriends', { count: sentCount }) : t('social.sendToMyFriends')}
         onPress={() => setSending(true)}
       />
-      <Sheet visible={sending} onClose={() => setSending(false)} title="Envoyer à mes amis">
+      <Sheet visible={sending} onClose={() => setSending(false)} title={t('social.sendSheetTitle')}>
         <SendToFriends
           list={list}
           onSent={(count) => {
@@ -79,7 +81,7 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyEmoji}>🤝</Text>
-        <Text style={styles.emptyText}>Aucun de vos amis n’a encore classé cette liste. Envoyez-la-leur pour comparer vos goûts !</Text>
+        <Text style={styles.emptyText}>{t('social.noFriendRanked')}</Text>
         {invite}
       </View>
     );
@@ -88,20 +90,18 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
   return (
     <View style={{ gap: spacing.md }}>
       <View style={styles.score}>
-        <Text style={styles.scoreValue}>{average} %</Text>
-        <Text style={styles.scoreLabel}>
-          de correspondance avec {votes.length > 1 ? `vos ${votes.length} amis` : 'votre ami'}
-        </Text>
+        <Text style={styles.scoreValue}>{t('social.percent', { value: average ?? 0 })}</Text>
+        <Text style={styles.scoreLabel}>{t('social.matchWith', { count: votes.length })}</Text>
       </View>
 
       {votes.map((v, i) => {
         const expanded = open === v.id;
-        const badge = votes.length > 1 ? (i === 0 ? '🤝 Âme sœur' : i === votes.length - 1 ? '⚔️ Rival' : null) : null;
+        const badge = votes.length > 1 ? (i === 0 ? t('social.soulmate') : i === votes.length - 1 ? t('social.rival') : null) : null;
         return (
           <View key={v.id} style={styles.friend}>
             <Clickable
               accessibilityRole="button"
-              accessibilityLabel={`${v.pseudo}, ${v.score} % d’accord`}
+              accessibilityLabel={t('social.friendAgreeA11y', { name: v.pseudo, score: v.score })}
               onPress={() => setOpen(expanded ? null : v.id)}
               style={({ pressed }) => [styles.friendRow, pressed && { opacity: 0.85 }]}
             >
@@ -112,14 +112,14 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
                 </Text>
                 {badge ? <Text style={styles.badge}>{badge}</Text> : null}
               </View>
-              <Text style={styles.friendScore}>{v.score} %</Text>
+              <Text style={styles.friendScore}>{t('social.percent', { value: v.score })}</Text>
               <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
             </Clickable>
             {expanded ? (
               <View style={styles.comparison}>
                 <View style={styles.compareRow}>
-                  <Text style={[styles.compareHead, { flex: 1, textAlign: 'left' }]}>Carte</Text>
-                  <Text style={styles.compareHead}>Vous</Text>
+                  <Text style={[styles.compareHead, { flex: 1, textAlign: 'left' }]}>{t('social.card')}</Text>
+                  <Text style={styles.compareHead}>{t('social.you')}</Text>
                   <Text numberOfLines={1} style={[styles.compareHead, { maxWidth: 72 }]}>
                     {v.pseudo}
                   </Text>
@@ -133,10 +133,10 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
                         {card.label}
                       </Text>
                       {mine[c] === v.ranks[c] ? <Ionicons name="checkmark" size={14} color="#2EAD6B" /> : null}
-                      {[a, b].map((t, k) => (
-                        <View key={k} style={[styles.chip, { backgroundColor: t?.color ?? colors.surfaceAlt }]}>
-                          <Text numberOfLines={1} style={[styles.chipText, { color: t ? readableTextColor(t.color) : colors.textMuted }]}>
-                            {t?.label ?? '–'}
+                      {[a, b].map((shown, k) => (
+                        <View key={k} style={[styles.chip, { backgroundColor: shown?.color ?? colors.surfaceAlt }]}>
+                          <Text numberOfLines={1} style={[styles.chipText, { color: shown ? readableTextColor(shown.color) : colors.textMuted }]}>
+                            {shown?.label ?? '–'}
                           </Text>
                         </View>
                       ))}

@@ -5,6 +5,7 @@ import { dailyTemplate } from '../store/useCatalog';
 import type { TierList } from '../store/types';
 import { popularVoteKey, rankingOf, useTierStore } from '../store/useTierStore';
 import { blockPlayer, createProfile, deleteProfile, reportPlayer, updateProfile, type DailyList, type FriendVote } from './api';
+import { t } from './i18n/useT';
 import { newId } from './id';
 import { syncBadges } from './badges';
 import { restoreIdentity, saveIdentity } from './identity';
@@ -30,21 +31,26 @@ export function parseFriendCode(text: string): { pseudo: string; tag: number } |
   return m ? { pseudo: m[1].trim(), tag: Number(m[2]) } : null;
 }
 
+// The server answers with English codes, never with text: the app words them in the player's language.
+const SERVER_ERRORS: [string, string][] = [
+  ['pseudo refused', 'social.error.pseudoRefused'],
+  ['invalid avatar', 'social.error.invalidAvatar'],
+  ['invalid pseudo', 'social.error.invalidPseudo'],
+  ['pseudo unavailable', 'social.error.pseudoUnavailable'],
+  ['player not found', 'social.error.playerNotFound'],
+  ['cannot add yourself', 'social.error.self'],
+  ['player blocked', 'social.error.playerBlocked'],
+  ['unknown profile', 'social.error.unknownProfile'],
+  ['content refused', 'social.error.contentRefused'],
+  ['mail not found', 'social.error.mailNotFound'],
+  ['too many requests', 'social.error.tooMany'],
+];
+
 /** Message to show for a failed social call. */
 export function socialError(e: unknown): string {
   const message = e instanceof Error ? e.message : '';
-  if (message.includes('pseudo refused')) return 'Ce pseudo n’est pas autorisé : choisissez-en un autre.';
-  if (message.includes('invalid avatar')) return 'Cet avatar n’est pas disponible.';
-  if (message.includes('invalid pseudo')) return 'Le pseudo doit faire 2 à 20 caractères : lettres, chiffres, espaces, « _ », « - » ou « . ».';
-  if (message.includes('pseudo unavailable')) return 'Ce pseudo est très demandé : essayez-en un autre.';
-  if (message.includes('player not found')) return 'Aucun joueur avec ce pseudo et ce numéro.';
-  if (message.includes('cannot add yourself')) return 'C’est votre propre code !';
-  if (message.includes('player blocked')) return 'Vous avez bloqué ce joueur : débloquez-le d’abord, en bas de cette page.';
-  if (message.includes('unknown profile')) return 'Votre profil n’existe plus en ligne.';
-  if (message.includes('content refused')) return 'Cette liste contient un mot ou des coordonnées refusés : modifiez-la pour la partager.';
-  if (message.includes('mail not found')) return 'Cette liste n’est plus disponible.';
-  if (message.includes('too many requests')) return 'Trop d’essais : réessayez dans un moment.';
-  return 'Pas de connexion : réessayez dans un instant.';
+  const known = SERVER_ERRORS.find(([code]) => message.includes(code));
+  return t(known ? known[1] : 'social.error.offline');
 }
 
 /** Creates the player's profile, or updates it, and keeps it on the device. */
@@ -104,21 +110,21 @@ export function confirmReport(player: { id: string; pseudo: string; tag: number 
   const run = (call: Promise<void>, message: string) =>
     call.then(
       () => {
-        Alert.alert('C’est fait', message);
+        Alert.alert(t('social.done'), message);
         done();
       },
-      (e) => Alert.alert('Oups', socialError(e)),
+      (e) => Alert.alert(t('social.oops'), socialError(e)),
     );
   const report = (reason: 'pseudo' | 'avatar') =>
-    run(reportPlayer(secret, player.id, reason), 'Le signalement est envoyé et ce joueur est bloqué : il ne pourra plus vous envoyer de demande.');
+    run(reportPlayer(secret, player.id, reason), t('social.reportSent'));
   Alert.alert(
-    'Signaler ou bloquer ?',
-    `${friendCode(player)} ne sera plus votre ami et ne pourra plus vous envoyer de demande. Après plusieurs signalements, son profil est masqué.`,
+    t('social.reportTitle'),
+    t('social.reportBody', { code: friendCode(player) }),
     [
-      { text: 'Pseudo inapproprié', style: 'destructive', onPress: () => report('pseudo') },
-      { text: 'Avatar inapproprié', style: 'destructive', onPress: () => report('avatar') },
-      { text: 'Bloquer sans signaler', style: 'destructive', onPress: () => run(blockPlayer(secret, player.id), 'Ce joueur est bloqué.') },
-      { text: 'Annuler', style: 'cancel' },
+      { text: t('social.reportPseudo'), style: 'destructive', onPress: () => report('pseudo') },
+      { text: t('social.reportAvatar'), style: 'destructive', onPress: () => report('avatar') },
+      { text: t('social.blockOnly'), style: 'destructive', onPress: () => run(blockPlayer(secret, player.id), t('social.blockedDone')) },
+      { text: t('social.cancel'), style: 'cancel' },
     ],
   );
 }

@@ -8,8 +8,9 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepe
 
 import { colors, radius, spacing } from '../../constants/theme';
 import { MANNEQUIN } from '../../lib/avatar';
-import type { Badge, Fork } from '../../lib/badges';
-import { lineFill, PART_LABELS, withReward, type Milestone, type Reward } from '../../lib/rewards';
+import { badgeLabel, type Badge, type Fork } from '../../lib/badges';
+import { useT } from '../../lib/i18n/useT';
+import { lineFill, partLabel, rewardLabel, withReward, type Milestone, type Reward } from '../../lib/rewards';
 import { playPop } from '../../lib/sound';
 import { useTierStore } from '../../store/useTierStore';
 import { AvatarDrawing } from '../Avatar';
@@ -96,6 +97,8 @@ function ForkSticker({
   onPress: () => void;
   onConfirm: () => void;
 }) {
+  const { t } = useT();
+  const label = badgeLabel(badge);
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
   const burst = useSharedValue(0);
@@ -115,7 +118,7 @@ function ForkSticker({
     <View style={styles.stickerBox}>
       <Clickable
         accessibilityRole="button"
-        accessibilityLabel={`${badge.label}${mine ? ', votre camp' : locked ? ', à débloquer' : ''}`}
+        accessibilityLabel={`${label}${mine ? t('play.path.mineSuffix') : locked ? t('play.path.lockedSuffix') : ''}`}
         onPress={onPress}
         disabled={popping}
         style={styles.stickerArt}
@@ -129,19 +132,19 @@ function ForkSticker({
         <Animated.View entering={ZoomIn.springify().damping(12)}>
           <Clickable
             accessibilityRole="button"
-            accessibilityLabel={`Sûr ? Choisir ${badge.label}`}
+            accessibilityLabel={t('play.path.askA11y', { name: label })}
             onPress={onConfirm}
             style={({ pressed }) => [styles.ask, { backgroundColor: color }, pressed && { opacity: 0.85 }]}
           >
-            <Text style={styles.askText}>Sûr ?</Text>
+            <Text style={styles.askText}>{t('play.path.ask')}</Text>
             <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
           </Clickable>
         </Animated.View>
       ) : (
         <View style={[styles.stickerLabel, mine && styles.stickerLabelMine]}>
           {mine ? <Ionicons name="checkmark" size={10} color="#FFFFFF" /> : null}
-          <Text style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }, { fontSize: stickerFit(badge.label, mine).fontSize }]}>
-            {stickerFit(badge.label, mine).lines.join('\n')}
+          <Text style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }, { fontSize: stickerFit(label, mine).fontSize }]}>
+            {stickerFit(label, mine).lines.join('\n')}
           </Text>
         </View>
       )}
@@ -184,8 +187,8 @@ export function RewardPath({
   won: number;
   theme: keyof typeof THEMES;
   glow?: boolean;
-  /** "liste" / "jour", for labels. */
-  unit: string;
+  /** What the path counts, for labels: public lists or days of flame. */
+  unit: 'list' | 'day';
 }) {
   const scroll = useRef<ScrollView>(null);
   const [viewWidth, setViewWidth] = useState(0);
@@ -196,7 +199,8 @@ export function RewardPath({
   const [popping, setPopping] = useState<{ fork: string; side: 0 | 1 } | null>(null);
   const popTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => clearTimeout(popTimer.current ?? undefined), []);
-  const t = THEMES[theme];
+  const { t } = useT();
+  const palette = THEMES[theme];
 
   // A start (0) on the left, then every step and every VS in order.
   const { columns, width } = useMemo(() => {
@@ -247,8 +251,8 @@ export function RewardPath({
   const tapSticker = (fork: Fork, side: 0 | 1) => {
     if (value < fork.at) {
       Alert.alert(
-        `${fork.options[0].label} ou ${fork.options[1].label} ?`,
-        `Au palier ${fork.at}, choisissez votre camp. L’autre badge disparaîtra pour toujours !`,
+        t('play.path.forkTitle', { a: badgeLabel(fork.options[0]), b: badgeLabel(fork.options[1]) }),
+        t('play.path.forkBody', { at: fork.at }),
       );
       return;
     }
@@ -267,8 +271,8 @@ export function RewardPath({
 
   const node = (col: Column, i: number, reached: boolean) => (
     <View style={[styles.nodeWrap, { left: col.x - NODE / 2 }]}>
-      {glow && reached && i > 0 ? <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: t.node }, pulseStyle]} /> : null}
-      <View style={[styles.node, reached ? { backgroundColor: t.node, borderColor: t.from } : i === nextIndex ? { borderColor: t.node, borderWidth: 3 } : null]}>
+      {glow && reached && i > 0 ? <Animated.View pointerEvents="none" style={[styles.halo, { backgroundColor: palette.node }, pulseStyle]} /> : null}
+      <View style={[styles.node, reached ? { backgroundColor: palette.node, borderColor: palette.from } : i === nextIndex ? { borderColor: palette.node, borderWidth: 3 } : null]}>
         {i === 0 ? (
           <Ionicons name={theme === 'orange' ? 'flame' : 'flag'} size={20} color={reached ? '#FFFFFF' : colors.textMuted} />
         ) : (
@@ -292,7 +296,7 @@ export function RewardPath({
           {fillX > first ? (
             <>
               {glow ? <Animated.View pointerEvents="none" style={[styles.lineGlow, { left: first - 6, width: fillX - first + 12 }, glowStyle]} /> : null}
-              <LinearGradient colors={[t.from, t.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.line, { left: first, width: fillX - first }]} />
+              <LinearGradient colors={[palette.from, palette.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.line, { left: first, width: fillX - first }]} />
             </>
           ) : null}
 
@@ -320,7 +324,7 @@ export function RewardPath({
                           mine={choice === side}
                           popping={isPopping}
                           asking={asking?.fork === fork.id && asking.side === side}
-                          color={t.node}
+                          color={palette.node}
                           wiggle={toPick ? breath : null}
                           onPress={() => (choice === -1 ? tapSticker(fork, side) : undefined)}
                           onConfirm={() => confirm(fork, side)}
@@ -333,7 +337,7 @@ export function RewardPath({
                     <Animated.View
                       style={[
                         styles.node,
-                        reached ? { backgroundColor: t.node, borderColor: t.from } : i === nextIndex ? { borderColor: t.node, borderWidth: 3 } : null,
+                        reached ? { backgroundColor: palette.node, borderColor: palette.from } : i === nextIndex ? { borderColor: palette.node, borderWidth: 3 } : null,
                         toPick && styles.vsLive,
                         toPick && vsStyle,
                       ]}
@@ -354,18 +358,18 @@ export function RewardPath({
                   <>
                     <Clickable
                       accessibilityRole="button"
-                      accessibilityLabel={`${step.at} ${unit}${step.at > 1 ? 's' : ''} : ${[
-                        ...step.rewards.map((r) => r.label),
-                        ...(step.credits ? [`${step.credits} crédits`] : []),
-                      ].join(', ')}${owned ? ', obtenu' : ', à débloquer'}`}
+                      accessibilityLabel={`${t('play.path.stepA11y', {
+                        step: t(`play.path.unit.${unit}`, { count: step.at }),
+                        rewards: [...step.rewards.map(rewardLabel), ...(step.credits ? [t('play.path.credits', { count: step.credits })] : [])].join(', '),
+                      })}${owned ? t('play.path.ownedSuffix') : t('play.path.lockedSuffix')}`}
                       onPress={() => setOpen(step)}
                       style={({ pressed }) => [styles.card, { left: col.x - (COL - 8) / 2 }, !owned && styles.cardLocked, pressed && { opacity: 0.8 }]}
                     >
                       {item ? (
                         <>
                           <RewardDrawing reward={item} size={MANNEQUIN_SIZE} />
-                          <Text numberOfLines={1} style={[styles.cardTitle, { fontSize: titleFit(item.label, CARD_TEXT).fontSize }]}>
-                            {item.label}
+                          <Text numberOfLines={1} style={[styles.cardTitle, { fontSize: titleFit(rewardLabel(item), CARD_TEXT).fontSize }]}>
+                            {rewardLabel(item)}
                           </Text>
                         </>
                       ) : (
@@ -375,7 +379,7 @@ export function RewardPath({
                             <Text style={styles.creditsText}>+{step.credits}</Text>
                           </View>
                           <Text numberOfLines={1} style={styles.cardTitle}>
-                            Crédits
+                            {t('play.path.creditsTitle')}
                           </Text>
                         </>
                       )}
@@ -391,7 +395,7 @@ export function RewardPath({
                         </View>
                       ) : null}
                     </Clickable>
-                    <View style={[styles.stem, { left: col.x - 1 }, owned && { backgroundColor: t.node }]} />
+                    <View style={[styles.stem, { left: col.x - 1 }, owned && { backgroundColor: palette.node }]} />
                   </>
                 ) : null}
                 {node(col, i, reached)}
@@ -401,25 +405,25 @@ export function RewardPath({
         </View>
       </ScrollView>
 
-      <Sheet visible={open !== null} onClose={() => setOpen(null)} title={open ? `Palier ${open.at}` : ''}>
+      <Sheet visible={open !== null} onClose={() => setOpen(null)} title={open ? t('play.path.step', { at: open.at }) : ''}>
         {open ? (
           <View style={{ gap: spacing.md }}>
             <Text style={styles.sheetHint}>
               {won >= open.at
                 ? open.rewards.length
-                  ? 'Débloqué ! Retrouvez ces éléments dans la garde-robe.'
-                  : 'Obtenu ! Ces crédits sont ajoutés à votre énergie.'
-                : `À débloquer : ${open.at} ${unit}${open.at > 1 ? 's' : ''}.`}
+                  ? t('play.path.unlockedItems')
+                  : t('play.path.unlockedCredits')
+                : t('play.path.toUnlock', { step: t(`play.path.unit.${unit}`, { count: open.at }) })}
             </Text>
             <View style={styles.sheetGrid}>
               {open.rewards.map((r) => (
                 <View key={`${r.part}-${r.id}`} style={styles.sheetItem}>
                   <RewardDrawing reward={r} size={80} />
-                  <Text numberOfLines={1} style={[styles.cardTitle, { fontSize: titleFit(r.label, 96).fontSize }]}>
-                    {r.label}
+                  <Text numberOfLines={1} style={[styles.cardTitle, { fontSize: titleFit(rewardLabel(r), 96).fontSize }]}>
+                    {rewardLabel(r)}
                   </Text>
                   <Text numberOfLines={1} style={styles.sheetMeta}>
-                    {PART_LABELS[r.part]}
+                    {partLabel(r.part)}
                   </Text>
                 </View>
               ))}
@@ -430,10 +434,10 @@ export function RewardPath({
                     <Text style={[styles.creditsText, { fontSize: 26 }]}>+{open.credits}</Text>
                   </View>
                   <Text numberOfLines={1} style={styles.cardTitle}>
-                    {open.credits} crédits
+                    {t('play.path.credits', { count: open.credits })}
                   </Text>
                   <Text numberOfLines={1} style={styles.sheetMeta}>
-                    Énergie
+                    {t('play.path.energy')}
                   </Text>
                 </View>
               ) : null}

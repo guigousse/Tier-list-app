@@ -1,4 +1,5 @@
 import { mailAgreement, type Mail } from '../store/useMail';
+import { t } from './i18n/useT';
 
 /** A list exchanged with a friend that they ranked, and the player's ranking of it if any. */
 export type FriendMail = { mail: Mail; received: boolean; theirs: number[]; mine: number[] | null; score: number | null };
@@ -28,7 +29,7 @@ function row(mail: Mail, received: boolean, theirs: number[], mine: number[] | n
   return { mail, received, theirs, mine, score: mine ? mailAgreement(mine, theirs, mail.list.tiers.length) : null };
 }
 
-export const completedLabel = (n: number) => (n > 1 ? 'listes complétées' : 'liste complétée');
+export const completedLabel = (n: number) => t('social.completedLabel', { count: n });
 
 /**
  * A pull to refresh: the spinner shows while the reloads the player started run, and only

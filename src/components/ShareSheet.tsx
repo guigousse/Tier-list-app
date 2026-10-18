@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { createShareCode } from '../lib/api';
+import { useT } from '../lib/i18n/useT';
 import { codeLink, copyText, offlineLink, shareUrl } from '../lib/share';
 import { socialError } from '../lib/social';
 import type { TierList } from '../store/types';
@@ -23,6 +24,7 @@ type Props = {
 
 /** Shares a tier list with a short code (stored online), or an offline link as a fallback. */
 export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }: Props) {
+  const { t, upper } = useT();
   const key = list ? `${list.id}:${list.updatedAt}` : '';
   const [state, setState] = useState<{ key: string; code?: string; error?: string }>({ key: '' });
   const [attempt, setAttempt] = useState(0);
@@ -46,7 +48,7 @@ export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }:
   if (!list) return null;
   const code = codes.get(key) ?? (state.key === key ? state.code : undefined);
   const error = state.key === key && state.error;
-  const intro = (c: string) => `Voici ma tier list « ${list.title} » sur Tiercraft. Code : ${c}`;
+  const intro = (c: string) => t('social.shareIntro', { title: list.title, code: c });
 
   const later = (fn: () => void) => () => {
     onClose();
@@ -61,57 +63,55 @@ export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }:
 
   if (toFriends) {
     return (
-      <Sheet visible={visible} onClose={close} title="Envoyer à des amis">
+      <Sheet visible={visible} onClose={close} title={t('social.sendToSomeFriends')}>
         <SendToFriends
           list={list}
           onSent={(count) => {
             close();
             // After the sheet is gone: iOS can't show an alert while it animates out.
             setTimeout(() => Alert.alert(
-              count > 0 ? 'Envoyée !' : 'Pas envoyée',
-              count > 0
-                ? `« ${list.title} » est envoyée à ${count > 1 ? `${count} amis` : 'votre ami'}. Vous verrez leur classement dans Social.`
-                : 'Rien n’a été envoyé : ces amis l’ont déjà reçue, ou vous leur avez envoyé beaucoup de listes aujourd’hui.',
+              count > 0 ? t('social.sentTitle') : t('social.notSentTitle'),
+              count > 0 ? t('social.sentBody', { title: list.title, count }) : t('social.notSentBody'),
             ), 400);
           }}
         />
-        <Button variant="ghost" icon="chevron-back" label="Autres façons de partager" onPress={() => setToFriends(false)} />
+        <Button variant="ghost" icon="chevron-back" label={t('social.otherWays')} onPress={() => setToFriends(false)} />
       </Sheet>
     );
   }
 
   return (
-    <Sheet visible={visible} onClose={close} title="Partager">
-      <Button icon="people" label="Envoyer à des amis" onPress={() => setToFriends(true)} />
+    <Sheet visible={visible} onClose={close} title={t('social.share')}>
+      <Button icon="people" label={t('social.sendToSomeFriends')} onPress={() => setToFriends(true)} />
       {code ? (
         <>
           <View style={styles.codeBox}>
-            <Text style={styles.codeLabel}>Code de la tier list</Text>
-            <Text selectable accessibilityLabel={`Code ${code.split('').join(' ')}`} style={styles.code}>
+            <Text style={styles.codeLabel}>{upper(t('social.codeTitle'))}</Text>
+            <Text selectable accessibilityLabel={t('social.codeA11y', { code: code.split('').join(' ') })} style={styles.code}>
               {code.slice(0, 3)} {code.slice(3)}
             </Text>
-            <Text style={styles.hint}>À saisir dans Tiercraft : Mes listes → Importer.</Text>
+            <Text style={styles.hint}>{t('social.codeWhere')}</Text>
           </View>
           <View style={styles.row}>
-            <Button style={styles.flex} variant="secondary" icon="copy-outline" label="Copier le code" onPress={() => copyText(code, `Le code ${code} est copié.`)} />
-            <Button style={styles.flex} icon="paper-plane-outline" label="Envoyer…" onPress={later(() => shareUrl(list.title, intro(code), codeLink(code)))} />
+            <Button style={styles.flex} variant="secondary" icon="copy-outline" label={t('social.copyCode')} onPress={() => copyText(code, t('social.codeCopiedShort', { code }))} />
+            <Button style={styles.flex} icon="paper-plane-outline" label={t('social.sendEllipsis')} onPress={later(() => shareUrl(list.title, intro(code), codeLink(code)))} />
           </View>
         </>
       ) : error && error !== 'offline' ? (
         <View style={styles.codeBox}>
-          <Text style={styles.errorTitle}>Partage refusé</Text>
+          <Text style={styles.errorTitle}>{t('social.shareRefused')}</Text>
           <Text style={styles.hint}>{error}</Text>
         </View>
       ) : error ? (
         <View style={styles.codeBox}>
-          <Text style={styles.errorTitle}>Pas de connexion</Text>
-          <Text style={styles.hint}>Le code n’a pas pu être créé. Vous pouvez réessayer, ou envoyer un lien qui fonctionne sans connexion.</Text>
+          <Text style={styles.errorTitle}>{t('social.noConnection')}</Text>
+          <Text style={styles.hint}>{t('social.codeFailed')}</Text>
           <View style={[styles.row, { marginTop: spacing.sm }]}>
             <Button
               style={styles.flex}
               variant="secondary"
               icon="refresh"
-              label="Réessayer"
+              label={t('social.retry')}
               onPress={() => {
                 setState({ key: '' });
                 setAttempt((n) => n + 1);
@@ -120,18 +120,18 @@ export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }:
             <Button
               style={styles.flex}
               icon="link-outline"
-              label="Envoyer un lien"
-              onPress={later(() => shareUrl(list.title, `Voici ma tier list « ${list.title} » sur Tiercraft`, offlineLink(list)))}
+              label={t('social.sendLink')}
+              onPress={later(() => shareUrl(list.title, t('social.shareIntroLink', { title: list.title }), offlineLink(list)))}
             />
           </View>
         </View>
       ) : (
         <View style={[styles.codeBox, { paddingVertical: spacing.xl }]}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.hint}>Création du code…</Text>
+          <Text style={styles.hint}>{t('social.creatingCode')}</Text>
         </View>
       )}
-      {onShareImage ? <Button variant="ghost" icon="image-outline" label={imageLabel ?? 'Partager en image'} onPress={later(onShareImage)} /> : null}
+      {onShareImage ? <Button variant="ghost" icon="image-outline" label={imageLabel ?? t('social.shareImage')} onPress={later(onShareImage)} /> : null}
     </Sheet>
   );
 }
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
-  codeLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  codeLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
   code: { color: colors.text, fontSize: 40, fontWeight: '800', letterSpacing: 4, fontVariant: ['tabular-nums'] },
   hint: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 },
   errorTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },

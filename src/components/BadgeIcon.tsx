@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import { colors } from '../constants/theme';
-import type { Badge } from '../lib/badges';
+import { badgeLabel, type Badge } from '../lib/badges';
 import { stickerSvg } from '../lib/stickers';
 import { Avatar } from './Avatar';
 
@@ -46,7 +46,7 @@ export function AvatarWithBadges({ avatar, seed, size, badges }: { avatar: strin
         return (
           <View
             key={b.id}
-            accessibilityLabel={b.label}
+            accessibilityLabel={badgeLabel(b)}
             style={[styles.pin, { left: r + Math.sin(a) * r - pin / 2, top: r + Math.cos(a) * r - pin / 2, transform: [{ rotate: `${tilts[i]}deg` }] }]}
           >
             <BadgeIcon badge={b} size={pin} />

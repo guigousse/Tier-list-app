@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { fetchFriends, mailSentTo, sendList, type PublicProfile } from '../lib/api';
+import { useT } from '../lib/i18n/useT';
 import { isSameList } from '../lib/sentRanks';
 import { socialError } from '../lib/social';
 import type { TierList } from '../store/types';
@@ -21,6 +22,7 @@ type Props = {
 
 /** Picks friends and sends them `list` to rank (shown inside the share sheet). */
 export function SendToFriends({ list, onSent }: Props) {
+  const { t } = useT();
   const secret = useTierStore((s) => s.profile?.secret);
   const [friends, setFriends] = useState<PublicProfile[] | null>(null);
   // Friends who already got this very list: where it stands with them.
@@ -72,25 +74,25 @@ export function SendToFriends({ list, onSent }: Props) {
   };
 
   if (!secret) {
-    return <Text style={styles.hint}>Créez votre profil dans Social pour envoyer vos tier lists à vos amis.</Text>;
+    return <Text style={styles.hint}>{t('social.noProfileHint')}</Text>;
   }
   if (cards === 0) {
-    return <Text style={styles.hint}>Ajoutez des cartes à la tier list avant de l’envoyer.</Text>;
+    return <Text style={styles.hint}>{t('social.noCards')}</Text>;
   }
   if (cards > 100) {
-    return <Text style={styles.hint}>Une tier list envoyée à des amis peut avoir 100 cartes au plus.</Text>;
+    return <Text style={styles.hint}>{t('social.tooManyCards')}</Text>;
   }
 
   return (
     <View style={{ gap: spacing.md }}>
       <Text style={styles.hint}>
-        Vos amis la reçoivent à classer, sans voir votre classement. Une fois classée, vous comparez vos deux classements.
-        {photos ? ' Les photos ne sont pas envoyées : seuls les noms des cartes le sont.' : ''}
+        {t('social.sendHint')}
+        {photos ? ` ${t('social.noPhotos')}` : ''}
       </Text>
       {friends === null && !error ? (
         <ActivityIndicator color={colors.primary} />
       ) : friends && friends.length === 0 ? (
-        <Text style={styles.hint}>Vous n’avez pas encore d’amis : ajoutez-en dans Social avec leur code.</Text>
+        <Text style={styles.hint}>{t('social.noFriendsYet')}</Text>
       ) : (
         <View style={{ gap: spacing.xs }}>
           {(friends ?? []).map((f) => {
@@ -101,7 +103,7 @@ export function SendToFriends({ list, onSent }: Props) {
                 key={f.id}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on, disabled: Boolean(sent) }}
-                accessibilityLabel={`${f.pseudo} #${f.tag}${sent ? ', déjà envoyée' : ''}`}
+                accessibilityLabel={sent ? t('social.alreadySentA11y', { name: `${f.pseudo} #${f.tag}` }) : `${f.pseudo} #${f.tag}`}
                 disabled={Boolean(sent)}
                 onPress={() => toggle(f.id)}
                 style={({ pressed }) => [styles.row, on && styles.rowOn, sent && { opacity: 0.6 }, pressed && { opacity: 0.85 }]}
@@ -112,7 +114,7 @@ export function SendToFriends({ list, onSent }: Props) {
                     {f.pseudo}
                     <Text style={styles.tag}> #{f.tag}</Text>
                   </Text>
-                  {sent ? <Text style={styles.already}>{sent === 'ranked' ? 'Déjà envoyée · classée' : 'Déjà envoyée · en attente'}</Text> : null}
+                  {sent ? <Text style={styles.already}>{sent === 'ranked' ? t('social.alreadyRanked') : t('social.alreadyPending')}</Text> : null}
                 </View>
                 {sent ? (
                   <Ionicons name="checkmark-done" size={22} color={colors.textMuted} />
@@ -127,7 +129,7 @@ export function SendToFriends({ list, onSent }: Props) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button
         icon="paper-plane"
-        label={busy ? 'Envoi…' : chosen.size > 1 ? `Envoyer à ${chosen.size} amis` : 'Envoyer'}
+        label={busy ? t('social.sending') : chosen.size > 1 ? t('social.sendToN', { n: chosen.size }) : t('social.send')}
         disabled={chosen.size === 0 || busy}
         onPress={send}
       />

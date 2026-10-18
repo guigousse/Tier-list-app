@@ -21,6 +21,7 @@ import {
   MOUTHS,
   canReachStep,
   isUnlocked,
+  itemLabel,
   randomAvatar,
   SKINS,
   unlockLabel,
@@ -29,6 +30,7 @@ import {
   type Progress,
   type Unlock,
 } from '../lib/avatar';
+import { useT } from '../lib/i18n/useT';
 import { playTick } from '../lib/sound';
 import { useProgress as usePlayerProgress } from '../lib/progress';
 import { useTierStore } from '../store/useTierStore';
@@ -41,6 +43,7 @@ type Option = { id: string; label: string; unlock?: Unlock; fill?: string };
 /** One carousel: the items of a part of the avatar, and how to show each one. */
 type Category = {
   key: keyof AvatarConfig;
+  /** Text key of its tab's name. */
   label: string;
   items: Option[];
   /** Thumbnail: the avatar wearing it, or a colour swatch / eye. */
@@ -55,49 +58,50 @@ const BEARD_ZOOM: AvatarZoom = { x: 30, y: 46, size: 60 };
 
 type StepIcon = keyof typeof MaterialCommunityIcons.glyphMap;
 
+// Titles and tab names are text keys, read in the language of the moment.
 const STEPS: { title: string; icon: StepIcon; categories: Category[] }[] = [
   {
-    title: 'Visage',
+    title: 'play.ae.step.face',
     icon: 'face-man-outline',
     categories: [
-      { key: 'face', label: 'Forme', items: FACES, thumb: 'avatar' },
-      { key: 'skin', label: 'Peau', items: SKINS, thumb: 'swatch' },
+      { key: 'face', label: 'play.ae.shape', items: FACES, thumb: 'avatar' },
+      { key: 'skin', label: 'play.ae.skin', items: SKINS, thumb: 'swatch' },
     ],
   },
   {
-    title: 'Coiffure',
+    title: 'play.ae.step.hair',
     icon: 'content-cut',
     categories: [
-      { key: 'hair', label: 'Coupe', items: HAIR_STYLES, thumb: 'avatar' },
-      { key: 'hairColor', label: 'Couleur', items: HAIR_COLORS, thumb: 'swatch' },
+      { key: 'hair', label: 'play.ae.cut', items: HAIR_STYLES, thumb: 'avatar' },
+      { key: 'hairColor', label: 'play.ae.color', items: HAIR_COLORS, thumb: 'swatch' },
     ],
   },
   {
-    title: 'Yeux',
+    title: 'play.ae.step.eyes',
     icon: 'eye-outline',
     categories: [
-      { key: 'eyeShape', label: 'Forme', items: EYE_SHAPES, thumb: 'avatar', zoom: EYES_ZOOM },
-      { key: 'eyes', label: 'Couleur', items: EYE_COLORS, thumb: 'eye' },
-      { key: 'brows', label: 'Sourcils', items: BROWS, thumb: 'avatar', zoom: EYES_ZOOM },
+      { key: 'eyeShape', label: 'play.ae.shape', items: EYE_SHAPES, thumb: 'avatar', zoom: EYES_ZOOM },
+      { key: 'eyes', label: 'play.ae.color', items: EYE_COLORS, thumb: 'eye' },
+      { key: 'brows', label: 'play.ae.brows', items: BROWS, thumb: 'avatar', zoom: EYES_ZOOM },
     ],
   },
   {
-    title: 'Bouche et barbe',
+    title: 'play.ae.step.mouth',
     icon: 'mustache',
     categories: [
-      { key: 'mouth', label: 'Bouche', items: MOUTHS, thumb: 'avatar', zoom: MOUTH_ZOOM },
-      { key: 'beard', label: 'Pilosité', items: BEARDS, thumb: 'avatar', zoom: BEARD_ZOOM },
+      { key: 'mouth', label: 'play.ae.mouth', items: MOUTHS, thumb: 'avatar', zoom: MOUTH_ZOOM },
+      { key: 'beard', label: 'play.ae.facialHair', items: BEARDS, thumb: 'avatar', zoom: BEARD_ZOOM },
     ],
   },
   {
-    title: 'Accessoires',
+    title: 'play.ae.step.accessories',
     icon: 'hat-fedora',
     categories: [
-      { key: 'hat', label: 'Chapeau', items: HATS, thumb: 'avatar' },
-      { key: 'glasses', label: 'Lunettes', items: GLASSES, thumb: 'avatar' },
+      { key: 'hat', label: 'play.ae.hat', items: HATS, thumb: 'avatar' },
+      { key: 'glasses', label: 'play.ae.glasses', items: GLASSES, thumb: 'avatar' },
     ],
   },
-  { title: 'Fond', icon: 'image-filter-hdr', categories: [{ key: 'bg', label: 'Fond', items: BACKGROUNDS, thumb: 'swatch' }] },
+  { title: 'play.ae.step.bg', icon: 'image-filter-hdr', categories: [{ key: 'bg', label: 'play.ae.bg', items: BACKGROUNDS, thumb: 'swatch' }] },
 ];
 
 /** Thumbnails of avatars: hairstyles are shown without a hat, to see them. */
@@ -131,6 +135,7 @@ function useProgress(): Progress {
  * the previous or next item at once. Locked items can be tried on, not kept.
  */
 export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
+  const { t } = useT();
   const insets = useSafeAreaInsets();
   const progress = useProgress();
   const haptics = useTierStore((s) => s.settings.haptics);
@@ -176,16 +181,16 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
     <Modal visible={visible} animationType="slide" presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={onClose}>
       <GestureHandlerRootView style={[styles.root, { paddingTop: Platform.OS === 'ios' ? spacing.md : insets.top + spacing.sm }]}>
         <View style={styles.header}>
-          <IconButton icon="close" label="Fermer sans enregistrer" onPress={onClose} color={colors.textMuted} />
+          <IconButton icon="close" label={t('play.ae.close')} onPress={onClose} color={colors.textMuted} />
           <Text style={styles.stepCount} accessibilityRole="header">
-            Étape {step + 1} sur {STEPS.length}
+            {t('play.ae.stepCount', { n: step + 1, total: STEPS.length })}
           </Text>
-          <IconButton icon="dice-outline" label="Avatar au hasard" onPress={() => setConfig(randomAvatar())} color={colors.textMuted} />
+          <IconButton icon="dice-outline" label={t('play.ae.random')} onPress={() => setConfig(randomAvatar())} color={colors.textMuted} />
         </View>
         {/* Past the step of a locked item tried on, the way is shut, as for « Suivant »; its own step stays open. */}
         <StepTrail step={step} onSelect={(i) => (canReachStep(i, blockingStep) ? goTo(i) : undefined)} />
 
-        <Text style={styles.title}>{current.title}</Text>
+        <Text style={styles.title}>{t(current.title)}</Text>
 
         <View style={styles.stage}>
           <SwipeAvatar
@@ -193,16 +198,16 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
             locked={Boolean(lock)}
             onPrevious={() => select(index - 1)}
             onNext={() => select(index + 1)}
-            label={`${category.label} : ${item.label}`}
+            label={t('play.ae.itemA11y', { part: t(category.label), name: itemLabel(category.key, item) })}
           />
           <View style={styles.caption}>
             {lock ? <Ionicons name="lock-closed" size={14} color={colors.textMuted} /> : null}
-            <Text style={styles.itemLabel}>{item.label}</Text>
+            <Text style={styles.itemLabel}>{itemLabel(category.key, item)}</Text>
             <Text style={styles.itemCount}>
               {index + 1} / {category.items.length}
             </Text>
           </View>
-          <Text style={[styles.lockHint, !lock && { opacity: 0 }]}>{lock ? `À débloquer : ${unlockLabel(lock).toLowerCase()}` : ' '}</Text>
+          <Text style={[styles.lockHint, !lock && { opacity: 0 }]}>{lock ? t('play.ae.toUnlock', { what: unlockLabel(lock).toLowerCase() }) : ' '}</Text>
         </View>
 
         {current.categories.length > 1 ? (
@@ -215,7 +220,7 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
                 onPress={() => setTab(i)}
                 style={[styles.tab, c === category && styles.tabSelected]}
               >
-                <Text style={[styles.tabText, c === category && { color: colors.text }]}>{c.label}</Text>
+                <Text style={[styles.tabText, c === category && { color: colors.text }]}>{t(c.label)}</Text>
               </Clickable>
             ))}
           </View>
@@ -233,10 +238,10 @@ export function AvatarEditor({ visible, initial, onDone, onClose }: Props) {
         />
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-          {step > 0 ? <Button variant="secondary" icon="chevron-back" label="Retour" onPress={() => goTo(step - 1)} style={{ flex: 1 }} /> : null}
+          {step > 0 ? <Button variant="secondary" icon="chevron-back" label={t('play.ae.back')} onPress={() => goTo(step - 1)} style={{ flex: 1 }} /> : null}
           <Button
             icon={forwardLocked ? 'lock-closed' : last ? 'checkmark' : 'chevron-forward'}
-            label={forwardLocked && blocking ? `${blocking.label} à débloquer` : last ? 'Terminer' : 'Suivant'}
+            label={forwardLocked && blocking ? t('play.ae.partLocked', { part: t(blocking.label) }) : last ? t('play.ae.finish') : t('play.ae.next')}
             disabled={forwardLocked}
             onPress={() => (last ? onDone(config) : goTo(step + 1))}
             style={{ flex: 2 }}
@@ -258,6 +263,7 @@ const STEP_SLOT = 48;
  * current one moves, with a slow breathing halo. A tap on an icon goes to its step.
  */
 function StepTrail({ step, onSelect }: { step: number; onSelect: (step: number) => void }) {
+  const { t } = useT();
   return (
     <View style={styles.trail}>
       <View style={styles.trailTrack}>
@@ -267,7 +273,7 @@ function StepTrail({ step, onSelect }: { step: number; onSelect: (step: number) 
         <Pressable
           key={s.title}
           accessibilityRole="button"
-          accessibilityLabel={`Étape ${i + 1} : ${s.title}`}
+          accessibilityLabel={t('play.ae.stepA11y', { n: i + 1, title: t(s.title) })}
           accessibilityState={{ selected: i === step }}
           hitSlop={4}
           onPress={() => i !== step && onSelect(i)}
@@ -309,6 +315,7 @@ function Halo() {
 
 /** The avatar in the middle: swipe it left or right for the next or previous item. */
 function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: AvatarConfig; locked: boolean; onPrevious: () => void; onNext: () => void; label: string }) {
+  const { t } = useT();
   const { width, height } = useWindowDimensions();
   // As big as the screen allows, above the carousel.
   const size = Math.min(width - 2 * spacing.lg, height * 0.34, 280);
@@ -338,7 +345,7 @@ function SwipeAvatar({ config, locked, onPrevious, onNext, label }: { config: Av
           accessible
           accessibilityRole="adjustable"
           accessibilityLabel={label}
-          accessibilityHint="Balayez vers le haut ou le bas pour changer"
+          accessibilityHint={t('play.ae.swipeHint')}
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
           onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'increment' ? onNext() : onPrevious())}
         >
@@ -368,6 +375,7 @@ function Carousel({
   onSelect: (i: number) => void;
   lockOf: (o: Option) => Unlock | undefined;
 }) {
+  const { t } = useT();
   const { width } = useWindowDimensions();
   const ref = useRef<ScrollView>(null);
   // Index the scroll position shows, to tell scrolls by the player from ours.
@@ -419,7 +427,7 @@ function Carousel({
           <Pressable
             key={o.id}
             accessibilityRole="button"
-            accessibilityLabel={lock ? `${o.label}, à débloquer : ${unlockLabel(lock).toLowerCase()}` : o.label}
+            accessibilityLabel={lock ? t('play.ae.optionLockedA11y', { name: itemLabel(category.key, o), what: unlockLabel(lock).toLowerCase() }) : itemLabel(category.key, o)}
             accessibilityState={{ selected }}
             onPress={() => onSelect(i)}
             style={styles.slot}

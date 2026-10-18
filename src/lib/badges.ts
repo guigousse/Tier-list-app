@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { useTierStore } from '../store/useTierStore';
 import { saveBadgeChoiceApi, setBadges } from './api';
+import { t } from './i18n/useT';
 import { useProgress } from './progress';
 
 /**
@@ -92,6 +93,23 @@ export const FORKS: Fork[] = [
 ];
 
 const BY_ID = new Map(FORKS.flatMap((f) => f.options.map((b) => [b.id, b] as const)));
+
+/**
+ * A badge's name, in the language of the moment. Only the id is saved and sent to
+ * friends: the name is looked up from it, `label` (French) is the source text.
+ */
+export function badgeLabel(badge: Badge): string {
+  const key = `play.badge.${badge.id}`;
+  const text = t(key);
+  return text === key ? badge.label : text;
+}
+
+/** A fork's question ("Pizza ou burger ?"), in the language of the moment. */
+export function forkQuestion(fork: Fork): string {
+  const key = `play.fork.${fork.id}`;
+  const text = t(key);
+  return text === key ? fork.question : text;
+}
 
 export function badgeById(id: string): Badge | undefined {
   return BY_ID.get(id);
