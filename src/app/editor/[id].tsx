@@ -1,16 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { captureRef } from 'react-native-view-shot';
 
 import { ActionSheet, Button, Field, IconButton, Sheet, type MenuAction } from '../../components/ui';
-import { ShareSheet } from '../../components/ShareSheet';
 import { CardFocus } from '../../components/editor/CardFocus';
 import { CardSheet, type CardDraft } from '../../components/editor/CardSheet';
 import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
@@ -81,17 +78,14 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
   const insets = useSafeAreaInsets();
   const store = useTierStore.getState();
   const { scrollRef, viewportRef, onScrollLayout, onContentSize } = useDragContext();
-  const captureTarget = useRef<View>(null);
 
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [cardSheet, setCardSheet] = useState<{ cardId: string | null } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const aiRunning = useAiJob((s) => (aiBusy(s.job, list.id) ? s.job!.kind : null));
   const [menuOpen, setMenuOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(list.title);
-  const [exporting, setExporting] = useState(false);
 
   const editingTierIndex = list.tiers.findIndex((t) => t.id === editingTierId);
   const editingTier = editingTierIndex >= 0 ? list.tiers[editingTierIndex] : null;
@@ -160,23 +154,6 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
     setEditing(false);
     setCardSheet(null);
     setEditingTierId(null);
-  };
-
-  const exportImage = async () => {
-    if (exporting) return;
-    setExporting(true);
-    try {
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Partage indisponible', 'Le partage n’est pas disponible sur cet appareil.');
-        return;
-      }
-      const uri = await captureRef(captureTarget, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: list.title });
-    } catch {
-      Alert.alert('Export impossible', 'L’image n’a pas pu être générée.');
-    } finally {
-      setExporting(false);
-    }
   };
 
   const confirmReset = () =>
@@ -249,7 +226,6 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
 
   const menuActions: MenuAction[] = fixed
     ? [
-        { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         ...(mail?.answeredAt ? [{ label: 'Voir la comparaison', icon: 'git-compare-outline', onPress: showComparison } as const] : []),
         ...(!mail && ranked?.validatedAt ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
         ...(validated ? [] : [{ label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset } as const]),
@@ -262,8 +238,6 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
               { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
             ] as const)
           : ([{ label: 'Modifier la liste', icon: 'create-outline', onPress: () => setEditing(true) }] as const)),
-        { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
-        { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
         {
           label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
           icon: list.favorite ? 'star' : 'star-outline',
@@ -301,7 +275,6 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           {editable ? <Ionicons name="pencil" size={14} color={colors.textMuted} /> : null}
         </Clickable>
         {fixed || editing ? null : <IconButton icon="create-outline" label="Modifier la liste" onPress={() => setEditing(true)} />}
-        <IconButton icon="share-outline" label="Partager" onPress={fixed ? exportImage : () => setShareOpen(true)} />
         <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
       </View>
       <TierStrip style={styles.strip} />
@@ -312,7 +285,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           contentContainerStyle={{ paddingBottom: spacing.lg }}
           onContentSizeChange={(_w: number, h: number) => onContentSize(h)}
         >
-          <View ref={captureTarget} collapsable={false} style={styles.capture}>
+          <View style={styles.capture}>
             {list.tiers.map((tier) => (
               <TierRow
                 key={tier.id}
@@ -439,7 +412,6 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
         </>
       )}
 
-      <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={exportImage} />
 
       <Sheet
         visible={renaming}
