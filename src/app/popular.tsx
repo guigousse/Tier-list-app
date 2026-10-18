@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TextInput, View, type ListRenderItem } from 'react-native';
+import { FlatList, Platform, ScrollView, StyleSheet, Text, TextInput, View, type ListRenderItem } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePopularCopies } from '../components/PopularList';
@@ -11,6 +11,7 @@ import { Chip } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { useResponsive } from '../lib/layout';
 import { popularShown, searchIndex, type PopularFilter } from '../lib/popularSearch';
+import { cardUrls, preloadCovers } from '../lib/preload';
 import { groupByTheme, themeOf } from '../lib/themes';
 import { useCatalog, usePopularTemplates } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
@@ -67,6 +68,17 @@ export default function Popular() {
       })),
     [templates, tags],
   );
+  // A theme opened: the pictures of its lists' cards copied to the device in the background,
+  // so a list opened next shows its cards at once.
+  const openTheme = useCallback(
+    (key: string) => {
+      setTheme(key);
+      if (Platform.OS === 'web') return;
+      const lists = groups.find((g) => g.theme.key === key)?.templates ?? [];
+      preloadCovers(cardUrls(lists, icons));
+    },
+    [groups, icons],
+  );
   // Nothing searched nor filtered: the gallery of themes rather than every list at once.
   const gallery = !theme && !query.trim() && filter === 'all';
   const opened = theme ? themeOf(theme) : undefined;
@@ -114,7 +126,7 @@ export default function Popular() {
         </View>
       ) : null}
       {gallery ? (
-        <ThemeGallery groups={groups} icons={icons} onOpen={setTheme} />
+        <ThemeGallery groups={groups} icons={icons} onOpen={openTheme} />
       ) : (
         <View style={styles.sortRow}>
           <Text style={styles.count}>

@@ -1,5 +1,5 @@
 import type { Template } from '../constants/presets';
-import { coverUrls } from '../lib/preload';
+import { cardUrls, coverUrls } from '../lib/preload';
 
 const t = (key: string, concepts: string[], day?: string) =>
   ({ key, title: key, emoji: '✨', items: concepts.map((c) => `🍎 ${c}`), concepts, day }) as Template;
@@ -13,5 +13,13 @@ describe('the pictures loaded ahead, before the public lists are opened', () => 
 
   it('nothing for a list with no picture', () => {
     expect(coverUrls([t('daily-2026-10-13', [], '2026-10-13')], {}, {})).toEqual([]);
+  });
+});
+
+describe('the cards loaded ahead when a theme is opened', () => {
+  it('the picture of every card of its lists, each once, the drawn ones only', () => {
+    const icons = { apple: 'u/apple', pear: 'u/pear', kiwi: 'u/kiwi' };
+    const lists = [t('fruits', ['apple', 'pear', 'plum']), t('more', ['kiwi', 'apple'])];
+    expect(cardUrls(lists, icons)).toEqual(['u/apple', 'u/pear', 'u/kiwi']);
   });
 });

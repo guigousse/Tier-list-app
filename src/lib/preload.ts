@@ -7,6 +7,11 @@ export function coverUrls(templates: Template[], tops: Record<string, number>, i
   return [...new Set(templates.map((t) => listCover(t, tops, icons).url).filter((u): u is string => Boolean(u)))];
 }
 
+/** The picture of every card of these lists (those already drawn), each once. */
+export function cardUrls(templates: Template[], icons: Record<string, string>): string[] {
+  return [...new Set(templates.flatMap((t) => (t.concepts ?? []).map((c) => icons[c])).filter((u): u is string => Boolean(u)))];
+}
+
 /**
  * Copies the pictures of the public lists to the device ahead (right after the catalogue
  * loads): opening the public lists then shows them from the device at once, rather than
