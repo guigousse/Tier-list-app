@@ -1,13 +1,8 @@
 import { useCallback } from 'react';
 
 import { useTierStore } from '../../store/useTierStore';
-import { deviceLocale, pickLanguage, pickRegion, translate, type Language, type Params } from './index';
-import { el } from './el';
-import { en } from './en';
-import { es } from './es';
-import { fr } from './fr';
-
-const CATALOGS = { fr, en, es, el };
+import { caps, deviceLocale, localeTag, pickLanguage, pickRegion, translate, type Language, type Params } from './index';
+import { CATALOGS } from './strings';
 
 // Read once: a phone changing its language restarts the app.
 const LOCALE = deviceLocale();
@@ -36,7 +31,9 @@ export function useT() {
   const chosen = useTierStore((s) => s.settings.language);
   const language = pickLanguage(chosen, LOCALE);
   const tr = useCallback((key: string, params?: Params) => translate(CATALOGS, language, key, params), [language]);
-  return { t: tr, language };
+  // Titles in capitals: right for Greek too (see caps).
+  const upper = useCallback((text: string) => caps(text, language), [language]);
+  return { t: tr, language, upper, locale: localeTag(language) };
 }
 
 export function useRegion(): string | null {

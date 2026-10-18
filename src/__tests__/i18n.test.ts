@@ -1,4 +1,4 @@
-import { localeParts, pickLanguage, pickRegion, translate } from '../lib/i18n';
+import { caps, localeParts, pickLanguage, pickRegion, translate } from '../lib/i18n';
 
 describe('the language the app opens in', () => {
   it('the phone’s, when the app speaks it', () => {
@@ -55,5 +55,16 @@ describe('a text in the player’s language', () => {
   it('a text missing in a language falls back to English, then French', () => {
     expect(translate(catalogs, 'el', 'hello', { name: 'Ana' })).toBe('Hello Ana');
     expect(translate(catalogs, 'en', 'onlyFr')).toBe('Seulement');
+  });
+});
+
+describe('titles in capitals', () => {
+  it('Greek capitals drop their accents, as Greek writes them', () => {
+    expect(caps('Γλώσσα και περιοχή', 'el')).toBe('ΓΛΩΣΣΑ ΚΑΙ ΠΕΡΙΟΧΗ');
+  });
+
+  it('the other languages keep theirs', () => {
+    expect(caps('Éditeur', 'fr')).toBe('ÉDITEUR');
+    expect(caps('Región', 'es')).toBe('REGIÓN');
   });
 });

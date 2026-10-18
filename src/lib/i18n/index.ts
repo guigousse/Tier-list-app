@@ -69,3 +69,17 @@ export function translate(catalogs: Partial<Record<Language, Catalog>>, language
   }
   return key;
 }
+
+/**
+ * `text` in capitals for `language`. Greek capitals carry no accents ("Γλώσσα" → "ΓΛΩΣΣΑ"),
+ * which `textTransform: 'uppercase'` gets wrong: titles in capitals go through here instead.
+ */
+export function caps(text: string, language: Language): string {
+  if (language !== 'el') return text.toLocaleUpperCase(language);
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleUpperCase('el').normalize('NFC');
+}
+
+/** The locale numbers and dates are written in for `language`. */
+export function localeTag(language: Language): string {
+  return { fr: 'fr-FR', en: 'en-US', es: 'es-ES', el: 'el-GR' }[language];
+}
