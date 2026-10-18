@@ -26,7 +26,7 @@ export function AppHeader({ navigation, options, back, route }: NativeStackHeade
           <View style={styles.side}>
             {back || !modal ? <IconButton icon={modal ? 'close' : 'chevron-back'} label={modal ? 'Fermer' : 'Retour'} onPress={goBack} size={26} /> : null}
           </View>
-          <Text style={styles.title} accessibilityRole="header">
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title} accessibilityRole="header">
             {title}
           </Text>
           <View style={[styles.side, styles.right]}>{options.headerRight?.({ tintColor: colors.text, canGoBack: Boolean(back) })}</View>

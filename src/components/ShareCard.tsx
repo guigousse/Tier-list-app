@@ -121,11 +121,9 @@ const styles = StyleSheet.create({
 });
 
 /**
- * The list's title, whole: on two lines as large as it can be, else on three, smaller.
- * Either way about 62 points high, the room the ranking was measured with.
+ * The list's title on one line, as large as it holds: titles are limited to 28
+ * characters (lib/listTitle.ts), 16 points fit them across the picture.
  */
 function shareTitle(heading: string) {
-  const width = SHARE_CARD.width - 2 * 20;
-  const two = fitText(heading, width, { maxLines: 2, max: 26, min: 18 });
-  return two.fits ? two : fitText(heading, width, { maxLines: 3, max: 17, min: 12 });
+  return fitText(heading, SHARE_CARD.width - 2 * 20, { maxLines: 1, max: 26, min: 16 });
 }

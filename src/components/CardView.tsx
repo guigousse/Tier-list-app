@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { readableTextColor } from '../constants/theme';
 import { aiIconUri } from '../lib/aiIconFiles';
 import { cardIconFor } from '../lib/cardIcons';
-import { fitText } from '../lib/fitText';
+import { fitText, lineHeight } from '../lib/fitText';
 import { splitEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
 import type { Card } from '../store/types';
@@ -21,16 +21,15 @@ export function CardView({ card, size, showLabel = true }: Props) {
   const { emoji, text } = splitEmoji(card.label);
   // A drawn icon for this card's name, when there's no photo.
   const icon = uri || card.iconUrl || card.iconSvg ? undefined : cardIconFor(text || card.label);
-  // Names are written whole, on up to three lines, smaller as they grow: the « … » of a
-  // cut name hid what the card was. The lines are set here, not by the platform, so the
-  // icon above gets exactly the height they leave.
-  // On a card too small for its name (a word that would break, an icon squeezed under
-  // half the card), the picture shows alone: it says more than half a name.
-  const fitted = showLabel && text ? fitText(text, size - 10, { maxLines: 3, max: size < 64 ? 10 : 11, min: 8 }) : null;
-  const fittedIcon = fitted ? Math.min(size * 0.62, size - 6 - (fitted.lines.length * lineHeight(fitted.fontSize) + 1)) : 0;
-  const caption = fitted?.fits && fittedIcon >= size * 0.45 ? fitted : null;
-  const iconSize = caption ? fittedIcon : size * 0.78;
-  const photoCaption = uri && showLabel && card.label ? fitText(card.label, size - 6, { maxLines: 3, max: 10, min: 7 }) : null;
+  // A name on one line sits under the picture. Longer, it goes over the picture, on a
+  // translucent band, written whole on up to three lines: the « … » of a cut name hid
+  // what the card was, and under the picture three lines squeezed it to a dot. The small
+  // cards of the shared picture (46 points, drawn at 3×) take a fourth line and 6 points.
+  const below = showLabel && text ? fitText(text, size - 10, { maxLines: 1, max: size < 64 ? 10 : 11, min: 7 }) : null;
+  const caption = below?.fits ? below : null;
+  const overlay = showLabel && text && !caption ? fitText(text, size - 8, { maxLines: size < 64 ? 4 : 3, max: size < 64 ? 10 : 11, min: 6, height: size * 0.62 }) : null;
+  const iconSize = caption ? size * 0.62 : size * 0.78;
+  const photoCaption = uri && showLabel && card.label ? fitText(card.label, size - 6, { maxLines: 3, max: 10, min: 6, height: size * 0.62 }) : null;
   const plain = fitText(card.label || '?', size - 6, { maxLines: 4, max: size < 64 ? 11 : 13, min: 7 });
 
   return (
@@ -59,8 +58,15 @@ export function CardView({ card, size, showLabel = true }: Props) {
           )}
           {caption ? (
             <Text style={[styles.small, { color: fg, fontSize: caption.fontSize, lineHeight: lineHeight(caption.fontSize) }]}>
-              {caption.lines.join('\n')}
+              {caption.lines[0]}
             </Text>
+          ) : null}
+          {overlay ? (
+            <View style={styles.caption}>
+              <Text style={[styles.captionText, { fontSize: overlay.fontSize, lineHeight: lineHeight(overlay.fontSize) }]}>
+                {overlay.lines.join('\n')}
+              </Text>
+            </View>
           ) : null}
         </>
       ) : (
@@ -69,8 +75,6 @@ export function CardView({ card, size, showLabel = true }: Props) {
     </View>
   );
 }
-
-const lineHeight = (fontSize: number) => Math.round(fontSize * 1.2);
 
 const styles = StyleSheet.create({
   card: {
@@ -87,7 +91,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(12,12,20,0.6)',
     paddingVertical: 2,
     paddingHorizontal: 3,
   },

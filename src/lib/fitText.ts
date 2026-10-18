@@ -30,15 +30,22 @@ export function wrapWords(text: string, capacity: number): string[] {
  * The largest font size (by half points, from `max` down to `min`) that writes `text`
  * whole within `width` points on at most `maxLines` lines, words unbroken: names cut
  * with « … » read badly everywhere in the app. At `min`, a word too long is split, and
- * `fits` is false.
+ * `fits` is false. `height`, when given, bounds the lines too (at `lineHeight`).
  */
-export function fitText(text: string, width: number, { maxLines, max, min }: { maxLines: number; max: number; min: number }) {
+export function fitText(
+  text: string,
+  width: number,
+  { maxLines, max, min, height = Infinity }: { maxLines: number; max: number; min: number; height?: number },
+) {
   for (let fontSize = max; fontSize >= min; fontSize -= 0.5) {
     const capacity = width / (fontSize * CHAR_WIDTH);
     const words = text.split(/\s+/);
     if (words.some((w) => w.length > capacity)) continue;
     const lines = wrapWords(text, capacity);
-    if (lines.length <= maxLines) return { fontSize, lines, fits: true };
+    if (lines.length <= maxLines && lines.length * lineHeight(fontSize) <= height) return { fontSize, lines, fits: true };
   }
   return { fontSize: min, lines: wrapWords(text, width / (min * CHAR_WIDTH)), fits: false };
 }
+
+/** The line height the app draws labels with. */
+export const lineHeight = (fontSize: number) => Math.round(fontSize * 1.2);

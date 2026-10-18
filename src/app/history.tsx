@@ -39,7 +39,7 @@ export default function History() {
             <Text style={styles.emoji}>{item.daily!.emoji}</Text>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.date}>{formatDay(item.daily!.day)}</Text>
-              <Text style={styles.title}>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
                 {item.title}
               </Text>
               {top.length ? (

@@ -44,7 +44,7 @@ function MailRow({ mail, received }: { mail: Mail; received: boolean }) {
     >
       <Avatar avatar={mail.friend.avatar} seed={mail.friend.id} size={44} />
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.title}>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
           {mail.list.title}
         </Text>
         <Text numberOfLines={1} style={styles.subtitle}>

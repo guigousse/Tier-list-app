@@ -1,3 +1,4 @@
+import { clampTitle, MAX_TITLE } from '../lib/listTitle';
 import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -254,7 +255,7 @@ export const useTierStore = create<State>()(
           });
           const list: TierList = {
             id: newId(),
-            title: title.trim() || 'Ma tier list',
+            title: clampTitle(title) || 'Ma tier list',
             tiers,
             cards,
             placement,
@@ -286,7 +287,7 @@ export const useTierStore = create<State>()(
           }
           const list: TierList = {
             id: newId(),
-            title: shared.title,
+            title: clampTitle(shared.title) || 'Ma tier list',
             tiers,
             cards,
             placement,
@@ -337,7 +338,7 @@ export const useTierStore = create<State>()(
           const mapCard = (cid: string) => cardIds.get(cid)!;
           const copy: TierList = {
             id: newId(),
-            title: `${source.title} (copie)`,
+            title: `${clampTitle(source.title, MAX_TITLE - ' (copie)'.length)} (copie)`,
             tiers: source.tiers.map((t) => ({ ...t, id: tierIds.get(t.id)! })),
             cards: Object.fromEntries(
               Object.values(source.cards).map((c) => [
@@ -359,7 +360,7 @@ export const useTierStore = create<State>()(
           return copy.id;
         },
 
-        renameList: (id, title) => patchList(id, () => ({ title: title.trim() || 'Sans titre' })),
+        renameList: (id, title) => patchList(id, () => ({ title: clampTitle(title) || 'Sans titre' })),
 
         toggleFavorite: (id) => patchList(id, (l) => ({ favorite: !l.favorite })),
 

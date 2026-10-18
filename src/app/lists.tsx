@@ -10,6 +10,7 @@ import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
+import { MAX_TITLE } from '../lib/listTitle';
 import { useTierStore } from '../store/useTierStore';
 
 type Sort = 'updated' | 'opened' | 'name' | 'favorites';
@@ -127,7 +128,7 @@ export default function Lists() {
           />
         }
       >
-        <Field value={newTitle} onChangeText={setNewTitle} autoFocus placeholder="Titre" />
+        <Field value={newTitle} onChangeText={setNewTitle} autoFocus placeholder="Titre" maxLength={MAX_TITLE} />
       </Sheet>
     </View>
   );

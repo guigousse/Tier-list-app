@@ -32,6 +32,7 @@ import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
 import { own } from '../../lib/own';
+import { MAX_TITLE } from '../../lib/listTitle';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
@@ -269,7 +270,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
             setRenaming(true);
           }}
         >
-          <Text style={styles.title}>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
             {list.title}
           </Text>
           {editable ? <Ionicons name="pencil" size={14} color={colors.textMuted} /> : null}
@@ -427,7 +428,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           />
         }
       >
-        <Field value={title} onChangeText={setTitle} autoFocus placeholder="Titre" maxLength={60} />
+        <Field value={title} onChangeText={setTitle} autoFocus placeholder="Titre" maxLength={MAX_TITLE} />
       </Sheet>
     </View>
   );

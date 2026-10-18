@@ -32,3 +32,11 @@ describe('a name written whole in a small space', () => {
     expect(fit.fits).toBe(false);
   });
 });
+
+describe('a name over a small card', () => {
+  it('keeps within the height given: smaller font rather than lines running off the card', () => {
+    const { fontSize, lines } = fitText('Noix de coco râpée', 38, { maxLines: 4, max: 10, min: 6, height: 28 });
+    expect(lines.length * Math.round(fontSize * 1.2)).toBeLessThanOrEqual(28);
+    expect(lines.join(' ')).toBe('Noix de coco râpée');
+  });
+});

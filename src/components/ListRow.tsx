@@ -65,20 +65,21 @@ export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: P
         <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {list.favorite ? <Ionicons name="star" size={14} color="#FFD54F" /> : null}
-            <Text style={styles.title}>
+            {/* One line, over the options button: a long title shrinks a little rather than wrap or end in « … ». */}
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
               {list.title}
             </Text>
           </View>
-          <Text style={styles.meta}>
+          <Text style={[styles.meta, onMore && styles.besideMore]}>
             {plural(list.tiers.length, 'rang')} · {ranked}/{total} classées
           </Text>
-          <Text style={styles.meta}>
+          <Text style={[styles.meta, onMore && styles.besideMore]}>
             {verb} {relativeTime(list[timestampKey])}
           </Text>
         </View>
         {onMore ? null : <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />}
       </Clickable>
-      {onMore ? <IconButton icon="ellipsis-horizontal" label="Options" onPress={onMore} color={colors.textMuted} /> : null}
+      {onMore ? <IconButton icon="ellipsis-horizontal" label="Options" onPress={onMore} color={colors.textMuted} style={styles.more} /> : null}
     </View>
   );
 }
@@ -102,4 +103,7 @@ const styles = StyleSheet.create({
   stripeLabel: { fontSize: 7, fontWeight: '800', color: '#111' },
   title: { color: colors.text, fontSize: 16, fontWeight: '700', flexShrink: 1 },
   meta: { color: colors.textMuted, fontSize: 13 },
+  // The options sit under the title, beside the details: the title has the row's whole width.
+  more: { position: 'absolute', right: spacing.md, bottom: spacing.md },
+  besideMore: { marginRight: 32 },
 });
