@@ -49,3 +49,18 @@ export function fitText(
 
 /** The line height the app draws labels with. */
 export const lineHeight = (fontSize: number) => Math.round(fontSize * 1.2);
+
+/** The most of a card's name shown: past it, « … ». */
+export const MAX_CARD_TEXT = 25;
+
+/**
+ * A card's name as drawn: 25 characters at most, on one or two lines, words whole, as
+ * large as it fits down to `min` (the smallest still readable). Too long even then,
+ * `lines` is null: the name is drawn on two lines and the platform hides the rest.
+ */
+export function cardCaption(name: string, width: number, { max, min }: { max: number; min: number }) {
+  const chars = Array.from(name.trim());
+  const text = chars.length > MAX_CARD_TEXT ? `${chars.slice(0, MAX_CARD_TEXT).join('').trimEnd()}…` : chars.join('');
+  const fit = fitText(text, width, { maxLines: 2, max, min });
+  return { text, fontSize: fit.fontSize, lines: fit.fits ? fit.lines : null };
+}

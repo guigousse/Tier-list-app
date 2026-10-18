@@ -1,4 +1,4 @@
-import { CHAR_WIDTH, fitText, wrapWords } from '../lib/fitText';
+import { CHAR_WIDTH, cardCaption, fitText, wrapWords } from '../lib/fitText';
 
 const widest = (lines: string[]) => Math.max(...lines.map((l) => l.length));
 
@@ -38,5 +38,24 @@ describe('a name over a small card', () => {
     const { fontSize, lines } = fitText('Noix de coco râpée', 38, { maxLines: 4, max: 10, min: 6, height: 28 });
     expect(lines.length * Math.round(fontSize * 1.2)).toBeLessThanOrEqual(28);
     expect(lines.join(' ')).toBe('Noix de coco râpée');
+  });
+});
+
+describe('the name of a card', () => {
+  it('shows 25 characters at most, then « … »', () => {
+    expect(cardCaption('Pomme Granny Smith bien acide', 66, { max: 11, min: 8 }).text).toBe('Pomme Granny Smith bien a…');
+    expect(cardCaption('Framboise sauvage', 66, { max: 11, min: 8 }).text).toBe('Framboise sauvage');
+  });
+
+  it('on two lines at most, words whole, smaller before anything is hidden', () => {
+    const c = cardCaption('Framboise sauvage', 52, { max: 10, min: 8 });
+    expect(c.lines).toEqual(['Framboise', 'sauvage']);
+    expect(c.fontSize).toBeLessThanOrEqual(10);
+  });
+
+  it('too long even at the smallest readable size: two lines, the rest hidden', () => {
+    const c = cardCaption('Anticonstitutionnellement', 40, { max: 10, min: 8 });
+    expect(c.lines).toBeNull();
+    expect(c.fontSize).toBe(8);
   });
 });
