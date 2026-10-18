@@ -50,7 +50,7 @@ function Comparison({ template, mine, theirs, name }: { template: Template; mine
         const same = mine[i] === theirs[i];
         return (
           <View key={item} style={styles.compareRow}>
-            <Text numberOfLines={1} style={styles.compareItem}>
+            <Text style={styles.compareItem}>
               {emoji ? `${emoji} ` : ''}
               {text || item}
             </Text>
@@ -76,7 +76,7 @@ function MailEntry({ row, name }: { row: FriendMail; name: string }) {
       >
         <Ionicons name={row.received ? 'mail-open-outline' : 'paper-plane-outline'} size={26} color={colors.primary} />
         <View style={{ flex: 1 }}>
-          <Text numberOfLines={1} style={styles.entryTitle}>
+          <Text style={styles.entryTitle}>
             {row.mail.list.title}
           </Text>
           <Text style={styles.muted}>
@@ -238,7 +238,7 @@ export default function Friend() {
                   >
                     <Text style={styles.entryEmoji}>{e.template?.emoji ?? '❔'}</Text>
                     <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={styles.entryTitle}>
+                      <Text style={styles.entryTitle}>
                         {title}
                       </Text>
                       <Text style={styles.muted}>Validée le {date}</Text>

@@ -65,7 +65,7 @@ export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: P
         <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {list.favorite ? <Ionicons name="star" size={14} color="#FFD54F" /> : null}
-            <Text numberOfLines={1} style={styles.title}>
+            <Text style={styles.title}>
               {list.title}
             </Text>
           </View>

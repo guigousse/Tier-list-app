@@ -129,7 +129,7 @@ export function FriendsResults({ list, voteKey, mine, cards }: Props) {
                   const b = tier(v.ranks[c]);
                   return (
                     <View key={card.id} style={styles.compareRow}>
-                      <Text numberOfLines={1} style={styles.compareItem}>
+                      <Text style={styles.compareItem}>
                         {card.label}
                       </Text>
                       {mine[c] === v.ranks[c] ? <Ionicons name="checkmark" size={14} color="#2EAD6B" /> : null}

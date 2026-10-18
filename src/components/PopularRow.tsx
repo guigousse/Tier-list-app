@@ -53,7 +53,7 @@ export const PopularRow = memo(function PopularRow({ template, list, completions
       {/* Its favourite card: the one players rank S most often. */}
       <Sticker url={cover.url} emoji={cover.emoji} size={52} />
       <View style={styles.body}>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text style={styles.title}>
           {template.title}
         </Text>
         <View style={styles.statusRow}>

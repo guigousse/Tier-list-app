@@ -3,6 +3,7 @@ import type { Ref } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, readableTextColor } from '../constants/theme';
+import { fitText } from '../lib/fitText';
 import { fitCards, labelFontSize, SHARE_CARD } from '../lib/shareCard';
 import type { Card, TierList } from '../store/types';
 import { CardView } from './CardView';
@@ -25,6 +26,8 @@ type Props = {
  */
 export function ShareCard({ ref, list, rows, agreement }: Props) {
   const size = fitCards(rows.map((r) => r.length));
+  const heading = `${list.emoji ? `${list.emoji} ` : ''}${list.title}`;
+  const title = shareTitle(heading);
   return (
     <View ref={ref} testID="share-card" collapsable={false} style={styles.card}>
       <View style={styles.stripes}>
@@ -34,10 +37,7 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
       </View>
       <View style={styles.header}>
         <Text style={styles.kicker}>Ma tier list</Text>
-        <Text style={styles.title} numberOfLines={2}>
-          {list.emoji ? `${list.emoji} ` : ''}
-          {list.title}
-        </Text>
+        <Text style={[styles.title, { fontSize: title.fontSize, lineHeight: Math.round(title.fontSize * 1.2) }]}>{title.lines.join('\n')}</Text>
         {agreement !== undefined ? <Text style={styles.agreement}>{agreement} % d’accord avec les autres joueurs</Text> : null}
       </View>
       <View style={styles.board}>
@@ -50,7 +50,7 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
             </View>
             <View style={styles.cards}>
               {(rows[t] ?? []).map((card) => (
-                <CardView key={card.id} card={card} size={size} showLabel={size >= 46} />
+                <CardView key={card.id} card={card} size={size} showLabel />
               ))}
             </View>
           </View>
@@ -58,24 +58,20 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
       </View>
       {/* The watermark: where the picture comes from, and where to play. */}
       <View style={styles.band}>
-        <Image source={require('../../assets/icon.png')} style={styles.icon} />
-        {/* One line each: side by side, the site squeezed « Tiercraft » letter by letter. */}
-        <View style={styles.bandText}>
-          <Text style={styles.brand} numberOfLines={1}>
-            Tiercraft
-          </Text>
-          <Text style={styles.tagline} numberOfLines={1}>
-            Classe, compare avec tes amis
-          </Text>
-          {/* Where to get it: the store, not the site the share links point to. */}
-          <View style={styles.store}>
-            <View style={styles.storeIcon}>
-              <Ionicons name="logo-apple-appstore" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.storeText} numberOfLines={1}>
-              Disponible gratuitement sur l’App Store
-            </Text>
+        <View style={styles.bandHead}>
+          <Image source={require('../../assets/icon.png')} style={styles.icon} />
+          {/* One line each: side by side, the site squeezed « Tiercraft » letter by letter. */}
+          <View style={styles.bandText}>
+            <Text style={styles.brand}>Tiercraft</Text>
+            <Text style={styles.tagline}>Classe, compare avec tes amis</Text>
           </View>
+        </View>
+        {/* Where to get it: the store, across the whole band so the sentence stays whole. */}
+        <View style={styles.store}>
+          <View style={styles.storeIcon}>
+            <Ionicons name="logo-apple-appstore" size={14} color="#FFFFFF" />
+          </View>
+          <Text style={styles.storeText}>Disponible gratuitement sur l’App Store</Text>
         </View>
       </View>
     </View>
@@ -95,7 +91,7 @@ const styles = StyleSheet.create({
   stripe: { flex: 1, height: 5, borderRadius: 3 },
   header: { paddingTop: 22, paddingBottom: 14, gap: 4 },
   kicker: { color: colors.primary, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
-  title: { color: colors.text, fontSize: 26, fontWeight: '800', lineHeight: 31 },
+  title: { color: colors.text, fontWeight: '800' },
   agreement: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginTop: 2 },
   board: { flex: 1, justifyContent: 'center', gap: SHARE_CARD.rowGap },
   row: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 10, overflow: 'hidden' },
@@ -104,9 +100,7 @@ const styles = StyleSheet.create({
   // Inner width: 360 − 2 × 20 (margins) − 64 (label) − 2 × 4 (padding) = SHARE_CARD.boardWidth.
   cards: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: SHARE_CARD.gap, padding: SHARE_CARD.gap },
   band: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    gap: 8,
     marginTop: 16,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -116,11 +110,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   icon: { width: 44, height: 44, borderRadius: 11 },
+  bandHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bandText: { flex: 1, minWidth: 0 },
   brand: { color: colors.text, fontSize: 16, fontWeight: '800' },
   tagline: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  store: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+  store: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   // The App Store's own blue, behind its glyph.
-  storeIcon: { width: 17, height: 17, borderRadius: 4, backgroundColor: '#1D8CF8', alignItems: 'center', justifyContent: 'center' },
-  storeText: { color: colors.text, fontSize: 12, fontWeight: '700', flexShrink: 1 },
+  storeIcon: { width: 20, height: 20, borderRadius: 5, backgroundColor: '#1D8CF8', alignItems: 'center', justifyContent: 'center' },
+  storeText: { color: colors.text, fontSize: 12, fontWeight: '700' },
 });
+
+/**
+ * The list's title, whole: on two lines as large as it can be, else on three, smaller.
+ * Either way about 62 points high, the room the ranking was measured with.
+ */
+function shareTitle(heading: string) {
+  const width = SHARE_CARD.width - 2 * 20;
+  const two = fitText(heading, width, { maxLines: 2, max: 26, min: 18 });
+  return two.fits ? two : fitText(heading, width, { maxLines: 3, max: 17, min: 12 });
+}

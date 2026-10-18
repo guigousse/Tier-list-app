@@ -71,7 +71,7 @@ export function DailyCard() {
       <Text style={styles.emoji}>{daily.emoji}</Text>
       <View style={{ flex: 1 }}>
         <Text style={styles.kicker}>Tier list du jour{streak > 0 ? `  ·  🔥 ${streak}` : ''}</Text>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text style={styles.title}>
           {daily.title}
         </Text>
       </View>

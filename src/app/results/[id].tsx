@@ -15,6 +15,7 @@ import { colors, radius, readableTextColor, spacing } from '../../constants/them
 import { fetchDailyResults, fetchListResults, type DailyResults } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
 import { formatDay, plural } from '../../lib/format';
+import { fitText } from '../../lib/fitText';
 import { useResponsive } from '../../lib/layout';
 import { setDailyReminder } from '../../lib/reminders';
 import { dailyStreak } from '../../lib/streak';
@@ -218,7 +219,9 @@ export default function ResultsScreen() {
               {list.tiers.map((tier, t) => (
                 <View key={tier.id} style={styles.row}>
                   <View style={[styles.label, { backgroundColor: tier.color, minHeight: size + 8 }]}>
-                    <Text style={[styles.labelText, { color: readableTextColor(tier.color) }]}>{tier.label}</Text>
+                    <Text style={[styles.labelText, { color: readableTextColor(tier.color), fontSize: tierFit(tier.label).fontSize }]}>
+                      {tierFit(tier.label).lines.join('\n')}
+                    </Text>
                   </View>
                   <View style={styles.cards}>
                     {rows[t].map(({ card }) => (
@@ -241,7 +244,7 @@ export default function ResultsScreen() {
                 return (
                   <View key={card.id} style={styles.detail}>
                     <View style={styles.detailHead}>
-                      <Text numberOfLines={1} style={styles.detailLabel}>
+                      <Text style={styles.detailLabel}>
                         {card.label}
                       </Text>
                       {you ? <Text style={styles.you}>Vous : {you.label}</Text> : null}
@@ -298,8 +301,9 @@ const styles = StyleSheet.create({
   error: { color: colors.danger, fontSize: 15, textAlign: 'center' },
   board: { borderRadius: radius.md, overflow: 'hidden' },
   row: { flexDirection: 'row', backgroundColor: colors.surface, borderBottomWidth: 2, borderBottomColor: colors.background },
-  label: { width: 56, alignItems: 'center', justifyContent: 'center' },
-  labelText: { fontSize: 18, fontWeight: '800' },
+  label: { width: 56, alignItems: 'center', justifyContent: 'center', padding: 4 },
+  // Sized to the longest word, as in the editor: « Délicieux » ran past the label.
+  labelText: { fontWeight: '800', textAlign: 'center' },
   cards: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 4 },
   section: { color: colors.text, fontSize: 18, fontWeight: '700' },
   sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm },
@@ -327,3 +331,6 @@ const styles = StyleSheet.create({
   offscreen: { position: 'absolute', left: -2000, top: 0 },
   barText: { color: '#111', fontSize: 10, fontWeight: '800', lineHeight: 18 },
 });
+
+/** A tier's name whole in its 56-point label (4 of padding each side). */
+const tierFit = (label: string) => fitText(label, 56 - 8, { maxLines: 3, max: 18, min: 8 });

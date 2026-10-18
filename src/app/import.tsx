@@ -74,7 +74,7 @@ export default function ImportScreen() {
 
         {shared ? (
           <View style={styles.preview}>
-            <Text numberOfLines={2} style={styles.title}>
+            <Text style={styles.title}>
               {shared.title}
             </Text>
             <Text style={styles.meta}>

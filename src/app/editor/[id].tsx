@@ -269,7 +269,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
             setRenaming(true);
           }}
         >
-          <Text numberOfLines={1} style={styles.title}>
+          <Text style={styles.title}>
             {list.title}
           </Text>
           {editable ? <Ionicons name="pencil" size={14} color={colors.textMuted} /> : null}

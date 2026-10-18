@@ -26,7 +26,7 @@ export default function Templates() {
             style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && { opacity: 0.8 }]}
           >
             <Text style={styles.emoji}>{t.emoji}</Text>
-            <Text numberOfLines={2} style={styles.title}>
+            <Text style={styles.title}>
               {t.title}
             </Text>
             <Text style={styles.meta}>{t.items.length} cartes</Text>

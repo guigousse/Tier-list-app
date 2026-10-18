@@ -46,7 +46,7 @@ export function CardFocus({ card, zone, tiers, onClose, onPlace }: Props) {
               <CardView card={card} size={size} showLabel={false} />
             </View>
             {card.label ? (
-              <Text numberOfLines={2} style={styles.label}>
+              <Text style={styles.label}>
                 {card.label}
               </Text>
             ) : null}

@@ -144,7 +144,7 @@ export default function MailComparison() {
           const match = done && mine[i] >= 0 && mine[i] === theirs[i];
           return (
             <View key={i} style={[styles.row, match && styles.rowMatch]}>
-              <Text numberOfLines={1} style={styles.cardLabel}>
+              <Text style={styles.cardLabel}>
                 {emoji ? `${emoji} ` : ''}
                 {text || card.label || 'Carte'}
               </Text>

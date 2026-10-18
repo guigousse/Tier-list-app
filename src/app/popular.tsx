@@ -120,7 +120,7 @@ export default function Popular() {
       {opened ? (
         <View style={styles.themeRow}>
           <Chip label="‹ Thématiques" onPress={() => setTheme(null)} />
-          <Text style={styles.themeTitle} numberOfLines={1}>
+          <Text style={styles.themeTitle}>
             {opened.emoji} {opened.title}
           </Text>
         </View>

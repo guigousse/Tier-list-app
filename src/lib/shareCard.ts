@@ -11,10 +11,10 @@ export const SHARE_CARD = {
   /** Width left to the cards of a tier, beside its label. */
   boardWidth: 360 - 2 * 20 - 64 - 8,
   /**
-   * Height left to the ranking: 640 less the stripes (23), the header with a two-line title
-   * and the agreement (142), the band (92) and the bottom margin (16), rounded down.
+   * Height left to the ranking, measured on a capture: 376 between a two-line title and
+   * the band, less the agreement line (about 24) when it shows.
    */
-  boardHeight: 364,
+  boardHeight: 350,
   gap: 4,
   /** Between two tiers. */
   rowGap: 3,
