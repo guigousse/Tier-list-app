@@ -97,7 +97,7 @@ describe('AI generation', () => {
 
     await generateWords(id, 'Fromages', 2);
 
-    expect(words).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', 2, ['Comté']);
+    expect(words).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', 2, ['Comté'], 'fr');
     expect(icons).not.toHaveBeenCalled();
     const list = store().lists[id];
     expect(list.title).toBe('Fromages');
@@ -248,11 +248,23 @@ describe('AI generation', () => {
     await generateTiers(id, 'Fromages', 'humour');
 
     // The cards say what the theme is really about ("Fromages" of a region, of a shop…).
-    expect(tiers).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', ['S', 'A', 'B'], 'humour', ['Comté', 'Brie']);
+    expect(tiers).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', ['S', 'A', 'B'], 'humour', ['Comté', 'Brie'], 'fr');
     expect(store().lists[id].tiers.map((t) => t.label)).toEqual(['Grand cru', 'Bien affiné', 'Bof']);
     // Renaming the tiers leaves the list's title and cards alone.
     expect(store().lists[id].title).toBe('Ma liste');
     expect(useAiJob.getState().job).toMatchObject({ kind: 'tiers', phase: 'done', tiers: 3 });
+  });
+
+  it('asks the cards and tier names in the player’s language', async () => {
+    store().updateSettings({ language: 'el' });
+    const id = store().createList({ title: 'T', tierLabels: ['S', 'A'], cardLabels: ['Feta'] });
+    words.mockResolvedValue({ cards: [{ label: 'Γραβιέρα', emoji: '🧀', concept: 'graviera' }] });
+    tiers.mockResolvedValue({ labels: ['Θεϊκό', 'Μέτριο'] });
+    await generateWords(id, 'Τυριά', 1);
+    await generateTiers(id, 'Τυριά', 'humour');
+    store().updateSettings({ language: 'auto' });
+    expect(words.mock.calls[0][5]).toBe('el');
+    expect(tiers.mock.calls[0][6]).toBe('el');
   });
 
   it('keeps a tier name the AI left out', async () => {
@@ -285,7 +297,7 @@ describe('AI generation', () => {
     await generateWords(id, 'Fromages', 1, [gouda.id]);
 
     // One call for both: the AI knows every card, the replaced one included, to avoid it.
-    expect(words).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', 2, ['🧀 Comté', '🧀 Gouda', '🧀 Brie']);
+    expect(words).toHaveBeenCalledWith(expect.any(String), WALLET, 'Fromages', 2, ['🧀 Comté', '🧀 Gouda', '🧀 Brie'], 'fr');
     const after = store().lists[id];
     const replaced = after.cards[gouda.id];
     expect(replaced.label).toBe('🧀 Roquefort');

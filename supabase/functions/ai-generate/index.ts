@@ -18,6 +18,7 @@ import { normalizeConcept, uniqueConcepts, withConcepts } from "./concepts.ts";
 import { drawSheet, SheetError } from "./iconSheet.ts";
 import { cardsToDraw, drawWithFallback, fillSheet } from "./sheet.ts";
 import { cleanTierLabels, TONES, type Tone } from "./tiers.ts";
+import { inLanguage, langOf } from "./language.ts";
 import { verifyAttestation } from "./appAttest.ts";
 import { WELCOME_BONUS } from "./pricing.ts";
 import { verifyTransaction } from "./purchase.ts";
@@ -254,7 +255,7 @@ Deno.serve(async (req) => {
         const result = await ask(
           CARDS_MODEL,
           "low",
-          WORDS_SYSTEM,
+          inLanguage(WORDS_SYSTEM, langOf(body.lang)),
           `Thème : ${theme}\nNombre de cartes : ${count}\nCartes déjà présentes : ${existing.join(", ") || "aucune"}\nBibliothèque déjà dessinée : ${drawn}`,
           WORDS_SCHEMA,
           4000,
@@ -295,7 +296,7 @@ Deno.serve(async (req) => {
         const result = await ask(
           TIERS_MODEL,
           "low",
-          TIERS_SYSTEM,
+          inLanguage(TIERS_SYSTEM, langOf(body.lang)),
           `Thème : ${theme}\nTon : ${TONES[tone]}\nRangs actuels (${current.length}, du meilleur au moins bon) : ${current.join(" | ")}\nQuelques cartes de la liste : ${cards.join(", ") || "aucune"}`,
           TIERS_SCHEMA,
           1000,
