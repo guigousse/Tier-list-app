@@ -343,6 +343,11 @@ export function updateProfile(secret: string, pseudo: string, avatar: string): P
   return rpc<PublicProfile>('update_profile', { secret, pseudo, avatar });
 }
 
+/** The app's language on the player's profile: their notifications are written in it. */
+export function setLanguageApi(secret: string, language: Language): Promise<void> {
+  return rpc<void>('set_language', { secret, language });
+}
+
 /** The badges shown on the player's profile, up to 3. */
 export function setBadges(secret: string, badges: string[]): Promise<void> {
   return rpc<void>('set_badges', { secret, badges });
