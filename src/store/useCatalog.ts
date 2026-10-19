@@ -5,7 +5,21 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
 import { THEMES } from '../lib/themes';
-import { fetchListTops, fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import {
+  fetchListTops,
+  fetchCardIcons,
+  fetchDaily,
+  fetchDiscovery,
+  fetchPastDailies,
+  fetchTemplateStats,
+  fetchTemplates,
+  fetchTranslations,
+  type DailyList,
+  type RemoteTemplate,
+  type TemplateStats,
+} from '../lib/api';
+import type { RemoteTranslations } from '../lib/i18n/content';
+import { currentLanguage } from '../lib/i18n/useT';
 import type { Discovery } from '../lib/discover';
 import type { IconLibrary } from '../lib/publicSync';
 
@@ -23,6 +37,8 @@ type CatalogState = {
   icons: IconLibrary;
   /** Each public list's favourite card, its picture in the catalogue (src/lib/listCover.ts). */
   tops: Record<string, number>;
+  /** The online content in the player's language (none in French, its own language). */
+  translations: RemoteTranslations | null;
   /** Applies a change made on this device right away, before the next refresh. */
   bumpStat: (key: string, field: 'completions' | 'favorites', delta: number) => void;
   /** Fetches the latest templates and daily tier list; keeps the cache on failure. */
@@ -39,6 +55,7 @@ export const useCatalog = create<CatalogState>()(
       discovery: { tags: {}, trends: {} },
       icons: {},
       tops: {},
+      translations: null,
       bumpStat: (key, field, delta) =>
         set((state) => {
           const saved = state.stats[key];
@@ -46,13 +63,15 @@ export const useCatalog = create<CatalogState>()(
           return { stats: { ...state.stats, [key]: { ...current, [field]: Math.max(0, current[field] + delta) } } };
         }),
       refresh: async () => {
-        const [templates, daily, stats, pastDailies, discovery, tops] = await Promise.allSettled([
+        const language = currentLanguage();
+        const [templates, daily, stats, pastDailies, discovery, tops, translations] = await Promise.allSettled([
           fetchTemplates(),
           fetchDaily(),
           fetchTemplateStats(),
           fetchPastDailies(),
           fetchDiscovery(),
           fetchListTops(),
+          language === 'fr' ? Promise.resolve(null) : fetchTranslations(language),
         ]);
         // The concepts are known once the published templates are: asked in a second call.
         const remote = templates.status === 'fulfilled' ? templates.value : get().templates;
@@ -74,6 +93,7 @@ export const useCatalog = create<CatalogState>()(
             ...keep('discovery', discovery),
             ...keep('icons', icons),
             ...keep('tops', tops),
+            ...keep('translations', translations),
           };
           return Object.keys(changed).length ? changed : state;
         });
@@ -93,6 +113,7 @@ export const useCatalog = create<CatalogState>()(
         discovery: state.discovery,
         icons: state.icons,
         tops: state.tops,
+        translations: state.translations,
       }),
     },
   ),

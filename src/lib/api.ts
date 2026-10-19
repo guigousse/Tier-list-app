@@ -3,6 +3,8 @@ import type { TierTone } from './aiGenerate';
 import { parsePayload, toPayload, type SharedList } from './share';
 import type { Discovery } from './discover';
 import { dailyDay } from './dailyClock';
+import type { Language } from './i18n';
+import type { RemoteTranslations } from './i18n/content';
 
 /**
  * Tiercraft's Supabase project (tables and functions: see supabase/migrations).
@@ -202,9 +204,21 @@ export type RemoteTemplate = {
   tiers?: string[];
   concepts?: string[];
   theme?: string;
+  /** Countries where the list is put forward (ISO codes); everywhere when missing. */
+  regions?: string[];
+  /** The only countries whose players may vote on it (a national election…); everyone when missing. */
+  voteRegions?: string[];
 };
 
-export type DailyList = { day: string; title: string; emoji: string; description?: string; items: string[] };
+export type DailyList = {
+  day: string;
+  title: string;
+  emoji: string;
+  description?: string;
+  items: string[];
+  regions?: string[];
+  voteRegions?: string[];
+};
 
 type TemplateRow = {
   key: string;
@@ -214,12 +228,30 @@ type TemplateRow = {
   tiers: string[] | null;
   concepts: string[] | null;
   theme: string | null;
+  regions: string[] | null;
+  vote_regions: string[] | null;
 };
 type DailyRow = Omit<TemplateRow, 'key' | 'tiers' | 'concepts' | 'theme'> & { day: string; description: string | null };
 
+const DAILY_COLUMNS = 'day,title,emoji,description,items,regions,vote_regions';
+const regionsOf = (r: { regions: string[] | null; vote_regions: string[] | null }) => ({
+  ...(r.regions ? { regions: r.regions } : {}),
+  ...(r.vote_regions ? { voteRegions: r.vote_regions } : {}),
+});
+const dailyOf = (r: DailyRow): DailyList => ({
+  day: r.day,
+  title: r.title,
+  emoji: r.emoji,
+  description: r.description ?? undefined,
+  items: r.items,
+  ...regionsOf(r),
+});
+
 /** Templates published from the Supabase dashboard. */
 export async function fetchTemplates(): Promise<RemoteTemplate[]> {
-  const rows = await request<TemplateRow[]>('templates?select=key,title,emoji,items,tiers,concepts,theme&order=sort.asc,created_at.asc');
+  const rows = await request<TemplateRow[]>(
+    'templates?select=key,title,emoji,items,tiers,concepts,theme,regions,vote_regions&order=sort.asc,created_at.asc',
+  );
   return rows.map((r) => ({
     key: r.key,
     title: r.title,
@@ -228,7 +260,25 @@ export async function fetchTemplates(): Promise<RemoteTemplate[]> {
     tiers: r.tiers ?? undefined,
     concepts: r.concepts ?? undefined,
     theme: r.theme ?? undefined,
+    ...regionsOf(r),
   }));
+}
+
+/** Translations of the online templates and daily lists in `lang` (never French: the source). */
+export async function fetchTranslations(lang: Exclude<Language, 'fr'>): Promise<RemoteTranslations> {
+  const rows = await request<{ kind: 'template' | 'daily'; key: string; title: string | null; description: string | null; items: string[] | null; tiers: string[] | null }[]>(
+    `content_translations?select=kind,key,title,description,items,tiers&lang=eq.${lang}&kind=in.(template,daily)`,
+  );
+  const result: RemoteTranslations = { lang, template: {}, daily: {} };
+  for (const r of rows) {
+    result[r.kind][r.key] = {
+      ...(r.title ? { title: r.title } : {}),
+      ...(r.description ? { description: r.description } : {}),
+      ...(r.items ? { items: r.items } : {}),
+      ...(r.tiers ? { tiers: r.tiers } : {}),
+    };
+  }
+  return result;
 }
 
 /** Each public list's favourite card (template key → index of the card most often ranked S). */
@@ -252,16 +302,14 @@ export function today(): string {
 
 /** Most recent daily tier list up to today (the daily tier list's day), if any. */
 export async function fetchDaily(day = today()): Promise<DailyList | null> {
-  const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items&day=lte.${day}&order=day.desc&limit=1`);
-  const r = rows[0];
-  if (!r) return null;
-  return { day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items };
+  const rows = await request<DailyRow[]>(`daily_lists?select=${DAILY_COLUMNS}&day=lte.${day}&order=day.desc&limit=1`);
+  return rows[0] ? dailyOf(rows[0]) : null;
 }
 
 /** Daily tier lists of the days before `before` (YYYY-MM-DD), newest first. */
 export async function fetchPastDailies(before = today()): Promise<DailyList[]> {
-  const rows = await request<DailyRow[]>(`daily_lists?select=day,title,emoji,description,items&day=lt.${before}&order=day.desc&limit=366`);
-  return rows.map((r) => ({ day: r.day, title: r.title, emoji: r.emoji, description: r.description ?? undefined, items: r.items }));
+  const rows = await request<DailyRow[]>(`daily_lists?select=${DAILY_COLUMNS}&day=lt.${before}&order=day.desc&limit=366`);
+  return rows.map(dailyOf);
 }
 
 /**
