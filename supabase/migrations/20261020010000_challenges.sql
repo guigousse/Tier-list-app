@@ -1,5 +1,5 @@
 -- Challenge lists: a ranking shared for friends to rank in turn and compare. When it brings
--- in a new player, its sharer earns credits: +1 once the newcomer ranks it, +30 once they
+-- in a new player, its sharer earns credits: +5 once the newcomer ranks it, +30 once they
 -- have ranked 3 public lists. A player already in the game earns their friend nothing, or
 -- two friends could farm credits by ranking each other's lists.
 
@@ -59,7 +59,7 @@ begin
 end;
 $$;
 
--- Called when the player ranks a challenge list opened from a code. Pays its sharer +1 if
+-- Called when the player ranks a challenge list opened from a code. Pays its sharer +5 if
 -- the player is new: a wallet verified by App Attest, made less than 7 days ago, never
 -- referred, on a device never referred; 10 referrals at most per sponsor.
 create or replace function public.claim_challenge(wallet text, device_id uuid, code text)
@@ -96,7 +96,7 @@ begin
   exception when unique_violation then
     return jsonb_build_object('status', 'already');
   end;
-  perform public.wallet_grant(sharer, 1, 'referral:' || me.id);
+  perform public.wallet_grant(sharer, 5, 'referral:' || me.id);
   -- Lists ranked before this one count too.
   perform private.activate_referral(claim_challenge.device_id);
   return jsonb_build_object('status', 'credited');

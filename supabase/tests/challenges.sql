@@ -37,33 +37,33 @@ begin
   if r->>'status' <> 'own' then raise exception 'FAIL: own challenge %', r; end if;
   if (select balance from public.credit_wallets where id = ref) <> 0 then raise exception 'FAIL: paid for nothing'; end if;
 
-  -- A new player ranks it: +1 for the sharer, once.
+  -- A new player ranks it: +5 for the sharer, once.
   r := public.claim_challenge(new_secret, dev, share_code);
   if r->>'status' <> 'credited' then raise exception 'FAIL: new player %', r; end if;
-  if (select balance from public.credit_wallets where id = ref) <> 1 then raise exception 'FAIL: +1 not paid'; end if;
+  if (select balance from public.credit_wallets where id = ref) <> 5 then raise exception 'FAIL: +5 not paid'; end if;
   r := public.claim_challenge(new_secret, dev, share_code);
   if r->>'status' <> 'already' then raise exception 'FAIL: second claim %', r; end if;
   -- The same device under another new wallet (a reinstall) does not pay again.
   insert into public.credit_wallets (secret_hash, balance, attest_key_id) values (encode(sha256(convert_to(reinstall_secret, 'UTF8')), 'hex'), 0, 'test-key-' || gen_random_uuid());
   r := public.claim_challenge(reinstall_secret, dev, share_code);
   if r->>'status' <> 'already' then raise exception 'FAIL: same device, new wallet %', r; end if;
-  if (select balance from public.credit_wallets where id = ref) <> 1 then raise exception 'FAIL: paid twice'; end if;
+  if (select balance from public.credit_wallets where id = ref) <> 5 then raise exception 'FAIL: paid twice'; end if;
 
   -- Three public lists validated by the newcomer: +30 for the sharer.
   insert into public.daily_votes (day, device_id, ranks)
   select d.day, dev, array_fill(0::smallint, array[cardinality(d.items)]) from public.daily_lists d
   where d.day <= (now() at time zone 'utc')::date order by d.day limit 2;
-  if (select balance from public.credit_wallets where id = ref) <> 1 then raise exception 'FAIL: activated too early'; end if;
+  if (select balance from public.credit_wallets where id = ref) <> 5 then raise exception 'FAIL: activated too early'; end if;
   insert into public.daily_votes (day, device_id, ranks)
   select d.day, dev, array_fill(0::smallint, array[cardinality(d.items)]) from public.daily_lists d
   where d.day <= (now() at time zone 'utc')::date order by d.day offset 2 limit 1;
-  if (select balance from public.credit_wallets where id = ref) <> 31 then
+  if (select balance from public.credit_wallets where id = ref) <> 35 then
     raise exception 'FAIL: activation not paid: %', (select balance from public.credit_wallets where id = ref);
   end if;
   insert into public.daily_votes (day, device_id, ranks)
   select d.day, dev, array_fill(0::smallint, array[cardinality(d.items)]) from public.daily_lists d
   where d.day <= (now() at time zone 'utc')::date order by d.day offset 3 limit 1;
-  if (select balance from public.credit_wallets where id = ref) <> 31 then raise exception 'FAIL: activation paid twice'; end if;
+  if (select balance from public.credit_wallets where id = ref) <> 35 then raise exception 'FAIL: activation paid twice'; end if;
 
   -- Ten referrals at most.
   for i in 1..9 loop
