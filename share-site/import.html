@@ -94,15 +94,12 @@
       // On iPhone/iPad, a tapped link normally opens the app directly (universal
       // link). It can still land here: link opened inside a browser or an in-app
       // web view, or iOS not having checked the domain yet. Try the app's own
-      // scheme; if the page is still visible shortly after, the app isn't
-      // installed: go to the App Store.
+      // scheme; if the page stays visible, the app isn't installed. The page then
+      // waits for a tap on the App Store button rather than going there by itself:
+      // only a tap lets Safari copy the code the app offers to paste once installed.
       var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       if (ios && code && !sessionStorage.getItem('tc-redirected')) {
         sessionStorage.setItem('tc-redirected', '1');
-        var timer = setTimeout(function () { location.href = document.getElementById('store').href; }, 1800);
-        document.addEventListener('visibilitychange', function () {
-          if (document.hidden) clearTimeout(timer);
-        });
         location.href = document.getElementById('open').href;
       }
     })();
