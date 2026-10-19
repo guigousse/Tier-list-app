@@ -8,23 +8,26 @@ import { RankingScene, sceneHeight } from '../components/onboarding/RankingScene
 import { ProfileForm } from '../components/ProfileForm';
 import { Button } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
+import { useT } from '../lib/i18n/useT';
 import { enableDefaultReminder } from '../lib/reminders';
 import { useTierStore } from '../store/useTierStore';
 
 type Scene = ComponentType<{ width: number; height: number; active: boolean }>;
 
+// Captions as text keys: read in the language of the moment.
 const SLIDES: { Scene: Scene; caption: string }[] = [
-  { Scene: RankingScene, caption: 'Glissez. Validez.\nComparez.' },
-  { Scene: CreateScene, caption: 'Créez vos\npropres listes.' },
-  { Scene: TiersScene, caption: 'Vos rangs,\nvos couleurs.' },
-  { Scene: DailyScene, caption: 'Un nouveau défi\nchaque jour.' },
-  { Scene: ShareScene, caption: 'Partagez\nen un code.' },
+  { Scene: RankingScene, caption: 'app.welcome.slide1' },
+  { Scene: CreateScene, caption: 'app.welcome.slide2' },
+  { Scene: TiersScene, caption: 'app.welcome.slide3' },
+  { Scene: DailyScene, caption: 'app.welcome.slide4' },
+  { Scene: ShareScene, caption: 'app.welcome.slide5' },
 ];
 
 /** Shown on the first launch, over the blurred home screen: animated scenes of the app. */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  const { t } = useT();
   const scroll = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const last = page === SLIDES.length - 1;
@@ -62,11 +65,11 @@ export default function Welcome() {
             ]}
           >
             <View style={styles.skipRow}>
-              <Button variant="ghost" label="Plus tard" onPress={finish} />
+              <Button variant="ghost" label={t('app.later')} onPress={finish} />
             </View>
-            <Text style={styles.caption}>Votre profil{'\n'}de joueur.</Text>
-            <Text style={styles.sub}>Pour ajouter vos amis et comparer vos classements.</Text>
-            <ProfileForm onSaved={finish} submitLabel="C’est parti !" />
+            <Text style={styles.caption}>{t('app.welcome.profile')}</Text>
+            <Text style={styles.sub}>{t('app.welcome.profileSub')}</Text>
+            <ProfileForm onSaved={finish} submitLabel={t('app.letsGo')} />
           </ScrollView>
         </KeyboardAvoidingView>
       ) : (
@@ -78,7 +81,7 @@ export default function Welcome() {
           }}
         >
           <View style={styles.skipRow}>
-            {last ? null : <Button variant="ghost" label="Passer" onPress={() => (hasProfile ? finish() : setProfileStep(true))} />}
+            {last ? null : <Button variant="ghost" label={t('app.welcome.skip')} onPress={() => (hasProfile ? finish() : setProfileStep(true))} />}
           </View>
           <ScrollView
             ref={scroll}
@@ -91,7 +94,7 @@ export default function Welcome() {
             {SLIDES.map(({ Scene, caption }, i) => (
               <View key={i} style={[styles.slide, { width }]}>
                 <Scene width={sceneW} height={sceneH} active={i === page} />
-                <Text style={styles.caption}>{caption}</Text>
+                <Text style={styles.caption}>{t(caption)}</Text>
               </View>
             ))}
           </ScrollView>
@@ -102,7 +105,7 @@ export default function Welcome() {
           </View>
           <View style={styles.footer}>
             <Button
-              label={last ? 'C’est parti !' : 'Suivant'}
+              label={last ? t('app.letsGo') : t('app.welcome.next')}
               icon={last ? 'checkmark' : 'arrow-forward'}
               onPress={() => {
                 if (last) return hasProfile ? finish() : setProfileStep(true);
@@ -181,11 +184,12 @@ const styles = StyleSheet.create({
 
 /** If a scene fails, skip the welcome screens rather than closing the app. */
 export function ErrorBoundary() {
+  const { t } = useT();
   return (
     <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.lg }]}>
-      <Text style={styles.caption}>Bienvenue sur{'\n'}Tiercraft !</Text>
+      <Text style={styles.caption}>{t('app.welcome.fallback')}</Text>
       <Button
-        label="C’est parti !"
+        label={t('app.letsGo')}
         icon="checkmark"
         onPress={() => {
           useTierStore.getState().updateSettings({ onboarded: true });

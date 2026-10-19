@@ -19,3 +19,5 @@ jest.mock('expo-notifications', () => ({
   requestPermissionsAsync: async () => ({ granted: false }),
   getExpoPushTokenAsync: async () => ({ data: '' }),
 }));
+// The tests read the French texts: the app speaks the phone's language, so the "phone" is French.
+jest.mock('./src/lib/i18n', () => ({ ...jest.requireActual('./src/lib/i18n'), deviceLocale: () => 'fr-FR' }));

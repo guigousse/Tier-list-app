@@ -1,3 +1,4 @@
+import type { Language } from '../lib/i18n';
 import { clampTitle, MAX_TITLE } from '../lib/listTitle';
 import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -6,7 +7,8 @@ import { persist } from 'zustand/middleware';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
-import { CLASSIC_TIERS, tierColorAt, type Template } from '../constants/presets';
+import { nextRegionChange } from '../lib/regionChange';
+import { CLASSIC_TIERS, sourceOf, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
@@ -14,6 +16,7 @@ import type { SharedList } from '../lib/share';
 import { debouncedJSONStorage } from './debouncedStorage';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 import { own } from '../lib/own';
+import { t } from '../lib/i18n/useT';
 import { publicTiers, syncedCopy, type IconLibrary } from '../lib/publicSync';
 
 /** The player's social profile. `secret` proves it is theirs to the server; never shown. */
@@ -35,6 +38,14 @@ export type Settings = {
   showCardLabels: boolean;
   /** Usage statistics (Firebase Analytics): asked once, changed in the settings. */
   analyticsConsent: 'unknown' | 'granted' | 'denied';
+  /** The app's language: the phone's by default ('auto'), English when the app doesn't speak it. */
+  language: Language | 'auto';
+  /** The player's region (ISO country code) for the lists put forward: the phone's by default, 'world' for none. */
+  region: string | 'auto' | 'world';
+  /** Whether the region was confirmed once, after the welcome screens. */
+  regionAsked: boolean;
+  /** Last change of region from the settings: one a month (lib/regionChange.ts). */
+  regionChangedAt?: number;
 };
 
 type NewListInput = {
@@ -105,6 +116,8 @@ type State = {
   resetPlacement: (listId: string) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
+  /** Changes the region from the settings (null: worldwide); false while the month isn't over. */
+  changeRegion: (region: string | null, now?: number) => boolean;
   clearAll: () => void;
 
   /** Creates the local copy of a daily tier list: classic S→D tiers, fixed cards. */
@@ -134,6 +147,9 @@ const DEFAULT_SETTINGS: Settings = {
   cardSize: 'medium',
   showCardLabels: true,
   analyticsConsent: 'unknown',
+  language: 'auto',
+  region: 'auto',
+  regionAsked: false,
 };
 
 /** Tier index (0 = S …) of each card of `cardIds`, or null if one isn't ranked. */
@@ -145,7 +161,8 @@ export function rankingOf(list: TierList, cardIds: string[]): number[] | null {
 }
 
 /** Statistics key of a popular list: its template key and a hash of its cards. */
-export function popularVoteKey(template: Template): string {
+export function popularVoteKey(shown: Template): string {
+  const template = sourceOf(shown);
   let h = 5381;
   for (const ch of template.items.join('\n')) h = ((h * 33) ^ ch.codePointAt(0)!) >>> 0;
   return `popular:${template.key}:${h.toString(36)}`;
@@ -258,7 +275,7 @@ export const useTierStore = create<State>()(
           });
           const list: TierList = {
             id: newId(),
-            title: clampTitle(title) || 'Ma tier list',
+            title: clampTitle(title) || t('app.list.defaultTitle'),
             tiers,
             cards,
             placement,
@@ -290,7 +307,7 @@ export const useTierStore = create<State>()(
           }
           const list: TierList = {
             id: newId(),
-            title: clampTitle(shared.title) || 'Ma tier list',
+            title: clampTitle(shared.title) || t('app.list.defaultTitle'),
             tiers,
             cards,
             placement,
@@ -363,7 +380,7 @@ export const useTierStore = create<State>()(
           return copy.id;
         },
 
-        renameList: (id, title) => patchList(id, () => ({ title: clampTitle(title) || 'Sans titre' })),
+        renameList: (id, title) => patchList(id, () => ({ title: clampTitle(title) || t('app.list.untitled') })),
 
         toggleFavorite: (id) => patchList(id, (l) => ({ favorite: !l.favorite })),
 
@@ -461,6 +478,12 @@ export const useTierStore = create<State>()(
 
         updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
 
+        changeRegion: (region, now = Date.now()) => {
+          if (nextRegionChange(get().settings.regionChangedAt, now) !== null) return false;
+          get().updateSettings({ region: region ?? 'world', regionAsked: true, regionChangedAt: now });
+          return true;
+        },
+
         createDailyList: (daily) => {
           const now = Date.now();
           const tiers = buildTiers(CLASSIC_TIERS);
@@ -501,7 +524,8 @@ export const useTierStore = create<State>()(
           return true;
         },
 
-        createPopularList: (template, icons = {}) => {
+        createPopularList: (shown, icons = {}) => {
+          const template = sourceOf(shown);
           const id = get().createList({
             title: template.title,
             tierLabels: publicTiers(template),
@@ -523,7 +547,7 @@ export const useTierStore = create<State>()(
         syncPopular: (listId, template, icons) =>
           set((state) => {
             const list = own(state.lists, listId);
-            const next = list && syncedCopy(list, template, icons);
+            const next = list && syncedCopy(list, sourceOf(template), icons);
             return next ? { lists: { ...state.lists, [listId]: next } } : state;
           }),
 

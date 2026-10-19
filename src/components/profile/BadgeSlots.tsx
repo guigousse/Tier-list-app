@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { badgeById, FORKS, placeBadge, type Badge } from '../../lib/badges';
+import { badgeById, badgeLabel, FORKS, placeBadge, type Badge } from '../../lib/badges';
+import { useT } from '../../lib/i18n/useT';
 import { useTierStore } from '../../store/useTierStore';
 import { BadgeIcon } from '../BadgeIcon';
 import { Clickable } from '../Clickable';
@@ -19,6 +20,7 @@ type Props = {
  * won on the path; one already pinned elsewhere swaps places.
  */
 export function BadgeSlots({ value, onChange }: Props) {
+  const { t, upper } = useT();
   const choices = useTierStore((s) => s.badgeChoices);
   const [open, setOpen] = useState<number | null>(null);
 
@@ -32,7 +34,7 @@ export function BadgeSlots({ value, onChange }: Props) {
 
   return (
     <View style={{ gap: spacing.sm }}>
-      <Text style={styles.label}>Mes badges</Text>
+      <Text style={styles.label}>{upper(t('play.badges.mine'))}</Text>
       <View style={styles.row}>
         {slots.map((b, i) => {
           const selected = open === i;
@@ -40,7 +42,7 @@ export function BadgeSlots({ value, onChange }: Props) {
             <Clickable
               key={i}
               accessibilityRole="button"
-              accessibilityLabel={b ? `Emplacement ${i + 1} : ${b.label}, changer` : `Emplacement ${i + 1} vide, choisir un badge`}
+              accessibilityLabel={b ? t('play.badges.slotA11y', { n: i + 1, name: badgeLabel(b) }) : t('play.badges.slotEmptyA11y', { n: i + 1 })}
               accessibilityState={{ expanded: selected, disabled: won.length === 0 }}
               disabled={won.length === 0}
               onPress={() => setOpen(selected ? null : i)}
@@ -54,16 +56,16 @@ export function BadgeSlots({ value, onChange }: Props) {
                 </View>
               )}
               <Text numberOfLines={1} style={[styles.slotLabel, !b && { color: colors.textMuted }]}>
-                {b ? b.label : won.length ? 'Libre' : 'Verrouillé'}
+                {b ? badgeLabel(b) : won.length ? t('play.badges.free') : t('play.badges.locked')}
               </Text>
             </Clickable>
           );
         })}
       </View>
       {won.length === 0 ? (
-        <Text style={styles.hint}>Premier badge au palier {FORKS[0].at} du parcours des récompenses.</Text>
+        <Text style={styles.hint}>{t('play.badges.firstOnPath', { at: FORKS[0].at })}</Text>
       ) : open === null ? (
-        <Text style={styles.hint}>Touchez un emplacement pour choisir le badge épinglé sur votre avatar.</Text>
+        <Text style={styles.hint}>{t('play.badges.tapSlot')}</Text>
       ) : (
         <View style={styles.picker}>
           {won.map((b) => {
@@ -73,7 +75,7 @@ export function BadgeSlots({ value, onChange }: Props) {
               <Clickable
                 key={b.id}
                 accessibilityRole="button"
-                accessibilityLabel={elsewhere ? `${b.label}, déjà épinglé : échanger` : b.label}
+                accessibilityLabel={elsewhere ? t('play.badges.swapA11y', { name: badgeLabel(b) }) : badgeLabel(b)}
                 accessibilityState={{ selected: here }}
                 onPress={() => put(open, b.id)}
                 style={({ pressed }) => [styles.choice, here && styles.choiceOn, pressed && { opacity: 0.8 }]}
@@ -82,7 +84,7 @@ export function BadgeSlots({ value, onChange }: Props) {
                   <BadgeIcon badge={b} size={44} />
                 </View>
                 <Text numberOfLines={1} style={styles.choiceLabel}>
-                  {b.label}
+                  {badgeLabel(b)}
                 </Text>
               </Clickable>
             );
@@ -90,7 +92,7 @@ export function BadgeSlots({ value, onChange }: Props) {
           {value[open] ? (
             <Clickable
               accessibilityRole="button"
-              accessibilityLabel="Retirer le badge de cet emplacement"
+              accessibilityLabel={t('play.badges.removeA11y')}
               onPress={() => put(open, null)}
               style={({ pressed }) => [styles.choice, pressed && { opacity: 0.8 }]}
             >
@@ -98,7 +100,7 @@ export function BadgeSlots({ value, onChange }: Props) {
                 <Ionicons name="close" size={20} color={colors.textMuted} />
               </View>
               <Text numberOfLines={1} style={[styles.choiceLabel, { color: colors.textMuted }]}>
-                Retirer
+                {t('play.badges.remove')}
               </Text>
             </Clickable>
           ) : null}
@@ -109,7 +111,7 @@ export function BadgeSlots({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
   row: { flexDirection: 'row', gap: spacing.sm },
   slot: {
     flex: 1,

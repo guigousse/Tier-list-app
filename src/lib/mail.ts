@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { useMail, type Mail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { ignoreMail, reportMail, rerankMail } from './api';
+import { t } from './i18n/useT';
 import { socialError } from './social';
 
 /** Opens a received list to rank (copied into the player's lists the first time). */
@@ -16,10 +17,10 @@ export function openReceived(mail: Mail, again = false): void {
 export function confirmRerank(mail: Mail): void {
   const secret = useTierStore.getState().profile?.secret;
   if (!secret) return;
-  Alert.alert('Reclasser cette liste ?', `${mail.friend.pseudo} verra votre nouveau classement une fois envoyé.`, [
-    { text: 'Annuler', style: 'cancel' },
+  Alert.alert(t('social.rerankTitle'), t('social.rerankBody', { name: mail.friend.pseudo }), [
+    { text: t('social.cancel'), style: 'cancel' },
     {
-      text: 'Reclasser',
+      text: t('social.rerank'),
       onPress: () =>
         rerankMail(secret, mail.id).then(
           async () => {
@@ -27,7 +28,7 @@ export function confirmRerank(mail: Mail): void {
             router.back();
             openReceived({ ...mail, status: 'sent' }, true);
           },
-          (e) => Alert.alert('Oups', socialError(e)),
+          (e) => Alert.alert(t('social.oops'), socialError(e)),
         ),
     },
   ]);
@@ -43,12 +44,12 @@ export function openMail(mail: Mail, received: boolean): void {
 export function confirmIgnore(mail: Mail): void {
   const secret = useTierStore.getState().profile?.secret;
   if (!secret) return;
-  Alert.alert('Ignorer cette liste ?', `« ${mail.list.title} » disparaîtra de vos listes reçues, sans prévenir ${mail.friend.pseudo}.`, [
-    { text: 'Annuler', style: 'cancel' },
+  Alert.alert(t('social.ignoreTitle'), t('social.ignoreBody', { title: mail.list.title, name: mail.friend.pseudo }), [
+    { text: t('social.cancel'), style: 'cancel' },
     {
-      text: 'Ignorer',
+      text: t('social.ignore'),
       style: 'destructive',
-      onPress: () => ignoreMail(secret, mail.id).then(() => useMail.getState().refresh(), (e) => Alert.alert('Oups', socialError(e))),
+      onPress: () => ignoreMail(secret, mail.id).then(() => useMail.getState().refresh(), (e) => Alert.alert(t('social.oops'), socialError(e))),
     },
   ]);
 }
@@ -58,20 +59,20 @@ export function confirmReportMail(mail: Mail): void {
   const secret = useTierStore.getState().profile?.secret;
   if (!secret) return;
   Alert.alert(
-    'Signaler cette liste ?',
-    `Le profil de ${mail.friend.pseudo} sera signalé et bloqué : vous ne serez plus amis, et ses listes ne vous parviendront plus.`,
+    t('social.reportMailTitle'),
+    t('social.reportMailBody', { name: mail.friend.pseudo }),
     [
-      { text: 'Annuler', style: 'cancel' },
+      { text: t('social.cancel'), style: 'cancel' },
       {
-        text: 'Signaler',
+        text: t('social.report'),
         style: 'destructive',
         onPress: () =>
           reportMail(secret, mail.id).then(
             () => {
               useMail.getState().refresh();
-              Alert.alert('Merci', 'Le signalement est envoyé.');
+              Alert.alert(t('social.thanks'), t('social.reportMailSent'));
             },
-            (e) => Alert.alert('Oups', socialError(e)),
+            (e) => Alert.alert(t('social.oops'), socialError(e)),
           ),
       },
     ],

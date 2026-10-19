@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { relativeTime } from '../lib/format';
+import { useT } from '../lib/i18n/useT';
 import { confirmIgnore, confirmReportMail, openMail } from '../lib/mail';
 import { isArchived, isToRank, mailAgreement, useMail, type Mail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
@@ -13,32 +14,42 @@ import { IconButton, SectionTitle } from './ui';
 
 /** One list: the friend, its title, and where it stands. */
 function MailRow({ mail, received }: { mail: Mail; received: boolean }) {
+  const { t } = useT();
   const toRank = received && isToRank(mail);
   const ranked = mail.status === 'ranked' && mail.senderRanks && mail.recipientRanks;
   const score = ranked ? mailAgreement(mail.senderRanks!, mail.recipientRanks!, mail.list.tiers.length) : null;
   const fresh = !received && ranked && !mail.seen;
   const when = relativeTime(Date.parse(mail.sentAt));
+  const name = mail.friend.pseudo;
   const subtitle = received
-    ? `De ${mail.friend.pseudo} · ${mail.auto ? 'déjà classée' : when}`
+    ? mail.auto
+      ? t('social.fromAuto', { name })
+      : t('social.fromWhen', { name, when })
     : ranked
-      ? `${mail.friend.pseudo} l’a classée`
-      : `À ${mail.friend.pseudo} · en attente`;
+      ? t('social.theyRanked', { name })
+      : t('social.toPending', { name });
 
   const more = () =>
-    Alert.alert(mail.list.title, `Envoyée par ${mail.friend.pseudo}`, [
-      { text: 'Ignorer', onPress: () => confirmIgnore(mail) },
+    Alert.alert(mail.list.title, t('social.sentBy', { name }), [
+      { text: t('social.ignore'), onPress: () => confirmIgnore(mail) },
       {
-        text: 'Signaler',
+        text: t('social.report'),
         style: 'destructive',
         onPress: () => confirmReportMail(mail),
       },
-      { text: 'Annuler', style: 'cancel' },
+      { text: t('social.cancel'), style: 'cancel' },
     ]);
 
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={`${mail.list.title}, ${subtitle}${toRank ? ', à classer' : score !== null ? `, ${score} % d’accord` : ''}`}
+      accessibilityLabel={
+        toRank
+          ? t('social.mailToRankA11y', { label: `${mail.list.title}, ${subtitle}` })
+          : score !== null
+            ? t('social.mailScoreA11y', { label: `${mail.list.title}, ${subtitle}`, score })
+            : `${mail.list.title}, ${subtitle}`
+      }
       onPress={() => openMail(mail, received)}
       style={({ pressed }) => [styles.row, (toRank || fresh) && styles.rowNew, pressed && { opacity: 0.85 }]}
     >
@@ -54,13 +65,13 @@ function MailRow({ mail, received }: { mail: Mail; received: boolean }) {
       {toRank ? (
         <>
           <View style={styles.pill}>
-            <Text style={styles.pillText}>À classer</Text>
+            <Text style={styles.pillText}>{t('social.toRank')}</Text>
           </View>
-          <IconButton icon="ellipsis-horizontal" label="Ignorer ou signaler" onPress={more} color={colors.textMuted} />
+          <IconButton icon="ellipsis-horizontal" label={t('social.ignoreOrReport')} onPress={more} color={colors.textMuted} />
         </>
       ) : score !== null ? (
         <View style={[styles.score, fresh && styles.scoreFresh]}>
-          <Text style={styles.scoreText}>{score} %</Text>
+          <Text style={styles.scoreText}>{t('social.percent', { value: score })}</Text>
           {fresh ? <View style={styles.dot} /> : null}
         </View>
       ) : (
@@ -72,6 +83,7 @@ function MailRow({ mail, received }: { mail: Mail; received: boolean }) {
 
 /** Challenges: tier lists received from friends (to rank, then compared), sent to them, and the archive. */
 export function MailBox() {
+  const { t } = useT();
   const inbox = useMail((s) => s.inbox);
   const outbox = useMail((s) => s.outbox);
   const loaded = useMail((s) => s.loaded);
@@ -91,15 +103,15 @@ export function MailBox() {
 
   return (
     <View style={{ gap: spacing.xl }}>
-      {offline ? <Text style={styles.hint}>Pas de connexion : vos défis s’afficheront dès que vous serez en ligne.</Text> : null}
+      {offline ? <Text style={styles.hint}>{t('social.offlineMail')}</Text> : null}
 
       <View style={{ gap: spacing.sm }}>
-        <SectionTitle>Reçus{toRank.length ? ` · ${toRank.length} à classer` : ''}</SectionTitle>
+        <SectionTitle>{toRank.length ? t('social.receivedToRank', { n: toRank.length }) : t('social.received')}</SectionTitle>
         {toRank.length + rankedIn.length === 0 ? (
           <Text style={styles.hint}>
             {inbox.length
-              ? 'Rien de nouveau : vos défis terminés sont dans les archives.'
-              : 'Les tier lists que vos amis vous envoient arrivent ici : classez-les, puis comparez vos classements.'}
+              ? t('social.nothingNew')
+              : t('social.inboxEmpty')}
           </Text>
         ) : (
           [...toRank, ...rankedIn].map((m) => <MailRow key={m.id} mail={m} received />)
@@ -107,10 +119,10 @@ export function MailBox() {
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <SectionTitle>Envoyés</SectionTitle>
+        <SectionTitle>{t('social.sentSection')}</SectionTitle>
         {sent.length === 0 ? (
           <Text style={styles.hint}>
-            {outbox.length ? 'Aucun défi en attente.' : 'Pour défier vos amis, ouvrez une de vos tier lists puis menu → Partager → Envoyer à des amis.'}
+            {outbox.length ? t('social.noPending') : t('social.outboxEmpty')}
           </Text>
         ) : (
           sent.map((m) => <MailRow key={m.id} mail={m} received={false} />)
@@ -126,7 +138,7 @@ export function MailBox() {
             style={styles.archiveHead}
           >
             <Ionicons name="archive-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.archiveTitle}>Archives ({archive.length})</Text>
+            <Text style={styles.archiveTitle}>{t('social.archive', { n: archive.length })}</Text>
             <Ionicons name={showArchive ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
           </Clickable>
           {showArchive ? archive.map(({ mail, received }) => <MailRow key={mail.id} mail={mail} received={received} />) : null}

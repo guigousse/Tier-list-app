@@ -64,6 +64,15 @@ describe('sending validated rankings', () => {
     expect(useTierStore.getState().lists.p1.popular?.voteSent).toBe(true);
   });
 
+  it('a list whose vote is kept to another country is not sent again and again', async () => {
+    listVote.mockRejectedValue(new Error('region_locked'));
+    useTierStore.setState({ lists: { p1: popular([0, 1]) } });
+    await syncDailyVotes();
+    listVote.mockClear();
+    await syncDailyVotes();
+    expect(listVote).not.toHaveBeenCalled();
+  });
+
   it('a ranking changed while the old one was on its way is sent too', async () => {
     let release = () => {};
     listVote.mockImplementationOnce(() => new Promise<void>((r) => (release = r))).mockResolvedValue(undefined);

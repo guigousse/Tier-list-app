@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../constants/theme';
 import { chooseBadge, FORKS, pendingForks } from '../../lib/badges';
+import { useT } from '../../lib/i18n/useT';
 import { openWallet } from '../../lib/credits';
 import { useResponsive } from '../../lib/layout';
 import { trackState } from '../../lib/rewards';
@@ -17,6 +18,7 @@ import { RewardPath } from './RewardPath';
  * sideways, opened on where the player stands.
  */
 export function ProfileRewards() {
+  const { t } = useT();
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const choices = useTierStore((s) => s.badgeChoices);
@@ -36,22 +38,22 @@ export function ProfileRewards() {
   const listsLeft = nextAt !== undefined ? nextAt - listsState.value : 0;
   const listsSummary =
     pending > 0
-      ? `${pending > 1 ? `${pending} badges vous attendent` : 'Un badge vous attend'} : choisissez votre camp !`
-      : `Encore ${listsLeft} liste${listsLeft > 1 ? 's' : ''} publique${listsLeft > 1 ? 's' : ''} pour le palier ${nextAt}`;
+      ? t('play.rewards.badgesWaiting', { count: pending })
+      : t('play.rewards.listsLeft', { count: listsLeft, at: nextAt });
 
   const flameLeft = flameState.next ? flameState.next.at - flameState.value : 0;
   const flameSummary =
     flameState.value === 0
-      ? `Flamme éteinte · record ${progress.bestStreak} jour${progress.bestStreak > 1 ? 's' : ''}. Jouez la tier list du jour pour la rallumer !`
+      ? t('play.rewards.flameOut', { count: progress.bestStreak })
       : flameState.next
-        ? `Encore ${flameLeft} jour${flameLeft > 1 ? 's' : ''} pour le palier ${flameState.next.at} · record ${progress.bestStreak}`
-        : 'Tous les paliers atteints : légendaire !';
+        ? t('play.rewards.flameLeft', { count: flameLeft, at: flameState.next.at, best: progress.bestStreak })
+        : t('play.rewards.allReached');
 
   return (
     <ScrollView contentContainerStyle={[column, { paddingHorizontal: gutter, paddingTop: spacing.sm, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }]}>
       <View style={styles.section}>
         <View style={styles.head}>
-          <Text style={styles.title}>✅ Listes validées · {progress.completed}</Text>
+          <Text style={styles.title}>✅ {t('play.track.lists')} · {progress.completed}</Text>
           <Text style={styles.hint}>{listsSummary}</Text>
         </View>
         <View style={{ marginHorizontal: -gutter }}>
@@ -60,24 +62,24 @@ export function ProfileRewards() {
             value={listsState.value}
             won={listsState.won}
             theme="green"
-            unit="liste"
+            unit="list"
             forks={FORKS}
             choices={choices}
             onChoose={chooseBadge}
           />
         </View>
-        <Text style={styles.foot}>Tier lists du jour et listes publiques validées. Aux VS, choisissez votre camp : l’autre badge disparaît !</Text>
+        <Text style={styles.foot}>{t('play.rewards.listsFoot')}</Text>
       </View>
 
       <View style={styles.section}>
         <View style={styles.head}>
-          <Text style={styles.title}>🔥 Flamme · {progress.streak}</Text>
+          <Text style={styles.title}>🔥 {t('play.track.flame')} · {progress.streak}</Text>
           <Text style={styles.hint}>{flameSummary}</Text>
         </View>
         <View style={{ marginHorizontal: -gutter }}>
-          <RewardPath steps={flameState.steps} value={flameState.value} won={flameState.won} theme="orange" glow unit="jour" />
+          <RewardPath steps={flameState.steps} value={flameState.value} won={flameState.won} theme="orange" glow unit="day" />
         </View>
-        <Text style={styles.foot}>Si la flamme s’éteint, le chemin repart de zéro, mais vos récompenses restent à vous.</Text>
+        <Text style={styles.foot}>{t('play.rewards.flameFoot')}</Text>
       </View>
     </ScrollView>
   );

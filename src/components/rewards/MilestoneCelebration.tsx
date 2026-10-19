@@ -21,11 +21,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../../constants/theme';
 import { claimListCredits } from '../../lib/api';
 import { MANNEQUIN } from '../../lib/avatar';
-import { chooseBadge, type Badge } from '../../lib/badges';
+import { badgeLabel, chooseBadge, forkQuestion, type Badge } from '../../lib/badges';
 import { BURST, coinTimes, counterAt } from '../../lib/celebration';
 import { setBalance, useCredits, walletForRequest } from '../../lib/credits';
+import { useT } from '../../lib/i18n/useT';
 import { creditsShow, teamLine, type Celebration } from '../../lib/milestoneEvents';
-import { PART_LABELS, withReward } from '../../lib/rewards';
+import { partLabel, rewardLabel, withReward } from '../../lib/rewards';
 import { playCoin, playComplete, playPop, playSparkle, playThunder } from '../../lib/sound';
 import { useTierStore } from '../../store/useTierStore';
 import { Avatar, AvatarDrawing } from '../Avatar';
@@ -39,8 +40,8 @@ type Point = { x: number; y: number };
 
 /** The colours of the two paths, as on the rewards page (RewardPath). */
 const TRACK = {
-  lists: { color: '#2EAD6B', label: 'Listes validées', icon: 'flag' as const },
-  flame: { color: '#FF7A1F', label: 'Flamme', icon: 'flame' as const },
+  lists: { color: '#2EAD6B', label: 'play.track.lists', icon: 'flag' as const },
+  flame: { color: '#FF7A1F', label: 'play.track.flame', icon: 'flame' as const },
 };
 const ITEM = 150;
 const STICKER = 112;
@@ -62,6 +63,7 @@ const haptic = (type: Haptics.NotificationFeedbackType) => {
  * the chosen one takes the centre, with its team's line.
  */
 export function MilestoneCelebration({ queue, onDone }: { queue: Celebration[]; onDone: () => void }) {
+  const { t } = useT();
   const [index, setIndex] = useState(0);
   const event = queue[index];
   // Targets of the flights, in window coordinates (measured once the overlay is laid out).
@@ -113,7 +115,7 @@ export function MilestoneCelebration({ queue, onDone }: { queue: Celebration[]; 
         </View>
 
         <View key={event.key} style={styles.body}>
-          <StepOpening at={event.at} color={track.color} icon={track.icon} label={track.label} />
+          <StepOpening at={event.at} color={track.color} icon={track.icon} label={t(track.label)} />
           {event.kind === 'item' ? (
             <ItemReveal key={event.key} event={event} target={targets?.avatar ?? null} onArrived={() => setSparkle((n) => n + 1)} onDone={next} />
           ) : event.kind === 'credits' ? (
@@ -168,6 +170,7 @@ function Spark({ angle, progress, color = '#FFE58A', distance = 46 }: { angle: n
 
 /** A piece of the path: the line fills up to the step, which bursts in the path's colour. */
 function StepOpening({ at, color, icon, label }: { at: number; color: string; icon: 'flag' | 'flame'; label: string }) {
+  const { t, upper } = useT();
   const fill = useSharedValue(0);
   const pop = useSharedValue(1);
   const burst = useSharedValue(0);
@@ -203,10 +206,10 @@ function StepOpening({ at, color, icon, label }: { at: number; color: string; ic
       </View>
       {reached ? (
         <Animated.View entering={FadeInDown.springify().damping(14)} style={{ alignItems: 'center', gap: 4 }}>
-          <Text style={styles.title}>Palier {at} atteint !</Text>
+          <Text style={styles.title}>{t('play.cel.reached', { at })}</Text>
           <View style={styles.trackLabel}>
             <Ionicons name={icon} size={14} color={color} />
-            <Text style={[styles.trackLabelText, { color }]}>{label}</Text>
+            <Text style={[styles.trackLabelText, { color }]}>{upper(label)}</Text>
           </View>
         </Animated.View>
       ) : (
@@ -238,6 +241,7 @@ function ItemReveal({
   onArrived: () => void;
   onDone: () => void;
 }) {
+  const { t, upper } = useT();
   const shown = useRevealed();
   const config = useMemo(() => withReward(MANNEQUIN, event.reward), [event.reward]);
   const box = useRef<View>(null);
@@ -287,11 +291,11 @@ function ItemReveal({
         </Animated.View>
       </Animated.View>
       <Animated.View entering={FadeIn.delay(250)} style={{ alignItems: 'center', gap: 2 }}>
-        <Text style={styles.kicker}>{PART_LABELS[event.reward.part]}</Text>
-        <Text style={styles.name}>{event.reward.label}</Text>
+        <Text style={styles.kicker}>{upper(partLabel(event.reward.part))}</Text>
+        <Text style={styles.name}>{rewardLabel(event.reward)}</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(450)} style={styles.actions}>
-        <Button label="Récupérer" icon="download-outline" onPress={collect} disabled={collecting} />
+        <Button label={t('play.cel.collect')} icon="download-outline" onPress={collect} disabled={collecting} />
       </Animated.View>
     </View>
   );
@@ -311,6 +315,7 @@ function CreditsReveal({
   onBurst: (from: Point, to: Point) => void;
   onDone: () => void;
 }) {
+  const { t } = useT();
   const shown = useRevealed();
   const box = useRef<View>(null);
   const [collecting, setCollecting] = useState(false);
@@ -337,7 +342,7 @@ function CreditsReveal({
       onBurst({ x: x + w / 2, y: y + h / 2 }, target ?? { x: x + w / 2, y: y - 240 });
       playThunder();
       haptic(Haptics.NotificationFeedbackType.Success);
-      for (const t of coinTimes()) timers.current.push(setTimeout(playCoin, t));
+      for (const at of coinTimes()) timers.current.push(setTimeout(playCoin, at));
       const start = Date.now() + BURST.arrive;
       const tick = () => {
         const progress = (Date.now() - start) / BURST.count;
@@ -361,10 +366,10 @@ function CreditsReveal({
         <EnergyIcon size={56} />
       </Animated.View>
       <Animated.View entering={FadeIn.delay(250)}>
-        <Text style={styles.name}>{later ? 'Versés dès que la connexion revient' : `${credits} crédits d’énergie offerts`}</Text>
+        <Text style={styles.name}>{later ? t('play.cel.creditsLater') : t('play.cel.creditsGiven', { count: credits })}</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(450)} style={styles.actions}>
-        <Button label="Récupérer" icon="download-outline" onPress={collect} disabled={collecting} />
+        <Button label={t('play.cel.collect')} icon="download-outline" onPress={collect} disabled={collecting} />
       </Animated.View>
     </View>
   );
@@ -375,6 +380,7 @@ function CreditsReveal({
  * the chosen one slides to the centre, a little bigger, with its team's line.
  */
 function VsReveal({ event, onDone }: { event: Extract<Celebration, { kind: 'vs' }>; onDone: () => void }) {
+  const { t } = useT();
   const shown = useRevealed();
   const [picked, setPicked] = useState<0 | 1 | null>(null);
   const [chosen, setChosen] = useState<0 | 1 | null>(null);
@@ -392,7 +398,7 @@ function VsReveal({ event, onDone }: { event: Extract<Celebration, { kind: 'vs' 
   return (
     <View style={styles.reveal}>
       <Animated.View entering={FadeIn}>
-        <Text style={styles.question}>{fork.question}</Text>
+        <Text style={styles.question}>{forkQuestion(fork)}</Text>
       </Animated.View>
       <View style={styles.vsRow}>
         {fork.options.map((badge, side) => (
@@ -423,7 +429,7 @@ function VsReveal({ event, onDone }: { event: Extract<Celebration, { kind: 'vs' 
               >
                 {picked === side ? <Ionicons name="checkmark-circle" size={16} color="#111111" /> : null}
                 <Text numberOfLines={1} style={[styles.teamText, picked === side && { color: '#111111' }]}>
-                  {badge.label}
+                  {badgeLabel(badge)}
                 </Text>
               </Clickable>
             ))}
@@ -431,13 +437,13 @@ function VsReveal({ event, onDone }: { event: Extract<Celebration, { kind: 'vs' 
           <View style={styles.actions}>
             {picked !== null ? (
               <Animated.View entering={ZoomIn.springify().damping(12)}>
-                <Button label={`Confirmer : ${fork.options[picked].label}`} icon="checkmark" onPress={confirm} />
+                <Button label={t('play.cel.confirm', { name: badgeLabel(fork.options[picked]) })} icon="checkmark" onPress={confirm} />
               </Animated.View>
             ) : (
-              <Text style={styles.hint}>Choisis ton camp : c’est pour toujours.</Text>
+              <Text style={styles.hint}>{t('play.cel.pickHint')}</Text>
             )}
             <Clickable accessibilityRole="button" onPress={onDone} hitSlop={8}>
-              <Text style={styles.later}>Plus tard</Text>
+              <Text style={styles.later}>{t('play.cel.later')}</Text>
             </Clickable>
           </View>
         </>
@@ -447,7 +453,7 @@ function VsReveal({ event, onDone }: { event: Extract<Celebration, { kind: 'vs' 
             <Text style={styles.teamLine}>{teamLine(fork.options[chosen].id)}</Text>
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(1100)} style={styles.actions}>
-            <Button label="Continuer" onPress={onDone} />
+            <Button label={t('play.cel.continue')} onPress={onDone} />
           </Animated.View>
         </>
       )}
@@ -513,11 +519,11 @@ const styles = StyleSheet.create({
   nodeText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
   title: { color: colors.text, fontSize: 28, fontWeight: '900', letterSpacing: -0.5 },
   trackLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  trackLabelText: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  trackLabelText: { fontSize: 13, fontWeight: '800', letterSpacing: 1 },
   reveal: { alignItems: 'center', gap: spacing.md, minHeight: 320 },
   itemStage: { width: ITEM + 40, height: ITEM + 40, alignItems: 'center', justifyContent: 'center' },
   itemGlow: { position: 'absolute', width: ITEM + 30, height: ITEM + 30, borderRadius: (ITEM + 30) / 2, backgroundColor: '#FFE58A' },
-  kicker: { color: colors.textMuted, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  kicker: { color: colors.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   name: { color: colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
   actions: { alignItems: 'center', gap: spacing.md, marginTop: spacing.md, alignSelf: 'stretch' },
   credits: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },

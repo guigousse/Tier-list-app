@@ -1,4 +1,5 @@
-import { fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates } from '../lib/api';
+import { fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, fetchTranslations } from '../lib/api';
+import { useTierStore } from '../store/useTierStore';
 import { useCatalog } from '../store/useCatalog';
 
 jest.mock('../lib/api', () => ({
@@ -9,6 +10,7 @@ jest.mock('../lib/api', () => ({
   fetchDiscovery: jest.fn(),
   fetchCardIcons: jest.fn(),
   fetchListTops: jest.fn(async () => ({ fruits: 2 })),
+  fetchTranslations: jest.fn(async (lang: string) => ({ lang, template: { fruits: { title: `Fruits ${lang}` } }, daily: {} })),
 }));
 
 const answer = () => {
@@ -52,5 +54,24 @@ describe('refreshing the catalogue when the app comes back', () => {
     expect(asked).toContain('kiwi-online');
     expect(new Set(asked).size).toBe(asked.length);
     expect(useCatalog.getState().icons).toEqual({ kiwi: 'https://x/kiwi.png' });
+  });
+});
+
+describe('translations of the online content', () => {
+  afterEach(() => useTierStore.getState().updateSettings({ language: 'auto' }));
+
+  it('are not asked in French, the language the content is written in', async () => {
+    answer();
+    (fetchTranslations as jest.Mock).mockClear();
+    await useCatalog.getState().refresh();
+    expect(fetchTranslations).not.toHaveBeenCalled();
+  });
+
+  it('are fetched in the player’s language and kept for offline', async () => {
+    answer();
+    useTierStore.getState().updateSettings({ language: 'el' });
+    await useCatalog.getState().refresh();
+    expect(fetchTranslations).toHaveBeenCalledWith('el');
+    expect(useCatalog.getState().translations?.template.fruits.title).toBe('Fruits el');
   });
 });

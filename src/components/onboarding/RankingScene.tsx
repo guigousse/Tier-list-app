@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useDerivedValue } from 'react-native-reanim
 import { TEMPLATES } from '../../constants/presets';
 import { CARD_COLORS, colors, TIER_COLORS } from '../../constants/theme';
 import { fetchAppIcons } from '../../lib/appstore';
+import { useT } from '../../lib/i18n/useT';
 import { Finger, FINGER, fingerOffset, MiniCard, Stage, step, useLoop, type SceneProps } from './kit';
 
 const GAMES = TEMPLATES.find((t) => t.key === 'mobile-games')!;
@@ -68,6 +69,8 @@ function useIcons(): Record<string, string> {
 export function RankingScene({ width: W, active }: SceneProps) {
   const icons = useIcons();
   const t = useLoop(active, DURATION);
+  // `t` is the loop's clock here: the texts go through `tr`.
+  const { t: tr } = useT();
 
   // Layout, from the width.
   const pad = 10;
@@ -150,7 +153,7 @@ export function RankingScene({ width: W, active }: SceneProps) {
     <Stage width={W} height={H}>
       <View style={[styles.header, { height: header, paddingHorizontal: pad }]}>
         <Ionicons name="chevron-back" size={18} color={colors.text} />
-        <Text style={styles.headerTitle}>Jeux mobiles</Text>
+        <Text style={styles.headerTitle}>{tr('play.onb.gamesTitle')}</Text>
       </View>
 
       {TIER_COLORS.slice(0, 5).map((color, i) => (
@@ -169,12 +172,12 @@ export function RankingScene({ width: W, active }: SceneProps) {
       )}
 
       <View style={[styles.pool, { top: poolTop, height: btnY - poolTop - 6 }]} />
-      <Animated.Text style={[styles.poolText, { top: poolTop + 6 }, poolTodo]}>À classer · 1</Animated.Text>
-      <Animated.Text style={[styles.poolText, { top: poolTop + 6 }, poolDone]}>Tout est classé 🎉</Animated.Text>
+      <Animated.Text style={[styles.poolText, { top: poolTop + 6 }, poolTodo]}>{tr('play.onb.toRankOne')}</Animated.Text>
+      <Animated.Text style={[styles.poolText, { top: poolTop + 6 }, poolDone]}>{tr('play.onb.allRanked')}</Animated.Text>
 
       <Animated.View style={[styles.button, { top: btnY, height: btnH, left: pad, right: pad }, buttonStyle]}>
         <Ionicons name="checkmark-done" size={18} color="#fff" />
-        <Text style={styles.buttonText}>Valider mon classement</Text>
+        <Text style={styles.buttonText}>{tr('play.onb.submit')}</Text>
       </Animated.View>
 
       <Animated.View style={[styles.abs, styles.lifted, brocStyle]}>
@@ -184,13 +187,13 @@ export function RankingScene({ width: W, active }: SceneProps) {
       <Animated.View style={[styles.stats, { top: tierY(2) - 6, padding: pad + 4 }, statsStyle]}>
         <View style={styles.validated}>
           <Ionicons name="checkmark-circle" size={18} color="#2EAD6B" />
-          <Text style={styles.validatedText}>Classement validé</Text>
+          <Text style={styles.validatedText}>{tr('play.onb.submitted')}</Text>
         </View>
-        <Text style={styles.score}>87 %</Text>
-        <Text style={styles.scoreHint}>d’accord avec les autres joueurs</Text>
+        <Text style={styles.score}>{tr('play.onb.score')}</Text>
+        <Text style={styles.scoreHint}>{tr('play.onb.scoreHint')}</Text>
         <View style={styles.voteRow}>
           <Text style={styles.voteName}>{BROC.emoji} Broc</Text>
-          <Text style={styles.voteHint}>72 % le mettent en S</Text>
+          <Text style={styles.voteHint}>{tr('play.onb.voteHint')}</Text>
         </View>
         <View style={styles.barTrack}>
           <Animated.View style={[styles.bar, barsStyle]}>

@@ -4,6 +4,7 @@ import { StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-na
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { useCredits } from '../lib/credits';
+import { useT } from '../lib/i18n/useT';
 import { Clickable } from './Clickable';
 
 /** The gold of the credits, the same everywhere they are shown. */
@@ -52,8 +53,9 @@ export function EnergyAmount({ amount, size = 16, style }: { amount: number | nu
  * pill opens the shop, not only the small sign, which alone would be a hard target.
  */
 export function EnergyPill({ onPress }: { onPress?: () => void }) {
+  const { t } = useT();
   const balance = useCredits((s) => s.balance);
-  const label = balance === null ? 'Solde de crédits en cours de chargement' : `Solde : ${balance} crédit${balance > 1 ? 's' : ''}`;
+  const label = balance === null ? t('app.energy.loading') : t('app.energy.balance', { count: balance });
   const content = (
     <>
       <EnergyIcon size={18} />
@@ -75,7 +77,7 @@ export function EnergyPill({ onPress }: { onPress?: () => void }) {
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={`${label}. Acheter de l’énergie`}
+      accessibilityLabel={t('app.energy.buy', { label })}
       onPress={onPress}
       hitSlop={8}
       style={({ pressed }) => [styles.pill, styles.pillWithPlus, pressed && { opacity: 0.8 }]}

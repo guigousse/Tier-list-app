@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, View } fro
 import { CARD_COLORS, colors, spacing } from '../../constants/theme';
 import { cardPreview } from '../../lib/cardPreview';
 import { deleteCardImage, downloadCardImage, pickCardImage } from '../../lib/images';
+import { useT } from '../../lib/i18n/useT';
 import { findImages, searchTerm, type WikiImage } from '../../lib/wikimedia';
 import type { Card } from '../../store/types';
 import { CardView } from '../CardView';
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete }: Props) {
+  const { t, upper } = useT();
   const [label, setLabel] = useState('');
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [imageName, setImageName] = useState<string | undefined>();
@@ -74,23 +76,23 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
       setImageName(name);
       setImageCredit(undefined);
     } catch {
-      Alert.alert('Image indisponible', "Impossible d'importer cette image.");
+      Alert.alert(t('editor.cardSheet.imageUnavailable'), t('editor.cardSheet.importFailed'));
     }
   };
 
   const searchWeb = async () => {
     const term = searchTerm(label);
     if (!term) {
-      Alert.alert('Nom manquant', 'Donnez d’abord un nom à la carte pour chercher une image.');
+      Alert.alert(t('editor.cardSheet.nameMissing'), t('editor.cardSheet.nameFirst'));
       return;
     }
     setSearching(true);
     try {
       const images = await findImages(term);
-      if (images.length === 0) Alert.alert('Aucune image trouvée', `Wikimedia n’a pas d’image pertinente pour « ${term} ».`);
+      if (images.length === 0) Alert.alert(t('editor.cardSheet.noImageFound'), t('editor.cardSheet.noRelevant', { term }));
       else setWeb({ images, index: 0 });
     } catch {
-      Alert.alert('Recherche impossible', 'Wikimedia est injoignable : vérifiez votre connexion.');
+      Alert.alert(t('editor.cardSheet.searchFailed'), t('editor.cardSheet.unreachable'));
     } finally {
       setSearching(false);
     }
@@ -104,10 +106,11 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
       const name = await downloadCardImage(image.url);
       pending.current.add(name);
       setImageName(name);
-      setImageCredit(`${image.credit || 'Auteur inconnu'} — Wikimedia Commons`);
+      // Stored on the card as text, in the language of the moment (it already was text).
+      setImageCredit(`${image.credit || t('editor.cardSheet.unknownAuthor')} — Wikimedia Commons`);
       setWeb(null);
     } catch {
-      Alert.alert('Image indisponible', "Impossible de télécharger cette image.");
+      Alert.alert(t('editor.cardSheet.imageUnavailable'), t('editor.cardSheet.downloadFailed'));
     } finally {
       setSaving(false);
     }
@@ -157,9 +160,9 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
     onClose();
     setTimeout(
       () =>
-        Alert.alert('Supprimer cette carte ?', undefined, [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Supprimer', style: 'destructive', onPress: onDelete },
+        Alert.alert(t('editor.cardSheet.deleteTitle'), undefined, [
+          { text: t('editor.cancel'), style: 'cancel' },
+          { text: t('editor.delete'), style: 'destructive', onPress: onDelete },
         ]),
       350,
     );
@@ -171,28 +174,28 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
   const previewSize = card && hasImage ? 150 : 92;
 
   const footer = card ? (
-    <Button label="Enregistrer" icon="checkmark" onPress={() => saveSingle(false)} />
+    <Button label={t('editor.save')} icon="checkmark" onPress={() => saveSingle(false)} />
   ) : bulk ? (
-    <Button label="Ajouter les cartes" icon="checkmark" onPress={saveBulk} disabled={!bulkText.trim()} />
+    <Button label={t('editor.cardSheet.addCards')} icon="checkmark" onPress={saveBulk} disabled={!bulkText.trim()} />
   ) : (
     <View style={styles.row}>
-      <Button style={styles.flex} variant="secondary" label="+ Autre" onPress={() => saveSingle(true)} disabled={!label.trim() && !imageName} />
-      <Button style={styles.flex} label="Ajouter" icon="checkmark" onPress={() => saveSingle(false)} disabled={!label.trim() && !imageName} />
+      <Button style={styles.flex} variant="secondary" label={t('editor.cardSheet.another')} onPress={() => saveSingle(true)} disabled={!label.trim() && !imageName} />
+      <Button style={styles.flex} label={t('editor.cardSheet.add')} icon="checkmark" onPress={() => saveSingle(false)} disabled={!label.trim() && !imageName} />
     </View>
   );
 
   return (
-    <Sheet visible={visible} onClose={close} title={card ? 'Modifier la carte' : 'Nouvelle carte'} footer={footer}>
+    <Sheet visible={visible} onClose={close} title={card ? t('editor.cardSheet.editTitle') : t('editor.cardSheet.newTitle')} footer={footer}>
       {!card ? (
         <View style={styles.row}>
-          <Chip label="Une carte" selected={!bulk} onPress={() => setBulk(false)} />
-          <Chip label="Plusieurs à la fois" selected={bulk} onPress={() => setBulk(true)} />
+          <Chip label={t('editor.cardSheet.one')} selected={!bulk} onPress={() => setBulk(false)} />
+          <Chip label={t('editor.cardSheet.many')} selected={bulk} onPress={() => setBulk(true)} />
         </View>
       ) : null}
 
       {bulk ? (
         <Field
-          label="Une carte par ligne"
+          label={t('editor.cardSheet.perLine')}
           value={bulkText}
           onChangeText={setBulkText}
           multiline
@@ -206,11 +209,11 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
             <CardView card={preview} size={previewSize} />
             <View style={previewSize > 92 ? styles.stretch : { flex: 1 }}>
               <Field
-                label="Nom"
+                label={t('editor.cardSheet.name')}
                 value={label}
                 onChangeText={setLabel}
                 maxLength={80}
-                placeholder="Ex. 🍕 Pizza"
+                placeholder={t('editor.cardSheet.namePlaceholder')}
                 autoFocus={!card}
                 returnKeyType="done"
                 onSubmitEditing={() => saveSingle(!card)}
@@ -220,17 +223,17 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
           </View>
 
           <View style={{ gap: spacing.sm }}>
-            <Text style={styles.label}>Image</Text>
+            <Text style={styles.label}>{upper(t('editor.cardSheet.image'))}</Text>
             <View style={styles.row}>
-              <Button style={styles.flex} variant="secondary" icon="images-outline" label="Photos" onPress={() => pick('library')} />
+              <Button style={styles.flex} variant="secondary" icon="images-outline" label={t('editor.cardSheet.photos')} onPress={() => pick('library')} />
               {Platform.OS !== 'web' ? (
-                <Button style={styles.flex} variant="secondary" icon="camera-outline" label="Caméra" onPress={() => pick('camera')} />
+                <Button style={styles.flex} variant="secondary" icon="camera-outline" label={t('editor.cardSheet.camera')} onPress={() => pick('camera')} />
               ) : null}
               <Button
                 style={styles.flex}
                 variant="secondary"
                 icon="globe-outline"
-                label={searching ? 'Recherche…' : 'Wikimedia'}
+                label={searching ? t('editor.cardSheet.searching') : 'Wikimedia'}
                 onPress={searchWeb}
                 disabled={searching}
               />
@@ -249,7 +252,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
                     {saving ? (
                       <ActivityIndicator color={colors.primary} />
                     ) : (
-                      <Button style={styles.flex} icon="checkmark" label="Utiliser" onPress={applyWebImage} />
+                      <Button style={styles.flex} icon="checkmark" label={t('editor.cardSheet.use')} onPress={applyWebImage} />
                     )}
                   </View>
                   <View style={styles.row}>
@@ -257,11 +260,11 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
                       <Button
                         style={styles.flex}
                         variant="secondary"
-                        label="Autre"
+                        label={t('editor.cardSheet.other')}
                         onPress={() => setWeb({ ...web, index: (web.index + 1) % web.images.length })}
                       />
                     ) : null}
-                    <Button style={styles.flex} variant="ghost" label="Annuler" onPress={() => setWeb(null)} />
+                    <Button style={styles.flex} variant="ghost" label={t('editor.cancel')} onPress={() => setWeb(null)} />
                   </View>
                 </View>
               </View>
@@ -270,7 +273,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
               <Button
                 variant="ghost"
                 icon="close-circle-outline"
-                label="Retirer l'image"
+                label={t('editor.cardSheet.removeImage')}
                 onPress={() => {
                   // The photo first: under it, the AI image shows again.
                   if (imageName) {
@@ -283,12 +286,12 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
           </View>
 
           <View style={{ gap: spacing.sm }}>
-            <Text style={styles.label}>Couleur de fond</Text>
+            <Text style={styles.label}>{upper(t('editor.cardSheet.background'))}</Text>
             <ColorPicker key={card?.id ?? 'new'} value={color} onChange={setColor} palette={CARD_COLORS} />
           </View>
 
 
-          {card ? <Button variant="ghost" icon="trash-outline" label="Supprimer la carte" onPress={confirmDelete} /> : null}
+          {card ? <Button variant="ghost" icon="trash-outline" label={t('editor.cardSheet.delete')} onPress={confirmDelete} /> : null}
         </>
       )}
     </Sheet>
@@ -296,7 +299,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
 }
 
 const styles = StyleSheet.create({
-  label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
   row: { flexDirection: 'row', gap: spacing.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   flex: { flex: 1, paddingHorizontal: spacing.sm },

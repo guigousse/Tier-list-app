@@ -4,6 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, readableTextColor } from '../constants/theme';
 import { fitText } from '../lib/fitText';
+import { useT } from '../lib/i18n/useT';
 import { fitCards, labelFontSize, SHARE_CARD } from '../lib/shareCard';
 import type { Card, TierList } from '../store/types';
 import { CardView } from './CardView';
@@ -25,6 +26,7 @@ type Props = {
  * Drawn off screen and captured at 3× (1080 × 1920) by the results page.
  */
 export function ShareCard({ ref, list, rows, agreement }: Props) {
+  const { t, upper } = useT();
   const size = fitCards(rows.map((r) => r.length));
   const heading = `${list.emoji ? `${list.emoji} ` : ''}${list.title}`;
   const title = shareTitle(heading);
@@ -36,9 +38,9 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
         ))}
       </View>
       <View style={styles.header}>
-        <Text style={styles.kicker}>Ma tier list</Text>
+        <Text style={styles.kicker}>{upper(t('app.share.kicker'))}</Text>
         <Text style={[styles.title, { fontSize: title.fontSize, lineHeight: Math.round(title.fontSize * 1.2) }]}>{title.lines.join('\n')}</Text>
-        {agreement !== undefined ? <Text style={styles.agreement}>{agreement} % d’accord avec les autres joueurs</Text> : null}
+        {agreement !== undefined ? <Text style={styles.agreement}>{t('app.share.agreement', { agreement })}</Text> : null}
       </View>
       <View style={styles.board}>
         {list.tiers.map((tier, t) => (
@@ -63,7 +65,7 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
           {/* One line each: side by side, the site squeezed « Tiercraft » letter by letter. */}
           <View style={styles.bandText}>
             <Text style={styles.brand}>Tiercraft</Text>
-            <Text style={styles.tagline}>Classe, compare avec tes amis</Text>
+            <Text style={styles.tagline}>{t('app.share.tagline')}</Text>
           </View>
         </View>
         {/* Where to get it: the store, across the whole band so the sentence stays whole. */}
@@ -71,7 +73,7 @@ export function ShareCard({ ref, list, rows, agreement }: Props) {
           <View style={styles.storeIcon}>
             <Ionicons name="logo-apple-appstore" size={14} color="#FFFFFF" />
           </View>
-          <Text style={styles.storeText}>Disponible gratuitement sur l’App Store</Text>
+          <Text style={styles.storeText}>{t('app.share.store')}</Text>
         </View>
       </View>
     </View>
@@ -90,7 +92,8 @@ const styles = StyleSheet.create({
   stripes: { flexDirection: 'row', gap: 4, paddingTop: 18 },
   stripe: { flex: 1, height: 5, borderRadius: 3 },
   header: { paddingTop: 22, paddingBottom: 14, gap: 4 },
-  kicker: { color: colors.primary, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  // Capitals through upper(), not textTransform: Greek capitals drop their accents.
+  kicker: { color: colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   title: { color: colors.text, fontWeight: '800' },
   agreement: { color: colors.textMuted, fontSize: 14, fontWeight: '600', marginTop: 2 },
   board: { flex: 1, justifyContent: 'center', gap: SHARE_CARD.rowGap },

@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Alert, Platform, Share } from 'react-native';
 
 import type { TierList } from '../store/types';
+import { t } from './i18n/useT';
 
 /**
  * A tier list as sent to someone else: no ids, no pictures (they only exist on
@@ -133,7 +134,8 @@ export function parsePayload(data: unknown, code: string): SharedList | null {
       color: isHex(color) ? color : '#2B2F3A',
       tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
     }));
-  return { code, title: text(d.t, 60) || 'Tier list partagée', tiers, cards };
+  // A list sent without a title: named in the language of the moment, as a list made here would be.
+  return { code, title: text(d.t, 60) || t('social.sharedListTitle'), tiers, cards };
 }
 
 /** Normalises a typed share code ("k7f-3qx" → "K7F3QX"), or null if it isn't one. */
@@ -173,8 +175,8 @@ export async function shareUrl(title: string, intro: string, url: string): Promi
 export async function copyText(value: string, confirmation: string): Promise<void> {
   try {
     await Clipboard.setStringAsync(value);
-    Alert.alert('Copié', confirmation);
+    Alert.alert(t('social.copied'), confirmation);
   } catch {
-    Alert.alert('Copie impossible', 'Le texte n’a pas pu être copié.');
+    Alert.alert(t('social.copyFailedTitle'), t('social.copyFailed'));
   }
 }

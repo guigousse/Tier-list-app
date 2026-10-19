@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing } from '../constants/theme';
 import { shouldAskConsent } from '../lib/analytics';
+import { useT } from '../lib/i18n/useT';
 import { useTierStore } from '../store/useTierStore';
 import { Button, Sheet } from './ui';
 
@@ -10,29 +11,25 @@ import { Button, Sheet } from './ui';
  * sheet counts as a no (nothing is measured without a yes); the settings change it later.
  */
 export function AnalyticsConsent() {
+  const { t } = useT();
   const ask = useTierStore((s) => shouldAskConsent(s.settings));
   const answer = (analyticsConsent: 'granted' | 'denied') => useTierStore.getState().updateSettings({ analyticsConsent });
   return (
     <Sheet
       visible={ask}
       onClose={() => answer('denied')}
-      title="Aider à améliorer Tiercraft"
+      title={t('consent.title')}
       footer={
         <View style={styles.buttons}>
-          <Button variant="secondary" label="Non merci" onPress={() => answer('denied')} style={{ flex: 1 }} />
-          <Button icon="checkmark" label="Accepter" onPress={() => answer('granted')} style={{ flex: 1 }} />
+          <Button variant="secondary" label={t('consent.no')} onPress={() => answer('denied')} style={{ flex: 1 }} />
+          <Button icon="checkmark" label={t('consent.yes')} onPress={() => answer('granted')} style={{ flex: 1 }} />
         </View>
       }
     >
       <View style={styles.body}>
-        <Text style={styles.text}>
-          Avec votre accord, Tiercraft mesure comment l’app est utilisée, sans votre nom ni votre e-mail : écrans ouverts, durée des parties, retour d’un jour à
-          l’autre. Ça nous aide à savoir ce qui plaît et ce qui bloque.
-        </Text>
-        <Text style={styles.text}>
-          Aucune publicité, aucun suivi entre les apps, aucun contenu de vos listes. Les mesures passent par Google Analytics pour Firebase.
-        </Text>
-        <Text style={styles.muted}>Vous pouvez changer d’avis à tout moment dans les Réglages.</Text>
+        <Text style={styles.text}>{t('consent.body')}</Text>
+        <Text style={styles.text}>{t('consent.privacy')}</Text>
+        <Text style={styles.muted}>{t('consent.later')}</Text>
       </View>
     </Sheet>
   );

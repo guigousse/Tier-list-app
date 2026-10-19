@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AvatarWithBadges } from '../components/BadgeIcon';
 import { AnalyticsConsent } from '../components/AnalyticsConsent';
+import { RegionQuestion } from '../components/RegionPicker';
 import { DailyCard } from '../components/DailyCard';
 import { EnergyPill } from '../components/Energy';
 import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
@@ -14,23 +15,25 @@ import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
-import { popularity, useCatalog, usePopularTemplates } from '../store/useCatalog';
+import { popularity, useCatalog, useFeaturedTemplates } from '../store/useCatalog';
 import { forYou, trending } from '../lib/discover';
 import type { Template } from '../constants/presets';
 import { knownBadges, usePendingBadges } from '../lib/badges';
 import { useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
+import { useT } from '../lib/i18n/useT';
 
 /** Size of the player's avatar next to the buttons. */
 const ME = 84;
 
 function Tile({ icon, title, badge = 0, onPress }: { icon: IconName; title: string; badge?: number; onPress: () => void }) {
   const { isCompact } = useResponsive();
+  const { t } = useT();
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={badge > 0 ? `${title}, ${badge} nouveauté${badge > 1 ? 's' : ''}` : title}
+      accessibilityLabel={badge > 0 ? t('app.home.newItems', { title, count: badge }) : title}
       onPress={onPress}
       style={({ pressed }) => [styles.tile, isCompact && styles.tileCompact, pressed && { opacity: 0.8 }]}
     >
@@ -50,12 +53,13 @@ function Tile({ icon, title, badge = 0, onPress }: { icon: IconName; title: stri
 export default function Home() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t } = useT();
   const lists = useTierStore((s) => s.lists);
   // Daily and popular tier lists live in their own sections.
   const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular), [lists]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
-  const popular = usePopularTemplates();
+  const popular = useFeaturedTemplates();
   // "Tendances": the last days' activity; "Pour toi": themes of the lists already completed.
   const [discover, setDiscover] = useState<'trends' | 'forYou'>('trends');
   const discovery = useCatalog((s) => s.discovery);
@@ -63,7 +67,7 @@ export default function Home() {
   const favoriteTemplates = useTierStore((s) => s.favoriteTemplates);
   const copies = usePopularCopies();
   const shown = useMemo(() => {
-    const isDone = (t: Template) => isValidated(copies(t));
+    const isDone = (template: Template) => isValidated(copies(template));
     const score = (key: string) => popularity(stats, key);
     return discover === 'trends' ? trending(popular, discovery, score, isDone) : forYou(popular, discovery, score, isDone, favoriteTemplates);
   }, [discover, popular, discovery, stats, copies, favoriteTemplates]);
@@ -97,7 +101,7 @@ export default function Home() {
           </Text>
           <View style={styles.headerIcons}>
             <EnergyPill onPress={() => router.push('/store')} />
-            <IconButton icon="settings-outline" label="Réglages" onPress={() => router.push('/settings')} />
+            <IconButton icon="settings-outline" label={t('app.title.settings')} onPress={() => router.push('/settings')} />
           </View>
         </View>
         <View style={styles.brandStrip}>
@@ -117,7 +121,7 @@ export default function Home() {
         {/* The player first: their avatar with its badges, no frame. */}
         <Clickable
           accessibilityRole="button"
-          accessibilityLabel={unread + pendingBadges > 0 ? `Profil, ${unread + pendingBadges} nouveauté${unread + pendingBadges > 1 ? 's' : ''}` : 'Profil'}
+          accessibilityLabel={unread + pendingBadges > 0 ? t('app.home.newItems', { title: t('app.title.social'), count: unread + pendingBadges }) : t('app.title.social')}
           onPress={() => router.push('/social')}
           hitSlop={6}
           style={({ pressed }) => [styles.me, pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] }]}
@@ -133,28 +137,28 @@ export default function Home() {
             </View>
           ) : null}
         </Clickable>
-        <Tile icon="add-circle-outline" title="Nouvelle liste" onPress={() => createAndOpen()} />
-        <Tile icon="albums-outline" title="Mes listes" onPress={() => router.push('/lists')} />
+        <Tile icon="add-circle-outline" title={t('app.home.newList')} onPress={() => createAndOpen()} />
+        <Tile icon="albums-outline" title={t('app.title.lists')} onPress={() => router.push('/lists')} />
       </View>
 
       <View style={{ gap: spacing.md }}>
         <View style={styles.sectionHead}>
-          <SectionTitle>Listes publiques</SectionTitle>
+          <SectionTitle>{t('app.title.popular')}</SectionTitle>
           <View style={styles.discover} accessibilityRole="tablist">
             {(
               [
-                { key: 'trends', label: 'Tendances' },
-                { key: 'forYou', label: 'Pour toi' },
+                { key: 'trends', label: t('app.home.trends') },
+                { key: 'forYou', label: t('app.home.forYou') },
               ] as const
-            ).map((t) => (
+            ).map((tab) => (
               <Clickable
-                key={t.key}
+                key={tab.key}
                 accessibilityRole="tab"
-                accessibilityState={{ selected: discover === t.key }}
-                onPress={() => setDiscover(t.key)}
-                style={[styles.discoverTab, discover === t.key && styles.discoverTabOn]}
+                accessibilityState={{ selected: discover === tab.key }}
+                onPress={() => setDiscover(tab.key)}
+                style={[styles.discoverTab, discover === tab.key && styles.discoverTabOn]}
               >
-                <Text style={[styles.discoverText, discover === t.key && { color: colors.text }]}>{t.label}</Text>
+                <Text style={[styles.discoverText, discover === tab.key && { color: colors.text }]}>{tab.label}</Text>
               </Clickable>
             ))}
           </View>
@@ -162,7 +166,7 @@ export default function Home() {
         <PopularList templates={shown.slice(0, 5)} />
         {popular.length > 5 ? (
           <Clickable accessibilityRole="button" onPress={() => router.push('/popular')} hitSlop={8} style={styles.historyLink}>
-            <Text style={styles.link}>Voir plus</Text>
+            <Text style={styles.link}>{t('app.home.seeMore')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </Clickable>
         ) : null}
@@ -170,7 +174,7 @@ export default function Home() {
 
       {favorites.length > 0 ? (
         <View style={{ gap: spacing.md }}>
-          <SectionTitle>Favoris</SectionTitle>
+          <SectionTitle>{t('app.favorites')}</SectionTitle>
           {favorites.map((l) => (
             <ListRow key={l.id} list={l} onPress={() => open(l.id)} />
           ))}
@@ -178,6 +182,7 @@ export default function Home() {
       ) : null}
       </ScrollView>
       <AnalyticsConsent />
+      <RegionQuestion />
     </View>
   );
 }

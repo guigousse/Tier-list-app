@@ -15,6 +15,7 @@ import { completedLabel, friendMails, type FriendMail } from '../../lib/friendPr
 import { openMail } from '../../lib/mail';
 import { knownBadges } from '../../lib/badges';
 import { splitEmoji } from '../../lib/emoji';
+import { useT } from '../../lib/i18n/useT';
 import { useResponsive } from '../../lib/layout';
 import { agreement, confirmReport, friendCode, myRanks, socialError, voteTemplate } from '../../lib/social';
 import { useCatalog, usePopularTemplates } from '../../store/useCatalog';
@@ -36,11 +37,12 @@ function TierChip({ tier }: { tier: number | undefined }) {
 
 /** Card by card: the player's tier and the friend's. */
 function Comparison({ template, mine, theirs, name }: { template: Template; mine: number[]; theirs: number[]; name: string }) {
+  const { t } = useT();
   return (
     <View style={styles.comparison}>
       <View style={styles.compareHead}>
-        <Text style={[styles.compareLabel, { flex: 1, textAlign: 'left' }]}>Carte</Text>
-        <Text style={styles.compareLabel}>Vous</Text>
+        <Text style={[styles.compareLabel, { flex: 1, textAlign: 'left' }]}>{t('social.card')}</Text>
+        <Text style={styles.compareLabel}>{t('social.you')}</Text>
         <Text numberOfLines={1} style={[styles.compareLabel, { maxWidth: 70 }]}>
           {name}
         </Text>
@@ -66,7 +68,8 @@ function Comparison({ template, mine, theirs, name }: { template: Template; mine
 
 /** A list exchanged with the friend: opens to rank it, or to both rankings side by side. */
 function MailEntry({ row, name }: { row: FriendMail; name: string }) {
-  const date = new Date(row.mail.sentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const { t, locale } = useT();
+  const date = new Date(row.mail.sentAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   return (
     <View style={styles.entry}>
       <Clickable
@@ -80,16 +83,16 @@ function MailEntry({ row, name }: { row: FriendMail; name: string }) {
             {row.mail.list.title}
           </Text>
           <Text style={styles.muted}>
-            {row.received ? `Envoyée par ${name}` : 'Envoyée par vous'} le {date}
+            {row.received ? t('social.sentByOn', { name, date }) : t('social.sentByYouOn', { date })}
           </Text>
         </View>
         {row.score !== null ? (
           <View style={styles.score}>
-            <Text style={styles.scoreText}>{row.score} %</Text>
+            <Text style={styles.scoreText}>{t('social.percent', { value: row.score })}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </View>
         ) : (
-          <Text style={styles.cta}>{row.received ? 'À votre tour' : 'Voir'}</Text>
+          <Text style={styles.cta}>{row.received ? t('social.yourTurn') : t('social.see')}</Text>
         )}
       </Clickable>
     </View>
@@ -101,6 +104,7 @@ export default function Friend() {
   // `key`: a list to show compared right away (from a notification).
   const { id, key } = useLocalSearchParams<{ id: string; key?: string }>();
   const insets = useSafeAreaInsets();
+  const { t, upper, locale } = useT();
   const { column, gutter } = useResponsive();
   const profile = useTierStore((s) => s.profile);
   const lists = useTierStore((s) => s.lists);
@@ -140,12 +144,12 @@ export default function Friend() {
 
   const remove = () =>
     data &&
-    Alert.alert('Retirer cet ami ?', `${friendCode(data.profile)} ne verra plus vos classements, et vous non plus les siens.`, [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('social.removeTitle'), t('social.removeBody', { code: friendCode(data.profile) }), [
+      { text: t('social.cancel'), style: 'cancel' },
       {
-        text: 'Retirer',
+        text: t('social.remove'),
         style: 'destructive',
-        onPress: () => removeFriend(profile!.secret, data.profile.id).then(() => router.back(), (e) => Alert.alert('Oups', socialError(e))),
+        onPress: () => removeFriend(profile!.secret, data.profile.id).then(() => router.back(), (e) => Alert.alert(t('social.oops'), socialError(e))),
       },
     ]);
 
@@ -153,12 +157,12 @@ export default function Friend() {
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
       <Stack.Screen
         options={{
-          title: data?.profile.pseudo ?? 'Ami',
+          title: data?.profile.pseudo ?? t('social.friendFallback'),
           headerRight: () =>
             data ? (
               <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                <IconButton icon="flag-outline" label="Signaler ou bloquer ce joueur" onPress={() => confirmReport(data.profile, () => router.back())} />
-                <IconButton icon="person-remove-outline" label="Retirer cet ami" onPress={remove} />
+                <IconButton icon="flag-outline" label={t('social.reportPlayerA11y')} onPress={() => confirmReport(data.profile, () => router.back())} />
+                <IconButton icon="person-remove-outline" label={t('social.removeFriendA11y')} onPress={remove} />
               </View>
             ) : null,
         }}
@@ -186,19 +190,19 @@ export default function Friend() {
                 <Text style={styles.statLabel}>{completedLabel(data.profile.completed)}</Text>
               </Clickable>
               <View style={styles.stat}>
-                <Text style={styles.statValue}>{average === null ? '–' : `${average} %`}</Text>
-                <Text style={styles.statLabel}>d’accord avec vous</Text>
+                <Text style={styles.statValue}>{average === null ? '–' : t('social.percent', { value: average })}</Text>
+                <Text style={styles.statLabel}>{t('social.agreeWithYou')}</Text>
               </View>
               <Clickable
                 accessibilityRole="button"
-                accessibilityLabel={`${scores.length} en commun : afficher seulement les listes classées par vous deux`}
+                accessibilityLabel={t('social.commonA11y', { n: scores.length })}
                 accessibilityState={{ selected: onlyCommon, disabled: scores.length === 0 }}
                 disabled={scores.length === 0}
                 onPress={() => setOnlyCommon((v) => !v)}
                 style={({ pressed }) => [styles.stat, onlyCommon && styles.statOn, pressed && { opacity: 0.85 }]}
               >
                 <Text style={styles.statValue}>{scores.length}</Text>
-                <Text style={styles.statLabel}>en commun</Text>
+                <Text style={styles.statLabel}>{t('social.inCommon')}</Text>
               </Clickable>
             </View>
           </View>
@@ -206,23 +210,23 @@ export default function Friend() {
           <View style={{ gap: spacing.sm }}>
             {onlyCommon ? (
               <View style={styles.filterHead}>
-                <Text style={styles.filterTitle}>Listes en commun</Text>
+                <Text style={styles.filterTitle}>{t('social.commonLists')}</Text>
                 <Clickable accessibilityRole="button" onPress={() => setOnlyCommon(false)} hitSlop={8}>
-                  <Text style={styles.cta}>Tout afficher</Text>
+                  <Text style={styles.cta}>{t('social.showAll')}</Text>
                 </Clickable>
               </View>
             ) : null}
             {entries.length === 0 && mails.length === 0 ? (
               <Text style={styles.muted}>
                 {data.profile.completed > 0
-                  ? `Les listes de ${data.profile.pseudo} ont été classées avec d’autres amis : elles restent privées. Envoyez-lui une liste pour comparer vos classements !`
-                  : `${data.profile.pseudo} n’a encore validé aucune liste.`}
+                  ? t('social.privateLists', { name: data.profile.pseudo })
+                  : t('social.noValidated', { name: data.profile.pseudo })}
               </Text>
             ) : null}
             {shownEntries.map((e) => {
               const expanded = open === e.vote.key;
-              const title = e.template?.title ?? 'Liste retirée';
-              const date = new Date(e.vote.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+              const title = e.template?.title ?? t('social.removedList');
+              const date = new Date(e.vote.at).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
               return (
                 <View key={e.vote.key} style={styles.entry}>
                   <Clickable
@@ -241,15 +245,15 @@ export default function Friend() {
                       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.entryTitle}>
                         {title}
                       </Text>
-                      <Text style={styles.muted}>Validée le {date}</Text>
+                      <Text style={styles.muted}>{t('social.validatedOn', { date })}</Text>
                     </View>
                     {e.score !== null ? (
                       <View style={styles.score}>
-                        <Text style={styles.scoreText}>{e.score} %</Text>
+                        <Text style={styles.scoreText}>{t('social.percent', { value: e.score })}</Text>
                         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
                       </View>
                     ) : e.template ? (
-                      <Text style={styles.cta}>À votre tour</Text>
+                      <Text style={styles.cta}>{t('social.yourTurn')}</Text>
                     ) : null}
                   </Clickable>
                   {expanded && e.template && e.mine ? (
@@ -258,7 +262,7 @@ export default function Friend() {
                 </View>
               );
             })}
-            {shownMails.length > 0 ? <Text style={styles.section}>Entre vous</Text> : null}
+            {shownMails.length > 0 ? <Text style={styles.section}>{upper(t('social.betweenYou'))}</Text> : null}
             {shownMails.map((m) => (
               <MailEntry key={m.mail.id} row={m} name={data.profile.pseudo} />
             ))}
@@ -271,7 +275,7 @@ export default function Friend() {
 
 const styles = StyleSheet.create({
   muted: { color: colors.textMuted, fontSize: 13 },
-  section: { color: colors.textMuted, fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginTop: spacing.sm },
+  section: { color: colors.textMuted, fontSize: 13, fontWeight: '800', letterSpacing: 1, marginTop: spacing.sm },
   filterHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   filterTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
   statOn: { borderWidth: 2, borderColor: colors.primary, paddingVertical: spacing.md - 2 },

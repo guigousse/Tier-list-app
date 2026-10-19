@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Field } from '../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../constants/theme';
 import { fetchSharedList } from '../lib/api';
-import { plural } from '../lib/format';
+import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import { decodeShared, normalizeCode, type SharedList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
@@ -21,6 +21,7 @@ type Lookup = { code: string; status: 'loading' | 'found' | 'missing' | 'offline
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t } = useT();
   const { d, c } = useLocalSearchParams<{ d?: string; c?: string }>();
   const fromLink = Boolean(d || c);
   const [typed, setTyped] = useState('');
@@ -59,11 +60,11 @@ export default function ImportScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[column, { padding: gutter, gap: spacing.xl }]}>
         {!fromLink ? (
           <View style={{ gap: spacing.sm }}>
-            <Text style={styles.intro}>Saisissez le code reçu (6 caractères) ou collez le lien.</Text>
+            <Text style={styles.intro}>{t('editor.import.intro')}</Text>
             <Field
               value={typed}
               onChangeText={setTyped}
-              placeholder="Ex. K7F 3QX"
+              placeholder={t('editor.import.placeholder')}
               autoCorrect={false}
               autoCapitalize="characters"
               autoFocus
@@ -78,7 +79,7 @@ export default function ImportScreen() {
               {shared.title}
             </Text>
             <Text style={styles.meta}>
-              {plural(shared.tiers.length, 'rang')} · {plural(shared.cards.length, 'carte')} · {ranked} classée{ranked > 1 ? 's' : ''}
+              {t('editor.row.tiers', { count: shared.tiers.length })} · {t('editor.import.cards', { count: shared.cards.length })} · {t('editor.import.ranked', { count: ranked })}
             </Text>
             <View style={styles.tiers}>
               {shared.tiers.map((t, i) => (
@@ -90,19 +91,19 @@ export default function ImportScreen() {
               ))}
             </View>
             <Text numberOfLines={4} style={styles.cards}>
-              {shared.cards.map((card) => card.label || 'Carte').join(' · ')}
+              {shared.cards.map((card) => card.label || t('editor.card')).join(' · ')}
             </Text>
-            <Text style={styles.hint}>Les photos des cartes ne sont pas transmises, seuls leurs noms et couleurs le sont.</Text>
+            <Text style={styles.hint}>{t('editor.import.photosHint')}</Text>
           </View>
         ) : current?.status === 'loading' ? (
           <ActivityIndicator color={colors.primary} />
         ) : current?.status === 'missing' ? (
-          <Text style={styles.error}>Aucune tier list ne correspond au code {current.code}.</Text>
+          <Text style={styles.error}>{t('editor.import.notFound', { code: current.code })}</Text>
         ) : current?.status === 'offline' ? (
           <View style={{ gap: spacing.md }}>
-            <Text style={styles.error}>Impossible de récupérer la tier list : vérifiez votre connexion.</Text>
+            <Text style={styles.error}>{t('editor.import.offline')}</Text>
             <Button
-              label="Réessayer"
+              label={t('editor.import.retry')}
               icon="refresh"
               variant="secondary"
               onPress={() => {
@@ -112,13 +113,13 @@ export default function ImportScreen() {
             />
           </View>
         ) : input.trim() && !code ? (
-          <Text style={styles.error}>Ce n’est pas un code ou un lien Tiercraft valide.</Text>
+          <Text style={styles.error}>{t('editor.import.invalid')}</Text>
         ) : null}
       </ScrollView>
 
       <View style={[styles.footer, { paddingHorizontal: gutter, paddingBottom: insets.bottom + spacing.md }]}>
         <View style={column}>
-          <Button label="Ajouter à mes tier lists" icon="download-outline" onPress={add} disabled={!shared} />
+          <Button label={t('editor.import.add')} icon="download-outline" onPress={add} disabled={!shared} />
         </View>
       </View>
     </View>

@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import { useTierStore } from '../store/useTierStore';
 import { publicationTime } from './dailyClock';
+import { t } from './i18n/useT';
 
 // Show the reminder even when the app is open.
 Notifications.setNotificationHandler({
@@ -31,8 +32,9 @@ async function schedule() {
   const at = publicationTime();
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'La tier list du jour est là 🎯',
-      body: 'Classez-la, gardez votre série et comparez-vous aux autres joueurs.',
+      // In the language of the moment: the next opening of the app schedules it again (syncDailyReminder).
+      title: t('app.reminder.title'),
+      body: t('app.reminder.body'),
     },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: at.getHours(), minute: at.getMinutes() },
   });

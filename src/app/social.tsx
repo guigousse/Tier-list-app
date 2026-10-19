@@ -19,10 +19,12 @@ import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
 import { knownBadges, usePendingBadges } from '../lib/badges';
 import { confirmReport, friendCode, parseFriendCode, saveProfile, socialError } from '../lib/social';
 import { pullToRefresh } from '../lib/friendProfile';
+import { useT } from '../lib/i18n/useT';
 import { isToRank, useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 
 function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?: () => void; right?: React.ReactNode }) {
+  const { t } = useT();
   return (
     <Clickable
       accessibilityRole={onPress ? 'button' : undefined}
@@ -36,10 +38,7 @@ function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?
           {player.pseudo}
           <Text style={styles.rowTag}> #{player.tag}</Text>
         </Text>
-        <Text style={styles.rowMeta}>
-          {player.completed} liste{player.completed > 1 ? 's' : ''} complétée
-          {player.completed > 1 ? 's' : ''}
-        </Text>
+        <Text style={styles.rowMeta}>{t('social.listsCompleted', { count: player.completed })}</Text>
       </View>
       {right ?? (onPress ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null)}
     </Clickable>
@@ -58,6 +57,7 @@ function initialTab(param: string | undefined): Tab {
 /** The player's profile: friends, challenges (tier lists sent between friends), rewards and statistics. */
 export default function Social() {
   const insets = useSafeAreaInsets();
+  const { t } = useT();
   const { column, gutter } = useResponsive();
   const profile = useTierStore((s) => s.profile);
   const [data, setData] = useState<Friends | null>(null);
@@ -107,7 +107,7 @@ export default function Social() {
           },
         ]}
       >
-        <Text style={styles.intro}>Créez votre profil de joueur pour ajouter des amis et comparer vos classements.</Text>
+        <Text style={styles.intro}>{t('social.intro')}</Text>
         <ProfileForm onSaved={load} />
       </ScrollView>
     );
@@ -125,7 +125,7 @@ export default function Social() {
       await saveProfile(profile.pseudo, encodeAvatar(c));
       load();
     } catch (e) {
-      Alert.alert('Oups', socialError(e));
+      Alert.alert(t('social.oops'), socialError(e));
     }
   };
 
@@ -133,7 +133,7 @@ export default function Social() {
     const parsed = parseFriendCode(code);
     if (!parsed) {
       setMessage({
-        text: 'Saisissez le pseudo et le numéro, par exemple Guigou#1234.',
+        text: t('social.codeFormatHint'),
         ok: false,
       });
       return;
@@ -143,10 +143,10 @@ export default function Social() {
       setMessage({
         text:
           result === 'accepted'
-            ? 'Vous êtes maintenant amis !'
+            ? t('social.nowFriends')
             : result === 'already_friends'
-              ? 'Vous êtes déjà amis.'
-              : 'Demande envoyée. Elle apparaîtra quand votre ami l’acceptera.',
+              ? t('social.alreadyFriends')
+              : t('social.requestSent'),
         ok: true,
       });
       setCode('');
@@ -161,26 +161,26 @@ export default function Social() {
       await respondFriendRequest(profile.secret, other, accept);
       load();
     } catch (e) {
-      Alert.alert('Oups', socialError(e));
+      Alert.alert(t('social.oops'), socialError(e));
     }
   };
 
   const cancel = (p: PublicProfile) =>
-    Alert.alert('Annuler la demande ?', `${friendCode(p)} ne verra plus votre demande.`, [
-      { text: 'Non', style: 'cancel' },
+    Alert.alert(t('social.cancelRequestTitle'), t('social.cancelRequestBody', { code: friendCode(p) }), [
+      { text: t('social.no'), style: 'cancel' },
       {
-        text: 'Annuler la demande',
+        text: t('social.cancelRequest'),
         style: 'destructive',
         onPress: () => removeFriend(profile.secret, p.id).then(load, () => {}),
       },
     ]);
 
   const unblock = (p: PublicProfile) =>
-    Alert.alert('Débloquer ce joueur ?', `${friendCode(p)} pourra de nouveau vous envoyer une demande d’ami.`, [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('social.unblockTitle'), t('social.unblockBody', { code: friendCode(p) }), [
+      { text: t('social.cancel'), style: 'cancel' },
       {
-        text: 'Débloquer',
-        onPress: () => unblockPlayer(profile.secret, p.id).then(load, (e) => Alert.alert('Oups', socialError(e))),
+        text: t('social.unblock'),
+        onPress: () => unblockPlayer(profile.secret, p.id).then(load, (e) => Alert.alert(t('social.oops'), socialError(e))),
       },
     ]);
 
@@ -204,15 +204,15 @@ export default function Social() {
       ]}
     >
       <View style={styles.me}>
-        <Clickable accessibilityRole="button" accessibilityLabel="Garde-robe : changer de tenue" onPress={dress} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+        <Clickable accessibilityRole="button" accessibilityLabel={t('social.wardrobeA11y')} onPress={dress} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
           <AvatarWithBadges avatar={profile.avatar} seed={profile.id} size={64} badges={knownBadges(shownBadges)} />
         </Clickable>
         <View style={{ flex: 1, gap: 2 }}>
           {/* A tap copies the friend code, to send it. */}
           <Clickable
             accessibilityRole="button"
-            accessibilityLabel={`${myCode}, copier mon code ami`}
-            onPress={() => copyText(myCode, `${myCode} est copié : envoyez-le à vos amis.`)}
+            accessibilityLabel={t('social.copyCodeA11y', { code: myCode })}
+            onPress={() => copyText(myCode, t('social.codeCopied', { code: myCode }))}
             hitSlop={6}
             style={({ pressed }) => [styles.meNameRow, pressed && { opacity: 0.6 }]}
           >
@@ -223,40 +223,40 @@ export default function Social() {
             <Ionicons name="copy-outline" size={16} color={colors.textMuted} />
           </Clickable>
           <Text style={styles.rowMeta}>
-            {data ? `${data.me.completed} liste${data.me.completed > 1 ? 's' : ''} complétée${data.me.completed > 1 ? 's' : ''}` : 'Votre code ami : ' + myCode}
+            {data ? t('social.listsCompleted', { count: data.me.completed }) : t('social.yourCode', { code: myCode })}
           </Text>
         </View>
         <View style={styles.meActions}>
-          <IconButton icon="shirt-outline" label="Garde-robe" onPress={dress} />
-          <IconButton icon="create-outline" label="Modifier le profil" onPress={() => setEditing(true)} />
+          <IconButton icon="shirt-outline" label={t('social.wardrobe')} onPress={dress} />
+          <IconButton icon="create-outline" label={t('social.editProfile')} onPress={() => setEditing(true)} />
         </View>
       </View>
       {data?.me.hidden ? (
-        <Text style={styles.warning}>Votre profil a été masqué après plusieurs signalements : les autres joueurs voient « Joueur signalé ».</Text>
+        <Text style={styles.warning}>{t('social.hiddenWarning')}</Text>
       ) : null}
 
       <View style={styles.tabRow}>
         <View style={styles.tabs} accessibilityRole="tablist">
           {(
             [
-              { key: 'friends', label: 'Amis', badge: data?.incoming.length ?? 0 },
-              { key: 'challenges', label: 'Défis', badge: unread },
+              { key: 'friends', label: t('social.tabFriends'), badge: data?.incoming.length ?? 0 },
+              { key: 'challenges', label: t('social.tabChallenges'), badge: unread },
             ] as const
-          ).map((t) => (
+          ).map((item) => (
             <Clickable
-              key={t.key}
+              key={item.key}
               accessibilityRole="tab"
-              accessibilityState={{ selected: tab === t.key }}
-              accessibilityLabel={t.badge ? `${t.label}, ${t.badge} nouveauté${t.badge > 1 ? 's' : ''}` : t.label}
-              onPress={() => setTab(t.key)}
-              style={[styles.tab, tab === t.key && styles.tabSelected]}
+              accessibilityState={{ selected: tab === item.key }}
+              accessibilityLabel={item.badge ? t('social.tabNews', { label: item.label, count: item.badge }) : item.label}
+              onPress={() => setTab(item.key)}
+              style={[styles.tab, tab === item.key && styles.tabSelected]}
             >
-              <Text numberOfLines={1} style={[styles.tabText, tab === t.key && { color: colors.text }]}>
-                {t.label}
+              <Text numberOfLines={1} style={[styles.tabText, tab === item.key && { color: colors.text }]}>
+                {item.label}
               </Text>
-              {t.badge ? (
+              {item.badge ? (
                 <View style={styles.tabBadge}>
-                  <Text style={styles.tabBadgeText}>{t.badge > 9 ? '9+' : t.badge}</Text>
+                  <Text style={styles.tabBadgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
                 </View>
               ) : null}
             </Clickable>
@@ -265,7 +265,7 @@ export default function Social() {
         {/* Rewards: apart, a trophy — the path is a climb, more than a present. */}
         <Clickable
           accessibilityRole="button"
-          accessibilityLabel={pendingBadges ? `Récompenses, ${pendingBadges} badge${pendingBadges > 1 ? 's' : ''} à choisir` : 'Récompenses'}
+          accessibilityLabel={pendingBadges ? t('social.rewardsPending', { count: pendingBadges }) : t('social.rewards')}
           onPress={() => router.push('/rewards')}
           style={({ pressed }) => [styles.trophy, pressed && { opacity: 0.8 }]}
         >
@@ -283,15 +283,15 @@ export default function Social() {
       ) : (
         <>
           <View style={{ gap: spacing.sm }}>
-            <SectionTitle>Ajouter un ami</SectionTitle>
+            <SectionTitle>{t('social.addFriend')}</SectionTitle>
             <View style={styles.addRow}>
               <TextInput
                 value={code}
-                onChangeText={(t) => {
-                  setCode(t);
+                onChangeText={(text) => {
+                  setCode(text);
                   setMessage(null);
                 }}
-                placeholder="Pseudo#1234"
+                placeholder={t('social.codePlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -301,7 +301,7 @@ export default function Social() {
               />
               <Clickable
                 accessibilityRole="button"
-                accessibilityLabel="Ajouter"
+                accessibilityLabel={t('social.add')}
                 onPress={add}
                 disabled={!code.trim()}
                 style={({ pressed }) => [styles.square, { backgroundColor: colors.primary }, !code.trim() && { opacity: 0.4 }, pressed && { opacity: 0.75 }]}
@@ -310,8 +310,8 @@ export default function Social() {
               </Clickable>
               <Clickable
                 accessibilityRole="button"
-                accessibilityLabel="Inviter un ami sur Tiercraft"
-                onPress={() => shareUrl('Tiercraft', `Ajoute-moi en ami sur Tiercraft : ${myCode}`, `https://${SHARE_HOST}`)}
+                accessibilityLabel={t('social.inviteA11y')}
+                onPress={() => shareUrl('Tiercraft', t('social.inviteMessage', { code: myCode }), `https://${SHARE_HOST}`)}
                 style={({ pressed }) => [styles.square, { backgroundColor: colors.surfaceAlt }, pressed && { opacity: 0.75 }]}
               >
                 <Ionicons name="paper-plane" size={20} color={colors.text} />
@@ -321,23 +321,23 @@ export default function Social() {
           </View>
 
           {offline && !data ? (
-            <Text style={styles.intro}>Pas de connexion : vos amis s’afficheront dès que vous serez en ligne.</Text>
+            <Text style={styles.intro}>{t('social.offlineFriends')}</Text>
           ) : !data ? (
             <ActivityIndicator color={colors.primary} />
           ) : (
             <>
               {data.incoming.length > 0 ? (
                 <View style={{ gap: spacing.sm }}>
-                  <SectionTitle>Demandes reçues</SectionTitle>
+                  <SectionTitle>{t('social.incoming')}</SectionTitle>
                   {data.incoming.map((p) => (
                     <PlayerRow
                       key={p.id}
                       player={p}
                       right={
                         <View style={styles.respond}>
-                          <IconButton icon="flag-outline" label="Signaler ou bloquer" color={colors.textMuted} onPress={() => confirmReport(p, load)} />
-                          <IconButton icon="close" label="Refuser" color={colors.textMuted} onPress={() => respond(p.id, false)} />
-                          <IconButton icon="checkmark" label="Accepter" color="#2EAD6B" onPress={() => respond(p.id, true)} />
+                          <IconButton icon="flag-outline" label={t('social.reportOrBlock')} color={colors.textMuted} onPress={() => confirmReport(p, load)} />
+                          <IconButton icon="close" label={t('social.decline')} color={colors.textMuted} onPress={() => respond(p.id, false)} />
+                          <IconButton icon="checkmark" label={t('social.accept')} color="#2EAD6B" onPress={() => respond(p.id, true)} />
                         </View>
                       }
                     />
@@ -346,9 +346,9 @@ export default function Social() {
               ) : null}
 
               <View style={{ gap: spacing.sm }}>
-                <SectionTitle>Amis{data.friends.length ? ` (${data.friends.length})` : ''}</SectionTitle>
+                <SectionTitle>{data.friends.length ? t('social.friendsN', { n: data.friends.length }) : t('social.tabFriends')}</SectionTitle>
                 {data.friends.length === 0 ? (
-                  <Text style={styles.intro}>Ajoutez un ami avec son code, ou envoyez-lui le vôtre : {myCode}</Text>
+                  <Text style={styles.intro}>{t('social.noFriends', { code: myCode })}</Text>
                 ) : (
                   data.friends.map((p) => (
                     <PlayerRow
@@ -367,12 +367,12 @@ export default function Social() {
 
               {data.outgoing.length > 0 ? (
                 <View style={{ gap: spacing.sm }}>
-                  <SectionTitle>Demandes envoyées</SectionTitle>
+                  <SectionTitle>{t('social.outgoing')}</SectionTitle>
                   {data.outgoing.map((p) => (
                     <PlayerRow
                       key={p.id}
                       player={p}
-                      right={<IconButton icon="close" label="Annuler la demande" color={colors.textMuted} onPress={() => cancel(p)} />}
+                      right={<IconButton icon="close" label={t('social.cancelRequest')} color={colors.textMuted} onPress={() => cancel(p)} />}
                     />
                   ))}
                 </View>
@@ -380,12 +380,12 @@ export default function Social() {
 
               {data.blocked?.length ? (
                 <View style={{ gap: spacing.sm }}>
-                  <SectionTitle>Joueurs bloqués</SectionTitle>
+                  <SectionTitle>{t('social.blocked')}</SectionTitle>
                   {data.blocked.map((p) => (
                     <PlayerRow
                       key={p.id}
                       player={p}
-                      right={<Button variant="secondary" label="Débloquer" onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />}
+                      right={<Button variant="secondary" label={t('social.unblock')} onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />}
                     />
                   ))}
                 </View>
@@ -395,7 +395,7 @@ export default function Social() {
         </>
       )}
 
-      <Sheet visible={editing} onClose={() => setEditing(false)} title="Mon profil">
+      <Sheet visible={editing} onClose={() => setEditing(false)} title={t('social.myProfile')}>
         <ProfileForm
           onSaved={() => {
             setEditing(false);

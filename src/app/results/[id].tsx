@@ -14,9 +14,11 @@ import { Button } from '../../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
 import { fetchDailyResults, fetchListResults, type DailyResults } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
-import { formatDay, plural } from '../../lib/format';
+import { formatDay } from '../../lib/format';
 import { track } from '../../lib/analytics';
 import { fitText } from '../../lib/fitText';
+import { t as translateNow, useT } from '../../lib/i18n/useT';
+import { useLocalizedList } from '../../lib/i18n/useContent';
 import { useResponsive } from '../../lib/layout';
 import { setDailyReminder } from '../../lib/reminders';
 import { dailyStreak } from '../../lib/streak';
@@ -28,8 +30,9 @@ import { own } from '../../lib/own';
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter, cardSize } = useResponsive();
+  const { t, upper, locale } = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const list = useTierStore((s) => own(s.lists, id));
+  const list = useLocalizedList(useTierStore((s) => own(s.lists, id)));
   const allLists = useTierStore((s) => s.lists);
   const [results, setResults] = useState<{ key: string; data?: DailyResults; failed?: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -65,13 +68,14 @@ export default function ResultsScreen() {
     updateSettings({ reminderAsked: true });
     const timer = setTimeout(
       () =>
+        // Read when the alert shows, outside the render: the effect doesn't depend on the language.
         Alert.alert(
-          'Ne ratez aucune tier list du jour',
-          'Recevoir un rappel chaque jour à 12 h 30, quand elle sort ? (modifiable dans les Réglages)',
+          translateNow('app.results.reminderTitle'),
+          translateNow('app.results.reminderBody'),
           [
-            { text: 'Plus tard', style: 'cancel' },
+            { text: translateNow('app.later'), style: 'cancel' },
             {
-              text: 'Oui',
+              text: translateNow('app.results.yes'),
               onPress: async () => {
                 if (await setDailyReminder(true)) useTierStore.getState().updateSettings({ dailyReminder: true });
               },
@@ -86,7 +90,7 @@ export default function ResultsScreen() {
   if (!list || !ranked) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>Cette tier list n’existe plus.</Text>
+        <Text style={styles.muted}>{t('app.results.gone')}</Text>
       </View>
     );
   }
@@ -94,8 +98,8 @@ export default function ResultsScreen() {
   if (!validated) {
     return (
       <View style={[styles.center, { padding: gutter }]}>
-        <Text style={styles.muted}>Validez votre classement pour découvrir celui des autres joueurs.</Text>
-        <Button label="Reprendre le classement" onPress={() => router.replace({ pathname: '/editor/[id]', params: { id: list.id } })} />
+        <Text style={styles.muted}>{t('app.results.validateFirst')}</Text>
+        <Button label={t('app.results.resume')} onPress={() => router.replace({ pathname: '/editor/[id]', params: { id: list.id } })} />
       </View>
     );
   }
@@ -132,14 +136,14 @@ export default function ResultsScreen() {
     (best, c) => (!best || Math.abs(c.mine - c.average) > Math.abs(best.mine - best.average) ? c : best),
     null,
   );
-  const tierLabel = (t: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, Math.round(t)))]?.label ?? '?';
+  const tierLabel = (tier: number) => list.tiers[Math.min(list.tiers.length - 1, Math.max(0, Math.round(tier)))]?.label ?? '?';
 
   // The player's own ranking, tier by tier, for the shared picture.
-  const myRows = list.tiers.map((_, t) => cards.filter((_, i) => mine[i] === t));
+  const myRows = list.tiers.map((_, tier) => cards.filter((_, i) => mine[i] === tier));
   const shareImage = async () => {
     try {
       if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Partage indisponible', 'Le partage n’est pas disponible sur cet appareil.');
+        Alert.alert(t('app.results.shareUnavailableTitle'), t('app.results.shareUnavailableBody'));
         return;
       }
       // 360 × 640 points at the screen's scale: 1080 × 1920 on an iPhone, a story's size.
@@ -147,7 +151,7 @@ export default function ResultsScreen() {
       await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: list.title });
       track('share_image', { kind: list.daily ? 'daily' : list.popular ? 'public' : 'personal' });
     } catch {
-      Alert.alert('Partage impossible', 'L’image n’a pas pu être créée.');
+      Alert.alert(t('app.results.shareFailedTitle'), t('app.results.shareFailedBody'));
     }
   };
 
@@ -158,18 +162,18 @@ export default function ResultsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: spacing.xl }]}>
         <View style={{ gap: 4 }}>
-          <Text style={styles.kicker}>{list.daily ? `Tier list du jour · ${formatDay(list.daily.day)}` : 'Liste publique'}</Text>
+          <Text style={styles.kicker}>{upper(list.daily ? t('app.results.dailyKicker', { day: formatDay(list.daily.day, locale) }) : t('app.results.publicList'))}</Text>
           <Text style={styles.title}>
             {list.emoji ?? list.daily?.emoji} {list.title}
           </Text>
-          {streak > 0 ? <Text style={styles.streak}>🔥 Série : {plural(streak, 'jour')} d’affilée</Text> : null}
+          {streak > 0 ? <Text style={styles.streak}>{t('app.results.streak', { count: streak })}</Text> : null}
         </View>
 
         <View style={styles.tabs} accessibilityRole="tablist">
           {(
             [
-              ['all', 'Tous les joueurs'],
-              ['friends', 'Amis'],
+              ['all', t('app.results.allPlayers')],
+              ['friends', t('app.friends')],
             ] as const
           ).map(([key, label]) => (
             <Clickable
@@ -190,9 +194,9 @@ export default function ResultsScreen() {
           <ActivityIndicator color={colors.primary} />
         ) : current.failed ? (
           <View style={{ gap: spacing.md }}>
-            <Text style={styles.error}>Impossible de charger les résultats : vérifiez votre connexion.</Text>
+            <Text style={styles.error}>{t('app.results.loadFailed')}</Text>
             <Button
-              label="Réessayer"
+              label={t('app.results.retry')}
               icon="refresh"
               variant="secondary"
               onPress={() => {
@@ -205,20 +209,20 @@ export default function ResultsScreen() {
           <>
             {data && data.votes > 1 && agreement !== null ? (
               <View style={styles.score}>
-                <Text style={styles.scoreValue}>{agreement} %</Text>
-                <Text style={styles.scoreLabel}>de correspondance avec les autres personnes</Text>
+                <Text style={styles.scoreValue}>{t('app.percent', { value: agreement })}</Text>
+                <Text style={styles.scoreLabel}>{t('app.results.agreement')}</Text>
                 {original && Math.abs(original.mine - original.average) >= 1 ? (
                   <Text style={styles.scoreDetail}>
-                    Votre choix le plus original : {original.card.label} (vous : {tierLabel(original.mine)}, joueurs : {tierLabel(original.average)})
+                    {t('app.results.original', { card: original.card.label, mine: tierLabel(original.mine), average: tierLabel(original.average) })}
                   </Text>
                 ) : null}
               </View>
             ) : data && data.votes <= 1 ? (
-              <Text style={styles.subtitle}>Vous êtes parmi les premiers à valider : revenez plus tard pour voir l’avis des autres joueurs.</Text>
+              <Text style={styles.subtitle}>{t('app.results.first')}</Text>
             ) : null}
 
             <View style={styles.board}>
-              {list.tiers.map((tier, t) => (
+              {list.tiers.map((tier, row) => (
                 <View key={tier.id} style={styles.row}>
                   <View style={[styles.label, { backgroundColor: tier.color, minHeight: size + 8 }]}>
                     <Text style={[styles.labelText, { color: readableTextColor(tier.color), fontSize: tierFit(tier.label).fontSize }]}>
@@ -226,7 +230,7 @@ export default function ResultsScreen() {
                     </Text>
                   </View>
                   <View style={styles.cards}>
-                    {rows[t].map(({ card }) => (
+                    {rows[row].map(({ card }) => (
                       <CardView key={card.id} card={card} size={size} />
                     ))}
                   </View>
@@ -236,8 +240,8 @@ export default function ResultsScreen() {
 
             <View style={{ gap: spacing.md }}>
               <View style={styles.sectionRow}>
-                <Text style={styles.section}>Détail des votes</Text>
-                {data ? <Text style={styles.sectionHint}>parmi {plural(data.votes, 'répondant')}</Text> : null}
+                <Text style={styles.section}>{t('app.results.votes')}</Text>
+                {data ? <Text style={styles.sectionHint}>{t('app.results.among', { count: data.votes })}</Text> : null}
               </View>
               {detail.map(({ card, index }) => {
                 const counts = data!.items[index].counts;
@@ -249,12 +253,12 @@ export default function ResultsScreen() {
                       <Text style={styles.detailLabel}>
                         {card.label}
                       </Text>
-                      {you ? <Text style={styles.you}>Vous : {you.label}</Text> : null}
+                      {you ? <Text style={styles.you}>{t('app.results.you', { tier: you.label })}</Text> : null}
                     </View>
                     <View style={styles.bar}>
-                      {counts.map((n, t) =>
+                      {counts.map((n, tier) =>
                         n > 0 ? (
-                          <View key={t} style={{ flex: n / votes, backgroundColor: list.tiers[t]?.color ?? colors.border, alignItems: 'center' }}>
+                          <View key={tier} style={{ flex: n / votes, backgroundColor: list.tiers[tier]?.color ?? colors.border, alignItems: 'center' }}>
                             {n / votes >= 0.12 ? <Text style={styles.barText}>{Math.round((n / votes) * 100)}%</Text> : null}
                           </View>
                         ) : null,
@@ -268,22 +272,23 @@ export default function ResultsScreen() {
         )}
       </ScrollView>
       <View style={[styles.actions, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Button style={styles.action} variant="secondary" icon="arrow-back" label="Modifier" onPress={edit} />
-        <Button style={styles.action} variant="secondary" icon="share-outline" label="Partager" onPress={() => setShareOpen(true)} />
-        <Button style={styles.action} icon="arrow-forward" label="Accueil" onPress={home} />
+        <Button style={styles.action} variant="secondary" icon="arrow-back" label={t('app.results.edit')} onPress={edit} />
+        <Button style={styles.action} variant="secondary" icon="share-outline" label={t('app.results.share')} onPress={() => setShareOpen(true)} />
+        <Button style={styles.action} icon="arrow-forward" label={t('app.results.home')} onPress={home} />
       </View>
       {/* The picture for social networks, drawn off screen, captured when shared. */}
       <View style={styles.offscreen} pointerEvents="none">
         <ShareCard ref={shareCard} list={list} rows={myRows} agreement={data && data.votes > 1 && agreement !== null ? agreement : undefined} />
       </View>
-      <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={shareImage} imageLabel="Image pour les réseaux sociaux" />
+      <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={shareImage} imageLabel={t('app.results.shareImage')} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
-  kicker: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Capitals through upper(), not textTransform: Greek capitals drop their accents.
+  kicker: { color: colors.primary, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   title: { color: colors.text, fontSize: 22, fontWeight: '700' },
   muted: { color: colors.textMuted, fontSize: 15, textAlign: 'center' },
   streak: { color: '#FFBF7F', fontSize: 14, fontWeight: '700' },

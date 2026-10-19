@@ -5,7 +5,23 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { TEMPLATES, type Template } from '../constants/presets';
 import { THEMES } from '../lib/themes';
-import { fetchListTops, fetchCardIcons, fetchDaily, fetchDiscovery, fetchPastDailies, fetchTemplateStats, fetchTemplates, type DailyList, type RemoteTemplate, type TemplateStats } from '../lib/api';
+import {
+  fetchListTops,
+  fetchCardIcons,
+  fetchDaily,
+  fetchDiscovery,
+  fetchPastDailies,
+  fetchTemplateStats,
+  fetchTemplates,
+  fetchTranslations,
+  type DailyList,
+  type RemoteTemplate,
+  type TemplateStats,
+} from '../lib/api';
+import { contentText, localizeTemplate, type RemoteTranslations } from '../lib/i18n/content';
+import { currentLanguage, useRegion, useT } from '../lib/i18n/useT';
+import { canVote, featuredIn } from '../lib/i18n/regions';
+import type { TierList } from './types';
 import type { Discovery } from '../lib/discover';
 import type { IconLibrary } from '../lib/publicSync';
 
@@ -23,6 +39,8 @@ type CatalogState = {
   icons: IconLibrary;
   /** Each public list's favourite card, its picture in the catalogue (src/lib/listCover.ts). */
   tops: Record<string, number>;
+  /** The online content in the player's language (none in French, its own language). */
+  translations: RemoteTranslations | null;
   /** Applies a change made on this device right away, before the next refresh. */
   bumpStat: (key: string, field: 'completions' | 'favorites', delta: number) => void;
   /** Fetches the latest templates and daily tier list; keeps the cache on failure. */
@@ -39,6 +57,7 @@ export const useCatalog = create<CatalogState>()(
       discovery: { tags: {}, trends: {} },
       icons: {},
       tops: {},
+      translations: null,
       bumpStat: (key, field, delta) =>
         set((state) => {
           const saved = state.stats[key];
@@ -46,13 +65,15 @@ export const useCatalog = create<CatalogState>()(
           return { stats: { ...state.stats, [key]: { ...current, [field]: Math.max(0, current[field] + delta) } } };
         }),
       refresh: async () => {
-        const [templates, daily, stats, pastDailies, discovery, tops] = await Promise.allSettled([
+        const language = currentLanguage();
+        const [templates, daily, stats, pastDailies, discovery, tops, translations] = await Promise.allSettled([
           fetchTemplates(),
           fetchDaily(),
           fetchTemplateStats(),
           fetchPastDailies(),
           fetchDiscovery(),
           fetchListTops(),
+          language === 'fr' ? Promise.resolve(null) : fetchTranslations(language),
         ]);
         // The concepts are known once the published templates are: asked in a second call.
         const remote = templates.status === 'fulfilled' ? templates.value : get().templates;
@@ -74,6 +95,7 @@ export const useCatalog = create<CatalogState>()(
             ...keep('discovery', discovery),
             ...keep('icons', icons),
             ...keep('tops', tops),
+            ...keep('translations', translations),
           };
           return Object.keys(changed).length ? changed : state;
         });
@@ -93,18 +115,33 @@ export const useCatalog = create<CatalogState>()(
         discovery: state.discovery,
         icons: state.icons,
         tops: state.tops,
+        translations: state.translations,
       }),
     },
   ),
 );
 
+/**
+ * Templates in the player's language. Each keeps its French list as `source`, from which
+ * copies, votes and syncs are made (lib/i18n/content.ts).
+ */
+function useLocalized(templates: Template[]): Template[] {
+  const { language } = useT();
+  const translations = useCatalog((s) => s.translations);
+  return useMemo(
+    () => (language === 'fr' ? templates : templates.map((t) => localizeTemplate(t, contentText(t.key, language, translations)))),
+    [templates, language, translations],
+  );
+}
+
 /** Built-in templates followed by the ones published online (online wins on a shared key). */
 export function useAllTemplates(): Template[] {
   const remote = useCatalog((s) => s.templates);
-  return useMemo(() => {
+  const all = useMemo(() => {
     const keys = new Set(remote.map((t) => t.key));
     return [...TEMPLATES.filter((t) => !keys.has(t.key)), ...remote];
   }, [remote]);
+  return useLocalized(all);
 }
 
 /** Popularity score of a popular tier list: a favourite weighs more than a completed ranking. */
@@ -115,7 +152,15 @@ export function popularity(stats: TemplateStats, key: string): number {
 
 /** Popular tier list made from a past daily tier list. */
 export function dailyTemplate(daily: DailyList): Template {
-  return { key: `daily-${daily.day}`, title: daily.title, emoji: daily.emoji, items: daily.items, day: daily.day };
+  return {
+    key: `daily-${daily.day}`,
+    title: daily.title,
+    emoji: daily.emoji,
+    items: daily.items,
+    day: daily.day,
+    regions: daily.regions,
+    voteRegions: daily.voteRegions,
+  };
 }
 
 /**
@@ -127,11 +172,39 @@ export function usePopularTemplates(): Template[] {
   const stats = useCatalog((s) => s.stats);
   const daily = useCatalog((s) => s.daily);
   const pastDailies = useCatalog((s) => s.pastDailies);
+  const past = useLocalized(useMemo(() => pastDailies.filter((d) => d.day !== daily?.day).map(dailyTemplate), [pastDailies, daily]));
   return useMemo(() => {
-    const templates = [...all, ...pastDailies.filter((d) => d.day !== daily?.day).map(dailyTemplate)];
+    const templates = [...all, ...past];
     return templates
       .map((t, i) => ({ t, i }))
       .sort((a, b) => popularity(stats, b.t.key) - popularity(stats, a.t.key) || a.i - b.i)
       .map(({ t }) => t);
-  }, [all, pastDailies, daily, stats]);
+  }, [all, past, stats]);
+}
+
+/** The popular tier lists put forward to the player: regional ones only in their regions. */
+export function useFeaturedTemplates(): Template[] {
+  const popular = usePopularTemplates();
+  const region = useRegion();
+  return useMemo(() => popular.filter((t) => featuredIn(t, region)), [popular, region]);
+}
+
+/** The countries a daily or popular list's vote is kept to, when the player is not of them. */
+export function keptVote(
+  list: TierList | undefined,
+  templates: Template[],
+  dailies: (DailyList | null)[],
+  region: string | null,
+): string[] | null {
+  const day = list?.daily?.day ?? (list?.popular?.key.startsWith('daily-') ? list.popular.key.slice('daily-'.length) : undefined);
+  const source = day ? dailies.find((d) => d?.day === day) : list?.popular && templates.find((t) => t.key === list.popular!.key);
+  return source && !canVote(source, region) ? (source.voteRegions ?? null) : null;
+}
+
+export function useKeptVote(list: TierList | undefined): string[] | null {
+  const templates = useAllTemplates();
+  const daily = useCatalog((s) => s.daily);
+  const pastDailies = useCatalog((s) => s.pastDailies);
+  const region = useRegion();
+  return useMemo(() => keptVote(list, templates, [daily, ...pastDailies], region), [list, templates, daily, pastDailies, region]);
 }

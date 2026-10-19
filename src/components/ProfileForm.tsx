@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, spacing } from '../constants/theme';
 import { decodeAvatar, encodeAvatar, isAvatarCode, randomAvatar } from '../lib/avatar';
 import { badgeById, knownBadges, showBadges } from '../lib/badges';
+import { useT } from '../lib/i18n/useT';
 import { saveProfile, socialError } from '../lib/social';
 import { useTierStore } from '../store/useTierStore';
 import { Avatar } from './Avatar';
@@ -25,6 +26,7 @@ type Props = {
  * 3 badges pinned on the avatar; the wardrobe has its own button on Profil).
  */
 export function ProfileForm({ onSaved, submitLabel }: Props) {
+  const { t } = useT();
   const profile = useTierStore((s) => s.profile);
   const [pseudo, setPseudo] = useState(profile?.pseudo ?? '');
   // Profiles made before drawn avatars start from a random look.
@@ -67,7 +69,7 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
         ) : (
           <Clickable
             accessibilityRole="button"
-            accessibilityLabel="Personnaliser mon avatar"
+            accessibilityLabel={t('social.customizeAvatar')}
             onPress={edit}
             style={({ pressed }) => [pressed && { opacity: 0.85 }]}
           >
@@ -78,16 +80,16 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
           </Clickable>
         )}
         <Text style={styles.name} numberOfLines={1}>
-          {pseudo.trim() || 'Votre pseudo'}
+          {pseudo.trim() || t('social.yourPseudo')}
           <Text style={styles.tag}>{profile ? ` #${profile.tag}` : ' #····'}</Text>
         </Text>
-        {profile ? null : <Text style={styles.hint}>Un numéro est ajouté à votre pseudo pour que vos amis vous trouvent.</Text>}
+        {profile ? null : <Text style={styles.hint}>{t('social.tagHint')}</Text>}
       </View>
       <Field
-        label="Pseudo"
+        label={t('social.pseudo')}
         value={pseudo}
         onChangeText={setPseudo}
-        placeholder="Ex. Guigou"
+        placeholder={t('social.pseudoPlaceholder')}
         maxLength={20}
         autoCapitalize="none"
         autoCorrect={false}
@@ -96,11 +98,11 @@ export function ProfileForm({ onSaved, submitLabel }: Props) {
       {profile ? (
         <BadgeSlots value={badges} onChange={setBadges} />
       ) : (
-        <Button variant="secondary" icon="color-palette-outline" label="Personnaliser mon avatar" onPress={edit} />
+        <Button variant="secondary" icon="color-palette-outline" label={t('social.customizeAvatar')} onPress={edit} />
       )}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button
-        label={busy ? 'Enregistrement…' : (submitLabel ?? (profile ? 'Enregistrer' : 'Créer mon profil'))}
+        label={busy ? t('social.saving') : (submitLabel ?? (profile ? t('social.save') : t('social.createProfile')))}
         icon="checkmark"
         disabled={!valid || busy}
         onPress={submit}

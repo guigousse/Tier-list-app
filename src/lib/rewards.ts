@@ -1,4 +1,5 @@
-import { AVATAR_PARTS, type AvatarConfig, type Progress } from './avatar';
+import { AVATAR_PARTS, itemLabel, type AvatarConfig, type Progress } from './avatar';
+import { t } from './i18n/useT';
 
 /** `lists`: public tier lists completed. `flame`: consecutive days of the daily tier list. */
 export type Track = 'lists' | 'flame';
@@ -33,6 +34,16 @@ export const PART_LABELS: Record<keyof AvatarConfig, string> = {
   glasses: 'Lunettes',
   bg: 'Fond',
 };
+
+/** An avatar part's name, in the language of the moment (PART_LABELS: the French source). */
+export function partLabel(part: keyof AvatarConfig): string {
+  return t(`play.part.${part}`);
+}
+
+/** A reward's name, in the language of the moment: looked up from its id, never stored. */
+export function rewardLabel(reward: Reward): string {
+  return itemLabel(reward.part, reward);
+}
 
 /**
  * The steps of a path, from the avatar items locked behind it. On the lists path,

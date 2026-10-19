@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { Template } from '../constants/presets';
 import { colors, radius, spacing } from '../constants/theme';
 import { openPopular } from '../lib/create';
+import { useT } from '../lib/i18n/useT';
 import { listCover } from '../lib/listCover';
 import { formatCount, toggleFavorite } from '../lib/popular';
 import { useCatalog } from '../store/useCatalog';
@@ -15,10 +16,11 @@ import { Sticker } from './Sticker';
 const HEART = '#FF5C7A';
 
 const days = new Map<string, string>();
-/** « 13 oct. » for "2026-10-13" (each day formatted once: up to 366 rows). */
-function dayLabel(day: string): string {
-  let label = days.get(day);
-  if (!label) days.set(day, (label = new Date(`${day}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })));
+/** « 13 oct. » for "2026-10-13" in `locale` (each day formatted once per language: up to 366 rows). */
+function dayLabel(day: string, locale: string): string {
+  const key = `${locale}|${day}`;
+  let label = days.get(key);
+  if (!label) days.set(key, (label = new Date(`${day}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'short' })));
   return label;
 }
 const SUCCESS = '#2EAD6B';
@@ -35,18 +37,23 @@ type Props = {
 
 /** A popular tier list on one line: emoji, title, progress, favourites and completed rankings. */
 export const PopularRow = memo(function PopularRow({ template, list, completions, favorites, favorite }: Props) {
+  const { t, locale } = useT();
   const validated = Boolean(list?.popular?.validatedAt ?? list?.daily?.validatedAt);
   const tops = useCatalog((s) => s.tops);
   const icons = useCatalog((s) => s.icons);
   const cover = useMemo(() => listCover(template, tops, icons), [template, tops, icons]);
   const ranked = list ? Object.keys(list.cards).length - list.pool.length : 0;
-  const progress = validated ? 'Validée' : list ? `En cours · ${ranked}/${template.items.length}` : `${template.items.length} cartes`;
-  const status = template.day ? `${progress} · du ${dayLabel(template.day)}` : progress;
+  const progress = validated
+    ? t('app.row.validated')
+    : list
+      ? t('app.row.started', { ranked, total: template.items.length })
+      : t('app.row.cards', { count: template.items.length });
+  const status = template.day ? t('app.row.fromDay', { status: progress, day: dayLabel(template.day, locale) }) : progress;
 
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={`${template.title}, ${status}, ${favorites} favoris, ${completions} classements complétés`}
+      accessibilityLabel={t('app.row.label', { title: template.title, status, favorites, completions })}
       onPress={() => openPopular(template)}
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
     >
@@ -65,7 +72,7 @@ export const PopularRow = memo(function PopularRow({ template, list, completions
           </Text>
           <Clickable
             accessibilityRole="button"
-            accessibilityLabel={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            accessibilityLabel={favorite ? t('app.row.unfavorite') : t('app.row.favorite')}
             hitSlop={8}
             onPress={() => toggleFavorite(template.key)}
             style={styles.stat}

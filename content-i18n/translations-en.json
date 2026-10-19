@@ -1,0 +1,1310 @@
+{
+  "builtin": {
+    "mobile-games": {
+      "title": "Mobile Games",
+      "items": [
+        "Broc: cozy yard sale game",
+        "Clash Royale",
+        "Clash of Clans",
+        "Brawl Stars",
+        "Candy Crush Saga",
+        "Subway Surfers",
+        "Pokémon GO",
+        "Among Us!",
+        "Roblox",
+        "Minecraft",
+        "Geometry Dash",
+        "Monument Valley",
+        "Plants vs. Zombies 2",
+        "Hay Day",
+        "Fruit Ninja"
+      ],
+      "tiers": [
+        "Never deleting it",
+        "Addictive",
+        "Fun",
+        "Got bored fast",
+        "Uninstalled"
+      ]
+    },
+    "fruits": {
+      "title": "Fruits",
+      "items": [
+        "🍎 Apple",
+        "🍌 Banana",
+        "🍓 Strawberry",
+        "🍇 Grapes",
+        "🍉 Watermelon",
+        "🍍 Pineapple",
+        "🥭 Mango",
+        "🍒 Cherry",
+        "🍑 Peach",
+        "🥝 Kiwi",
+        "🍋 Lemon",
+        "🍐 Pear",
+        "🍊 Orange",
+        "🫐 Blueberry",
+        "🍈 Cantaloupe",
+        "🥥 Coconut",
+        "🍓 Raspberry",
+        "🍑 Apricot",
+        "🟣 Fig",
+        "🐉 Dragon fruit",
+        "🟢 Durian",
+        "🍋 Quince",
+        "🍊 Grapefruit",
+        "🔴 Red currant"
+      ],
+      "tiers": [
+        "Heavenly",
+        "Delicious",
+        "Decent",
+        "Meh",
+        "Yuck"
+      ]
+    },
+    "desserts": {
+      "title": "Desserts",
+      "items": [
+        "🍰 Strawberry cake",
+        "🍫 Lava cake",
+        "🍮 Crème brûlée",
+        "🥧 Pie",
+        "🍩 Donut",
+        "🧁 Cupcake",
+        "🍦 Ice cream",
+        "🥞 Crêpes",
+        "🍪 Cookie",
+        "🍨 Tiramisu",
+        "🍫 Chocolate mousse",
+        "🍮 Flan",
+        "🍰 Cheesecake",
+        "🍎 Tarte Tatin",
+        "🍚 Rice pudding",
+        "🧇 Waffle",
+        "🍌 Banana split",
+        "🥮 Brownie",
+        "🍓 Pavlova",
+        "🍮 Floating island",
+        "🥣 Semolina pudding",
+        "🍮 Bread pudding",
+        "🍹 Rum baba",
+        "🍑 Canned fruit"
+      ],
+      "tiers": [
+        "Seconds, please",
+        "Indulgent",
+        "Why not",
+        "Too rich",
+        "I'll pass"
+      ]
+    },
+    "animals": {
+      "title": "Animals",
+      "items": [
+        "🐶 Dog",
+        "🐱 Cat",
+        "🐼 Panda",
+        "🦁 Lion",
+        "🐧 Penguin",
+        "🦊 Fox",
+        "🐨 Koala",
+        "🐬 Dolphin",
+        "🦉 Owl",
+        "🐢 Turtle",
+        "🐘 Elephant",
+        "🦄 Unicorn",
+        "🐰 Bunny",
+        "🐯 Tiger",
+        "🦒 Giraffe",
+        "🦩 Flamingo",
+        "🐙 Octopus",
+        "🦦 Otter",
+        "🐻 Bear",
+        "🦥 Sloth",
+        "🕷️ Spider",
+        "🪳 Cockroach",
+        "🦟 Mosquito",
+        "🐀 Rat",
+        "🪼 Jellyfish"
+      ],
+      "tiers": [
+        "Love at first sight",
+        "Adorable",
+        "Cute",
+        "Weird",
+        "Creepy"
+      ]
+    },
+    "sports": {
+      "title": "Sports",
+      "items": [
+        "⚽ Soccer",
+        "🏀 Basketball",
+        "🎾 Tennis",
+        "🏉 Rugby",
+        "🏐 Volleyball",
+        "🏊 Swimming",
+        "🚴 Cycling",
+        "🥊 Boxing",
+        "⛷️ Skiing",
+        "🏓 Ping-pong",
+        "🏃 Running",
+        "🧗 Climbing",
+        "🏸 Badminton",
+        "🏄 Surfing",
+        "🥋 Judo",
+        "⛳ Golf",
+        "🛹 Skateboarding",
+        "🤾 Handball",
+        "🏇 Horseback riding",
+        "🤺 Fencing"
+      ],
+      "tiers": [
+        "My passion",
+        "Love it",
+        "Worth a try",
+        "Not for me",
+        "Never"
+      ]
+    },
+    "seasons": {
+      "title": "Seasons & Holidays",
+      "items": [
+        "🌸 Spring",
+        "☀️ Summer",
+        "🍂 Fall",
+        "❄️ Winter",
+        "🎄 Christmas",
+        "🎃 Halloween",
+        "🎆 New Year's",
+        "🐣 Easter",
+        "🎂 Birthday",
+        "💘 Valentine's Day",
+        "🎭 Carnival",
+        "🎵 World Music Day",
+        "🇫🇷 Bastille Day",
+        "👑 Epiphany",
+        "🥞 Crêpe Day",
+        "🏖️ Summer vacation",
+        "🎒 Back to school",
+        "💐 Mother's Day",
+        "👔 Father's Day",
+        "🐟 April Fools' Day",
+        "⏰ Daylight saving time",
+        "🧾 Tax Day"
+      ],
+      "tiers": [
+        "Best time of year",
+        "Can't wait",
+        "Nice",
+        "It's fine",
+        "Skip it"
+      ]
+    },
+    "food": {
+      "title": "Food",
+      "items": [
+        "🍕 Pizza",
+        "🍔 Burger",
+        "🍣 Sushi",
+        "🌮 Tacos",
+        "🍝 Pasta",
+        "🥗 Salad",
+        "🍜 Ramen",
+        "🥘 Paella",
+        "🧀 Raclette",
+        "🥐 Croissant",
+        "🌯 Kebab",
+        "🍛 Curry",
+        "🫕 Fondue",
+        "🥧 Quiche",
+        "🍲 Beef stew",
+        "🥟 Dumplings",
+        "🍗 Roast chicken",
+        "🥩 Steak frites",
+        "🥞 Buckwheat crêpe",
+        "🍆 Ratatouille",
+        "🌭 Tripe sausage",
+        "🍲 Tripe",
+        "🐮 Calf's head",
+        "🥫 Canned ravioli"
+      ],
+      "tiers": [
+        "Favorite dish",
+        "A real treat",
+        "Good",
+        "So-so",
+        "Inedible"
+      ]
+    },
+    "vegetables": {
+      "title": "Vegetables",
+      "items": [
+        "🥦 Broccoli",
+        "🥕 Carrot",
+        "🍅 Tomato",
+        "🥒 Cucumber",
+        "🌽 Corn",
+        "🥔 Potato",
+        "🍆 Eggplant",
+        "🫑 Bell pepper",
+        "🧅 Onion",
+        "🥬 Lettuce",
+        "🍄 Mushroom",
+        "🫛 Peas",
+        "🥒 Zucchini",
+        "🎃 Pumpkin",
+        "🥬 Spinach",
+        "🫘 Green beans",
+        "🥬 Brussels sprouts",
+        "🌿 Leek",
+        "🟣 Beet",
+        "🌿 Artichoke",
+        "⚪ Turnip",
+        "🥬 Cooked endive",
+        "🌿 Celery"
+      ],
+      "tiers": [
+        "Going back for more",
+        "Good",
+        "Edible",
+        "If I have to",
+        "Slipped to the dog"
+      ]
+    },
+    "drinks": {
+      "title": "Drinks",
+      "items": [
+        "☕ Coffee",
+        "🍵 Tea",
+        "🧋 Bubble tea",
+        "🥤 Soda",
+        "🧃 Fruit juice",
+        "🥛 Milk",
+        "🍫 Hot chocolate",
+        "💧 Water",
+        "🍋 Lemonade",
+        "🥥 Coconut water",
+        "🧉 Yerba mate",
+        "🍹 Smoothie",
+        "🍊 Orange juice",
+        "🧊 Iced tea",
+        "🥤 Milkshake",
+        "☕ Cappuccino",
+        "🌿 Herbal tea",
+        "🫧 Sparkling water",
+        "🍎 Apple juice",
+        "🍵 Matcha",
+        "🍅 Tomato juice",
+        "☕ Instant coffee",
+        "🫙 Kombucha"
+      ],
+      "tiers": [
+        "Every day",
+        "Gladly",
+        "Now and then",
+        "Just to be polite",
+        "Never"
+      ]
+    },
+    "cheeses": {
+      "title": "Cheeses",
+      "items": [
+        "🧀 Comté",
+        "🧀 Camembert",
+        "🧀 Brie",
+        "🧀 Roquefort",
+        "🧀 Reblochon",
+        "🧀 Goat cheese",
+        "🧀 Emmental",
+        "🧀 Mozzarella",
+        "🧀 Cantal",
+        "🧀 Munster",
+        "🧀 Beaufort",
+        "🧀 Parmesan",
+        "🧀 Feta",
+        "🧀 Raclette",
+        "🧀 Saint-Nectaire",
+        "🧀 Mimolette",
+        "🧀 Mont d'Or",
+        "🧀 Gouda",
+        "🧀 Bleu d'Auvergne",
+        "🧀 Burrata",
+        "🧀 Sliced cheddar",
+        "🧀 Bagged shredded cheese"
+      ],
+      "tiers": [
+        "Heavenly",
+        "Excellent",
+        "Decent",
+        "Meh",
+        "Inedible"
+      ]
+    },
+    "breakfast": {
+      "title": "Breakfast",
+      "items": [
+        "🥐 Croissant",
+        "🍫 Pain au chocolat",
+        "🥖 Buttered toast",
+        "🍯 Honey",
+        "🥞 Pancakes",
+        "🧇 Waffle",
+        "🥣 Cereal",
+        "🍳 Eggs",
+        "🥓 Bacon",
+        "🥑 Avocado toast",
+        "🥯 Bagel",
+        "🍓 Jam",
+        "🍫 Chocolate spread",
+        "🥛 Yogurt",
+        "🥣 Oatmeal",
+        "🍞 Brioche",
+        "🍳 French toast",
+        "🥗 Fruit salad",
+        "🥐 Raisin swirl",
+        "🧀 Croque-monsieur",
+        "🍞 Melba toast",
+        "🥖 Stale bread"
+      ],
+      "tiers": [
+        "Dream wake-up",
+        "Great start",
+        "Fills me up",
+        "Better than nothing",
+        "I'll skip breakfast"
+      ]
+    },
+    "destinations": {
+      "title": "Destinations",
+      "items": [
+        "🇫🇷 France",
+        "🇮🇹 Italy",
+        "🇪🇸 Spain",
+        "🇵🇹 Portugal",
+        "🇬🇷 Greece",
+        "🇯🇵 Japan",
+        "🇺🇸 United States",
+        "🇨🇦 Canada",
+        "🇲🇦 Morocco",
+        "🇹🇭 Thailand",
+        "🇧🇷 Brazil",
+        "🇮🇸 Iceland",
+        "🇬🇧 United Kingdom",
+        "🇲🇽 Mexico",
+        "🇪🇬 Egypt",
+        "🇦🇺 Australia",
+        "🇳🇴 Norway",
+        "🇮🇳 India",
+        "🇨🇭 Switzerland",
+        "🇳🇿 New Zealand"
+      ],
+      "tiers": [
+        "The dream",
+        "Going back",
+        "Why not",
+        "Not tempted",
+        "Not a chance"
+      ]
+    },
+    "boardgames": {
+      "title": "Board Games",
+      "items": [
+        "♟️ Chess",
+        "🎲 Monopoly",
+        "🃏 Uno",
+        "🔤 Scrabble",
+        "🕵️ Clue",
+        "🎴 Checkers",
+        "🧩 Jigsaw puzzle",
+        "🏝️ Catan",
+        "🚂 Ticket to Ride",
+        "🐺 Werewolf",
+        "🎯 Trivial Pursuit",
+        "🀄 Mahjong",
+        "🎲 Yahtzee",
+        "🃏 French Tarot",
+        "🐴 Parcheesi",
+        "🧱 Jenga",
+        "🔴 Connect 4",
+        "⛵ Battleship",
+        "🕵️ Codenames",
+        "🦓 Dixit",
+        "🪿 Game of the Goose",
+        "🃏 War",
+        "🎱 Bingo"
+      ],
+      "tiers": [
+        "One more game!",
+        "Always down",
+        "One round",
+        "If I have to",
+        "Back in the closet"
+      ]
+    },
+    "movie-genres": {
+      "title": "Movie Genres",
+      "items": [
+        "💥 Action",
+        "😂 Comedy",
+        "😱 Horror",
+        "💘 Romance",
+        "🚀 Sci-fi",
+        "🧙 Fantasy",
+        "🕵️ Crime",
+        "🎭 Drama",
+        "🎨 Animation",
+        "📽️ Documentary",
+        "🤠 Western",
+        "🎤 Musical",
+        "🦸 Superhero",
+        "🔪 Thriller",
+        "🏴‍☠️ Adventure",
+        "🪖 War",
+        "📜 Period piece",
+        "🧸 Kids' movie",
+        "🧟 Zombies",
+        "🕰️ Black-and-white movie",
+        "📺 Christmas TV movie",
+        "🦈 So bad it's good"
+      ],
+      "tiers": [
+        "Masterpiece",
+        "My thing",
+        "Depends",
+        "Losing interest",
+        "Next!"
+      ]
+    },
+    "music-genres": {
+      "title": "Music Genres",
+      "items": [
+        "🎸 Rock",
+        "🎤 Rap",
+        "🎹 Classical",
+        "🎷 Jazz",
+        "💃 Pop",
+        "🪩 Electronic",
+        "🤠 Country",
+        "🎺 Funk",
+        "🥁 Metal",
+        "🌴 Reggae",
+        "🎻 Folk",
+        "💿 R&B",
+        "🪩 Disco",
+        "🇫🇷 French chanson",
+        "🎤 K-pop",
+        "🎸 Punk",
+        "🎙️ Soul",
+        "🎶 Blues",
+        "💃 Salsa",
+        "🎧 Lo-fi",
+        "🛗 Elevator music",
+        "📢 Ad jingle"
+      ],
+      "tiers": [
+        "On repeat",
+        "I like it",
+        "Background music",
+        "Skip",
+        "My ears!"
+      ]
+    },
+    "instruments": {
+      "title": "Instruments",
+      "items": [
+        "🎸 Guitar",
+        "🎹 Piano",
+        "🥁 Drums",
+        "🎻 Violin",
+        "🎺 Trumpet",
+        "🎷 Saxophone",
+        "🪕 Banjo",
+        "🪈 Flute",
+        "🪗 Accordion",
+        "🎤 Vocals",
+        "🪘 Djembe",
+        "🎼 Harp",
+        "🎻 Cello",
+        "🎸 Bass",
+        "🎶 Harmonica",
+        "🎹 Synthesizer",
+        "🎺 Trombone",
+        "🎵 Ukulele",
+        "🔔 Xylophone",
+        "🎶 Bagpipes",
+        "🪈 Recorder",
+        "📯 Vuvuzela",
+        "🔺 Triangle",
+        "🎶 Kazoo"
+      ],
+      "tiers": [
+        "Mesmerizing",
+        "Beautiful",
+        "Pleasant",
+        "A bit grating",
+        "Unbearable"
+      ]
+    },
+    "transport": {
+      "title": "Transportation",
+      "items": [
+        "🚗 Car",
+        "🚲 Bike",
+        "🛴 Kick scooter",
+        "🚆 Train",
+        "🚇 Subway",
+        "🚌 Bus",
+        "✈️ Plane",
+        "🚢 Boat",
+        "🏍️ Motorcycle",
+        "🚕 Taxi",
+        "🚡 Cable car",
+        "🚶 Walking",
+        "🚊 Streetcar",
+        "🛵 Scooter",
+        "🚁 Helicopter",
+        "🛶 Kayak",
+        "🎈 Hot-air balloon",
+        "🚐 Camper van",
+        "⛵ Sailboat",
+        "🛼 Roller skates",
+        "🛞 Unicycle",
+        "🫏 Donkey",
+        "🌙 Night bus"
+      ],
+      "tiers": [
+        "Love it",
+        "Handy",
+        "Depends",
+        "A hassle",
+        "Nightmare"
+      ]
+    },
+    "superpowers": {
+      "title": "Superpowers",
+      "items": [
+        "🕊️ Flying",
+        "👻 Invisibility",
+        "⏳ Time travel",
+        "🌀 Teleportation",
+        "🧠 Mind reading",
+        "💪 Super strength",
+        "⚡ Super speed",
+        "🔥 Fire control",
+        "❄️ Ice control",
+        "🗣️ Talking to animals",
+        "♾️ Immortality",
+        "🩹 Healing",
+        "🫧 Breathing underwater",
+        "🔮 Seeing the future",
+        "🧲 Metal control",
+        "🦎 Shapeshifting",
+        "🕸️ Wall-crawling",
+        "🌱 Making plants grow",
+        "🌤️ Weather control",
+        "🗝️ Walking through walls",
+        "🐦 Talking to pigeons",
+        "✨ Glowing in the dark",
+        "🤏 Shrinking for good",
+        "👂 Hearing everything 24/7",
+        "🤧 Sneezing glitter"
+      ],
+      "tiers": [
+        "Sign me up!",
+        "Super useful",
+        "Neat",
+        "Gimmick",
+        "Curse"
+      ]
+    },
+    "weekend": {
+      "title": "Weekend Activities",
+      "items": [
+        "🛋️ Couch & binge-watching",
+        "🥾 Hiking",
+        "🎬 Movies",
+        "🍽️ Eating out",
+        "🛍️ Shopping",
+        "🏖️ Beach",
+        "🎮 Video games",
+        "📚 Reading",
+        "🎉 Hanging with friends",
+        "🧘 Yoga",
+        "🏟️ Game day",
+        "😴 Sleeping in",
+        "🥐 Brunch",
+        "🖼️ Museum",
+        "🎤 Karaoke",
+        "🧹 Cleaning",
+        "🌳 Picnic",
+        "🍳 Cooking",
+        "🏰 Flea market",
+        "🎲 Board games",
+        "🛒 Grocery run",
+        "🧺 Ironing",
+        "📦 Helping a friend move"
+      ],
+      "tiers": [
+        "Perfect weekend",
+        "Gladly",
+        "Weather permitting",
+        "Out of obligation",
+        "Staying in bed"
+      ]
+    },
+    "school": {
+      "title": "School Subjects",
+      "items": [
+        "➗ Math",
+        "📖 French",
+        "🌍 Geography",
+        "🏛️ History",
+        "🇬🇧 English",
+        "🔬 Biology",
+        "⚗️ Physical science",
+        "🎨 Art",
+        "🎵 Music",
+        "⚽ Gym",
+        "💻 Computer science",
+        "🤔 Philosophy",
+        "🇪🇸 Spanish",
+        "🇩🇪 German",
+        "🏛️ Latin",
+        "📈 Economics",
+        "⚖️ Civics",
+        "🛠️ Technology",
+        "🍽️ Cafeteria",
+        "🔔 Recess",
+        "📝 Pop quiz",
+        "⏳ Detention"
+      ],
+      "tiers": [
+        "Favorite subject",
+        "I like it",
+        "It's OK",
+        "A drag",
+        "Nightmare"
+      ]
+    }
+  },
+  "themes": {
+    "cuisine": "Food",
+    "voyages": "Travel",
+    "jeux": "Games",
+    "culture": "Movies & Music",
+    "nature": "Animals & Nature",
+    "fetes": "Seasons & Holidays",
+    "loisirs": "Sports & Hobbies",
+    "imaginaire": "Imagination"
+  },
+  "templates": {
+    "cities-fr": {
+      "title": "French Cities",
+      "items": [
+        "🗼 Paris",
+        "🌉 Lyon",
+        "⚓ Marseille",
+        "🍷 Bordeaux",
+        "🌸 Toulouse",
+        "🌊 Nice",
+        "🥨 Strasbourg",
+        "🐘 Nantes",
+        "🏰 Lille",
+        "🎆 Montpellier",
+        "⛰️ Grenoble",
+        "🦪 Rennes",
+        "🏞️ Annecy",
+        "🏛️ Nîmes",
+        "🍾 Reims",
+        "🌋 Clermont-Ferrand",
+        "🎭 Avignon",
+        "🏄 Biarritz",
+        "🫙 Dijon",
+        "🕰️ Rouen"
+      ],
+      "tiers": [
+        "I'd live there",
+        "Love it",
+        "Weekend trip",
+        "Just passing through",
+        "I avoid it"
+      ]
+    },
+    "pastries": {
+      "title": "Pastries",
+      "items": [
+        "🍰 Strawberry cake",
+        "🍫 Opera cake",
+        "🥧 Lemon tart",
+        "🍮 Paris-Brest",
+        "🧁 Macaron",
+        "🍩 Éclair",
+        "🥐 Mille-feuille",
+        "🍮 Flan",
+        "🍫 Black Forest cake",
+        "🍓 Strawberry tart",
+        "🍯 Kouign-amann",
+        "🍒 Clafoutis",
+        "🎂 Saint-Honoré",
+        "🥮 Canelé",
+        "🍮 Crème brûlée",
+        "🍎 Tarte Tatin",
+        "⛪ Religieuse",
+        "🐚 Madeleine",
+        "🥐 Apple turnover",
+        "🍓 Charlotte",
+        "🍹 Rum baba",
+        "🥧 Prune tart"
+      ],
+      "tiers": [
+        "Queen of pastries",
+        "A real treat",
+        "It's edible",
+        "Too sweet",
+        "You can have mine"
+      ]
+    },
+    "video-game-genres": {
+      "title": "Video Game Genres",
+      "items": [
+        "🗡️ RPG",
+        "🔫 FPS",
+        "🏎️ Racing",
+        "⚽ Sports",
+        "🧩 Puzzle",
+        "🏗️ Management",
+        "👻 Horror",
+        "🕹️ Platformer",
+        "🥊 Fighting",
+        "🌍 Open world",
+        "🎲 Roguelike",
+        "🃏 Card games",
+        "🪓 Survival",
+        "🎵 Rhythm",
+        "🕵️ Stealth",
+        "♟️ Strategy",
+        "🏰 Tower defense",
+        "👾 Arcade",
+        "📖 Narrative",
+        "🌱 Life sim",
+        "🖱️ Clicker",
+        "🎰 Gacha"
+      ],
+      "tiers": [
+        "Game of the year",
+        "Hours sunk in",
+        "Just one game",
+        "Dropped fast",
+        "Controller down"
+      ]
+    }
+  },
+  "daily": {
+    "2026-10-13": {
+      "title": "Pizza Toppings",
+      "description": "The real question: pineapple, S or D?",
+      "items": [
+        "🍍 Pineapple",
+        "🍄 Mushrooms",
+        "🧀 Four cheese",
+        "🌶️ Chorizo",
+        "🫒 Olives",
+        "🥓 Bacon",
+        "🍅 Margherita",
+        "🐟 Anchovies",
+        "🥚 Egg",
+        "🌿 Arugula",
+        "🍗 Chicken",
+        "🧅 Onions"
+      ]
+    },
+    "2026-10-14": {
+      "title": "Seasons of the Year",
+      "description": "Which one deserves the S?",
+      "items": [
+        "🌸 Spring",
+        "☀️ Summer",
+        "🍂 Fall",
+        "❄️ Winter"
+      ]
+    },
+    "2026-10-15": {
+      "title": "Breakfast Pastries",
+      "description": "The breakfast power ranking.",
+      "items": [
+        "🥐 Croissant",
+        "🍫 Pain au chocolat",
+        "🥨 Pretzel",
+        "🍞 Brioche",
+        "🍎 Apple turnover",
+        "🌀 Raisin swirl",
+        "🥯 Bagel",
+        "🧇 Waffle",
+        "🍩 Doughnut",
+        "🥞 Pancake"
+      ]
+    },
+    "2026-10-16": {
+      "title": "Superheroes",
+      "description": "Who really saves the world?",
+      "items": [
+        "🦇 Batman",
+        "🕷️ Spider-Man",
+        "🛡️ Captain America",
+        "🔨 Thor",
+        "🦾 Iron Man",
+        "💚 Hulk",
+        "⚡ Flash",
+        "🌊 Aquaman",
+        "🦸‍♀️ Wonder Woman",
+        "🐈‍⬛ Black Panther",
+        "🧙 Doctor Strange",
+        "🐜 Ant-Man"
+      ]
+    },
+    "2026-10-17": {
+      "title": "Sunday Activities",
+      "description": "What does the perfect Sunday look like?",
+      "items": [
+        "😴 Sleeping in",
+        "🥐 Brunch",
+        "🚶 Going for a walk",
+        "🎬 Movie",
+        "🎮 Video games",
+        "📚 Reading",
+        "🧹 Cleaning",
+        "👨‍👩‍👧 Family dinner",
+        "🏃 Working out",
+        "🛁 Bath"
+      ]
+    },
+    "2026-10-18": {
+      "title": "Sauces",
+      "description": "Ketchup, mayo… or something better?",
+      "items": [
+        "🍅 Ketchup",
+        "🥚 Mayo",
+        "🟡 Mustard",
+        "🔥 Samurai sauce",
+        "🌶️ Harissa",
+        "🧄 Aioli",
+        "🍯 Honey mustard",
+        "🥢 Soy sauce",
+        "🧀 Cheese sauce",
+        "🍖 BBQ sauce",
+        "🥒 Tartar sauce",
+        "🌿 Pesto"
+      ]
+    },
+    "2026-10-19": {
+      "title": "Social Media",
+      "description": "Which one would you keep?",
+      "items": [
+        "📸 Instagram",
+        "🎵 TikTok",
+        "▶️ YouTube",
+        "👻 Snapchat",
+        "🐦 X",
+        "📘 Facebook",
+        "💼 LinkedIn",
+        "📌 Pinterest",
+        "👾 Reddit",
+        "💬 WhatsApp",
+        "🎮 Discord",
+        "🟣 Twitch"
+      ]
+    },
+    "2026-10-20": {
+      "title": "Christmas Desserts",
+      "description": "Getting a head start.",
+      "items": [
+        "🪵 Yule log",
+        "🍪 Shortbread",
+        "🍫 Truffles",
+        "🍊 Clementines",
+        "🥮 Gingerbread",
+        "🍰 Panettone",
+        "🍬 Wrapped chocolates",
+        "🌰 Candied chestnuts",
+        "🧁 Cupcakes",
+        "🍮 Christmas pudding"
+      ]
+    },
+    "2026-10-21": {
+      "title": "Pets",
+      "description": "Who's the best buddy?",
+      "items": [
+        "🐶 Dog",
+        "🐱 Cat",
+        "🐰 Rabbit",
+        "🐹 Hamster",
+        "🐟 Goldfish",
+        "🦜 Parrot",
+        "🐢 Turtle",
+        "🐍 Snake",
+        "🦎 Lizard",
+        "🐴 Horse",
+        "🐭 Mouse",
+        "🦔 Hedgehog"
+      ]
+    },
+    "2026-10-22": {
+      "title": "Card Games",
+      "description": "Who's bringing the deck tonight?",
+      "items": [
+        "🃏 Uno",
+        "♠️ Poker",
+        "🂡 Belote",
+        "🎴 President",
+        "🃁 War",
+        "🐦 Tarot",
+        "🧙 Magic",
+        "🎲 Skyjo",
+        "🦖 Spot It!",
+        "🍀 Solitaire"
+      ]
+    },
+    "2026-10-23": {
+      "title": "Times of Day",
+      "description": "What's your favorite time?",
+      "items": [
+        "🌅 Sunrise",
+        "☕ Breakfast",
+        "🕛 Noon",
+        "😴 Nap",
+        "🍪 Afternoon snack",
+        "🌇 Sunset",
+        "🍽️ Dinner",
+        "🌙 Midnight",
+        "🛌 Bedtime"
+      ]
+    },
+    "2026-10-24": {
+      "title": "Halloween",
+      "description": "What's the scariest?",
+      "items": [
+        "🧛 Vampire",
+        "🧟 Zombie",
+        "👻 Ghost",
+        "🧙‍♀️ Witch",
+        "🎃 Pumpkin",
+        "🕷️ Spider",
+        "🐺 Werewolf",
+        "💀 Skeleton",
+        "🤡 Clown",
+        "🦇 Bat",
+        "🧌 Troll",
+        "🪦 Graveyard"
+      ]
+    },
+    "2026-10-25": {
+      "title": "Raclette Cheeses",
+      "description": "'Tis the season… for raclette.",
+      "items": [
+        "🧀 Plain raclette",
+        "🌶️ Peppercorn raclette",
+        "🍷 White wine",
+        "🌿 Herbed",
+        "🔥 Smoked",
+        "🐐 Goat cheese",
+        "🧀 Morbier",
+        "🧀 Reblochon",
+        "🧀 Blue cheese",
+        "🧀 Comté"
+      ]
+    },
+    "2026-10-26": {
+      "title": "Winter Sports",
+      "description": "Hit the slopes or hot cocoa?",
+      "items": [
+        "⛷️ Skiing",
+        "🏂 Snowboarding",
+        "⛸️ Ice skating",
+        "🛷 Sledding",
+        "🥾 Snowshoeing",
+        "🏒 Hockey",
+        "🧗 Ice climbing",
+        "🎿 Cross-country skiing",
+        "☕ Cocoa in the lodge",
+        "🧖 Spa"
+      ]
+    },
+    "2026-10-27": {
+      "title": "School Lunches",
+      "description": "Cafeteria flashbacks.",
+      "items": [
+        "🐟 Fish sticks",
+        "🍝 Lasagna",
+        "🥔 Mashed potatoes",
+        "🥕 Shredded carrots",
+        "🍮 Flan",
+        "🍖 Shepherd's pie",
+        "🌽 Tabbouleh",
+        "🥦 Broccoli",
+        "🍗 Cordon bleu",
+        "🍚 Rice pudding",
+        "🥧 Quiche",
+        "🍫 Chocolate mousse"
+      ]
+    },
+    "2026-10-28": {
+      "title": "Animated Movies",
+      "description": "What's the best cartoon ever?",
+      "items": [
+        "🦁 The Lion King",
+        "🧸 Toy Story",
+        "🐠 Finding Nemo",
+        "❄️ Frozen",
+        "👹 Shrek",
+        "🏠 Up",
+        "🐀 Ratatouille",
+        "🤖 WALL-E",
+        "🐉 How to Train Your Dragon",
+        "👻 Spirited Away",
+        "🦸 The Incredibles",
+        "🕷️ Spider-Verse"
+      ]
+    },
+    "2026-10-29": {
+      "title": "Hot Drinks",
+      "description": "For chilly evenings.",
+      "items": [
+        "☕ Coffee",
+        "🍵 Green tea",
+        "🫖 Black tea",
+        "🍫 Hot chocolate",
+        "🌿 Herbal tea",
+        "🥛 Warm milk",
+        "🍷 Mulled wine",
+        "🧉 Yerba mate",
+        "🥥 Chai latte",
+        "🍯 Honey milk"
+      ]
+    },
+    "2026-10-30": {
+      "title": "Chores",
+      "description": "What's the worst chore?",
+      "items": [
+        "🧽 Dishes",
+        "👕 Ironing",
+        "🧺 Laundry",
+        "🚽 Cleaning the toilet",
+        "🪟 Windows",
+        "🧹 Vacuuming",
+        "🗑️ Taking out the trash",
+        "🛏️ Making the bed",
+        "🍳 Cooking",
+        "🛒 Grocery shopping",
+        "🧊 Defrosting the freezer",
+        "🐈 Litter box"
+      ]
+    },
+    "2026-10-31": {
+      "title": "Candy",
+      "description": "Halloween special.",
+      "items": [
+        "🐻 Gummy bears",
+        "🍓 Strawberry gummies",
+        "🍭 Lollipop",
+        "🍬 Caramel",
+        "🍫 Chocolate bar",
+        "🐍 Gummy worms",
+        "🧸 Marshmallow",
+        "🍒 Gummy cherries",
+        "🌈 Sour belts",
+        "🦷 Bubble gum",
+        "🍋 Sour candy",
+        "🥜 Nougat"
+      ]
+    },
+    "2026-11-01": {
+      "title": "Days of the Week",
+      "description": "The best day, no debate.",
+      "items": [
+        "😩 Monday",
+        "🌮 Tuesday",
+        "🐪 Wednesday",
+        "🍻 Thursday",
+        "🎉 Friday",
+        "🛍️ Saturday",
+        "🛋️ Sunday"
+      ]
+    },
+    "2026-11-02": {
+      "title": "Fall Vegetables",
+      "description": "Fresh from the fall garden.",
+      "items": [
+        "🎃 Pumpkin",
+        "🥔 Potato",
+        "🥕 Carrot",
+        "🥬 Cabbage",
+        "🧅 Leek",
+        "🍠 Sweet potato",
+        "🌰 Chestnut",
+        "🍄 Mushroom",
+        "🥦 Broccoli",
+        "🫜 Beet",
+        "🧄 Garlic",
+        "🌱 Spinach"
+      ]
+    },
+    "2026-11-03": {
+      "title": "Public Transit",
+      "description": "Which ride is the nicest?",
+      "items": [
+        "🚇 Subway",
+        "🚌 Bus",
+        "🚊 Streetcar",
+        "🚆 Regional train",
+        "🚄 High-speed train",
+        "⛴️ Ferry",
+        "🚡 Cable car",
+        "🚲 Bike share",
+        "🛴 Kick scooter",
+        "🚕 Taxi"
+      ]
+    },
+    "2026-11-04": {
+      "title": "Little Joys",
+      "description": "The things that make your day.",
+      "items": [
+        "☀️ Winter sunshine",
+        "🛏️ Clean sheets",
+        "📦 A package arrives",
+        "🎶 Favorite song",
+        "🍪 Smell of baking",
+        "😺 Cat cuddles",
+        "🌧️ Rain outside, cozy in",
+        "📖 A good book",
+        "🧦 Warm socks",
+        "🍕 Surprise pizza"
+      ]
+    },
+    "2026-11-05": {
+      "title": "Instruments",
+      "description": "The one you dream of playing.",
+      "items": [
+        "🎸 Guitar",
+        "🎹 Piano",
+        "🥁 Drums",
+        "🎻 Violin",
+        "🎷 Saxophone",
+        "🎺 Trumpet",
+        "🪕 Banjo",
+        "🪗 Accordion",
+        "🪈 Flute",
+        "🪘 Djembe",
+        "🎤 Vocals",
+        "🎼 Harp"
+      ]
+    },
+    "2026-11-06": {
+      "title": "Fast Food",
+      "description": "What's your go-to order?",
+      "items": [
+        "🍔 Burger",
+        "🍟 Fries",
+        "🌯 Kebab",
+        "🌮 Tacos",
+        "🍕 Pizza",
+        "🍗 Fried chicken",
+        "🍣 Sushi",
+        "🥪 Sandwich",
+        "🌭 Hot dog",
+        "🥡 Stir-fry noodles",
+        "🥙 Falafel",
+        "🍜 Ramen"
+      ]
+    },
+    "2026-11-07": {
+      "title": "Dream Jobs",
+      "description": "If you could start all over.",
+      "items": [
+        "🚀 Astronaut",
+        "👩‍🍳 Chef",
+        "🎮 Game tester",
+        "🏝️ Tour guide",
+        "🐬 Marine biologist",
+        "🎬 Movie director",
+        "⚽ Soccer player",
+        "🎨 Artist",
+        "🏛️ Archaeologist",
+        "🧑‍✈️ Pilot",
+        "📚 Bookstore owner",
+        "🍫 Chocolatier"
+      ]
+    },
+    "2026-11-08": {
+      "title": "Fairy Tales",
+      "description": "Once upon a time, the best one…",
+      "items": [
+        "👠 Cinderella",
+        "🍎 Snow White",
+        "🌹 Beauty and the Beast",
+        "🧜 The Little Mermaid",
+        "🐺 Little Red Riding Hood",
+        "🐷 The Three Little Pigs",
+        "🍬 Hansel and Gretel",
+        "👢 Puss in Boots",
+        "😴 Sleeping Beauty",
+        "🫛 The Princess and the Pea"
+      ]
+    },
+    "2026-11-09": {
+      "title": "Pasta",
+      "description": "Shape matters.",
+      "items": [
+        "🍝 Spaghetti",
+        "🌀 Fusilli",
+        "🎀 Farfalle",
+        "🧵 Tagliatelle",
+        "🐚 Conchiglie",
+        "🥟 Ravioli",
+        "🍲 Lasagna",
+        "📏 Penne",
+        "🧀 Gnocchi",
+        "🥣 Elbows",
+        "🔁 Macaroni",
+        "🌾 Linguine"
+      ]
+    },
+    "2026-11-10": {
+      "title": "Must-Have Apps",
+      "description": "The ones you'd never delete.",
+      "items": [
+        "🗺️ Maps",
+        "🎵 Music",
+        "📸 Camera",
+        "💬 Messages",
+        "🌦️ Weather",
+        "🏦 Banking",
+        "📺 Streaming",
+        "🛒 Groceries",
+        "🚗 Carpooling",
+        "📝 Notes",
+        "⏰ Alarm",
+        "🎧 Podcasts"
+      ]
+    },
+    "2026-11-11": {
+      "title": "Holiday Feasts",
+      "description": "The dish that makes the holidays.",
+      "items": [
+        "🦃 Turkey",
+        "🦪 Oysters",
+        "🍤 Shrimp",
+        "🥩 Foie gras",
+        "🧀 Cheese platter",
+        "🍾 Champagne",
+        "🐟 Smoked salmon",
+        "🍖 Leg of lamb",
+        "🥘 Fondue",
+        "🔥 Raclette",
+        "🦞 Lobster",
+        "🍰 Yule log"
+      ]
+    }
+  }
+}

@@ -11,6 +11,7 @@ import { colors, radius, spacing } from '../constants/theme';
 import { imageCredits, wordCredits } from '../lib/aiGenerate';
 import { BURST, coinTimes, counterAt } from '../lib/celebration';
 import { openWallet, useCredits } from '../lib/credits';
+import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import { bonusPercent, buy, openShop, PACKS, type Pack, useShop } from '../lib/shop';
 import { playCoin, playThunder } from '../lib/sound';
@@ -27,7 +28,8 @@ const PACK_ART = [
 /** What a full list costs: 10 cards written and illustrated, a yardstick for the packs. */
 const LIST = wordCredits(10) + imageCredits(10);
 
-const euros = (price: number) => price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+// Until the App Store gives its price: euros, written the player's way.
+const euros = (price: number, locale: string) => price.toLocaleString(locale, { style: 'currency', currency: 'EUR' });
 
 type Point = { x: number; y: number };
 
@@ -35,6 +37,7 @@ type Point = { x: number; y: number };
 export default function Store() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t, locale } = useT();
   const balance = useCredits((s) => s.balance);
   const { prices, buying, message, celebration } = useShop();
   useEffect(() => {
@@ -66,12 +69,12 @@ export default function Store() {
     });
     playThunder();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    for (const t of coinTimes()) {
+    for (const at of coinTimes()) {
       timers.push(
         setTimeout(() => {
           playCoin();
           Haptics.selectionAsync().catch(() => {});
-        }, t),
+        }, at),
       );
     }
     timers.push(
@@ -104,7 +107,7 @@ export default function Store() {
     <View ref={root} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}>
         <View style={styles.balance}>
-          <Text style={styles.balanceLabel}>Votre énergie</Text>
+          <Text style={styles.balanceLabel}>{t('app.store.balance')}</Text>
           <Animated.View ref={counter} style={pulseStyle}>
             {/* While the bolts fly, still the old balance: the server's new one is counted up to. */}
             <EnergyAmount amount={shown ?? (celebration ? celebration.from : balance)} size={26} style={styles.balanceValue} />
@@ -122,7 +125,7 @@ export default function Store() {
             key={pack.id}
             pack={pack}
             rank={i}
-            price={prices[pack.id] ?? euros(pack.price)}
+            price={prices[pack.id] ?? euros(pack.price, locale)}
             busy={buying === pack.id}
             disabled={buying !== null}
             artRef={(v) => {
@@ -133,8 +136,8 @@ export default function Store() {
 
         <Text style={styles.note}>
           {Platform.OS === 'ios'
-            ? `Paiement par l’App Store. L’énergie ne périme pas et reste après une réinstallation de l’app. Une liste de 10 cartes écrites et illustrées en coûte ${LIST}.\n\nEn achetant, vous acceptez que l’usage de votre énergie soit communiqué à Apple en cas de demande de remboursement.`
-            : 'Les packs d’énergie s’achètent pour le moment depuis l’app iPhone.'}
+            ? t('app.store.noteIos', { cost: LIST })
+            : t('app.store.noteOther')}
         </Text>
       </ScrollView>
       {burst ? <PurchaseBurst key={burst.key} from={burst.from} to={burst.to} /> : null}
@@ -157,13 +160,14 @@ function PackRow({
   disabled: boolean;
   artRef: (view: View | null) => void;
 }) {
+  const { t, locale } = useT();
   const bonus = bonusPercent(pack);
   const lists = Math.floor(pack.credits / LIST);
   return (
     <View style={[styles.pack, pack.tag ? styles.packTagged : null]}>
       {pack.tag ? (
         <View style={styles.tag}>
-          <Text style={styles.tagText}>{pack.tag}</Text>
+          <Text style={styles.tagText}>{t(`app.store.tag.${pack.tag}`)}</Text>
         </View>
       ) : null}
       {/* Drawn in the icons' style: one more bolt per pack, and hotter, up to the fireball. */}
@@ -171,15 +175,15 @@ function PackRow({
         <Image source={PACK_ART[rank]} style={[styles.art, { transform: [{ scale: 0.86 + rank * 0.06 }] }]} accessibilityIgnoresInvertColors />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.credits}>{pack.credits.toLocaleString('fr-FR')}</Text>
+        <Text style={styles.credits}>{pack.credits.toLocaleString(locale)}</Text>
         <Text style={styles.detail}>
-          ≈ {lists} liste{lists > 1 ? 's' : ''} illustrée{lists > 1 ? 's' : ''}
+          {t('app.store.lists', { count: lists })}
         </Text>
-        {bonus > 0 ? <Text style={styles.bonus}>+{bonus} % offerts</Text> : <Text style={styles.detail}>Pour essayer</Text>}
+        {bonus > 0 ? <Text style={styles.bonus}>{t('app.store.bonus', { bonus })}</Text> : <Text style={styles.detail}>{t('app.store.trial')}</Text>}
       </View>
       <Clickable
         accessibilityRole="button"
-        accessibilityLabel={`Acheter ${pack.credits} crédits d’énergie pour ${price}`}
+        accessibilityLabel={t('app.store.buy', { credits: pack.credits, price })}
         accessibilityState={{ disabled, busy }}
         disabled={disabled || Platform.OS !== 'ios'}
         onPress={() => buy(pack.id)}

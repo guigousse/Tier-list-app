@@ -1,4 +1,5 @@
 import { FORKS, type Fork } from './badges';
+import { t } from './i18n/useT';
 import { milestones, type Reward, type Track } from './rewards';
 
 /**
@@ -35,7 +36,7 @@ export function crossedSteps(track: Track, from: number, to: number, choices: Re
   return events.sort((a, b) => a.at - b.at || ORDER[a.kind] - ORDER[b.kind]);
 }
 
-/** Said under the sticker chosen at a VS: the team's reason to be. */
+/** Said under the sticker chosen at a VS: the team's reason to be (French source; shown through teamLine). */
 export const TEAM_LINES: Record<string, string> = {
   pizza: 'Une part de bonheur, à partager (ou pas).',
   burger: 'Double cheddar, zéro regret.',
@@ -55,7 +56,8 @@ export const TEAM_LINES: Record<string, string> = {
   ninja: 'Silencieux, rapide, invisible.',
 };
 
-export const teamLine = (badgeId: string) => TEAM_LINES[badgeId] ?? '';
+/** The team's line in the language of the moment; nothing for a badge this app doesn't know. */
+export const teamLine = (badgeId: string) => (TEAM_LINES[badgeId] ? t(`play.team.${badgeId}`) : '');
 
 export type Celebrated = { lists: number; flame: number };
 

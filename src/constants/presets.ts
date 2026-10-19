@@ -27,7 +27,18 @@ export type Template = {
   concepts?: string[];
   /** Grand theme the list is shown under in the gallery of public tier lists. */
   theme?: string;
+  /**
+   * Set on a template translated for display (lib/i18n/content.ts): the French list it
+   * shows. Copies, votes and the public list's sync are always made from the source.
+   */
+  source?: Template;
+  /** Online lists: where they are put forward, and who may vote (lib/i18n/regions.ts). */
+  regions?: string[];
+  voteRegions?: string[];
 };
+
+/** The French list behind a template, translated for display or not. */
+export const sourceOf = (template: Template): Template => template.source ?? template;
 
 /**
  * A public list written card by card: its name and the concept of its image in the

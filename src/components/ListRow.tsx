@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
-import { plural, relativeTime } from '../lib/format';
+import { relativeTime } from '../lib/format';
+import { useT } from '../lib/i18n/useT';
 import { leadingEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
 import type { TierList } from '../store/types';
@@ -53,7 +54,7 @@ function ListPreview({ list }: { list: TierList }) {
 export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: Props) {
   const total = Object.keys(list.cards).length;
   const ranked = total - list.pool.length;
-  const verb = timestampKey === 'openedAt' ? 'Ouverte' : 'Modifiée';
+  const { t } = useT();
   return (
     <View style={styles.row}>
       <Clickable
@@ -71,15 +72,15 @@ export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: P
             </Text>
           </View>
           <Text style={[styles.meta, onMore && styles.besideMore]}>
-            {plural(list.tiers.length, 'rang')} · {ranked}/{total} classées
+            {t('editor.row.tiers', { count: list.tiers.length })} · {t('editor.row.ranked', { ranked, total })}
           </Text>
           <Text style={[styles.meta, onMore && styles.besideMore]}>
-            {verb} {relativeTime(list[timestampKey])}
+            {t(timestampKey === 'openedAt' ? 'editor.row.opened' : 'editor.row.updated', { time: relativeTime(list[timestampKey]) })}
           </Text>
         </View>
         {onMore ? null : <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />}
       </Clickable>
-      {onMore ? <IconButton icon="ellipsis-horizontal" label="Options" onPress={onMore} color={colors.textMuted} style={styles.more} /> : null}
+      {onMore ? <IconButton icon="ellipsis-horizontal" label={t('editor.options')} onPress={onMore} color={colors.textMuted} style={styles.more} /> : null}
     </View>
   );
 }

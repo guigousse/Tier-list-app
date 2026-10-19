@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { FORKS, knownBadges } from '../../lib/badges';
+import { badgeLabel, FORKS, knownBadges } from '../../lib/badges';
+import { useT } from '../../lib/i18n/useT';
 import { useTierStore } from '../../store/useTierStore';
 import { BadgeIcon } from '../BadgeIcon';
 
 /** The 3 badges shown on the profile; they are chosen in « Mon profil », next to the pseudo. */
 export function MyBadges() {
+  const { t } = useT();
   const choices = useTierStore((s) => s.badgeChoices);
   const shown = useTierStore((s) => s.shownBadges);
 
@@ -15,11 +17,11 @@ export function MyBadges() {
   const first = FORKS[0];
 
   return (
-    <View style={styles.card} accessible accessibilityLabel={`Mes badges : ${visible.length ? visible.map((b) => b.label).join(', ') : 'aucun'}`}>
+    <View style={styles.card} accessible accessibilityLabel={t('play.badges.mineA11y', { list: visible.length ? visible.map(badgeLabel).join(', ') : t('play.badges.none') })}>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.title}>Mes badges</Text>
+        <Text style={styles.title}>{t('play.badges.mine')}</Text>
         <Text numberOfLines={2} style={styles.hint}>
-          {won === 0 ? `Premier badge au palier ${first.at}` : 'À changer dans Profil › Modifier le profil'}
+          {won === 0 ? t('play.badges.first', { at: first.at }) : t('play.badges.changeIn')}
         </Text>
       </View>
       <View style={styles.slots}>

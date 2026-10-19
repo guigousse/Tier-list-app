@@ -6,22 +6,24 @@ import { create } from 'zustand';
 import { useTierStore } from '../store/useTierStore';
 import { aiPurchase } from './api';
 import { setBalance, walletForRequest } from './credits';
+import { t } from './i18n/useT';
 
 /**
  * The energy shop: packs bought in the App Store, credited by the server once it has
  * checked Apple's signature on the transaction (supabase/functions/ai-generate/
  * purchase.ts, same packs). Prices are shown as the App Store gives them, in the
  * player's currency; `price` is the French one, for the bonus and before the store answers.
+ * `tag` names the ribbon (its text is `app.store.tag.<tag>`, in the player's language).
  */
-export type Pack = { id: string; credits: number; price: number; tag?: string };
+export type Pack = { id: string; credits: number; price: number; tag?: 'mostChosen' | 'bestPrice' };
 
 export const PACKS: Pack[] = [
   { id: 'tiercraft.energy.60', credits: 60, price: 0.99 },
   { id: 'tiercraft.energy.200', credits: 200, price: 2.99 },
   // The one the eye should land on: twice the way in, a real bonus already.
-  { id: 'tiercraft.energy.360', credits: 360, price: 4.99, tag: 'Le plus choisi' },
+  { id: 'tiercraft.energy.360', credits: 360, price: 4.99, tag: 'mostChosen' },
   { id: 'tiercraft.energy.800', credits: 800, price: 9.99 },
-  { id: 'tiercraft.energy.1750', credits: 1750, price: 19.99, tag: 'Meilleur prix' },
+  { id: 'tiercraft.energy.1750', credits: 1750, price: 19.99, tag: 'bestPrice' },
 ];
 
 /** Credits a pack gives beyond the 0.99 € one's rate, in percent. */
@@ -53,7 +55,7 @@ export async function deliver(purchase: Purchase): Promise<void> {
   try {
     result = await aiPurchase(useTierStore.getState().deviceId, await walletForRequest(), jws);
   } catch {
-    useShop.setState({ buying: null, message: 'Achat reçu : les crédits arriveront au prochain lancement de l’app, une fois la connexion revenue.' });
+    useShop.setState({ buying: null, message: t('app.shop.pending') });
     return;
   }
   const { balance, credited, credits } = result;
@@ -68,7 +70,7 @@ export async function deliver(purchase: Purchase): Promise<void> {
   setBalance(balance);
   useShop.setState({
     buying: null,
-    message: credited ? `+${credits} crédits d’énergie ajoutés.` : null,
+    message: credited ? t('app.shop.credited', { credits }) : null,
     // Counted from the balance before this purchase, which the server's answer gives.
     celebration: credited && finished ? { packId: purchase.productId, from: balance - credits, to: balance, key: Date.now() } : null,
   });
@@ -98,7 +100,7 @@ export function openShop(): Promise<void> {
     });
     Iap.purchaseErrorListener((e) => {
       const cancelled = e.code === Iap.ErrorCode.UserCancelled;
-      useShop.setState({ buying: null, message: cancelled ? null : 'L’achat n’a pas pu aboutir : rien n’a été débité.' });
+      useShop.setState({ buying: null, message: cancelled ? null : t('app.shop.failed') });
     });
     const products = await Iap.fetchProducts({ skus: PACKS.map((p) => p.id), type: 'in-app' });
     const prices: Record<string, string> = {};

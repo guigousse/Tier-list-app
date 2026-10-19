@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../constants/theme';
+import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import { TierStrip } from './TierStrip';
 import { IconButton } from './ui';
@@ -15,6 +16,7 @@ import { IconButton } from './ui';
 export function AppHeader({ navigation, options, back, route }: NativeStackHeaderProps) {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t } = useT();
   const modal = options.presentation === 'modal' || options.presentation === 'formSheet';
   const title = typeof options.headerTitle === 'string' ? options.headerTitle : (options.title ?? route.name);
   const goBack = () => (navigation.canGoBack() ? navigation.goBack() : router.replace('/'));
@@ -24,7 +26,7 @@ export function AppHeader({ navigation, options, back, route }: NativeStackHeade
       <View style={[column, styles.inner, { paddingHorizontal: gutter }]}>
         <View style={styles.row}>
           <View style={styles.side}>
-            {back || !modal ? <IconButton icon={modal ? 'close' : 'chevron-back'} label={modal ? 'Fermer' : 'Retour'} onPress={goBack} size={26} /> : null}
+            {back || !modal ? <IconButton icon={modal ? 'close' : 'chevron-back'} label={modal ? t('app.close') : t('app.back')} onPress={goBack} size={26} /> : null}
           </View>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title} accessibilityRole="header">
             {title}

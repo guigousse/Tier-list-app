@@ -8,6 +8,7 @@ import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
 import { splitEmoji } from '../../lib/emoji';
+import { useT } from '../../lib/i18n/useT';
 import { useResponsive } from '../../lib/layout';
 import { confirmRerank, openReceived } from '../../lib/mail';
 import { isSameList } from '../../lib/sentRanks';
@@ -15,12 +16,12 @@ import { mailAgreement, useMail } from '../../store/useMail';
 import { useTierStore } from '../../store/useTierStore';
 
 function TierChip({ tier, tiers }: { tier: number | undefined; tiers: { label: string; color: string }[] }) {
-  const t = tier !== undefined && tier >= 0 ? tiers[tier] : undefined;
-  if (!t) return <View style={[styles.chip, { backgroundColor: colors.surfaceAlt }]} />;
+  const shown = tier !== undefined && tier >= 0 ? tiers[tier] : undefined;
+  if (!shown) return <View style={[styles.chip, { backgroundColor: colors.surfaceAlt }]} />;
   return (
-    <View style={[styles.chip, { backgroundColor: t.color }]}>
-      <Text numberOfLines={1} style={[styles.chipText, { color: readableTextColor(t.color) }]}>
-        {t.label.slice(0, 3)}
+    <View style={[styles.chip, { backgroundColor: shown.color }]}>
+      <Text numberOfLines={1} style={[styles.chipText, { color: readableTextColor(shown.color) }]}>
+        {shown.label.slice(0, 3)}
       </Text>
     </View>
   );
@@ -30,6 +31,7 @@ function TierChip({ tier, tiers }: { tier: number | undefined; tiers: { label: s
 export default function MailComparison() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const { t, upper } = useT();
   const { column, gutter } = useResponsive();
   const profile = useTierStore((s) => s.profile);
   const received = useMail((s) => s.inbox.find((m) => m.id === id));
@@ -55,7 +57,7 @@ export default function MailComparison() {
   if (!mail || !profile) {
     return (
       <View style={styles.center}>
-        {loaded ? <Text style={styles.muted}>Cette liste n’est plus disponible.</Text> : <ActivityIndicator color={colors.primary} />}
+        {loaded ? <Text style={styles.muted}>{t('social.listGone')}</Text> : <ActivityIndicator color={colors.primary} />}
       </View>
     );
   }
@@ -78,14 +80,14 @@ export default function MailComparison() {
         <View style={styles.player}>
           <Avatar avatar={profile.avatar} seed={profile.id} size={72} />
           <Text numberOfLines={1} style={styles.playerName}>
-            Vous
+            {t('social.you')}
           </Text>
         </View>
         <View style={styles.score}>
           {score !== null ? (
             <>
-              <Text style={styles.scoreValue}>{score} %</Text>
-              <Text style={styles.scoreLabel}>d’accord</Text>
+              <Text style={styles.scoreValue}>{t('social.percent', { value: score })}</Text>
+              <Text style={styles.scoreLabel}>{t('social.agree')}</Text>
             </>
           ) : (
             <Ionicons name="hourglass-outline" size={32} color={colors.textMuted} />
@@ -103,40 +105,40 @@ export default function MailComparison() {
         <View style={{ gap: spacing.sm }}>
           <Text style={styles.summary}>
             {same === list.cards.length
-              ? 'Exactement le même classement !'
-              : `Même rang pour ${same} carte${same > 1 ? 's' : ''} sur ${list.cards.length}.`}
+              ? t('social.sameRanking')
+              : t('social.sameTier', { count: same, total: list.cards.length })}
           </Text>
           {mail.auto ? (
             <Text style={styles.note}>
               {received
-                ? 'Vous aviez déjà classé cette liste : votre classement a été repris.'
-                : `${friend.pseudo} avait déjà classé cette liste : son classement a été repris.`}
+                ? t('social.autoMine')
+                : t('social.autoTheirs', { name: friend.pseudo })}
             </Text>
           ) : null}
-          {received && unranked(theirs) ? <Text style={styles.note}>{friend.pseudo} n’a pas encore classé toutes les cartes de sa liste.</Text> : null}
-          {received ? <Button variant="ghost" icon="refresh" label="Reclasser" onPress={() => confirmRerank(mail)} /> : null}
+          {received && unranked(theirs) ? <Text style={styles.note}>{t('social.theirsIncomplete', { name: friend.pseudo })}</Text> : null}
+          {received ? <Button variant="ghost" icon="refresh" label={t('social.rerank')} onPress={() => confirmRerank(mail)} /> : null}
         </View>
       ) : received ? (
         <View style={{ gap: spacing.md }}>
-          <Text style={styles.summary}>Classez cette liste pour découvrir le classement de {friend.pseudo}.</Text>
-          <Button icon="reorder-four-outline" label="Classer la liste" onPress={() => openReceived(mail)} />
+          <Text style={styles.summary}>{t('social.rankToSee', { name: friend.pseudo })}</Text>
+          <Button icon="reorder-four-outline" label={t('social.rankList')} onPress={() => openReceived(mail)} />
         </View>
       ) : (
-        <Text style={styles.summary}>{friend.pseudo} n’a pas encore classé cette liste.</Text>
+        <Text style={styles.summary}>{t('social.notRankedYet', { name: friend.pseudo })}</Text>
       )}
       {ownCopy ? (
         <View style={{ gap: spacing.sm }}>
-          <Text style={styles.note}>Vous n’avez pas classé toutes les cartes : {friend.pseudo} comparera avec votre classement dès que vous l’aurez validé.</Text>
-          <Button icon="reorder-four-outline" label="Classer ma liste" onPress={() => router.push({ pathname: '/editor/[id]', params: { id: ownCopy.id } })} />
+          <Text style={styles.note}>{t('social.ownCopyNote', { name: friend.pseudo })}</Text>
+          <Button icon="reorder-four-outline" label={t('social.rankMyList')} onPress={() => router.push({ pathname: '/editor/[id]', params: { id: ownCopy.id } })} />
         </View>
       ) : null}
 
       <View style={styles.table}>
         <View style={styles.head}>
-          <Text style={[styles.headLabel, { flex: 1, textAlign: 'left' }]}>Carte</Text>
-          <Text style={[styles.headLabel, styles.col]}>Vous</Text>
+          <Text style={[styles.headLabel, { flex: 1, textAlign: 'left' }]}>{upper(t('social.card'))}</Text>
+          <Text style={[styles.headLabel, styles.col]}>{upper(t('social.you'))}</Text>
           <Text numberOfLines={1} style={[styles.headLabel, styles.col]}>
-            {friend.pseudo}
+            {upper(friend.pseudo)}
           </Text>
         </View>
         {list.cards.map((card, i) => {
@@ -146,7 +148,7 @@ export default function MailComparison() {
             <View key={i} style={[styles.row, match && styles.rowMatch]}>
               <Text style={styles.cardLabel}>
                 {emoji ? `${emoji} ` : ''}
-                {text || card.label || 'Carte'}
+                {text || card.label || t('social.card')}
               </Text>
               {match ? <Ionicons name="checkmark" size={14} color="#2EAD6B" /> : null}
               <View style={styles.col}>
@@ -176,7 +178,7 @@ const styles = StyleSheet.create({
   note: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18, fontStyle: 'italic' },
   table: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  headLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' },
+  headLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   col: { width: 64, alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, minHeight: 44 },
   rowMatch: { backgroundColor: 'rgba(46, 173, 107, 0.08)' },

@@ -9,29 +9,34 @@ import { ThemeGallery } from '../components/ThemeGallery';
 import type { Template } from '../constants/presets';
 import { Chip } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
+import { useT } from '../lib/i18n/useT';
+import { useThemeTitle } from '../lib/i18n/useContent';
 import { useResponsive } from '../lib/layout';
 import { popularShown, searchIndex, type PopularFilter } from '../lib/popularSearch';
 import { cardUrls, preloadCovers } from '../lib/preload';
 import { groupByTheme, themeOf } from '../lib/themes';
-import { useCatalog, usePopularTemplates } from '../store/useCatalog';
+import { useCatalog, useFeaturedTemplates } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 
 type Filter = PopularFilter;
 type Sort = 'popular' | 'title';
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all', label: 'Toutes' },
-  { key: 'favorites', label: 'Favoris' },
-  { key: 'todo', label: 'À classer' },
-  { key: 'started', label: 'En cours' },
-  { key: 'validated', label: 'Validées' },
+// Text keys: the labels are read in the language of the moment.
+const FILTERS: { key: Filter; labelKey: string }[] = [
+  { key: 'all', labelKey: 'app.popular.all' },
+  { key: 'favorites', labelKey: 'app.favorites' },
+  { key: 'todo', labelKey: 'app.popular.todo' },
+  { key: 'started', labelKey: 'app.popular.started' },
+  { key: 'validated', labelKey: 'app.popular.validated' },
 ];
 
 /** Every public tier list: grand themes first, then search, filters and sorting. */
 export default function Popular() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
-  const templates = usePopularTemplates();
+  const { t, locale } = useT();
+  const themeName = useThemeTitle();
+  const templates = useFeaturedTemplates();
   const copies = usePopularCopies();
   const favorites = useTierStore((s) => s.favoriteTemplates);
   const [query, setQuery] = useState('');
@@ -57,8 +62,9 @@ export default function Popular() {
         sort,
         theme: theme ?? undefined,
         tags,
+        locale,
       }),
-    [templates, index, copies, favorites, query, filter, sort, theme, tags],
+    [templates, index, copies, favorites, query, filter, sort, theme, tags, locale],
   );
   const groups = useMemo(
     () =>
@@ -84,13 +90,13 @@ export default function Popular() {
   const opened = theme ? themeOf(theme) : undefined;
 
   const renderItem = useCallback<ListRenderItem<Template>>(
-    ({ item: t }) => (
+    ({ item }) => (
       <PopularRow
-        template={t}
-        list={copies(t)}
-        completions={stats[t.key]?.completions ?? 0}
-        favorites={stats[t.key]?.favorites ?? 0}
-        favorite={favorites.includes(t.key)}
+        template={item}
+        list={copies(item)}
+        completions={stats[item.key]?.completions ?? 0}
+        favorites={stats[item.key]?.favorites ?? 0}
+        favorite={favorites.includes(item.key)}
       />
     ),
     [copies, stats, favorites],
@@ -104,7 +110,7 @@ export default function Popular() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Rechercher une liste ou une carte"
+          placeholder={t('app.popular.search')}
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           returnKeyType="search"
@@ -114,14 +120,14 @@ export default function Popular() {
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         {FILTERS.map((f) => (
-          <Chip key={f.key} label={f.label} selected={filter === f.key} onPress={() => setFilter(f.key)} />
+          <Chip key={f.key} label={t(f.labelKey)} selected={filter === f.key} onPress={() => setFilter(f.key)} />
         ))}
       </ScrollView>
       {opened ? (
         <View style={styles.themeRow}>
-          <Chip label="‹ Thématiques" onPress={() => setTheme(null)} />
+          <Chip label={t('app.popular.themes')} onPress={() => setTheme(null)} />
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.themeTitle}>
-            {opened.emoji} {opened.title}
+            {opened.emoji} {themeName(opened.key, opened.title)}
           </Text>
         </View>
       ) : null}
@@ -130,11 +136,11 @@ export default function Popular() {
       ) : (
         <View style={styles.sortRow}>
           <Text style={styles.count}>
-            {shown.length} liste{shown.length > 1 ? 's' : ''}
+            {t('app.listCount', { count: shown.length })}
           </Text>
           <View style={styles.chips}>
-            <Chip label="Populaires" selected={sort === 'popular'} onPress={() => setSort('popular')} />
-            <Chip label="A → Z" selected={sort === 'title'} onPress={() => setSort('title')} />
+            <Chip label={t('app.popular.popular')} selected={sort === 'popular'} onPress={() => setSort('popular')} />
+            <Chip label={t('app.popular.alphabetical')} selected={sort === 'title'} onPress={() => setSort('title')} />
           </View>
         </View>
       )}
@@ -145,14 +151,14 @@ export default function Popular() {
   return (
     <FlatList
       data={gallery ? EMPTY : shown}
-      keyExtractor={(t) => t.key}
+      keyExtractor={(item) => item.key}
       renderItem={renderItem}
       ListHeaderComponent={header}
       ListEmptyComponent={
         gallery ? null : (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              {filter === 'favorites' && !query ? 'Touchez le cœur d’une liste pour la retrouver ici.' : 'Aucune liste ne correspond.'}
+              {filter === 'favorites' && !query ? t('app.popular.noFavorites') : t('app.popular.noMatch')}
             </Text>
           </View>
         )

@@ -10,6 +10,8 @@
  * tier lists completed).
  */
 
+import { t } from './i18n/useT';
+
 export type Unlock = { streak: number } | { completed: number };
 
 type Item = { id: string; label: string; unlock?: Unlock };
@@ -262,10 +264,21 @@ export function isUnlocked(item: { unlock?: Unlock }, progress: Progress): boole
   return progress.completed >= item.unlock.completed;
 }
 
-/** "Flamme de 7 jours" / "10 listes publiques". */
+/** "Flamme de 7 jours" / "10 listes publiques", in the language of the moment. */
 export function unlockLabel(unlock: Unlock): string {
-  if ('streak' in unlock) return `Flamme de ${unlock.streak} jour${unlock.streak > 1 ? 's' : ''}`;
-  return `${unlock.completed} liste${unlock.completed > 1 ? 's' : ''} publique${unlock.completed > 1 ? 's' : ''}`;
+  if ('streak' in unlock) return t('play.unlock.streak', { count: unlock.streak });
+  return t('play.unlock.completed', { count: unlock.completed });
+}
+
+/**
+ * An item's name, in the language of the moment. The id is what the avatar code
+ * stores (and the server checks): the name is looked up from it, `label` (French) is
+ * kept only as the source text, for an item with no translation yet.
+ */
+export function itemLabel(part: keyof AvatarConfig, item: { id: string; label: string }): string {
+  const key = `play.avatar.${part}.${item.id}`;
+  const text = t(key);
+  return text === key ? item.label : text;
 }
 
 // ——— Drawing (viewBox 0 0 120 120) ———

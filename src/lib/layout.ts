@@ -29,15 +29,20 @@ export function useResponsive() {
   };
 }
 
-/** Width of a bold character, as a share of the font size (measured on a tier label). */
+/**
+ * Width of a bold character, as a share of the font size, measured on a tier label: up to
+ * 0.59 for the Latin letters, 0.66 for the Greek ones ("Μπλιαχ").
+ */
 const BOLD_CHAR = 0.6;
+const BOLD_GREEK = 0.7;
 
 /**
  * Font size of a tier label in a column `width` wide (padding taken off): the longest
  * word must fit on one line, or it is cut in the middle ("encha / ntée"), which the
- * text's own shrinking doesn't prevent. Never below 11, where it stops being read.
+ * text's own shrinking doesn't prevent. Never below 9: smaller, it stops being read;
+ * 11 cut "Désinstallé" and "Insupportable" already.
  */
 export function tierLabelFontSize(label: string, width: number): number {
-  const longest = Math.max(1, ...label.split(/\s+/).map((w) => w.length));
-  return Math.max(11, Math.min(20, Math.floor(width / (longest * BOLD_CHAR))));
+  const widest = Math.max(1, ...label.split(/\s+/).map((w) => w.length * (/[\u0370-\u03ff]/.test(w) ? BOLD_GREEK : BOLD_CHAR)));
+  return Math.max(9, Math.min(20, Math.floor(width / widest)));
 }
