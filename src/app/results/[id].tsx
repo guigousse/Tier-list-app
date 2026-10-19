@@ -17,6 +17,7 @@ import { syncDailyVotes } from '../../lib/daily';
 import { formatDay } from '../../lib/format';
 import { fitText } from '../../lib/fitText';
 import { t as translateNow, useT } from '../../lib/i18n/useT';
+import { useLocalizedList } from '../../lib/i18n/useContent';
 import { useResponsive } from '../../lib/layout';
 import { setDailyReminder } from '../../lib/reminders';
 import { dailyStreak } from '../../lib/streak';
@@ -30,7 +31,7 @@ export default function ResultsScreen() {
   const { column, gutter, cardSize } = useResponsive();
   const { t, upper, locale } = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const list = useTierStore((s) => own(s.lists, id));
+  const list = useLocalizedList(useTierStore((s) => own(s.lists, id)));
   const allLists = useTierStore((s) => s.lists);
   const [results, setResults] = useState<{ key: string; data?: DailyResults; failed?: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);

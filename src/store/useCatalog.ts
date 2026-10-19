@@ -18,8 +18,8 @@ import {
   type RemoteTemplate,
   type TemplateStats,
 } from '../lib/api';
-import type { RemoteTranslations } from '../lib/i18n/content';
-import { currentLanguage } from '../lib/i18n/useT';
+import { contentText, localizeTemplate, type RemoteTranslations } from '../lib/i18n/content';
+import { currentLanguage, useT } from '../lib/i18n/useT';
 import type { Discovery } from '../lib/discover';
 import type { IconLibrary } from '../lib/publicSync';
 
@@ -119,13 +119,27 @@ export const useCatalog = create<CatalogState>()(
   ),
 );
 
+/**
+ * Templates in the player's language. Each keeps its French list as `source`, from which
+ * copies, votes and syncs are made (lib/i18n/content.ts).
+ */
+function useLocalized(templates: Template[]): Template[] {
+  const { language } = useT();
+  const translations = useCatalog((s) => s.translations);
+  return useMemo(
+    () => (language === 'fr' ? templates : templates.map((t) => localizeTemplate(t, contentText(t.key, language, translations)))),
+    [templates, language, translations],
+  );
+}
+
 /** Built-in templates followed by the ones published online (online wins on a shared key). */
 export function useAllTemplates(): Template[] {
   const remote = useCatalog((s) => s.templates);
-  return useMemo(() => {
+  const all = useMemo(() => {
     const keys = new Set(remote.map((t) => t.key));
     return [...TEMPLATES.filter((t) => !keys.has(t.key)), ...remote];
   }, [remote]);
+  return useLocalized(all);
 }
 
 /** Popularity score of a popular tier list: a favourite weighs more than a completed ranking. */
@@ -148,11 +162,12 @@ export function usePopularTemplates(): Template[] {
   const stats = useCatalog((s) => s.stats);
   const daily = useCatalog((s) => s.daily);
   const pastDailies = useCatalog((s) => s.pastDailies);
+  const past = useLocalized(useMemo(() => pastDailies.filter((d) => d.day !== daily?.day).map(dailyTemplate), [pastDailies, daily]));
   return useMemo(() => {
-    const templates = [...all, ...pastDailies.filter((d) => d.day !== daily?.day).map(dailyTemplate)];
+    const templates = [...all, ...past];
     return templates
       .map((t, i) => ({ t, i }))
       .sort((a, b) => popularity(stats, b.t.key) - popularity(stats, a.t.key) || a.i - b.i)
       .map(({ t }) => t);
-  }, [all, pastDailies, daily, stats]);
+  }, [all, past, stats]);
 }

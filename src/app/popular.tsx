@@ -10,6 +10,7 @@ import type { Template } from '../constants/presets';
 import { Chip } from '../components/ui';
 import { colors, radius, spacing } from '../constants/theme';
 import { useT } from '../lib/i18n/useT';
+import { useThemeTitle } from '../lib/i18n/useContent';
 import { useResponsive } from '../lib/layout';
 import { popularShown, searchIndex, type PopularFilter } from '../lib/popularSearch';
 import { cardUrls, preloadCovers } from '../lib/preload';
@@ -34,6 +35,7 @@ export default function Popular() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const { t, locale } = useT();
+  const themeName = useThemeTitle();
   const templates = usePopularTemplates();
   const copies = usePopularCopies();
   const favorites = useTierStore((s) => s.favoriteTemplates);
@@ -125,7 +127,7 @@ export default function Popular() {
         <View style={styles.themeRow}>
           <Chip label={t('app.popular.themes')} onPress={() => setTheme(null)} />
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.themeTitle}>
-            {opened.emoji} {opened.title}
+            {opened.emoji} {themeName(opened.key, opened.title)}
           </Text>
         </View>
       ) : null}

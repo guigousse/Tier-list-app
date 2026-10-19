@@ -1,4 +1,4 @@
-import type { Template } from '../../constants/presets';
+import { sourceOf, type Template } from '../../constants/presets';
 import type { TierList } from '../../store/types';
 import type { Language } from './index';
 import el from '../../../content-i18n/translations-el.json';
@@ -56,6 +56,7 @@ export function localizeTemplate(template: Template, text: ContentText | undefin
   if (!text) return template;
   return {
     ...template,
+    source: sourceOf(template),
     title: text.title ?? template.title,
     items: pick(template.items, text.items),
     tiers: template.tiers && pick(template.tiers, text.tiers),

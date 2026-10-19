@@ -23,6 +23,7 @@ import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated, useTierStore } from '../store/useTierStore';
 import { openShop } from '../lib/shop';
 import { t as translateNow, useT } from '../lib/i18n/useT';
+import { useTranslationsFollowLanguage } from '../lib/i18n/useContent';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -45,6 +46,7 @@ export default function RootLayout() {
   const hydrated = useHydrated();
   // Screen titles read at render: they follow a language changed in the settings.
   const { t } = useT();
+  useTranslationsFollowLanguage();
 
   useEffect(() => {
     if (!hydrated) return;

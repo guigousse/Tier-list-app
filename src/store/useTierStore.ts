@@ -7,7 +7,7 @@ import { persist } from 'zustand/middleware';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
-import { CLASSIC_TIERS, tierColorAt, type Template } from '../constants/presets';
+import { CLASSIC_TIERS, sourceOf, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
@@ -153,7 +153,8 @@ export function rankingOf(list: TierList, cardIds: string[]): number[] | null {
 }
 
 /** Statistics key of a popular list: its template key and a hash of its cards. */
-export function popularVoteKey(template: Template): string {
+export function popularVoteKey(shown: Template): string {
+  const template = sourceOf(shown);
   let h = 5381;
   for (const ch of template.items.join('\n')) h = ((h * 33) ^ ch.codePointAt(0)!) >>> 0;
   return `popular:${template.key}:${h.toString(36)}`;
@@ -509,7 +510,8 @@ export const useTierStore = create<State>()(
           return true;
         },
 
-        createPopularList: (template, icons = {}) => {
+        createPopularList: (shown, icons = {}) => {
+          const template = sourceOf(shown);
           const id = get().createList({
             title: template.title,
             tierLabels: publicTiers(template),
@@ -531,7 +533,7 @@ export const useTierStore = create<State>()(
         syncPopular: (listId, template, icons) =>
           set((state) => {
             const list = own(state.lists, listId);
-            const next = list && syncedCopy(list, template, icons);
+            const next = list && syncedCopy(list, sourceOf(template), icons);
             return next ? { lists: { ...state.lists, [listId]: next } } : state;
           }),
 

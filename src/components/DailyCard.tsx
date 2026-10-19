@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, with
 
 import { radius, spacing } from '../constants/theme';
 import { useT } from '../lib/i18n/useT';
+import { useContentText } from '../lib/i18n/useContent';
 import { dailyStreak } from '../lib/streak';
 import { useCatalog } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
@@ -18,6 +19,7 @@ const SHINE_WIDTH = 80;
 export function DailyCard() {
   const { t, upper } = useT();
   const daily = useCatalog((s) => s.daily);
+  const text = useContentText();
   const existing = useTierStore((s) => (daily ? Object.values(s.lists).find((l) => l.daily?.day === daily.day) : undefined));
   const lists = useTierStore((s) => s.lists);
   const streak = useMemo(() => dailyStreak(Object.values(lists)), [lists]);
@@ -40,6 +42,7 @@ export function DailyCard() {
   const nudgeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: nudge.value }] }));
 
   if (!daily) return null;
+  const title = text(`daily-${daily.day}`)?.title ?? daily.title;
   const validated = Boolean(existing?.daily?.validatedAt);
 
   const open = () => {
@@ -54,7 +57,7 @@ export function DailyCard() {
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={t('app.daily.label', { title: daily.title })}
+      accessibilityLabel={t('app.daily.label', { title })}
       accessibilityHint={validated ? t('app.daily.hintResults') : t('app.daily.hintRank')}
       onPress={open}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
@@ -74,7 +77,7 @@ export function DailyCard() {
       <View style={{ flex: 1 }}>
         <Text style={styles.kicker}>{upper(t('app.dailyList'))}{streak > 0 ? `  ·  🔥 ${streak}` : ''}</Text>
         <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
-          {daily.title}
+          {title}
         </Text>
       </View>
       <View style={[styles.action, validated && styles.actionDone]}>

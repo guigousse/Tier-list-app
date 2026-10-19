@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 
-import { CLASSIC_TIERS, type Template } from '../constants/presets';
+import { CLASSIC_TIERS, sourceOf, type Template } from '../constants/presets';
 import { useCatalog } from '../store/useCatalog';
 import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
@@ -28,7 +28,9 @@ export function createAndOpen(template?: Template): void {
 }
 
 /** Opens the player's copy of a popular tier list, creating it the first time. */
-export function openPopular(template: Template): void {
+export function openPopular(shown: Template): void {
+  // Opened from a translated gallery: the copy, its vote and its app icons go by the French list.
+  const template = sourceOf(shown);
   const store = useTierStore.getState();
   const voteKey = popularVoteKey(template);
   const lists = Object.values(store.lists);

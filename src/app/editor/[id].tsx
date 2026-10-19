@@ -34,6 +34,7 @@ import { Clickable } from '../../components/Clickable';
 import { own } from '../../lib/own';
 import { MAX_TITLE } from '../../lib/listTitle';
 import { useT } from '../../lib/i18n/useT';
+import { useLocalizedList } from '../../lib/i18n/useContent';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
@@ -41,7 +42,8 @@ const noop = () => {};
 export default function EditorScreen() {
   // `edit`: a list just created opens in edit mode, to name it and add its cards.
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
-  const list = useTierStore((s) => own(s.lists, id));
+  // Daily and popular lists read in the player's language; the save keeps the French labels.
+  const list = useLocalizedList(useTierStore((s) => own(s.lists, id)));
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
   const { cardSize } = useResponsive();

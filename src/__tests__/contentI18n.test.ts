@@ -78,6 +78,18 @@ describe('content translations', () => {
     expect(localizeList(list, undefined)).toBe(list);
   });
 
+  it('makes the player’s copy from the French source even when opened from a translated gallery', () => {
+    const shown = localizeTemplate(fruits, contentText('fruits', 'el'));
+    expect(popularVoteKey(shown)).toBe(popularVoteKey(fruits));
+    const id = useTierStore.getState().createPopularList(shown, {});
+    const list = useTierStore.getState().lists[id];
+    expect(list.title).toBe(fruits.title);
+    expect(list.popular!.cardIds.map((cid) => list.cards[cid].label)).toEqual(fruits.items);
+    useTierStore.getState().syncPopular(id, shown, {});
+    const synced = useTierStore.getState().lists[id];
+    expect(Object.values(synced.cards).map((c) => c.label).sort()).toEqual([...fruits.items].sort());
+  });
+
   it('names the themes in each language', () => {
     expect(themeTitle('cuisine', 'fr')).toBeUndefined();
     expect(themeTitle('cuisine', 'en')).toBeTruthy();

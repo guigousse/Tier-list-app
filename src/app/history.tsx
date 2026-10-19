@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../constants/theme';
 import { formatDay } from '../lib/format';
 import { useT } from '../lib/i18n/useT';
+import { useLocalizeList } from '../lib/i18n/useContent';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
@@ -16,6 +17,7 @@ export default function History() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const { t, upper, locale } = useT();
+  const localize = useLocalizeList();
   const lists = useTierStore((s) => s.lists);
   const validated = useMemo(
     () => Object.values(lists).filter((l) => l.daily?.validatedAt).sort((a, b) => b.daily!.day.localeCompare(a.daily!.day)),
@@ -30,7 +32,8 @@ export default function History() {
       ListEmptyComponent={
         <Text style={styles.empty}>{t('app.history.empty')}</Text>
       }
-      renderItem={({ item }) => {
+      renderItem={({ item: saved }) => {
+        const item = localize(saved);
         const top = (item.placement[item.tiers[0]?.id] ?? []).map((cid) => item.cards[cid]?.label).filter(Boolean);
         return (
           <Clickable
