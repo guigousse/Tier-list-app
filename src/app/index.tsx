@@ -25,6 +25,7 @@ import { useMail, useUnreadMail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
 import { useT } from '../lib/i18n/useT';
+import { hasPot, useReferrals } from '../lib/referrals';
 
 /** Size of the player's avatar next to the buttons. */
 const ME = 84;
@@ -54,6 +55,7 @@ function Tile({ icon, title, badge = 0, onPress }: { icon: IconName; title: stri
 
 export default function Home() {
   const insets = useSafeAreaInsets();
+  const pot = useReferrals((s) => (hasPot(s) ? s.status!.pending : 0));
   const { column, gutter } = useResponsive();
   const { t } = useT();
   const lists = useTierStore((s) => s.lists);
@@ -112,7 +114,7 @@ export default function Home() {
             Tiercraft
           </Text>
           <View style={styles.headerIcons}>
-            <EnergyPill onPress={() => router.push('/store')} />
+            <EnergyPill onPress={() => router.push('/store')} pending={pot} />
             <IconButton icon="settings-outline" label={t('app.title.settings')} onPress={() => router.push('/settings')} />
           </View>
         </View>

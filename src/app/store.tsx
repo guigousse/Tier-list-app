@@ -1,20 +1,21 @@
-import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Clickable } from '../components/Clickable';
 import { ENERGY, EnergyAmount } from '../components/Energy';
 import { PurchaseBurst } from '../components/PurchaseBurst';
+import { useBoltShow } from '../components/useBoltShow';
 import { colors, radius, spacing } from '../constants/theme';
 import { imageCredits, wordCredits } from '../lib/aiGenerate';
-import { BURST, coinTimes, counterAt } from '../lib/celebration';
 import { openWallet, useCredits } from '../lib/credits';
 import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import { bonusPercent, buy, openShop, PACKS, type Pack, useShop } from '../lib/shop';
-import { playCoin, playThunder } from '../lib/sound';
+import { hasPot, REFERRAL_CAP, REFERRAL_REWARD, refreshReferrals, useReferrals } from '../lib/referrals';
 
 /** Pack pictures (Gemini sheet in the card icons' style, keyed like them): 1 to 5 bolts. */
 const PACK_ART = [
@@ -31,8 +32,6 @@ const LIST = wordCredits(10) + imageCredits(10);
 // Until the App Store gives its price: euros, written the player's way.
 const euros = (price: number, locale: string) => price.toLocaleString(locale, { style: 'currency', currency: 'EUR' });
 
-type Point = { x: number; y: number };
-
 /** The energy shop: the packs, cheapest first, each with what it gives beyond the first. */
 export default function Store() {
   const insets = useSafeAreaInsets();
@@ -43,65 +42,16 @@ export default function Store() {
   useEffect(() => {
     openShop();
     openWallet();
+    refreshReferrals();
   }, []);
 
   // A pack credited: bolts from it to the balance, which then counts up to the new one.
-  const root = useRef<View>(null);
-  const counter = useRef<View>(null);
   const arts = useRef<Record<string, View | null>>({});
-  const [burst, setBurst] = useState<{ from: Point; to: Point; key: number } | null>(null);
-  const [shown, setShown] = useState<number | null>(null);
-  const pulse = useSharedValue(1);
-  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
-  useEffect(() => {
-    if (!celebration) return;
-    const { packId, from, to, key } = celebration;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let frame = 0;
-    // Window coordinates, made relative to the overlay laid over the whole page.
-    const art = arts.current[packId];
-    root.current?.measureInWindow((rx, ry) => {
-      art?.measureInWindow((ax, ay, aw, ah) => {
-        counter.current?.measureInWindow((cx, cy, _cw, ch) => {
-          setBurst({ from: { x: ax - rx + aw / 2, y: ay - ry + ah / 2 }, to: { x: cx - rx + 14, y: cy - ry + ch / 2 }, key });
-        });
-      });
-    });
-    playThunder();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    for (const at of coinTimes()) {
-      timers.push(
-        setTimeout(() => {
-          playCoin();
-          Haptics.selectionAsync().catch(() => {});
-        }, at),
-      );
-    }
-    timers.push(
-      setTimeout(() => {
-        pulse.value = withSequence(withTiming(1.18, { duration: 120 }), withSpring(1));
-        const start = Date.now();
-        const tick = () => {
-          const progress = (Date.now() - start) / BURST.count;
-          setShown(counterAt(from, to, progress));
-          if (progress < 1) frame = requestAnimationFrame(tick);
-          else pulse.value = withSequence(withTiming(1.25, { duration: 140 }), withSpring(1));
-        };
-        frame = requestAnimationFrame(tick);
-      }, BURST.arrive),
-    );
-    timers.push(
-      setTimeout(() => {
-        setBurst(null);
-        setShown(null);
-        useShop.setState({ celebration: null });
-      }, BURST.arrive + BURST.count + 600),
-    );
-    return () => {
-      timers.forEach(clearTimeout);
-      cancelAnimationFrame(frame);
-    };
-  }, [celebration, pulse]);
+  const { root, counter, burst, shown, pulseStyle } = useBoltShow(
+    celebration,
+    () => (celebration ? arts.current[celebration.packId] : null),
+    () => useShop.setState({ celebration: null }),
+  );
 
   return (
     <View ref={root} style={{ flex: 1 }}>
@@ -113,6 +63,8 @@ export default function Store() {
             <EnergyAmount amount={shown ?? (celebration ? celebration.from : balance)} size={26} style={styles.balanceValue} />
           </Animated.View>
         </View>
+
+        <FreeEnergyButton />
 
         {message ? (
           <View style={styles.message} accessibilityLiveRegion="polite">
@@ -142,6 +94,35 @@ export default function Store() {
       </ScrollView>
       {burst ? <PurchaseBurst key={burst.key} from={burst.from} to={burst.to} /> : null}
     </View>
+  );
+}
+
+/** The way to energy without paying: referrals now, a rewarded ad later. */
+function FreeEnergyButton() {
+  const { t } = useT();
+  const pending = useReferrals((s) => (hasPot(s) ? s.status!.pending : 0));
+  const max = REFERRAL_CAP * (REFERRAL_REWARD.challenge + REFERRAL_REWARD.active);
+  return (
+    <Clickable
+      accessibilityRole="button"
+      accessibilityLabel={[t('app.store.freeEnergy'), pending > 0 ? t('app.free.badge', { count: pending }) : null].filter(Boolean).join('. ')}
+      onPress={() => router.push('/free-energy')}
+      style={({ pressed }) => [styles.free, pressed && { opacity: 0.8 }]}
+    >
+      <View style={styles.freeIcon}>
+        <Ionicons name="gift" size={26} color="#2A1B00" />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={styles.freeTitle}>{t('app.store.freeEnergy')}</Text>
+        <Text style={styles.detail}>{t('app.store.freeEnergyHint', { max })}</Text>
+      </View>
+      {pending > 0 ? (
+        <View style={styles.freeBadge}>
+          <Text style={styles.freeBadgeText}>+{pending}</Text>
+        </View>
+      ) : null}
+      <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+    </Clickable>
   );
 }
 
@@ -220,5 +201,19 @@ const styles = StyleSheet.create({
   bonus: { color: '#7BE495', fontSize: 13, fontWeight: '700' },
   price: { minWidth: 92, height: 44, borderRadius: 22, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md },
   priceText: { color: colors.primaryText, fontSize: 16, fontWeight: '800' },
+  free: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(123, 228, 149, 0.55)',
+    backgroundColor: 'rgba(123, 228, 149, 0.10)',
+    padding: spacing.md,
+  },
+  freeIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#7BE495', alignItems: 'center', justifyContent: 'center' },
+  freeTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
+  freeBadge: { minWidth: 28, height: 24, borderRadius: 12, paddingHorizontal: 8, backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center' },
+  freeBadgeText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', fontVariant: ['tabular-nums'] },
   note: { color: colors.textMuted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: spacing.sm },
 });

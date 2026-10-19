@@ -55,6 +55,16 @@ export function claimChallenge(wallet: string, deviceId: string, code: string): 
   return rpc<{ status: ClaimStatus }>('claim_challenge', { wallet, device_id: deviceId, code });
 }
 
+/** The sponsor's referrals and uncollected pot, as the server sends it (read by parseReferralStatus). */
+export function referralStatus(wallet: string): Promise<unknown> {
+  return rpc<unknown>('referral_status', { wallet });
+}
+
+/** Moves the referral pot onto the wallet; the credits collected (0 when it was empty). */
+export function collectReferrals(wallet: string): Promise<number> {
+  return rpc<number>('collect_referrals', { wallet });
+}
+
 /** Tier list stored under `code`, or null if the code doesn't exist. */
 export async function fetchSharedList(code: string): Promise<SharedList | null> {
   const payload = await rpc<unknown>('get_shared_list', { code });
