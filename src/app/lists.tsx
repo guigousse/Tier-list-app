@@ -10,20 +10,19 @@ import { colors, spacing } from '../constants/theme';
 import type { TierList } from '../store/types';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
+import { useT } from '../lib/i18n/useT';
+import { MAX_TITLE } from '../lib/listTitle';
 import { useTierStore } from '../store/useTierStore';
 
 type Sort = 'updated' | 'opened' | 'name' | 'favorites';
 
-const SORTS: { key: Sort; label: string }[] = [
-  { key: 'updated', label: 'Modifiées' },
-  { key: 'opened', label: 'Ouvertes' },
-  { key: 'name', label: 'A → Z' },
-  { key: 'favorites', label: 'Favoris' },
-];
+// Labels looked up when shown: each sort's text key is `editor.sort.<sort>`.
+const SORTS: Sort[] = ['updated', 'opened', 'name', 'favorites'];
 
 export default function Lists() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t, locale } = useT();
   const lists = useTierStore((s) => s.lists);
   const { deleteList, duplicateList, renameList, toggleFavorite } = useTierStore.getState();
   const [query, setQuery] = useState('');
@@ -39,18 +38,18 @@ export default function Lists() {
     let items = Object.values(lists).filter((l) => !l.daily && !l.popular && (!q || l.title.toLowerCase().includes(q)));
     if (sort === 'favorites') items = items.filter((l) => l.favorite);
     return items.sort((a, b) => {
-      if (sort === 'name') return a.title.localeCompare(b.title, 'fr');
+      if (sort === 'name') return a.title.localeCompare(b.title, locale);
       if (sort === 'opened') return b.openedAt - a.openedAt;
       return b.updatedAt - a.updatedAt;
     });
-  }, [lists, query, sort]);
+  }, [lists, query, sort, locale]);
 
   const open = (id: string) => router.push({ pathname: '/editor/[id]', params: { id } });
 
   const confirmDelete = (list: TierList) =>
-    Alert.alert('Supprimer la tier list ?', `« ${list.title} » sera définitivement supprimée.`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: () => deleteList(list.id) },
+    Alert.alert(t('editor.deleteTitle'), t('editor.deleteBody', { title: list.title }), [
+      { text: t('editor.cancel'), style: 'cancel' },
+      { text: t('editor.delete'), style: 'destructive', onPress: () => deleteList(list.id) },
     ]);
 
   return (
@@ -62,11 +61,11 @@ export default function Lists() {
         contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
-            <Field value={query} onChangeText={setQuery} placeholder="Rechercher…" clearButtonMode="while-editing" autoCorrect={false} />
-            <Button label="Importer une tier list reçue" icon="download-outline" variant="secondary" onPress={() => router.push('/import')} />
+            <Field value={query} onChangeText={setQuery} placeholder={t('editor.search')} clearButtonMode="while-editing" autoCorrect={false} />
+            <Button label={t('editor.importReceived')} icon="download-outline" variant="secondary" onPress={() => router.push('/import')} />
             <View style={styles.chips}>
-              {SORTS.map((s) => (
-                <Chip key={s.key} label={s.label} selected={sort === s.key} onPress={() => setSort(s.key)} />
+              {SORTS.map((key) => (
+                <Chip key={key} label={t(`editor.sort.${key}`)} selected={sort === key} onPress={() => setSort(key)} />
               ))}
             </View>
           </View>
@@ -74,9 +73,9 @@ export default function Lists() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              {ownCount === 0 ? 'Vous n’avez encore aucune tier list.' : 'Aucun résultat.'}
+              {ownCount === 0 ? t('editor.noListYet') : t('editor.noResult')}
             </Text>
-            {ownCount === 0 ? <Button label="Créer une tier list" icon="add" onPress={() => createAndOpen()} /> : null}
+            {ownCount === 0 ? <Button label={t('editor.createList')} icon="add" onPress={() => createAndOpen()} /> : null}
           </View>
         }
         renderItem={({ item }) => <ListRow list={item} onPress={() => open(item.id)} onMore={() => setMenuFor(item)} />}
@@ -89,23 +88,23 @@ export default function Lists() {
         actions={
           menuFor
             ? [
-                { label: 'Ouvrir', icon: 'open-outline', onPress: () => open(menuFor.id) },
+                { label: t('editor.open'), icon: 'open-outline', onPress: () => open(menuFor.id) },
                 {
-                  label: menuFor.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                  label: menuFor.favorite ? t('editor.removeFavorite') : t('editor.addFavorite'),
                   icon: menuFor.favorite ? 'star' : 'star-outline',
                   onPress: () => toggleFavorite(menuFor.id),
                 },
                 {
-                  label: 'Renommer',
+                  label: t('editor.rename'),
                   icon: 'pencil-outline',
                   onPress: () => {
                     setNewTitle(menuFor.title);
                     setRenaming(menuFor);
                   },
                 },
-                { label: 'Partager', icon: 'share-outline', onPress: () => setShareFor(menuFor) },
-                { label: 'Dupliquer', icon: 'copy-outline', onPress: () => duplicateList(menuFor.id) },
-                { label: 'Supprimer', icon: 'trash-outline', destructive: true, onPress: () => confirmDelete(menuFor) },
+                { label: t('editor.share'), icon: 'share-outline', onPress: () => setShareFor(menuFor) },
+                { label: t('editor.duplicate'), icon: 'copy-outline', onPress: () => duplicateList(menuFor.id) },
+                { label: t('editor.delete'), icon: 'trash-outline', destructive: true, onPress: () => confirmDelete(menuFor) },
               ]
             : []
         }
@@ -116,10 +115,10 @@ export default function Lists() {
       <Sheet
         visible={renaming !== null}
         onClose={() => setRenaming(null)}
-        title="Renommer"
+        title={t('editor.rename')}
         footer={
           <Button
-            label="Enregistrer"
+            label={t('editor.save')}
             onPress={() => {
               if (renaming) renameList(renaming.id, newTitle);
               setRenaming(null);
@@ -127,7 +126,7 @@ export default function Lists() {
           />
         }
       >
-        <Field value={newTitle} onChangeText={setNewTitle} autoFocus placeholder="Titre" />
+        <Field value={newTitle} onChangeText={setNewTitle} autoFocus placeholder={t('editor.titlePlaceholder')} maxLength={MAX_TITLE} />
       </Sheet>
     </View>
   );

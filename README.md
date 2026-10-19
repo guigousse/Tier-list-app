@@ -67,9 +67,9 @@ nécessaire pour tester.
 ## Publication sur l’App Store
 
 1. Compte Apple Developer (99 €/an) et compte Expo.
-2. Vérifier `app.json` : nom affiché (`Tiercraft`), `ios.bundleIdentifier` (`com.guigousse.tiercraft`, invisible pour les utilisateurs), version, icône
+2. Vérifier `app.json` : nom affiché (`Tiercraft`), `ios.bundleIdentifier` (`com.guigousse.TierCraft`, invisible pour les utilisateurs), version, icône
    (`assets/icon.png`, 1024×1024 sans transparence) et écran de démarrage.
 3. `npx eas-cli@latest build --platform ios --profile production`
 4. `npx eas-cli@latest submit --platform ios` (envoi vers App Store Connect / TestFlight).
 5. Dans App Store Connect, nommer l’app « Tiercraft : Tier List maker », puis ajouter : captures d’écran, description, politique de confidentialité
-   (l’app ne collecte aucune donnée : tout reste sur l’appareil).
+   (voir la politique de confidentialité : profils, amis, votes et listes partagées sont stockés sur Supabase).

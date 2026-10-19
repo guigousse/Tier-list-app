@@ -1,0 +1,87 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+body{margin:0;background:#1b1d24;font-family:Inter,sans-serif}
+.icon{width:1024px;height:1024px;display:block}
+</style></head><body>
+
+<!-- 1. Badge de rang : écusson de jeu avec un grand S, couronne, chevrons A→D -->
+<svg id="badge" class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg1" cx="30%" cy="20%" r="95%"><stop offset="0" stop-color="#6E4BFF"/><stop offset=".55" stop-color="#2B1B66"/><stop offset="1" stop-color="#120E24"/></radialGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A8A"/><stop offset="1" stop-color="#FF5C6C"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE48A"/><stop offset="1" stop-color="#FFB547"/></linearGradient>
+    <filter id="sh1" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg1)"/>
+  <g filter="url(#sh1)">
+    <!-- chevrons A B C D under the shield -->
+    <path d="M292 610 L512 735 L732 610 L732 680 L512 805 L292 680Z" fill="#FFBF7F"/>
+    <path d="M322 700 L512 808 L702 700 L702 760 L512 868 L322 760Z" fill="#FFDF7F"/>
+    <path d="M352 785 L512 876 L672 785 L672 835 L512 926 L352 835Z" fill="#BFFF7F"/>
+    <!-- shield -->
+    <path d="M512 210 L752 290 L752 520 C752 650 640 730 512 780 C384 730 272 650 272 520 L272 290Z" fill="url(#shield)" stroke="#fff" stroke-opacity=".9" stroke-width="18"/>
+    <path d="M512 250 L716 318 L716 520 C716 626 624 694 512 740 C400 694 308 626 308 520 L308 318Z" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="6"/>
+    <text x="512" y="615" text-anchor="middle" font-family="Inter Display, Inter, sans-serif" font-weight="900" font-size="330" fill="#fff">S</text>
+    <!-- crown -->
+    <path d="M372 222 L412 112 L470 180 L512 92 L554 180 L612 112 L652 222Z" fill="url(#gold)" stroke="#fff" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="412" cy="104" r="16" fill="#fff"/><circle cx="512" cy="84" r="18" fill="#fff"/><circle cx="612" cy="104" r="16" fill="#fff"/>
+  </g>
+  <path d="M842 300 l16 44 44 16 -44 16 -16 44 -16 -44 -44 -16 44 -16z" fill="#fff"/>
+  <path d="M190 640 l11 30 30 11 -30 11 -11 30 -11 -30 -30 -11 30 -11z" fill="#fff" opacity=".8"/>
+</svg>
+
+<!-- 2. Podium : les marches S / A / B, une carte étoile qui atterrit sur la S -->
+<svg id="podium" class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset=".6" stop-color="#3A1F8F"/><stop offset="1" stop-color="#16122B"/></linearGradient>
+    <linearGradient id="card2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#E4DCFF"/></linearGradient>
+    <filter id="sh2" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#000" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg2)"/>
+  <g filter="url(#sh2)">
+    <rect x="132" y="640" width="260" height="250" rx="28" fill="#FFBF7F"/>
+    <rect x="382" y="520" width="260" height="370" rx="28" fill="#FF7F7F"/>
+    <rect x="632" y="720" width="260" height="170" rx="28" fill="#FFDF7F"/>
+    <text x="262" y="800" text-anchor="middle" font-family="Inter Display, Inter" font-weight="900" font-size="150" fill="#2A1C12" opacity=".85">A</text>
+    <text x="512" y="700" text-anchor="middle" font-family="Inter Display, Inter" font-weight="900" font-size="170" fill="#3A1010" opacity=".85">S</text>
+    <text x="762" y="860" text-anchor="middle" font-family="Inter Display, Inter" font-weight="900" font-size="130" fill="#2E2810" opacity=".85">B</text>
+    <!-- card landing on S -->
+    <g transform="rotate(-8 512 330)">
+      <rect x="402" y="200" width="220" height="250" rx="34" fill="url(#card2)"/>
+      <path d="M512 248 l26 58 62 6 -47 41 14 61 -55 -32 -55 32 14 -61 -47 -41 62 -6z" fill="#FFB547" stroke="#FF8A3D" stroke-width="6" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <path d="M300 300 l14 38 38 14 -38 14 -14 38 -14 -38 -38 -14 38 -14z" fill="#fff"/>
+  <path d="M760 220 l10 26 26 10 -26 10 -10 26 -10 -26 -26 -10 26 -10z" fill="#fff" opacity=".85"/>
+  <path d="M470 470 q42 22 84 0" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" opacity=".6"/>
+</svg>
+
+<!-- 3. Carte à collectionner : une carte rang S holographique, liseré aux couleurs des rangs -->
+<svg id="card" class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg3" cx="70%" cy="15%" r="100%"><stop offset="0" stop-color="#3A2A7A"/><stop offset="1" stop-color="#0F1115"/></radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7F7F"/><stop offset=".3" stop-color="#FFBF7F"/><stop offset=".5" stop-color="#FFDF7F"/><stop offset=".7" stop-color="#FFFF7F"/><stop offset="1" stop-color="#BFFF7F"/></linearGradient>
+    <linearGradient id="holo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset=".5" stop-color="#5C3BE0"/><stop offset="1" stop-color="#2B1B66"/></linearGradient>
+    <linearGradient id="shine3" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="cardclip"><rect x="262" y="142" width="500" height="700" rx="56"/></clipPath>
+    <filter id="sh3" x="-30%" y="-20%" width="160%" height="150%"><feDropShadow dx="0" dy="30" stdDeviation="30" flood-color="#000" flood-opacity=".55"/></filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg3)"/>
+  <!-- cards behind, fanned -->
+  <rect x="262" y="172" width="500" height="700" rx="56" fill="#FFBF7F" opacity=".9" transform="rotate(-14 512 520)"/>
+  <rect x="262" y="172" width="500" height="700" rx="56" fill="#BFFF7F" opacity=".9" transform="rotate(12 512 520)"/>
+  <g filter="url(#sh3)" transform="rotate(-3 512 492)">
+    <rect x="242" y="122" width="540" height="740" rx="70" fill="url(#rim)"/>
+    <rect x="262" y="142" width="500" height="700" rx="56" fill="url(#holo)"/>
+    <g clip-path="url(#cardclip)">
+      <rect x="120" y="100" width="180" height="900" fill="url(#shine3)" transform="rotate(24 512 492)"/>
+    </g>
+    <text x="512" y="600" text-anchor="middle" font-family="Inter Display, Inter" font-weight="900" font-size="420" fill="#fff">S</text>
+    <path d="M512 660 l14 32 34 3 -26 22 8 33 -30 -17 -30 17 8 -33 -26 -22 34 -3z" fill="#FFE48A"/>
+    <path d="M440 676 l8 18 19 2 -14 12 4 19 -17 -9 -17 9 4 -19 -14 -12 19 -2z" fill="#FFE48A" opacity=".8"/>
+    <path d="M584 676 l8 18 19 2 -14 12 4 19 -17 -9 -17 9 4 -19 -14 -12 19 -2z" fill="#FFE48A" opacity=".8"/>
+    <text x="312" y="225" font-family="Inter Display, Inter" font-weight="900" font-size="64" fill="#fff" opacity=".9">S</text>
+  </g>
+  <path d="M850 760 l14 38 38 14 -38 14 -14 38 -14 -38 -38 -14 38 -14z" fill="#fff"/>
+</svg>
+</body></html>

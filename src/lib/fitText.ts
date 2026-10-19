@@ -1,0 +1,66 @@
+/**
+ * Average width of a character, in em, of a semi-bold label: measured over the 430 card
+ * names of the public lists (95th percentile of their words, Chromium's sans-serif, a little
+ * wider than the iPhone's): sized on it, a name fits on every phone.
+ */
+export const CHAR_WIDTH = 0.62;
+
+/** The words of `text` on lines of at most `capacity` characters; a longer word is split. */
+export function wrapWords(text: string, capacity: number): string[] {
+  const room = Math.max(1, Math.floor(capacity));
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    if (!line) line = word;
+    else if (line.length + 1 + word.length <= room) line += ` ${word}`;
+    else {
+      lines.push(line);
+      line = word;
+    }
+    while (line.length > room) {
+      lines.push(line.slice(0, room));
+      line = line.slice(room);
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * The largest font size (by half points, from `max` down to `min`) that writes `text`
+ * whole within `width` points on at most `maxLines` lines, words unbroken: names cut
+ * with « … » read badly everywhere in the app. At `min`, a word too long is split, and
+ * `fits` is false. `height`, when given, bounds the lines too (at `lineHeight`).
+ */
+export function fitText(
+  text: string,
+  width: number,
+  { maxLines, max, min, height = Infinity }: { maxLines: number; max: number; min: number; height?: number },
+) {
+  for (let fontSize = max; fontSize >= min; fontSize -= 0.5) {
+    const capacity = width / (fontSize * CHAR_WIDTH);
+    const words = text.split(/\s+/);
+    if (words.some((w) => w.length > capacity)) continue;
+    const lines = wrapWords(text, capacity);
+    if (lines.length <= maxLines && lines.length * lineHeight(fontSize) <= height) return { fontSize, lines, fits: true };
+  }
+  return { fontSize: min, lines: wrapWords(text, width / (min * CHAR_WIDTH)), fits: false };
+}
+
+/** The line height the app draws labels with. */
+export const lineHeight = (fontSize: number) => Math.round(fontSize * 1.2);
+
+/** The most of a card's name shown: past it, « … ». */
+export const MAX_CARD_TEXT = 25;
+
+/**
+ * A card's name as drawn: 25 characters at most, on one or two lines, words whole, as
+ * large as it fits down to `min` (the smallest still readable). Too long even then,
+ * `lines` is null: the name is drawn on two lines and the platform hides the rest.
+ */
+export function cardCaption(name: string, width: number, { max, min }: { max: number; min: number }) {
+  const chars = Array.from(name.trim());
+  const text = chars.length > MAX_CARD_TEXT ? `${chars.slice(0, MAX_CARD_TEXT).join('').trimEnd()}…` : chars.join('');
+  const fit = fitText(text, width, { maxLines: 2, max, min });
+  return { text, fontSize: fit.fontSize, lines: fit.fits ? fit.lines : null };
+}

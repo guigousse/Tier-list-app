@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title data-i18n="support.title">Assistance · Tiercraft</title>
+  <meta name="theme-color" content="#0B0C12">
+  <link rel="icon" href="/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site.css">
+  <style>
+    .faq { display: grid; gap: 10px; }
+    .faq .box h3 { display: flex; gap: 10px; align-items: baseline; }
+    .faq .box h3::before { content: "?"; flex: none; width: 24px; height: 24px; border-radius: 7px; display: inline-grid; place-items: center;
+      background: var(--primary); color: #fff; font-size: 14px; font-weight: 900; transform: translateY(2px); }
+    .faq .box p { margin-top: 6px; padding-left: 34px; }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <header class="top">
+    <a class="brand" href="/"><img src="/icon.png" alt=""><span><b>Tiercraft</b><span class="strip"><i></i><i></i><i></i><i></i><i></i></span></span></a>
+    <a class="btn small" href="https://apps.apple.com/app/id6822017061" data-i18n="nav.download">Télécharger</a>
+  </header>
+  <main class="page">
+    <h1 data-i18n="support.h1">Assistance</h1>
+    <p data-i18n="support.intro">Une question, un bug, une idée de tier list du jour ? Écrivez-nous, nous répondons à chaque message.</p>
+    <a class="mail" href="mailto:broc.le.jeu@gmail.com">✉️ broc.le.jeu@gmail.com</a>
+
+    <h2 data-i18n="support.faq">Questions fréquentes</h2>
+    <div class="faq">
+      <div class="box"><h3 data-i18n="support.q1">Comment placer une carte sans la glisser ?</h3><p data-i18n="support.a1">Touchez la carte : sa fiche s’ouvre avec « Placer dans » et la liste des rangs.</p></div>
+      <div class="box"><h3 data-i18n="support.q2">Puis-je changer mon classement après l’avoir validé ?</h3><p data-i18n="support.a2">Oui, pour la tier list du jour comme pour les listes publiques : déplacez les cartes puis touchez « Valider mes changements ». Votre nouveau classement remplace l’ancien dans les résultats.</p></div>
+      <div class="box"><h3 data-i18n="support.q3">Comment créer une tier list avec l’IA ?</h3><p data-i18n="support.a3">Ouvrez une de vos listes (Mes listes), touchez la baguette magique en bas à droite et donnez un thème. L’IA propose les cartes, que vous vérifiez, puis leurs images sont préparées : reprises de la bibliothèque Tiercraft quand elles y sont déjà, dessinées par l’IA sinon, toutes dans le même style. Elle peut aussi baptiser vos rangs.</p></div>
+      <div class="box"><h3 data-i18n="support.q4">À quoi sert l’énergie ?</h3><p data-i18n="support.a4">Chaque génération par l’IA utilise de l’énergie : seul ce qui est livré est décompté, une génération ratée ne coûte rien. De l’énergie est offerte pour commencer ; d’autres packs sont proposés dans la boutique (le « + » à côté de votre solde).</p></div>
+      <div class="box"><h3 data-i18n="support.q5">Un achat n’apparaît pas dans mon solde ?</h3><p data-i18n="support.a5">Rouvrez la boutique (le « + » à côté de votre solde) avec une connexion : un achat payé et pas encore crédité l’est alors automatiquement, une seule fois. Si l’énergie manque toujours, écrivez-nous avec la date de l’achat. Les remboursements se demandent à Apple (reportaproblem.apple.com).</p></div>
+      <div class="box"><h3 data-i18n="support.q6">Comment ajouter un ami ?</h3><p data-i18n="support.a6">Touchez votre avatar sur l’accueil pour créer votre profil (un pseudo et un avatar, sans e-mail), puis partagez votre code ami ou saisissez le sien dans « Ajouter un ami ».</p></div>
+      <div class="box"><h3 data-i18n="support.q7">Pourquoi les photos ne sont-elles pas partagées ?</h3><p data-i18n="support.a7">Vos photos restent sur votre téléphone. Le partage transmet le titre, les noms et couleurs des cartes et votre classement.</p></div>
+      <div class="box"><h3 data-i18n="support.q8">Comment recevoir un rappel chaque jour ?</h3><p data-i18n="support.a8">Réglages → Tier list du jour → Rappel quotidien, puis choisissez l’heure.</p></div>
+      <div class="box"><h3 data-i18n="support.q9">Un joueur me dérange, que faire ?</h3><p data-i18n="support.a9">Depuis son profil, sa demande d’ami ou une liste qu’il vous a envoyée, vous pouvez le bloquer ou le signaler : il ne peut alors plus vous contacter.</p></div>
+      <div class="box"><h3 data-i18n="support.q10">Comment supprimer mes données ?</h3><p data-i18n="support.a10">Réglages → Zone de danger → Supprimer mon profil efface immédiatement votre profil en ligne ; « Effacer toutes les données » vide l’app sur votre téléphone.</p></div>
+    </div>
+  </main>
+  <footer>
+    <span>© 2026 Guillaume Fenard</span>
+    <nav><a href="/" data-i18n="nav.home">Accueil</a><a href="/confidentialite" data-i18n="nav.privacy" data-i18n-attr="href:link.privacy">Confidentialité</a><a href="mailto:broc.le.jeu@gmail.com" data-i18n="nav.contact">Contact</a></nav>
+  </footer>
+  <script src="/i18n.js"></script>
+  <script src="/site.js" defer></script>
+</body>
+</html>

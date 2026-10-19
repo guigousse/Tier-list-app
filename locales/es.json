@@ -1,0 +1,6 @@
+{
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "Tiercraft necesita acceder a tus fotos para ilustrar tus cartas.",
+    "NSCameraUsageDescription": "Tiercraft necesita acceder a la cámara para ilustrar tus cartas."
+  }
+}

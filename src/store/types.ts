@@ -12,6 +12,12 @@ export type Card = {
   imageName?: string;
   /** Author and licence of a picture taken from Wikimedia Commons, shown with the card. */
   imageCredit?: string;
+  /** Icon drawn by the AI (SVG markup, already cleaned by the server). Older generations. */
+  iconSvg?: string;
+  /** Icon drawn by the AI in a sheet (public PNG URL; a copy is kept on the device). */
+  iconUrl?: string;
+  /** What the AI would draw for this card, given with its words; forgotten when the label changes. */
+  aiConcept?: string;
 };
 
 /** Where a card lives: a tier id, or the unranked tray at the bottom. */
@@ -24,8 +30,10 @@ export type DailyInfo = {
   emoji: string;
   /** Card ids in the order of the published items, to send the ranking. */
   cardIds: string[];
-  /** When the player validated their ranking; it can't change afterwards. */
+  /** When the player first validated their ranking (it can be validated again). */
   validatedAt?: number;
+  /** Latest validated ranking (tier index per published item); older lists have none. */
+  validatedRanks?: number[];
   /** Whether the validated ranking reached the server. */
   voteSent?: boolean;
 };
@@ -45,6 +53,18 @@ export type PopularInfo = {
   voteSent?: boolean;
 };
 
+/** Set on a tier list a friend sent: fixed tiers and cards, ranked once and sent back. */
+export type MailInfo = {
+  /** Id of the mail on the server. */
+  id: string;
+  /** Pseudo of the friend who sent it. */
+  from: string;
+  /** Card ids in the order of the sent cards, to send the ranking back. */
+  cardIds: string[];
+  /** When the player sent their ranking back; it can't change afterwards. */
+  answeredAt?: number;
+};
+
 export type TierList = {
   id: string;
   title: string;
@@ -60,6 +80,7 @@ export type TierList = {
   /** Set on the daily tier list: fixed S→D tiers and cards, ranking frozen once validated. */
   daily?: DailyInfo;
   popular?: PopularInfo;
+  mail?: MailInfo;
   /** Share code this list was imported from, so opening the same link twice doesn't duplicate it. */
   importedFrom?: string;
   createdAt: number;

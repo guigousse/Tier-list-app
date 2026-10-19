@@ -1,0 +1,492 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Avatar } from '../components/Avatar';
+import { AvatarEditor } from '../components/AvatarEditor';
+import { AvatarWithBadges } from '../components/BadgeIcon';
+import { MailBox } from '../components/MailBox';
+import { Clickable } from '../components/Clickable';
+import { ProfileForm } from '../components/ProfileForm';
+import { Button, IconButton, SectionTitle, Sheet } from '../components/ui';
+import { colors, radius, spacing } from '../constants/theme';
+import { fetchFriends, removeFriend, respondFriendRequest, sendFriendRequest, unblockPlayer, type Friends, type PublicProfile } from '../lib/api';
+import { decodeAvatar, DEFAULT_AVATAR, encodeAvatar, isAvatarCode, type AvatarConfig } from '../lib/avatar';
+import { useResponsive } from '../lib/layout';
+import { copyText, shareUrl, SHARE_HOST } from '../lib/share';
+import { knownBadges, usePendingBadges } from '../lib/badges';
+import { confirmReport, friendCode, parseFriendCode, saveProfile, socialError } from '../lib/social';
+import { pullToRefresh } from '../lib/friendProfile';
+import { useT } from '../lib/i18n/useT';
+import { isToRank, useMail, useUnreadMail } from '../store/useMail';
+import { useTierStore } from '../store/useTierStore';
+
+function PlayerRow({ player, onPress, right }: { player: PublicProfile; onPress?: () => void; right?: React.ReactNode }) {
+  const { t } = useT();
+  return (
+    <Clickable
+      accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && onPress && { opacity: 0.85 }]}
+    >
+      <Avatar avatar={player.avatar} seed={player.id} />
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={1} style={styles.rowName}>
+          {player.pseudo}
+          <Text style={styles.rowTag}> #{player.tag}</Text>
+        </Text>
+        <Text style={styles.rowMeta}>{t('social.listsCompleted', { count: player.completed })}</Text>
+      </View>
+      {right ?? (onPress ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null)}
+    </Clickable>
+  );
+}
+
+type Tab = 'friends' | 'challenges';
+
+function initialTab(param: string | undefined): Tab {
+  if (param === 'lists' || param === 'challenges') return 'challenges';
+  if (param === 'friends') return param;
+  // Lists waiting to be ranked: open on them.
+  return useMail.getState().inbox.some(isToRank) ? 'challenges' : 'friends';
+}
+
+/** The player's profile: friends, challenges (tier lists sent between friends), rewards and statistics. */
+export default function Social() {
+  const insets = useSafeAreaInsets();
+  const { t } = useT();
+  const { column, gutter } = useResponsive();
+  const profile = useTierStore((s) => s.profile);
+  const [data, setData] = useState<Friends | null>(null);
+  const [pulling, setPulling] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [code, setCode] = useState('');
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [dressing, setDressing] = useState(false);
+  // A new wardrobe at each opening, starting from the current look.
+  const [wardrobe, setWardrobe] = useState(0);
+  const look = useMemo(() => (profile && isAvatarCode(profile.avatar) ? decodeAvatar(profile.avatar) : DEFAULT_AVATAR), [profile]);
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>(() => initialTab(params.tab));
+  const unread = useUnreadMail();
+  const pendingBadges = usePendingBadges();
+  const shownBadges = useTierStore((s) => s.shownBadges);
+
+  const load = useCallback(async () => {
+    const secret = useTierStore.getState().profile?.secret;
+    if (!secret) return;
+    try {
+      setData(await fetchFriends(secret));
+      setOffline(false);
+    } catch {
+      setOffline(true);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      useMail.getState().refresh();
+    }, [load]),
+  );
+
+  if (!profile) {
+    return (
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          column,
+          {
+            padding: gutter,
+            gap: spacing.lg,
+            paddingBottom: insets.bottom + spacing.xl,
+          },
+        ]}
+      >
+        <Text style={styles.intro}>{t('social.intro')}</Text>
+        <ProfileForm onSaved={load} />
+      </ScrollView>
+    );
+  }
+
+  const myCode = friendCode(profile);
+
+  const dress = () => {
+    setWardrobe((n) => n + 1);
+    setDressing(true);
+  };
+  const wear = async (c: AvatarConfig) => {
+    setDressing(false);
+    try {
+      await saveProfile(profile.pseudo, encodeAvatar(c));
+      load();
+    } catch (e) {
+      Alert.alert(t('social.oops'), socialError(e));
+    }
+  };
+
+  const add = async () => {
+    const parsed = parseFriendCode(code);
+    if (!parsed) {
+      setMessage({
+        text: t('social.codeFormatHint'),
+        ok: false,
+      });
+      return;
+    }
+    try {
+      const result = await sendFriendRequest(profile.secret, parsed.pseudo, parsed.tag);
+      setMessage({
+        text:
+          result === 'accepted'
+            ? t('social.nowFriends')
+            : result === 'already_friends'
+              ? t('social.alreadyFriends')
+              : t('social.requestSent'),
+        ok: true,
+      });
+      setCode('');
+      load();
+    } catch (e) {
+      setMessage({ text: socialError(e), ok: false });
+    }
+  };
+
+  const respond = async (other: string, accept: boolean) => {
+    try {
+      await respondFriendRequest(profile.secret, other, accept);
+      load();
+    } catch (e) {
+      Alert.alert(t('social.oops'), socialError(e));
+    }
+  };
+
+  const cancel = (p: PublicProfile) =>
+    Alert.alert(t('social.cancelRequestTitle'), t('social.cancelRequestBody', { code: friendCode(p) }), [
+      { text: t('social.no'), style: 'cancel' },
+      {
+        text: t('social.cancelRequest'),
+        style: 'destructive',
+        onPress: () => removeFriend(profile.secret, p.id).then(load, () => {}),
+      },
+    ]);
+
+  const unblock = (p: PublicProfile) =>
+    Alert.alert(t('social.unblockTitle'), t('social.unblockBody', { code: friendCode(p) }), [
+      { text: t('social.cancel'), style: 'cancel' },
+      {
+        text: t('social.unblock'),
+        onPress: () => unblockPlayer(profile.secret, p.id).then(load, (e) => Alert.alert(t('social.oops'), socialError(e))),
+      },
+    ]);
+
+  return (
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl
+          refreshing={pulling}
+          onRefresh={() => pullToRefresh(setPulling, load, () => useMail.getState().refresh())}
+          tintColor={colors.textMuted}
+        />
+      }
+      contentContainerStyle={[
+        column,
+        {
+          padding: gutter,
+          gap: spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl,
+        },
+      ]}
+    >
+      <View style={styles.me}>
+        <Clickable accessibilityRole="button" accessibilityLabel={t('social.wardrobeA11y')} onPress={dress} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+          <AvatarWithBadges avatar={profile.avatar} seed={profile.id} size={64} badges={knownBadges(shownBadges)} />
+        </Clickable>
+        <View style={{ flex: 1, gap: 2 }}>
+          {/* A tap copies the friend code, to send it. */}
+          <Clickable
+            accessibilityRole="button"
+            accessibilityLabel={t('social.copyCodeA11y', { code: myCode })}
+            onPress={() => copyText(myCode, t('social.codeCopied', { code: myCode }))}
+            hitSlop={6}
+            style={({ pressed }) => [styles.meNameRow, pressed && { opacity: 0.6 }]}
+          >
+            <Text numberOfLines={1} style={[styles.meName, { flexShrink: 1 }]}>
+              {profile.pseudo}
+              <Text style={styles.rowTag}> #{profile.tag}</Text>
+            </Text>
+            <Ionicons name="copy-outline" size={16} color={colors.textMuted} />
+          </Clickable>
+          <Text style={styles.rowMeta}>
+            {data ? t('social.listsCompleted', { count: data.me.completed }) : t('social.yourCode', { code: myCode })}
+          </Text>
+        </View>
+        <View style={styles.meActions}>
+          <IconButton icon="shirt-outline" label={t('social.wardrobe')} onPress={dress} />
+          <IconButton icon="create-outline" label={t('social.editProfile')} onPress={() => setEditing(true)} />
+        </View>
+      </View>
+      {data?.me.hidden ? (
+        <Text style={styles.warning}>{t('social.hiddenWarning')}</Text>
+      ) : null}
+
+      <View style={styles.tabRow}>
+        <View style={styles.tabs} accessibilityRole="tablist">
+          {(
+            [
+              { key: 'friends', label: t('social.tabFriends'), badge: data?.incoming.length ?? 0 },
+              { key: 'challenges', label: t('social.tabChallenges'), badge: unread },
+            ] as const
+          ).map((item) => (
+            <Clickable
+              key={item.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === item.key }}
+              accessibilityLabel={item.badge ? t('social.tabNews', { label: item.label, count: item.badge }) : item.label}
+              onPress={() => setTab(item.key)}
+              style={[styles.tab, tab === item.key && styles.tabSelected]}
+            >
+              <Text numberOfLines={1} style={[styles.tabText, tab === item.key && { color: colors.text }]}>
+                {item.label}
+              </Text>
+              {item.badge ? (
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{item.badge > 9 ? '9+' : item.badge}</Text>
+                </View>
+              ) : null}
+            </Clickable>
+          ))}
+        </View>
+        {/* Rewards: apart, a trophy — the path is a climb, more than a present. */}
+        <Clickable
+          accessibilityRole="button"
+          accessibilityLabel={pendingBadges ? t('social.rewardsPending', { count: pendingBadges }) : t('social.rewards')}
+          onPress={() => router.push('/rewards')}
+          style={({ pressed }) => [styles.trophy, pressed && { opacity: 0.8 }]}
+        >
+          <Ionicons name="trophy" size={24} color="#FFC233" />
+          {pendingBadges ? (
+            <View style={[styles.tabBadge, styles.trophyBadge]}>
+              <Text style={styles.tabBadgeText}>{pendingBadges > 9 ? '9+' : pendingBadges}</Text>
+            </View>
+          ) : null}
+        </Clickable>
+      </View>
+
+      {tab === 'challenges' ? (
+        <MailBox />
+      ) : (
+        <>
+          <View style={{ gap: spacing.sm }}>
+            <SectionTitle>{t('social.addFriend')}</SectionTitle>
+            <View style={styles.addRow}>
+              <TextInput
+                value={code}
+                onChangeText={(text) => {
+                  setCode(text);
+                  setMessage(null);
+                }}
+                placeholder={t('social.codePlaceholder')}
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="send"
+                onSubmitEditing={add}
+                style={styles.input}
+              />
+              <Clickable
+                accessibilityRole="button"
+                accessibilityLabel={t('social.add')}
+                onPress={add}
+                disabled={!code.trim()}
+                style={({ pressed }) => [styles.square, { backgroundColor: colors.primary }, !code.trim() && { opacity: 0.4 }, pressed && { opacity: 0.75 }]}
+              >
+                <Ionicons name="person-add" size={20} color={colors.primaryText} />
+              </Clickable>
+              <Clickable
+                accessibilityRole="button"
+                accessibilityLabel={t('social.inviteA11y')}
+                onPress={() => shareUrl('Tiercraft', t('social.inviteMessage', { code: myCode }), `https://${SHARE_HOST}`)}
+                style={({ pressed }) => [styles.square, { backgroundColor: colors.surfaceAlt }, pressed && { opacity: 0.75 }]}
+              >
+                <Ionicons name="paper-plane" size={20} color={colors.text} />
+              </Clickable>
+            </View>
+            {message ? <Text style={[styles.message, { color: message.ok ? '#2EAD6B' : colors.danger }]}>{message.text}</Text> : null}
+          </View>
+
+          {offline && !data ? (
+            <Text style={styles.intro}>{t('social.offlineFriends')}</Text>
+          ) : !data ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <>
+              {data.incoming.length > 0 ? (
+                <View style={{ gap: spacing.sm }}>
+                  <SectionTitle>{t('social.incoming')}</SectionTitle>
+                  {data.incoming.map((p) => (
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      right={
+                        <View style={styles.respond}>
+                          <IconButton icon="flag-outline" label={t('social.reportOrBlock')} color={colors.textMuted} onPress={() => confirmReport(p, load)} />
+                          <IconButton icon="close" label={t('social.decline')} color={colors.textMuted} onPress={() => respond(p.id, false)} />
+                          <IconButton icon="checkmark" label={t('social.accept')} color="#2EAD6B" onPress={() => respond(p.id, true)} />
+                        </View>
+                      }
+                    />
+                  ))}
+                </View>
+              ) : null}
+
+              <View style={{ gap: spacing.sm }}>
+                <SectionTitle>{data.friends.length ? t('social.friendsN', { n: data.friends.length }) : t('social.tabFriends')}</SectionTitle>
+                {data.friends.length === 0 ? (
+                  <Text style={styles.intro}>{t('social.noFriends', { code: myCode })}</Text>
+                ) : (
+                  data.friends.map((p) => (
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/friend/[id]',
+                          params: { id: p.id },
+                        })
+                      }
+                    />
+                  ))
+                )}
+              </View>
+
+              {data.outgoing.length > 0 ? (
+                <View style={{ gap: spacing.sm }}>
+                  <SectionTitle>{t('social.outgoing')}</SectionTitle>
+                  {data.outgoing.map((p) => (
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      right={<IconButton icon="close" label={t('social.cancelRequest')} color={colors.textMuted} onPress={() => cancel(p)} />}
+                    />
+                  ))}
+                </View>
+              ) : null}
+
+              {data.blocked?.length ? (
+                <View style={{ gap: spacing.sm }}>
+                  <SectionTitle>{t('social.blocked')}</SectionTitle>
+                  {data.blocked.map((p) => (
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      right={<Button variant="secondary" label={t('social.unblock')} onPress={() => unblock(p)} style={{ paddingHorizontal: spacing.md }} />}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </>
+          )}
+        </>
+      )}
+
+      <Sheet visible={editing} onClose={() => setEditing(false)} title={t('social.myProfile')}>
+        <ProfileForm
+          onSaved={() => {
+            setEditing(false);
+            load();
+          }}
+        />
+      </Sheet>
+      <AvatarEditor key={wardrobe} visible={dressing} initial={look} onClose={() => setDressing(false)} onDone={wear} />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  intro: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
+  me: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  meName: { color: colors.text, fontSize: 22, fontWeight: '800' },
+  meNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', maxWidth: '100%' },
+  square: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  addRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.text,
+    fontSize: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+  },
+  message: { fontSize: 14, lineHeight: 19 },
+  warning: {
+    color: colors.danger,
+    fontSize: 14,
+    lineHeight: 19,
+    marginTop: -spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+    paddingRight: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  rowName: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  rowTag: { color: colors.textMuted, fontWeight: '500' },
+  rowMeta: { color: colors.textMuted, fontSize: 13 },
+  respond: { flexDirection: 'row', gap: spacing.xs },
+  tabRow: { flexDirection: 'row', gap: spacing.sm, marginTop: -spacing.sm },
+  meActions: { flexDirection: 'row', gap: spacing.xs },
+  trophy: {
+    width: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trophyBadge: { position: 'absolute', top: -5, right: -5, borderWidth: 2, borderColor: colors.background },
+  tabs: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 4,
+    gap: 4,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 4,
+    minHeight: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabSelected: { backgroundColor: colors.surfaceAlt },
+  tabText: { color: colors.textMuted, fontSize: 15, fontWeight: '700' },
+  tabBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    backgroundColor: '#FF3B4E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+});

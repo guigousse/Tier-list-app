@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -20 592 552">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9773F"/><stop offset=".6" stop-color="#8A4F22"/><stop offset="1" stop-color="#5E3214"/></linearGradient>
+  </defs>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- sticker border -->
+    <g fill="#fff" stroke="#fff" stroke-width="64">
+      <path d="M262 52 C300 70 316 104 300 132 C352 134 378 170 366 206 C420 210 444 252 430 292 C482 304 500 352 478 392 C458 432 412 448 360 448 L152 448 C100 448 54 432 34 392 C12 352 30 304 82 292 C68 252 92 210 146 206 C134 170 160 134 212 132 C206 100 226 68 262 52 Z"/>
+    </g>
+    <!-- three swirls -->
+    <path d="M262 52 C300 70 316 104 300 132 C352 134 378 170 366 206 C420 210 444 252 430 292 C482 304 500 352 478 392 C458 432 412 448 360 448 L152 448 C100 448 54 432 34 392 C12 352 30 304 82 292 C68 252 92 210 146 206 C134 170 160 134 212 132 C206 100 226 68 262 52 Z" fill="url(#b)" stroke="#2B1406" stroke-width="20"/>
+    <path d="M146 206 C210 228 300 228 366 206" fill="none" stroke="#2B1406" stroke-width="14"/>
+    <path d="M82 292 C180 322 330 322 430 292" fill="none" stroke="#2B1406" stroke-width="14"/>
+    <!-- highlights -->
+    <path d="M232 92 C246 84 262 86 272 96" fill="none" stroke="#E2A672" stroke-width="14"/>
+    <path d="M178 170 C200 158 228 158 248 164" fill="none" stroke="#E2A672" stroke-width="14"/>
+    <path d="M70 342 C78 322 100 312 124 312" fill="none" stroke="#E2A672" stroke-width="14"/>
+    <!-- eyes -->
+    <ellipse cx="200" cy="262" rx="40" ry="46" fill="#fff" stroke="#2B1406" stroke-width="12"/>
+    <ellipse cx="312" cy="262" rx="40" ry="46" fill="#fff" stroke="#2B1406" stroke-width="12"/>
+    <circle cx="210" cy="270" r="18" fill="#2B1406"/>
+    <circle cx="302" cy="270" r="18" fill="#2B1406"/>
+    <circle cx="216" cy="262" r="6" fill="#fff"/>
+    <circle cx="308" cy="262" r="6" fill="#fff"/>
+    <!-- grin -->
+    <path d="M176 352 C220 398 292 398 336 352 Z" fill="#fff" stroke="#2B1406" stroke-width="12"/>
+  </g>
+</svg>

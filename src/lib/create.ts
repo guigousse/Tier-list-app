@@ -1,34 +1,52 @@
 import { router } from 'expo-router';
 
-import { CLASSIC_TIERS, type Template } from '../constants/presets';
+import { CLASSIC_TIERS, sourceOf, type Template } from '../constants/presets';
+import { useCatalog } from '../store/useCatalog';
 import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
+import { t } from './i18n/useT';
 import { downloadCardImage } from './images';
+import { recordTemplateView } from './api';
+import { copiesByKey } from './publicSync';
 
 /**
  * Creates a tier list (classic S → D tiers, or the template's) and opens it in the
- * editor, where its title, tiers and cards can be customised right away.
+ * editor in edit mode, where its title, tiers and cards can be customised right away.
  */
 export function createAndOpen(template?: Template): void {
   const store = useTierStore.getState();
   const id = store.createList({
-    title: template?.title ?? 'Nouvelle tier list',
+    // A default title is text the player can rename: written in the language of the moment.
+    title: template?.title ?? t('editor.newList'),
     tierLabels: template?.tiers ?? CLASSIC_TIERS,
     cardLabels: template?.items,
     cardRanks: template?.ranks,
     emoji: template?.emoji,
   });
-  router.push({ pathname: '/editor/[id]', params: { id } });
+  router.push({ pathname: '/editor/[id]', params: { id, edit: '1' } });
   if (template?.appStoreIds) attachAppIcons(id, template).catch(() => {});
 }
 
 /** Opens the player's copy of a popular tier list, creating it the first time. */
-export function openPopular(template: Template): void {
+export function openPopular(shown: Template): void {
+  // Opened from a translated gallery: the copy, its vote and its app icons go by the French list.
+  const template = sourceOf(shown);
   const store = useTierStore.getState();
   const voteKey = popularVoteKey(template);
-  const existing = Object.values(store.lists).find((l) => l.popular?.voteKey === voteKey);
-  const id = existing?.id ?? store.createPopularList(template);
+  const lists = Object.values(store.lists);
+  // A past daily tier list played on its day: open that copy.
+  const existing =
+    (template.day ? lists.find((l) => l.daily?.day === template.day) : undefined) ??
+    copiesByKey(lists, () => voteKey).get(template.key);
+  // Today's daily tier list (e.g. from a friend's profile): play it as the daily one.
+  const { daily: today, icons } = useCatalog.getState();
+  const id =
+    existing?.id ?? (template.day && template.day === today?.day ? store.createDailyList(today) : store.createPopularList(template, icons));
+  // Cards added to the list since the copy was made arrive to rank.
+  if (existing?.popular) store.syncPopular(existing.id, template, icons);
   router.push({ pathname: '/editor/[id]', params: { id } });
+  // Counts in the trends (latest view per device).
+  recordTemplateView(template.key, store.deviceId).catch(() => {});
   if (!existing && template.appStoreIds) attachAppIcons(id, template).catch(() => {});
 }
 
@@ -45,7 +63,7 @@ async function attachAppIcons(listId: string, template: Template): Promise<void>
       if (!url || !cardId) return;
       try {
         const imageName = await downloadCardImage(url);
-        useTierStore.getState().updateCard(listId, cardId, { imageName, imageCredit: 'Icône : App Store' });
+        useTierStore.getState().updateCard(listId, cardId, { imageName, imageCredit: t('editor.appStoreCredit') });
       } catch {
         // Keep the card with its name only.
       }

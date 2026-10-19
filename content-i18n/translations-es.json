@@ -1,0 +1,1310 @@
+{
+  "builtin": {
+    "mobile-games": {
+      "title": "Juegos móviles",
+      "items": [
+        "Broc: juego de mercadillo",
+        "Clash Royale",
+        "Clash of Clans",
+        "Brawl Stars",
+        "Candy Crush Saga",
+        "Subway Surfers",
+        "Pokémon GO",
+        "Among Us!",
+        "Roblox",
+        "Minecraft",
+        "Geometry Dash",
+        "Monument Valley",
+        "Plants vs. Zombies 2",
+        "Hay Day",
+        "Fruit Ninja"
+      ],
+      "tiers": [
+        "Instalado de por vida",
+        "Adictivo",
+        "Está bien",
+        "Me cansa rápido",
+        "Desinstalado"
+      ]
+    },
+    "fruits": {
+      "title": "Frutas",
+      "items": [
+        "🍎 Manzana",
+        "🍌 Plátano",
+        "🍓 Fresa",
+        "🍇 Uva",
+        "🍉 Sandía",
+        "🍍 Piña",
+        "🥭 Mango",
+        "🍒 Cereza",
+        "🍑 Melocotón",
+        "🥝 Kiwi",
+        "🍋 Limón",
+        "🍐 Pera",
+        "🍊 Naranja",
+        "🫐 Arándano",
+        "🍈 Melón",
+        "🥥 Coco",
+        "🍓 Frambuesa",
+        "🍑 Albaricoque",
+        "🟣 Higo",
+        "🐉 Pitaya",
+        "🟢 Durián",
+        "🍋 Membrillo",
+        "🍊 Pomelo",
+        "🔴 Grosella"
+      ],
+      "tiers": [
+        "Divino",
+        "Delicioso",
+        "Correcto",
+        "Meh",
+        "Puaj"
+      ]
+    },
+    "desserts": {
+      "title": "Postres",
+      "items": [
+        "🍰 Tarta de fresas",
+        "🍫 Coulant",
+        "🍮 Crème brûlée",
+        "🥧 Tarta",
+        "🍩 Dónut",
+        "🧁 Cupcake",
+        "🍦 Helado",
+        "🥞 Crepes",
+        "🍪 Galleta",
+        "🍨 Tiramisú",
+        "🍫 Mousse de chocolate",
+        "🍮 Flan",
+        "🍰 Cheesecake",
+        "🍎 Tarta Tatin",
+        "🍚 Arroz con leche",
+        "🧇 Gofre",
+        "🍌 Banana split",
+        "🥮 Brownie",
+        "🍓 Pavlova",
+        "🍮 Isla flotante",
+        "🥣 Pastel de sémola",
+        "🍮 Pudin",
+        "🍹 Babá al ron",
+        "🍑 Fruta en almíbar"
+      ],
+      "tiers": [
+        "Repito",
+        "Goloso",
+        "Puede ser",
+        "Empalagoso",
+        "Lo dejo"
+      ]
+    },
+    "animals": {
+      "title": "Animales",
+      "items": [
+        "🐶 Perro",
+        "🐱 Gato",
+        "🐼 Panda",
+        "🦁 León",
+        "🐧 Pingüino",
+        "🦊 Zorro",
+        "🐨 Koala",
+        "🐬 Delfín",
+        "🦉 Búho",
+        "🐢 Tortuga",
+        "🐘 Elefante",
+        "🦄 Unicornio",
+        "🐰 Conejo",
+        "🐯 Tigre",
+        "🦒 Jirafa",
+        "🦩 Flamenco",
+        "🐙 Pulpo",
+        "🦦 Nutria",
+        "🐻 Oso",
+        "🦥 Perezoso",
+        "🕷️ Araña",
+        "🪳 Cucaracha",
+        "🦟 Mosquito",
+        "🐀 Rata",
+        "🪼 Medusa"
+      ],
+      "tiers": [
+        "Flechazo",
+        "Adorable",
+        "Mono",
+        "Raro",
+        "Da miedo"
+      ]
+    },
+    "sports": {
+      "title": "Deportes",
+      "items": [
+        "⚽ Fútbol",
+        "🏀 Baloncesto",
+        "🎾 Tenis",
+        "🏉 Rugby",
+        "🏐 Voleibol",
+        "🏊 Natación",
+        "🚴 Ciclismo",
+        "🥊 Boxeo",
+        "⛷️ Esquí",
+        "🏓 Ping-pong",
+        "🏃 Correr",
+        "🧗 Escalada",
+        "🏸 Bádminton",
+        "🏄 Surf",
+        "🥋 Judo",
+        "⛳ Golf",
+        "🛹 Skateboard",
+        "🤾 Balonmano",
+        "🏇 Equitación",
+        "🤺 Esgrima"
+      ],
+      "tiers": [
+        "Mi pasión",
+        "Me encanta",
+        "Lo probaría",
+        "No es lo mío",
+        "Nunca"
+      ]
+    },
+    "seasons": {
+      "title": "Estaciones y fiestas",
+      "items": [
+        "🌸 Primavera",
+        "☀️ Verano",
+        "🍂 Otoño",
+        "❄️ Invierno",
+        "🎄 Navidad",
+        "🎃 Halloween",
+        "🎆 Año Nuevo",
+        "🐣 Pascua",
+        "🎂 Cumpleaños",
+        "💘 San Valentín",
+        "🎭 Carnaval",
+        "🎵 Día de la Música",
+        "🇫🇷 14 de julio",
+        "👑 Reyes Magos",
+        "🥞 La Candelaria",
+        "🏖️ Vacaciones de verano",
+        "🎒 Vuelta al cole",
+        "💐 Día de la Madre",
+        "👔 Día del Padre",
+        "🐟 Inocentada",
+        "⏰ Cambio de hora",
+        "🧾 Declaración de la renta"
+      ],
+      "tiers": [
+        "El mejor momento",
+        "Lo espero con ganas",
+        "Agradable",
+        "Pasable",
+        "Para saltárselo"
+      ]
+    },
+    "food": {
+      "title": "Platos",
+      "items": [
+        "🍕 Pizza",
+        "🍔 Hamburguesa",
+        "🍣 Sushi",
+        "🌮 Tacos",
+        "🍝 Pasta",
+        "🥗 Ensalada",
+        "🍜 Ramen",
+        "🥘 Paella",
+        "🧀 Raclette",
+        "🥐 Cruasán",
+        "🌯 Kebab",
+        "🍛 Curry",
+        "🫕 Fondue",
+        "🥧 Quiche",
+        "🍲 Cocido francés",
+        "🥟 Empanadillas chinas",
+        "🍗 Pollo asado",
+        "🥩 Filete con patatas",
+        "🥞 Galette bretona",
+        "🍆 Ratatouille",
+        "🌭 Andouillette",
+        "🍲 Callos",
+        "🐮 Cabeza de ternera",
+        "🥫 Raviolis de lata"
+      ],
+      "tiers": [
+        "Plato favorito",
+        "Un manjar",
+        "Bueno",
+        "Normalito",
+        "Incomible"
+      ]
+    },
+    "vegetables": {
+      "title": "Verduras",
+      "items": [
+        "🥦 Brócoli",
+        "🥕 Zanahoria",
+        "🍅 Tomate",
+        "🥒 Pepino",
+        "🌽 Maíz",
+        "🥔 Patata",
+        "🍆 Berenjena",
+        "🫑 Pimiento",
+        "🧅 Cebolla",
+        "🥬 Lechuga",
+        "🍄 Champiñón",
+        "🫛 Guisantes",
+        "🥒 Calabacín",
+        "🎃 Calabaza",
+        "🥬 Espinacas",
+        "🫘 Judías verdes",
+        "🥬 Coles de Bruselas",
+        "🌿 Puerro",
+        "🟣 Remolacha",
+        "🌿 Alcachofa",
+        "⚪ Nabo",
+        "🥬 Endivia cocida",
+        "🌿 Apio"
+      ],
+      "tiers": [
+        "Repito",
+        "Buena",
+        "Comestible",
+        "Si insisten",
+        "Al plato del vecino"
+      ]
+    },
+    "drinks": {
+      "title": "Bebidas",
+      "items": [
+        "☕ Café",
+        "🍵 Té",
+        "🧋 Bubble tea",
+        "🥤 Refresco",
+        "🧃 Zumo de frutas",
+        "🥛 Leche",
+        "🍫 Chocolate caliente",
+        "💧 Agua",
+        "🍋 Limonada",
+        "🥥 Agua de coco",
+        "🧉 Mate",
+        "🍹 Smoothie",
+        "🍊 Zumo de naranja",
+        "🧊 Té helado",
+        "🥤 Batido",
+        "☕ Capuchino",
+        "🌿 Infusión",
+        "🫧 Agua con gas",
+        "🍎 Zumo de manzana",
+        "🍵 Matcha",
+        "🍅 Zumo de tomate",
+        "☕ Café soluble",
+        "🫙 Kombucha"
+      ],
+      "tiers": [
+        "Todos los días",
+        "Con gusto",
+        "De vez en cuando",
+        "Por educación",
+        "Nunca"
+      ]
+    },
+    "cheeses": {
+      "title": "Quesos",
+      "items": [
+        "🧀 Comté",
+        "🧀 Camembert",
+        "🧀 Brie",
+        "🧀 Roquefort",
+        "🧀 Reblochon",
+        "🧀 Queso de cabra",
+        "🧀 Emmental",
+        "🧀 Mozzarella",
+        "🧀 Cantal",
+        "🧀 Munster",
+        "🧀 Beaufort",
+        "🧀 Parmesano",
+        "🧀 Feta",
+        "🧀 Raclette",
+        "🧀 Saint-Nectaire",
+        "🧀 Mimolette",
+        "🧀 Mont d’Or",
+        "🧀 Gouda",
+        "🧀 Bleu d’Auvergne",
+        "🧀 Burrata",
+        "🧀 Cheddar en lonchas",
+        "🧀 Queso rallado de bolsa"
+      ],
+      "tiers": [
+        "Divino",
+        "Excelente",
+        "Correcto",
+        "Meh",
+        "Incomible"
+      ]
+    },
+    "breakfast": {
+      "title": "Desayuno",
+      "items": [
+        "🥐 Cruasán",
+        "🍫 Napolitana de chocolate",
+        "🥖 Tostada con mantequilla",
+        "🍯 Miel",
+        "🥞 Tortitas",
+        "🧇 Gofre",
+        "🥣 Cereales",
+        "🍳 Huevos",
+        "🥓 Beicon",
+        "🥑 Tostada de aguacate",
+        "🥯 Bagel",
+        "🍓 Mermelada",
+        "🍫 Crema de cacao",
+        "🥛 Yogur",
+        "🥣 Porridge",
+        "🍞 Brioche",
+        "🍳 Torrijas",
+        "🥗 Macedonia de frutas",
+        "🥐 Caracola de pasas",
+        "🧀 Sándwich mixto",
+        "🍞 Biscotes",
+        "🥖 Pan duro"
+      ],
+      "tiers": [
+        "Despertar de ensueño",
+        "Buen día",
+        "Llena",
+        "A falta de algo mejor",
+        "Me salto el desayuno"
+      ]
+    },
+    "destinations": {
+      "title": "Destinos",
+      "items": [
+        "🇫🇷 Francia",
+        "🇮🇹 Italia",
+        "🇪🇸 España",
+        "🇵🇹 Portugal",
+        "🇬🇷 Grecia",
+        "🇯🇵 Japón",
+        "🇺🇸 Estados Unidos",
+        "🇨🇦 Canadá",
+        "🇲🇦 Marruecos",
+        "🇹🇭 Tailandia",
+        "🇧🇷 Brasil",
+        "🇮🇸 Islandia",
+        "🇬🇧 Reino Unido",
+        "🇲🇽 México",
+        "🇪🇬 Egipto",
+        "🇦🇺 Australia",
+        "🇳🇴 Noruega",
+        "🇮🇳 India",
+        "🇨🇭 Suiza",
+        "🇳🇿 Nueva Zelanda"
+      ],
+      "tiers": [
+        "El sueño",
+        "Vuelvo seguro",
+        "Puede ser",
+        "No me tienta",
+        "Ni loco"
+      ]
+    },
+    "boardgames": {
+      "title": "Juegos de mesa",
+      "items": [
+        "♟️ Ajedrez",
+        "🎲 Monopoly",
+        "🃏 Uno",
+        "🔤 Scrabble",
+        "🕵️ Cluedo",
+        "🎴 Damas",
+        "🧩 Puzle",
+        "🏝️ Catan",
+        "🚂 ¡Aventureros al tren!",
+        "🐺 Los Hombres Lobo",
+        "🎯 Trivial Pursuit",
+        "🀄 Mahjong",
+        "🎲 Yahtzee",
+        "🃏 Tarot",
+        "🐴 Parchís",
+        "🧱 Jenga",
+        "🔴 Conecta 4",
+        "⛵ Hundir la flota",
+        "🕵️ Código Secreto",
+        "🦓 Dixit",
+        "🪿 Juego de la oca",
+        "🃏 Guerra de cartas",
+        "🎱 Bingo"
+      ],
+      "tiers": [
+        "Partida tras partida",
+        "Siempre me apunto",
+        "Una partida",
+        "Si insisten",
+        "Al armario"
+      ]
+    },
+    "movie-genres": {
+      "title": "Géneros de cine",
+      "items": [
+        "💥 Acción",
+        "😂 Comedia",
+        "😱 Terror",
+        "💘 Romance",
+        "🚀 Ciencia ficción",
+        "🧙 Fantasía",
+        "🕵️ Policíaco",
+        "🎭 Drama",
+        "🎨 Animación",
+        "📽️ Documental",
+        "🤠 Wéstern",
+        "🎤 Musical",
+        "🦸 Superhéroes",
+        "🔪 Thriller",
+        "🏴‍☠️ Aventura",
+        "🪖 Bélico",
+        "📜 Histórico",
+        "🧸 Cine infantil",
+        "🧟 Zombis",
+        "🕰️ Cine en blanco y negro",
+        "📺 Telefilme navideño",
+        "🦈 Cine cutre"
+      ],
+      "tiers": [
+        "Obra maestra",
+        "Mi género",
+        "Depende",
+        "Me pierdo",
+        "Cambio de canal"
+      ]
+    },
+    "music-genres": {
+      "title": "Estilos de música",
+      "items": [
+        "🎸 Rock",
+        "🎤 Rap",
+        "🎹 Clásica",
+        "🎷 Jazz",
+        "💃 Pop",
+        "🪩 Electrónica",
+        "🤠 Country",
+        "🎺 Funk",
+        "🥁 Metal",
+        "🌴 Reggae",
+        "🎻 Folk",
+        "💿 R&B",
+        "🪩 Disco",
+        "🇫🇷 Chanson francesa",
+        "🎤 K-pop",
+        "🎸 Punk",
+        "🎙️ Soul",
+        "🎶 Blues",
+        "💃 Salsa",
+        "🎧 Lo-fi",
+        "🛗 Música de ascensor",
+        "📢 Jingle de anuncio"
+      ],
+      "tiers": [
+        "En bucle",
+        "Me gusta",
+        "De fondo",
+        "Cambio",
+        "Mis pobres oídos"
+      ]
+    },
+    "instruments": {
+      "title": "Instrumentos",
+      "items": [
+        "🎸 Guitarra",
+        "🎹 Piano",
+        "🥁 Batería",
+        "🎻 Violín",
+        "🎺 Trompeta",
+        "🎷 Saxofón",
+        "🪕 Banjo",
+        "🪈 Flauta",
+        "🪗 Acordeón",
+        "🎤 Canto",
+        "🪘 Yembé",
+        "🎼 Arpa",
+        "🎻 Violonchelo",
+        "🎸 Bajo",
+        "🎶 Armónica",
+        "🎹 Sintetizador",
+        "🎺 Trombón",
+        "🎵 Ukelele",
+        "🔔 Xilófono",
+        "🎶 Gaita",
+        "🪈 Flauta dulce",
+        "📯 Vuvuzela",
+        "🔺 Triángulo",
+        "🎶 Kazoo"
+      ],
+      "tiers": [
+        "Hechizante",
+        "Precioso",
+        "Agradable",
+        "Algo irritante",
+        "Insoportable"
+      ]
+    },
+    "transport": {
+      "title": "Transportes",
+      "items": [
+        "🚗 Coche",
+        "🚲 Bici",
+        "🛴 Patinete",
+        "🚆 Tren",
+        "🚇 Metro",
+        "🚌 Autobús",
+        "✈️ Avión",
+        "🚢 Barco",
+        "🏍️ Moto",
+        "🚕 Taxi",
+        "🚡 Teleférico",
+        "🚶 A pie",
+        "🚊 Tranvía",
+        "🛵 Scooter",
+        "🚁 Helicóptero",
+        "🛶 Kayak",
+        "🎈 Globo aerostático",
+        "🚐 Furgoneta camper",
+        "⛵ Velero",
+        "🛼 Patines",
+        "🛞 Monociclo",
+        "🫏 Burro",
+        "🌙 Autobús nocturno"
+      ],
+      "tiers": [
+        "Lo máximo",
+        "Práctico",
+        "Depende",
+        "Un calvario",
+        "Pesadilla"
+      ]
+    },
+    "superpowers": {
+      "title": "Superpoderes",
+      "items": [
+        "🕊️ Volar",
+        "👻 Invisibilidad",
+        "⏳ Viajar en el tiempo",
+        "🌀 Teletransporte",
+        "🧠 Leer mentes",
+        "💪 Superfuerza",
+        "⚡ Supervelocidad",
+        "🔥 Controlar el fuego",
+        "❄️ Controlar el hielo",
+        "🗣️ Hablar con animales",
+        "♾️ Inmortalidad",
+        "🩹 Curación",
+        "🫧 Respirar bajo el agua",
+        "🔮 Ver el futuro",
+        "🧲 Controlar el metal",
+        "🦎 Cambiar de aspecto",
+        "🕸️ Trepar por paredes",
+        "🌱 Hacer crecer plantas",
+        "🌤️ Controlar el clima",
+        "🗝️ Atravesar paredes",
+        "🐦 Hablar con palomas",
+        "✨ Brillar en la oscuridad",
+        "🤏 Encoger sin vuelta atrás",
+        "👂 Oírlo todo sin parar",
+        "🤧 Estornudar purpurina"
+      ],
+      "tiers": [
+        "Firmo ya",
+        "Muy útil",
+        "Está bien",
+        "Un truquito",
+        "Maldición"
+      ]
+    },
+    "weekend": {
+      "title": "Planes de fin de semana",
+      "items": [
+        "🛋️ Sofá y series",
+        "🥾 Senderismo",
+        "🎬 Cine",
+        "🍽️ Restaurante",
+        "🛍️ Compras",
+        "🏖️ Playa",
+        "🎮 Videojuegos",
+        "📚 Lectura",
+        "🎉 Noche con amigos",
+        "🧘 Yoga",
+        "🏟️ Partido",
+        "😴 Dormir hasta tarde",
+        "🥐 Brunch",
+        "🖼️ Museo",
+        "🎤 Karaoke",
+        "🧹 Limpieza",
+        "🌳 Pícnic",
+        "🍳 Cocinar",
+        "🏰 Mercadillo",
+        "🎲 Juegos de mesa",
+        "🛒 Hacer la compra",
+        "🧺 Planchar",
+        "📦 Ayudar en una mudanza"
+      ],
+      "tiers": [
+        "Fin de semana ideal",
+        "Con gusto",
+        "Si hace buen tiempo",
+        "Por obligación",
+        "Mejor en la cama"
+      ]
+    },
+    "school": {
+      "title": "Asignaturas",
+      "items": [
+        "➗ Matemáticas",
+        "📖 Francés",
+        "🌍 Geografía",
+        "🏛️ Historia",
+        "🇬🇧 Inglés",
+        "🔬 Biología",
+        "⚗️ Física y química",
+        "🎨 Plástica",
+        "🎵 Música",
+        "⚽ Educación física",
+        "💻 Informática",
+        "🤔 Filosofía",
+        "🇪🇸 Español",
+        "🇩🇪 Alemán",
+        "🏛️ Latín",
+        "📈 Economía",
+        "⚖️ Educación cívica",
+        "🛠️ Tecnología",
+        "🍽️ Comedor",
+        "🔔 Recreo",
+        "📝 Examen sorpresa",
+        "⏳ Castigo"
+      ],
+      "tiers": [
+        "Asignatura favorita",
+        "Me gusta",
+        "Bien",
+        "Pesada",
+        "Pesadilla"
+      ]
+    }
+  },
+  "themes": {
+    "cuisine": "Cocina",
+    "voyages": "Viajes",
+    "jeux": "Juegos",
+    "culture": "Cine y música",
+    "nature": "Animales y naturaleza",
+    "fetes": "Estaciones y fiestas",
+    "loisirs": "Deporte y ocio",
+    "imaginaire": "Imaginario"
+  },
+  "templates": {
+    "cities-fr": {
+      "title": "Ciudades de Francia",
+      "items": [
+        "🗼 París",
+        "🌉 Lyon",
+        "⚓ Marsella",
+        "🍷 Burdeos",
+        "🌸 Toulouse",
+        "🌊 Niza",
+        "🥨 Estrasburgo",
+        "🐘 Nantes",
+        "🏰 Lille",
+        "🎆 Montpellier",
+        "⛰️ Grenoble",
+        "🦪 Rennes",
+        "🏞️ Annecy",
+        "🏛️ Nimes",
+        "🍾 Reims",
+        "🌋 Clermont-Ferrand",
+        "🎭 Aviñón",
+        "🏄 Biarritz",
+        "🫙 Dijon",
+        "🕰️ Ruan"
+      ],
+      "tiers": [
+        "Viviría allí",
+        "Flechazo",
+        "Para un fin de semana",
+        "Solo de paso",
+        "La evito"
+      ]
+    },
+    "pastries": {
+      "title": "Pastelería",
+      "items": [
+        "🍰 Tarta de fresas",
+        "🍫 Ópera",
+        "🥧 Tarta de limón",
+        "🍮 Paris-Brest",
+        "🧁 Macaron",
+        "🍩 Éclair",
+        "🥐 Milhojas",
+        "🍮 Flan",
+        "🍫 Selva Negra",
+        "🍓 Tartaleta de fresas",
+        "🍯 Kouign-amann",
+        "🍒 Clafoutis",
+        "🎂 Saint-Honoré",
+        "🥮 Canelé",
+        "🍮 Crème brûlée",
+        "🍎 Tarta Tatin",
+        "⛪ Religieuse",
+        "🐚 Magdalena",
+        "🥐 Empanada de manzana",
+        "🍓 Carlota",
+        "🍹 Babá al ron",
+        "🥧 Tarta de ciruelas"
+      ],
+      "tiers": [
+        "La reina",
+        "Un capricho",
+        "Se deja comer",
+        "Demasiado dulce",
+        "Te dejo mi parte"
+      ]
+    },
+    "video-game-genres": {
+      "title": "Géneros de videojuegos",
+      "items": [
+        "🗡️ RPG",
+        "🔫 FPS",
+        "🏎️ Carreras",
+        "⚽ Deportes",
+        "🧩 Puzle",
+        "🏗️ Gestión",
+        "👻 Terror",
+        "🕹️ Plataformas",
+        "🥊 Lucha",
+        "🌍 Mundo abierto",
+        "🎲 Roguelike",
+        "🃏 Cartas",
+        "🪓 Supervivencia",
+        "🎵 Ritmo",
+        "🕵️ Sigilo",
+        "♟️ Estrategia",
+        "🏰 Tower defense",
+        "👾 Arcade",
+        "📖 Narrativo",
+        "🌱 Simulación de vida",
+        "🖱️ Clicker",
+        "🎰 Gacha"
+      ],
+      "tiers": [
+        "Juego del año",
+        "Horas y horas",
+        "Una partida",
+        "Lo dejé pronto",
+        "Mando al suelo"
+      ]
+    }
+  },
+  "daily": {
+    "2026-10-13": {
+      "title": "Ingredientes de pizza",
+      "description": "La gran pregunta: la piña, ¿S o D?",
+      "items": [
+        "🍍 Piña",
+        "🍄 Champiñones",
+        "🧀 Cuatro quesos",
+        "🌶️ Chorizo",
+        "🫒 Aceitunas",
+        "🥓 Panceta",
+        "🍅 Margarita",
+        "🐟 Anchoas",
+        "🥚 Huevo",
+        "🌿 Rúcula",
+        "🍗 Pollo",
+        "🧅 Cebolla"
+      ]
+    },
+    "2026-10-14": {
+      "title": "Estaciones del año",
+      "description": "¿Cuál se merece la S?",
+      "items": [
+        "🌸 Primavera",
+        "☀️ Verano",
+        "🍂 Otoño",
+        "❄️ Invierno"
+      ]
+    },
+    "2026-10-15": {
+      "title": "Bollería",
+      "description": "La clasificación del desayuno.",
+      "items": [
+        "🥐 Cruasán",
+        "🍫 Napolitana de chocolate",
+        "🥨 Pretzel",
+        "🍞 Brioche",
+        "🍎 Empanada de manzana",
+        "🌀 Caracola de pasas",
+        "🥯 Bagel",
+        "🧇 Gofre",
+        "🍩 Buñuelo",
+        "🥞 Tortita"
+      ]
+    },
+    "2026-10-16": {
+      "title": "Superhéroes",
+      "description": "¿Quién salva de verdad el mundo?",
+      "items": [
+        "🦇 Batman",
+        "🕷️ Spider-Man",
+        "🛡️ Capitán América",
+        "🔨 Thor",
+        "🦾 Iron Man",
+        "💚 Hulk",
+        "⚡ Flash",
+        "🌊 Aquaman",
+        "🦸‍♀️ Wonder Woman",
+        "🐈‍⬛ Black Panther",
+        "🧙 Doctor Strange",
+        "🐜 Ant-Man"
+      ]
+    },
+    "2026-10-17": {
+      "title": "Planes de domingo",
+      "description": "¿Cómo es el domingo ideal?",
+      "items": [
+        "😴 Dormir hasta tarde",
+        "🥐 Brunch",
+        "🚶 Paseo",
+        "🎬 Película",
+        "🎮 Videojuegos",
+        "📚 Lectura",
+        "🧹 Limpieza",
+        "👨‍👩‍👧 Comida familiar",
+        "🏃 Deporte",
+        "🛁 Baño"
+      ]
+    },
+    "2026-10-18": {
+      "title": "Salsas",
+      "description": "Kétchup, mayo… ¿o algo mejor?",
+      "items": [
+        "🍅 Kétchup",
+        "🥚 Mayonesa",
+        "🟡 Mostaza",
+        "🔥 Samurái",
+        "🌶️ Harissa",
+        "🧄 Alioli",
+        "🍯 Miel y mostaza",
+        "🥢 Salsa de soja",
+        "🧀 Salsa de queso",
+        "🍖 Barbacoa",
+        "🥒 Tártara",
+        "🌿 Pesto"
+      ]
+    },
+    "2026-10-19": {
+      "title": "Redes sociales",
+      "description": "¿Con cuál te quedarías?",
+      "items": [
+        "📸 Instagram",
+        "🎵 TikTok",
+        "▶️ YouTube",
+        "👻 Snapchat",
+        "🐦 X",
+        "📘 Facebook",
+        "💼 LinkedIn",
+        "📌 Pinterest",
+        "👾 Reddit",
+        "💬 WhatsApp",
+        "🎮 Discord",
+        "🟣 Twitch"
+      ]
+    },
+    "2026-10-20": {
+      "title": "Postres de Navidad",
+      "description": "Nos adelantamos un poco.",
+      "items": [
+        "🪵 Tronco de Navidad",
+        "🍪 Galletas de mantequilla",
+        "🍫 Trufas",
+        "🍊 Mandarinas",
+        "🥮 Pan de especias",
+        "🍰 Panettone",
+        "🍬 Bombones envueltos",
+        "🌰 Marrons glacés",
+        "🧁 Cupcakes",
+        "🍮 Pudin"
+      ]
+    },
+    "2026-10-21": {
+      "title": "Mascotas",
+      "description": "¿El mejor compañero?",
+      "items": [
+        "🐶 Perro",
+        "🐱 Gato",
+        "🐰 Conejo",
+        "🐹 Hámster",
+        "🐟 Pez de colores",
+        "🦜 Loro",
+        "🐢 Tortuga",
+        "🐍 Serpiente",
+        "🦎 Lagarto",
+        "🐴 Caballo",
+        "🐭 Ratón",
+        "🦔 Erizo"
+      ]
+    },
+    "2026-10-22": {
+      "title": "Juegos de cartas",
+      "description": "¿Quién saca la baraja esta noche?",
+      "items": [
+        "🃏 Uno",
+        "♠️ Póker",
+        "🂡 Belote",
+        "🎴 Presidente",
+        "🃁 Guerra",
+        "🐦 Tarot",
+        "🧙 Magic",
+        "🎲 Skyjo",
+        "🦖 Dobble",
+        "🍀 Solitario"
+      ]
+    },
+    "2026-10-23": {
+      "title": "Momentos del día",
+      "description": "¿Tu hora favorita?",
+      "items": [
+        "🌅 Amanecer",
+        "☕ Desayuno",
+        "🕛 Mediodía",
+        "😴 Siesta",
+        "🍪 Merienda",
+        "🌇 Atardecer",
+        "🍽️ Cena",
+        "🌙 Medianoche",
+        "🛌 Hora de dormir"
+      ]
+    },
+    "2026-10-24": {
+      "title": "Halloween",
+      "description": "¿Lo que más miedo da?",
+      "items": [
+        "🧛 Vampiro",
+        "🧟 Zombi",
+        "👻 Fantasma",
+        "🧙‍♀️ Bruja",
+        "🎃 Calabaza",
+        "🕷️ Araña",
+        "🐺 Hombre lobo",
+        "💀 Esqueleto",
+        "🤡 Payaso",
+        "🦇 Murciélago",
+        "🧌 Trol",
+        "🪦 Cementerio"
+      ]
+    },
+    "2026-10-25": {
+      "title": "Quesos para raclette",
+      "description": "Temporada de raclette.",
+      "items": [
+        "🧀 Raclette natural",
+        "🌶️ Raclette a la pimienta",
+        "🍷 Al vino blanco",
+        "🌿 A las hierbas",
+        "🔥 Ahumado",
+        "🐐 Cabra",
+        "🧀 Morbier",
+        "🧀 Reblochon",
+        "🧀 Azul",
+        "🧀 Comté"
+      ]
+    },
+    "2026-10-26": {
+      "title": "Deportes de invierno",
+      "description": "¿Pistas o chocolate caliente?",
+      "items": [
+        "⛷️ Esquí",
+        "🏂 Snowboard",
+        "⛸️ Patinaje sobre hielo",
+        "🛷 Trineo",
+        "🥾 Raquetas de nieve",
+        "🏒 Hockey",
+        "🧗 Escalada en hielo",
+        "🎿 Esquí de fondo",
+        "☕ Chocolate en el refugio",
+        "🧖 Spa"
+      ]
+    },
+    "2026-10-27": {
+      "title": "Comida del comedor escolar",
+      "description": "Recuerdos del cole.",
+      "items": [
+        "🐟 Pescado rebozado",
+        "🍝 Lasaña",
+        "🥔 Puré",
+        "🥕 Zanahoria rallada",
+        "🍮 Flan",
+        "🍖 Pastel de carne",
+        "🌽 Tabulé",
+        "🥦 Brócoli",
+        "🍗 Cordon bleu",
+        "🍚 Arroz con leche",
+        "🥧 Quiche",
+        "🍫 Mousse de chocolate"
+      ]
+    },
+    "2026-10-28": {
+      "title": "Películas de animación",
+      "description": "¿La mejor peli animada?",
+      "items": [
+        "🦁 El rey león",
+        "🧸 Toy Story",
+        "🐠 Buscando a Nemo",
+        "❄️ Frozen",
+        "👹 Shrek",
+        "🏠 Up",
+        "🐀 Ratatouille",
+        "🤖 WALL·E",
+        "🐉 Cómo entrenar a tu dragón",
+        "👻 El viaje de Chihiro",
+        "🦸 Los Increíbles",
+        "🕷️ Spider-Verse"
+      ]
+    },
+    "2026-10-29": {
+      "title": "Bebidas calientes",
+      "description": "Para las noches frescas.",
+      "items": [
+        "☕ Café",
+        "🍵 Té verde",
+        "🫖 Té negro",
+        "🍫 Chocolate caliente",
+        "🌿 Infusión",
+        "🥛 Leche caliente",
+        "🍷 Vino caliente",
+        "🧉 Mate",
+        "🥥 Chai latte",
+        "🍯 Leche con miel"
+      ]
+    },
+    "2026-10-30": {
+      "title": "Tareas de casa",
+      "description": "¿La peor tarea doméstica?",
+      "items": [
+        "🧽 Fregar los platos",
+        "👕 Planchar",
+        "🧺 Poner la lavadora",
+        "🚽 Limpiar el baño",
+        "🪟 Limpiar cristales",
+        "🧹 Pasar la aspiradora",
+        "🗑️ Sacar la basura",
+        "🛏️ Hacer la cama",
+        "🍳 Cocinar",
+        "🛒 Hacer la compra",
+        "🧊 Descongelar el congelador",
+        "🐈 Arena del gato"
+      ]
+    },
+    "2026-10-31": {
+      "title": "Golosinas",
+      "description": "Especial Halloween.",
+      "items": [
+        "🐻 Ositos de goma",
+        "🍓 Fresas de gominola",
+        "🍭 Piruleta",
+        "🍬 Caramelo",
+        "🍫 Chocolatina",
+        "🐍 Serpientes de goma",
+        "🧸 Nube",
+        "🍒 Cerezas de goma",
+        "🌈 Cintas ácidas",
+        "🦷 Chicle",
+        "🍋 Caramelos ácidos",
+        "🥜 Turrón"
+      ]
+    },
+    "2026-11-01": {
+      "title": "Días de la semana",
+      "description": "El mejor día, sin discusión.",
+      "items": [
+        "😩 Lunes",
+        "🌮 Martes",
+        "🐪 Miércoles",
+        "🍻 Jueves",
+        "🎉 Viernes",
+        "🛍️ Sábado",
+        "🛋️ Domingo"
+      ]
+    },
+    "2026-11-02": {
+      "title": "Verduras de otoño",
+      "description": "La huerta de temporada.",
+      "items": [
+        "🎃 Calabaza",
+        "🥔 Patata",
+        "🥕 Zanahoria",
+        "🥬 Col",
+        "🧅 Puerro",
+        "🍠 Boniato",
+        "🌰 Castaña",
+        "🍄 Champiñón",
+        "🥦 Brócoli",
+        "🫜 Remolacha",
+        "🧄 Ajo",
+        "🌱 Espinaca"
+      ]
+    },
+    "2026-11-03": {
+      "title": "Transporte público",
+      "description": "¿El más agradable?",
+      "items": [
+        "🚇 Metro",
+        "🚌 Autobús",
+        "🚊 Tranvía",
+        "🚆 Tren regional",
+        "🚄 Tren de alta velocidad",
+        "⛴️ Ferri",
+        "🚡 Teleférico",
+        "🚲 Bici compartida",
+        "🛴 Patinete",
+        "🚕 Taxi"
+      ]
+    },
+    "2026-11-04": {
+      "title": "Pequeños placeres",
+      "description": "Lo que te alegra el día.",
+      "items": [
+        "☀️ Sol de invierno",
+        "🛏️ Sábanas limpias",
+        "📦 Paquete recibido",
+        "🎶 Canción favorita",
+        "🍪 Olor a bizcocho",
+        "😺 Mimos de gato",
+        "🌧️ Lluvia fuera, y tú dentro",
+        "📖 Un buen libro",
+        "🧦 Calcetines calentitos",
+        "🍕 Pizza sorpresa"
+      ]
+    },
+    "2026-11-05": {
+      "title": "Instrumentos",
+      "description": "El que sueñas con tocar.",
+      "items": [
+        "🎸 Guitarra",
+        "🎹 Piano",
+        "🥁 Batería",
+        "🎻 Violín",
+        "🎷 Saxofón",
+        "🎺 Trompeta",
+        "🪕 Banjo",
+        "🪗 Acordeón",
+        "🪈 Flauta",
+        "🪘 Yembé",
+        "🎤 Canto",
+        "🎼 Arpa"
+      ]
+    },
+    "2026-11-06": {
+      "title": "Comida rápida",
+      "description": "¿El mejor menú?",
+      "items": [
+        "🍔 Hamburguesa",
+        "🍟 Patatas fritas",
+        "🌯 Kebab",
+        "🌮 Tacos",
+        "🍕 Pizza",
+        "🍗 Pollo frito",
+        "🍣 Sushi",
+        "🥪 Sándwich",
+        "🌭 Perrito caliente",
+        "🥡 Fideos salteados",
+        "🥙 Falafel",
+        "🍜 Ramen"
+      ]
+    },
+    "2026-11-07": {
+      "title": "Trabajos soñados",
+      "description": "Si pudieras empezar de cero.",
+      "items": [
+        "🚀 Astronauta",
+        "👩‍🍳 Chef",
+        "🎮 Probador de videojuegos",
+        "🏝️ Guía de viajes",
+        "🐬 Biólogo marino",
+        "🎬 Director de cine",
+        "⚽ Futbolista",
+        "🎨 Artista",
+        "🏛️ Arqueólogo",
+        "🧑‍✈️ Piloto",
+        "📚 Librero",
+        "🍫 Chocolatero"
+      ]
+    },
+    "2026-11-08": {
+      "title": "Cuentos de hadas",
+      "description": "El mejor cuento.",
+      "items": [
+        "👠 Cenicienta",
+        "🍎 Blancanieves",
+        "🌹 La Bella y la Bestia",
+        "🧜 La sirenita",
+        "🐺 Caperucita Roja",
+        "🐷 Los tres cerditos",
+        "🍬 Hansel y Gretel",
+        "👢 El gato con botas",
+        "😴 La bella durmiente",
+        "🫛 La princesa y el guisante"
+      ]
+    },
+    "2026-11-09": {
+      "title": "Pasta",
+      "description": "Lo que cuenta es la forma.",
+      "items": [
+        "🍝 Espaguetis",
+        "🌀 Fusilli",
+        "🎀 Farfalle",
+        "🧵 Tallarines",
+        "🐚 Conchiglie",
+        "🥟 Raviolis",
+        "🍲 Lasaña",
+        "📏 Penne",
+        "🧀 Ñoquis",
+        "🥣 Coditos",
+        "🔁 Macarrones",
+        "🌾 Linguine"
+      ]
+    },
+    "2026-11-10": {
+      "title": "Apps imprescindibles",
+      "description": "Las que nunca borrarías.",
+      "items": [
+        "🗺️ Mapas",
+        "🎵 Música",
+        "📸 Cámara",
+        "💬 Mensajes",
+        "🌦️ El tiempo",
+        "🏦 Banco",
+        "📺 Streaming",
+        "🛒 Compras",
+        "🚗 Coche compartido",
+        "📝 Notas",
+        "⏰ Alarma",
+        "🎧 Pódcasts"
+      ]
+    },
+    "2026-11-11": {
+      "title": "Comidas de fiesta",
+      "description": "El plato que hace la fiesta.",
+      "items": [
+        "🦃 Pavo",
+        "🦪 Ostras",
+        "🍤 Gambas",
+        "🥩 Foie gras",
+        "🧀 Tabla de quesos",
+        "🍾 Champán",
+        "🐟 Salmón ahumado",
+        "🍖 Pierna de cordero",
+        "🥘 Fondue",
+        "🔥 Raclette",
+        "🦞 Bogavante",
+        "🍰 Tronco de Navidad"
+      ]
+    }
+  }
+}

@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Field } from '../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../constants/theme';
 import { fetchSharedList } from '../lib/api';
-import { plural } from '../lib/format';
+import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import { decodeShared, normalizeCode, type SharedList } from '../lib/share';
 import { useTierStore } from '../store/useTierStore';
@@ -15,12 +15,13 @@ type Lookup = { code: string; status: 'loading' | 'found' | 'missing' | 'offline
 
 /**
  * Adds a tier list received from someone else. Opened by a shared link
- * (…/s/CODE, or an offline …/import?d=… link), which adds it right away, or
- * from the app to type a code / paste a link by hand.
+ * (…/s/CODE, or an offline …/import?d=… link), or from the app to type a code /
+ * paste a link by hand. The list is shown first: it's only added once confirmed.
  */
 export default function ImportScreen() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t } = useT();
   const { d, c } = useLocalSearchParams<{ d?: string; c?: string }>();
   const fromLink = Boolean(d || c);
   const [typed, setTyped] = useState('');
@@ -52,14 +53,6 @@ export default function ImportScreen() {
     router.replace({ pathname: '/editor/[id]', params: { id } });
   };
 
-  // A link was opened: add the tier list without asking and show it.
-  const autoAdded = useRef(false);
-  useEffect(() => {
-    if (!fromLink || !shared || autoAdded.current) return;
-    autoAdded.current = true;
-    add();
-  });
-
   const ranked = shared ? shared.cards.filter((card) => card.tier >= 0).length : 0;
 
   return (
@@ -67,11 +60,11 @@ export default function ImportScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[column, { padding: gutter, gap: spacing.xl }]}>
         {!fromLink ? (
           <View style={{ gap: spacing.sm }}>
-            <Text style={styles.intro}>Saisissez le code reçu (6 caractères) ou collez le lien.</Text>
+            <Text style={styles.intro}>{t('editor.import.intro')}</Text>
             <Field
               value={typed}
               onChangeText={setTyped}
-              placeholder="Ex. K7F 3QX"
+              placeholder={t('editor.import.placeholder')}
               autoCorrect={false}
               autoCapitalize="characters"
               autoFocus
@@ -86,7 +79,7 @@ export default function ImportScreen() {
               {shared.title}
             </Text>
             <Text style={styles.meta}>
-              {plural(shared.tiers.length, 'rang')} · {plural(shared.cards.length, 'carte')} · {ranked} classée{ranked > 1 ? 's' : ''}
+              {t('editor.row.tiers', { count: shared.tiers.length })} · {t('editor.import.cards', { count: shared.cards.length })} · {t('editor.import.ranked', { count: ranked })}
             </Text>
             <View style={styles.tiers}>
               {shared.tiers.map((t, i) => (
@@ -97,17 +90,20 @@ export default function ImportScreen() {
                 </View>
               ))}
             </View>
-            <Text style={styles.hint}>Les photos des cartes ne sont pas transmises, seuls leurs noms et couleurs le sont.</Text>
+            <Text numberOfLines={4} style={styles.cards}>
+              {shared.cards.map((card) => card.label || t('editor.card')).join(' · ')}
+            </Text>
+            <Text style={styles.hint}>{t('editor.import.photosHint')}</Text>
           </View>
         ) : current?.status === 'loading' ? (
           <ActivityIndicator color={colors.primary} />
         ) : current?.status === 'missing' ? (
-          <Text style={styles.error}>Aucune tier list ne correspond au code {current.code}.</Text>
+          <Text style={styles.error}>{t('editor.import.notFound', { code: current.code })}</Text>
         ) : current?.status === 'offline' ? (
           <View style={{ gap: spacing.md }}>
-            <Text style={styles.error}>Impossible de récupérer la tier list : vérifiez votre connexion.</Text>
+            <Text style={styles.error}>{t('editor.import.offline')}</Text>
             <Button
-              label="Réessayer"
+              label={t('editor.import.retry')}
               icon="refresh"
               variant="secondary"
               onPress={() => {
@@ -117,13 +113,13 @@ export default function ImportScreen() {
             />
           </View>
         ) : input.trim() && !code ? (
-          <Text style={styles.error}>Ce n’est pas un code ou un lien Tiercraft valide.</Text>
+          <Text style={styles.error}>{t('editor.import.invalid')}</Text>
         ) : null}
       </ScrollView>
 
       <View style={[styles.footer, { paddingHorizontal: gutter, paddingBottom: insets.bottom + spacing.md }]}>
         <View style={column}>
-          <Button label="Ajouter à mes tier lists" icon="download-outline" onPress={add} disabled={!shared} />
+          <Button label={t('editor.import.add')} icon="download-outline" onPress={add} disabled={!shared} />
         </View>
       </View>
     </View>
@@ -139,6 +135,7 @@ const styles = StyleSheet.create({
   tiers: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs },
   tier: { minWidth: 36, maxWidth: 120, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, alignItems: 'center' },
   tierLabel: { fontSize: 13, fontWeight: '800' },
+  cards: { color: colors.text, fontSize: 14, lineHeight: 20, marginTop: spacing.xs },
   hint: { color: colors.textMuted, fontSize: 12, marginTop: spacing.xs },
   error: { color: colors.danger, fontSize: 15, textAlign: 'center' },
   footer: { paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },

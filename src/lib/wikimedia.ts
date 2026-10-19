@@ -1,3 +1,6 @@
+import { leadingEmoji } from './emoji';
+import { currentLanguage } from './i18n/useT';
+
 /** Picture found on Wikimedia Commons for a card name. */
 export type WikiImage = {
   /** Thumbnail URL (about 600 px wide), downloaded when the user picks it. */
@@ -10,8 +13,9 @@ export type WikiImage = {
 
 const COMMONS = 'https://commons.wikimedia.org/w/api.php';
 const WIKIDATA = 'https://www.wikidata.org/w/api.php';
-const WIKIPEDIA = 'https://fr.wikipedia.org/w/api.php';
-const HEADERS = { 'Api-User-Agent': 'Tiercraft/1.0 (https://tiercraft.vercel.app)' };
+// The player names cards in their own language: Wikipedia and Wikidata are searched in it.
+const wikipedia = (language: string) => `https://${language}.wikipedia.org/w/api.php`;
+const HEADERS = { 'Api-User-Agent': 'Tiercraft/1.0 (https://tier-list-app-share-site.vercel.app)' };
 // SVG files (flags, logos) come with a PNG thumbnail, which is what gets downloaded.
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 /** Wikidata properties holding the most recognisable picture of a thing, best first. */
@@ -67,16 +71,17 @@ function toImages(pages: Page[]): WikiImage[] {
 
 /** Card name without its leading emoji, e.g. "🍕 Pizza" → "Pizza". */
 export function searchTerm(label: string): string {
-  return label.replace(/^[\p{Extended_Pictographic}‍️\s]+/u, '').trim();
+  const emoji = leadingEmoji(label.trim());
+  return (emoji ? label.trim().slice(emoji.length) : label).trim();
 }
 
 /** Commons file names of the flag, logo and main image of the Wikidata item named `term`. */
-async function wikidataFiles(term: string): Promise<string[]> {
+async function wikidataFiles(term: string, language: string): Promise<string[]> {
   const found = await api<WikidataResponse>(WIKIDATA, {
     action: 'wbsearchentities',
     search: term,
-    language: 'fr',
-    uselang: 'fr',
+    language,
+    uselang: language,
     type: 'item',
     limit: '1',
   });
@@ -105,16 +110,17 @@ async function commonsFiles(names: string[]): Promise<WikiImage[]> {
 
 /**
  * Pictures for `label`, most representative first: the flag, logo or main image
- * of the matching Wikidata item, the picture of the French Wikipedia article,
+ * of the matching Wikidata item, the picture of the Wikipedia article (in the app's language),
  * then Commons search results as a last resort.
  */
 export async function findImages(label: string): Promise<WikiImage[]> {
   const term = searchTerm(label);
   if (!term) return [];
+  const language = currentLanguage();
 
   const [wikidata, article, search] = await Promise.allSettled([
-    wikidataFiles(term),
-    api(WIKIPEDIA, { action: 'query', prop: 'pageimages', piprop: 'name', redirects: '1', titles: term }),
+    wikidataFiles(term, language),
+    api(wikipedia(language), { action: 'query', prop: 'pageimages', piprop: 'name', redirects: '1', titles: term }),
     api(COMMONS, { action: 'query', generator: 'search', gsrsearch: `${term} filetype:bitmap|drawing`, gsrnamespace: '6', gsrlimit: '6', ...IMAGE_INFO }),
   ]);
   if (wikidata.status === 'rejected' && article.status === 'rejected' && search.status === 'rejected') throw search.reason;

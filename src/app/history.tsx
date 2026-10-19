@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { formatDay } from '../lib/format';
+import { useT } from '../lib/i18n/useT';
+import { useLocalizeList } from '../lib/i18n/useContent';
 import { useResponsive } from '../lib/layout';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from '../components/Clickable';
@@ -14,6 +16,8 @@ import { Clickable } from '../components/Clickable';
 export default function History() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
+  const { t, upper, locale } = useT();
+  const localize = useLocalizeList();
   const lists = useTierStore((s) => s.lists);
   const validated = useMemo(
     () => Object.values(lists).filter((l) => l.daily?.validatedAt).sort((a, b) => b.daily!.day.localeCompare(a.daily!.day)),
@@ -26,9 +30,10 @@ export default function History() {
       keyExtractor={(l) => l.id}
       contentContainerStyle={[column, { padding: gutter, gap: spacing.md, paddingBottom: insets.bottom + spacing.xl }]}
       ListEmptyComponent={
-        <Text style={styles.empty}>Validez la tier list du jour pour la retrouver ici, avec le classement moyen des joueurs.</Text>
+        <Text style={styles.empty}>{t('app.history.empty')}</Text>
       }
-      renderItem={({ item }) => {
+      renderItem={({ item: saved }) => {
+        const item = localize(saved);
         const top = (item.placement[item.tiers[0]?.id] ?? []).map((cid) => item.cards[cid]?.label).filter(Boolean);
         return (
           <Clickable
@@ -38,13 +43,13 @@ export default function History() {
           >
             <Text style={styles.emoji}>{item.daily!.emoji}</Text>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.date}>{formatDay(item.daily!.day)}</Text>
-              <Text numberOfLines={1} style={styles.title}>
+              <Text style={styles.date}>{upper(formatDay(item.daily!.day, locale))}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
                 {item.title}
               </Text>
               {top.length ? (
                 <Text numberOfLines={1} style={styles.meta}>
-                  Votre S : {top.join(', ')}
+                  {t('app.history.top', { cards: top.join(', ') })}
                 </Text>
               ) : null}
             </View>
@@ -69,7 +74,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   emoji: { fontSize: 30 },
-  date: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Capitals through upper(), not textTransform: Greek capitals drop their accents.
+  date: { color: colors.primary, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   title: { color: colors.text, fontSize: 16, fontWeight: '700' },
   meta: { color: colors.textMuted, fontSize: 13 },
 });

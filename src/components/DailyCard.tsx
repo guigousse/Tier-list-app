@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { radius, spacing } from '../constants/theme';
+import { useT } from '../lib/i18n/useT';
+import { useContentText } from '../lib/i18n/useContent';
+import { dailyStreak } from '../lib/streak';
 import { useCatalog } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from './Clickable';
@@ -14,8 +17,12 @@ const SHINE_WIDTH = 80;
 
 /** Home screen card for the daily tier list: coloured, with a sweeping shine. */
 export function DailyCard() {
+  const { t, upper } = useT();
   const daily = useCatalog((s) => s.daily);
+  const text = useContentText();
   const existing = useTierStore((s) => (daily ? Object.values(s.lists).find((l) => l.daily?.day === daily.day) : undefined));
+  const lists = useTierStore((s) => s.lists);
+  const streak = useMemo(() => dailyStreak(Object.values(lists)), [lists]);
   const [width, setWidth] = useState(0);
 
   // Shine: a light band crossing the card every few seconds.
@@ -35,6 +42,7 @@ export function DailyCard() {
   const nudgeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: nudge.value }] }));
 
   if (!daily) return null;
+  const title = text(`daily-${daily.day}`)?.title ?? daily.title;
   const validated = Boolean(existing?.daily?.validatedAt);
 
   const open = () => {
@@ -49,8 +57,8 @@ export function DailyCard() {
   return (
     <Clickable
       accessibilityRole="button"
-      accessibilityLabel={`Tier list du jour : ${daily.title}`}
-      accessibilityHint={validated ? 'Voir le classement moyen' : 'Classer les cartes'}
+      accessibilityLabel={t('app.daily.label', { title })}
+      accessibilityHint={validated ? t('app.daily.hintResults') : t('app.daily.hintRank')}
       onPress={open}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.98 }] }]}
@@ -67,9 +75,9 @@ export function DailyCard() {
 
       <Text style={styles.emoji}>{daily.emoji}</Text>
       <View style={{ flex: 1 }}>
-        <Text style={styles.kicker}>Tier list du jour</Text>
-        <Text numberOfLines={1} style={styles.title}>
-          {daily.title}
+        <Text style={styles.kicker}>{upper(t('app.dailyList'))}{streak > 0 ? `  ·  🔥 ${streak}` : ''}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
+          {title}
         </Text>
       </View>
       <View style={[styles.action, validated && styles.actionDone]}>
@@ -97,7 +105,8 @@ const styles = StyleSheet.create({
   },
   shine: { position: 'absolute', top: -20, bottom: -20, left: 0, width: SHINE_WIDTH },
   emoji: { fontSize: 32 },
-  kicker: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
+  // Capitals through upper(), not textTransform: Greek capitals drop their accents.
+  kicker: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
   title: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },
   action: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
   actionDone: { backgroundColor: '#2EAD6B' },

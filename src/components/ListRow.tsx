@@ -2,7 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
-import { plural, relativeTime } from '../lib/format';
+import { relativeTime } from '../lib/format';
+import { useT } from '../lib/i18n/useT';
+import { leadingEmoji } from '../lib/emoji';
 import { imageUri } from '../lib/images';
 import type { TierList } from '../store/types';
 import { IconButton } from './ui';
@@ -14,8 +16,6 @@ type Props = {
   onMore?: () => void;
   timestampKey?: 'openedAt' | 'updatedAt';
 };
-
-const leadingEmoji = (label: string) => label.match(/^\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/u)?.[0];
 
 /** The list's emoji, else a card picture or emoji, else its tier colours. */
 function ListPreview({ list }: { list: TierList }) {
@@ -54,7 +54,7 @@ function ListPreview({ list }: { list: TierList }) {
 export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: Props) {
   const total = Object.keys(list.cards).length;
   const ranked = total - list.pool.length;
-  const verb = timestampKey === 'openedAt' ? 'Ouverte' : 'Modifiée';
+  const { t } = useT();
   return (
     <View style={styles.row}>
       <Clickable
@@ -66,20 +66,21 @@ export function ListRow({ list, onPress, onMore, timestampKey = 'updatedAt' }: P
         <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {list.favorite ? <Ionicons name="star" size={14} color="#FFD54F" /> : null}
-            <Text numberOfLines={1} style={styles.title}>
+            {/* One line, over the options button: a long title shrinks a little rather than wrap or end in « … ». */}
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
               {list.title}
             </Text>
           </View>
-          <Text style={styles.meta}>
-            {plural(list.tiers.length, 'rang')} · {ranked}/{total} classées
+          <Text style={[styles.meta, onMore && styles.besideMore]}>
+            {t('editor.row.tiers', { count: list.tiers.length })} · {t('editor.row.ranked', { ranked, total })}
           </Text>
-          <Text style={styles.meta}>
-            {verb} {relativeTime(list[timestampKey])}
+          <Text style={[styles.meta, onMore && styles.besideMore]}>
+            {t(timestampKey === 'openedAt' ? 'editor.row.opened' : 'editor.row.updated', { time: relativeTime(list[timestampKey]) })}
           </Text>
         </View>
         {onMore ? null : <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />}
       </Clickable>
-      {onMore ? <IconButton icon="ellipsis-horizontal" label="Options" onPress={onMore} color={colors.textMuted} /> : null}
+      {onMore ? <IconButton icon="ellipsis-horizontal" label={t('editor.options')} onPress={onMore} color={colors.textMuted} style={styles.more} /> : null}
     </View>
   );
 }
@@ -103,4 +104,7 @@ const styles = StyleSheet.create({
   stripeLabel: { fontSize: 7, fontWeight: '800', color: '#111' },
   title: { color: colors.text, fontSize: 16, fontWeight: '700', flexShrink: 1 },
   meta: { color: colors.textMuted, fontSize: 13 },
+  // The options sit under the title, beside the details: the title has the row's whole width.
+  more: { position: 'absolute', right: spacing.md, bottom: spacing.md },
+  besideMore: { marginRight: 32 },
 });

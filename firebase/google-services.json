@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1065330525513",
+    "project_id": "tiercraft-517f4",
+    "storage_bucket": "tiercraft-517f4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065330525513:android:e19711787e8358a18dc698",
+        "android_client_info": {
+          "package_name": "com.guigousse.tiercraft"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgjx-FJhNdihTSLCDrIDlmf6D94I_4lic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,51 +1,69 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { captureRef } from 'react-native-view-shot';
 
 import { ActionSheet, Button, Field, IconButton, Sheet, type MenuAction } from '../../components/ui';
-import { ShareSheet } from '../../components/ShareSheet';
 import { CardFocus } from '../../components/editor/CardFocus';
 import { CardSheet, type CardDraft } from '../../components/editor/CardSheet';
 import { DragProvider, useDragContext } from '../../components/editor/DragDrop';
 import { TierRow } from '../../components/editor/TierRow';
 import { TierSheet } from '../../components/editor/TierSheet';
 import { Tray } from '../../components/editor/Tray';
+import { AiSheet } from '../../components/editor/AiSheet';
+import { MagicWand } from '../../components/editor/MagicWand';
+import { aiBusy, useAiJob } from '../../lib/aiGenerate';
+import { isFixed, placementLocked, startsEditing } from '../../lib/editorMode';
 import { colors, spacing } from '../../constants/theme';
+import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
+import { TierStrip } from '../../components/TierStrip';
+import { socialError } from '../../lib/social';
+import { sentRanksState, validateSentRanks } from '../../lib/sentRanks';
+import { useCatalog, useKeptVote } from '../../store/useCatalog';
+import { useRegionName } from '../../components/RegionPicker';
+import { useMail } from '../../store/useMail';
 import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
+import { own } from '../../lib/own';
+import { track } from '../../lib/analytics';
+import { MAX_TITLE } from '../../lib/listTitle';
+import { useT } from '../../lib/i18n/useT';
+import { useLocalizedList } from '../../lib/i18n/useContent';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 const noop = () => {};
 
 export default function EditorScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const list = useTierStore((s) => (id ? s.lists[id] : undefined));
+  // `edit`: a list just created opens in edit mode, to name it and add its cards.
+  const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
+  // Daily and popular lists read in the player's language; the save keeps the French labels.
+  const list = useLocalizedList(useTierStore((s) => own(s.lists, id)));
   const settings = useTierStore((s) => s.settings);
   const moveCard = useTierStore((s) => s.moveCard);
   const { cardSize } = useResponsive();
+  const { t } = useT();
 
   useEffect(() => {
     if (id) useTierStore.getState().markOpened(id);
   }, [id]);
 
   const onMove = useCallback((cardId: string, zone: Zone, index: number) => moveCard(id!, cardId, zone, index), [id, moveCard]);
+  // The mode lives here: dragging is locked while editing (DragProvider wraps the editor).
+  const [editing, setEditing] = useState(() => Boolean(list && startsEditing(list, edit === '1')));
 
   if (!list) {
     return (
       <View style={styles.missing}>
-        <Text style={styles.missingText}>Cette tier list n’existe plus.</Text>
-        <Button label="Retour à l’accueil" onPress={() => router.dismissTo('/')} />
+        <Text style={styles.missingText}>{t('editor.missing')}</Text>
+        <Button label={t('editor.backHome')} onPress={() => router.dismissTo('/')} />
       </View>
     );
   }
@@ -55,45 +73,49 @@ export default function EditorScreen() {
       cardSize={cardSize(settings.cardSize)}
       showLabels={settings.showCardLabels}
       haptics={settings.haptics}
-      locked={Boolean(list.daily?.validatedAt)}
+      locked={placementLocked(list, editing)}
       onMove={onMove}
     >
-      <Editor list={list} />
+      <Editor list={list} editing={editing} setEditing={setEditing} />
     </DragProvider>
   );
 }
 
-function Editor({ list }: { list: TierList }) {
+function Editor({ list, editing, setEditing }: { list: TierList; editing: boolean; setEditing: (on: boolean) => void }) {
   const insets = useSafeAreaInsets();
+  const { t } = useT();
   const store = useTierStore.getState();
   const { scrollRef, viewportRef, onScrollLayout, onContentSize } = useDragContext();
-  const captureTarget = useRef<View>(null);
 
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [cardSheet, setCardSheet] = useState<{ cardId: string | null } | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const aiRunning = useAiJob((s) => (aiBusy(s.job, list.id) ? s.job!.kind : null));
   const [menuOpen, setMenuOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(list.title);
-  const [exporting, setExporting] = useState(false);
 
   const editingTierIndex = list.tiers.findIndex((t) => t.id === editingTierId);
   const editingTier = editingTierIndex >= 0 ? list.tiers[editingTierIndex] : null;
   const editingCard = cardSheet?.cardId ? list.cards[cardSheet.cardId] ?? null : null;
-  const editingCardZone: Zone | null = editingCard
-    ? list.pool.includes(editingCard.id)
-      ? POOL
-      : (list.tiers.find((t) => list.placement[t.id]?.includes(editingCard.id))?.id ?? POOL)
-    : null;
 
-  // Daily and popular tier lists have fixed tiers and cards: only the ranking changes.
   const daily = list.daily;
   const popular = list.popular;
-  const fixed = Boolean(daily || popular);
-  // The daily ranking is frozen once validated; a popular one can change and be validated again.
-  const validated = Boolean(daily?.validatedAt);
-  const popularRanks = popular ? rankingOf(list, popular.cardIds) : null;
-  const popularUpToDate = Boolean(popularRanks && popular?.validatedRanks?.join() === popularRanks.join());
+  const mail = list.mail;
+  const fixed = isFixed(list);
+  // The player's own lists have two modes: editing (title, tiers, cards, never their
+  // place) and ranking (only placing the cards), where they land once saved.
+  const editable = !fixed && editing;
+  // A received list's ranking is frozen once sent back; daily and popular ones can
+  // change and be validated again.
+  const validated = Boolean(mail?.answeredAt);
+  const [sending, setSending] = useState(false);
+  const ranked = popular ?? daily;
+  // A national vote (an election…) seen from abroad: ranking stays possible, the vote isn't.
+  const keptTo = useKeptVote(list);
+  const regionName = useRegionName();
+  const currentRanks = ranked ? rankingOf(list, ranked.cardIds) : null;
+  const upToDate = Boolean(currentRanks && ranked?.validatedRanks?.join() === currentRanks.join());
 
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
@@ -104,11 +126,11 @@ function Editor({ list }: { list: TierList }) {
   const openCard = useCallback(
     (card: Card) => {
       playClick();
-      // Cards of daily and popular tier lists can't be edited: only offer to place them.
-      if (fixed) setFocusId(card.id);
-      else setCardSheet({ cardId: card.id });
+      // Outside edit mode, cards can't be edited: only offer to place them.
+      if (editable) setCardSheet({ cardId: card.id });
+      else setFocusId(card.id);
     },
-    [fixed],
+    [editable],
   );
   const focusCard = focusId ? (list.cards[focusId] ?? null) : null;
   const focusZone: Zone | null = focusCard
@@ -120,42 +142,77 @@ function Editor({ list }: { list: TierList }) {
 
   const createCards = (drafts: CardDraft[]) => drafts.forEach((d) => store.addCard(list.id, d));
 
-  const exportImage = async () => {
-    if (exporting) return;
-    setExporting(true);
+  // A list sent to friends: they compare with the ranking the player validates.
+  const outbox = useMail((s) => s.outbox);
+  const sentState = sentRanksState(list, outbox);
+  useEffect(() => {
+    if (!fixed && !useMail.getState().loaded) useMail.getState().refresh();
+  }, [fixed]);
+
+  const validateOwn = async () => {
+    setSending(true);
     try {
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Partage indisponible', 'Le partage n’est pas disponible sur cet appareil.');
-        return;
-      }
-      const uri = await captureRef(captureTarget, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: list.title });
-    } catch {
-      Alert.alert('Export impossible', 'L’image n’a pas pu être générée.');
+      await validateSentRanks(list.id);
+    } catch (e) {
+      Alert.alert(t('editor.oops'), socialError(e));
     } finally {
-      setExporting(false);
+      setSending(false);
     }
   };
 
+  const save = () => {
+    playClick();
+    setEditing(false);
+    setCardSheet(null);
+    setEditingTierId(null);
+  };
+
   const confirmReset = () =>
-    Alert.alert('Réinitialiser le classement ?', 'Toutes les cartes retournent dans la barre du bas.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Réinitialiser', style: 'destructive', onPress: () => store.resetPlacement(list.id) },
+    Alert.alert(t('editor.resetTitle'), t('editor.resetBody'), [
+      { text: t('editor.cancel'), style: 'cancel' },
+      { text: t('editor.reset'), style: 'destructive', onPress: () => store.resetPlacement(list.id) },
     ]);
 
+  const showComparison = () => mail && router.push({ pathname: '/mail/[id]', params: { id: mail.id } });
+
+  // A received list: the ranking goes back to the friend, then both are compared.
+  const sendRanking = async () => {
+    const secret = useTierStore.getState().profile?.secret;
+    const ranks = mail ? rankingOf(list, mail.cardIds) : null;
+    if (!mail || !secret || !ranks) return;
+    setSending(true);
+    try {
+      await answerMail(secret, mail.id, ranks);
+      store.markMailAnswered(list.id);
+      await useMail.getState().refresh();
+      showComparison();
+    } catch (e) {
+      Alert.alert(t('editor.oops'), socialError(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
   const confirmValidate = () =>
-    Alert.alert(
-      'Valider votre classement ?',
-      daily
-        ? 'Il sera figé et ajouté à votre historique. Vous découvrirez ensuite le classement moyen des joueurs.'
-        : 'Il comptera dans le classement moyen des joueurs. Vous pourrez le modifier et le valider à nouveau plus tard.',
+    mail
+      ? Alert.alert(t('editor.sendTitle'), t('editor.sendBody', { name: mail.from }), [
+          { text: t('editor.cancel'), style: 'cancel' },
+          { text: t('editor.send'), onPress: sendRanking },
+        ])
+      : Alert.alert(
+      t('editor.validateTitle'),
+      t('editor.validateBody'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('editor.cancel'), style: 'cancel' },
         {
-          text: 'Valider',
+          text: t('editor.validate'),
           onPress: () => {
+            const first = !list.popular?.validatedAt;
             const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
             if (!ok) return;
+            track('list_validated', { kind: daily ? 'daily' : 'public', first: first ? 1 : 0 });
+            // Count this player's first completed ranking right away (stats refresh later).
+            if (list.popular && first) useCatalog.getState().bumpStat(list.popular.key, 'completions', 1);
             syncDailyVotes();
             showResults();
           },
@@ -164,10 +221,10 @@ function Editor({ list }: { list: TierList }) {
     );
 
   const confirmDelete = () =>
-    Alert.alert('Supprimer la tier list ?', `« ${list.title} » sera définitivement supprimée.`, [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('editor.deleteTitle'), t('editor.deleteBody', { title: list.title }), [
+      { text: t('editor.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer',
+        text: t('editor.delete'),
         style: 'destructive',
         onPress: () => {
           router.back();
@@ -176,59 +233,63 @@ function Editor({ list }: { list: TierList }) {
       },
     ]);
 
-  const showResults = () => router.push({ pathname: '/results/[id]', params: { id: list.id } });
+  // The results replace this screen: going back returns where the player came from.
+  const showResults = () => router.replace({ pathname: '/results/[id]', params: { id: list.id } });
 
   const menuActions: MenuAction[] = fixed
     ? [
-        { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
-        ...(validated || popular?.validatedAt ? [{ label: 'Voir le classement moyen', icon: 'people-outline', onPress: showResults } as const] : []),
-        ...(validated ? [] : [{ label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset } as const]),
-        { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+        ...(mail?.answeredAt ? [{ label: t('editor.seeComparison'), icon: 'git-compare-outline', onPress: showComparison } as const] : []),
+        ...(!mail && ranked?.validatedAt ? [{ label: t('editor.seeAverage'), icon: 'people-outline', onPress: showResults } as const] : []),
+        ...(validated ? [] : [{ label: t('editor.resetRanking'), icon: 'refresh-outline', onPress: confirmReset } as const]),
+        { label: t('editor.deleteList'), icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ]
     : [
-        { label: 'Ajouter des cartes', icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
-        { label: 'Ajouter un rang', icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
-        { label: 'Partager la tier list', icon: 'share-outline', onPress: () => setShareOpen(true) },
-        { label: 'Partager en image', icon: 'image-outline', onPress: exportImage },
+        ...(editable
+          ? ([
+              { label: t('editor.addCards'), icon: 'add-circle-outline', onPress: () => setCardSheet({ cardId: null }) },
+              { label: t('editor.addTier'), icon: 'reorder-four-outline', onPress: () => store.addTier(list.id) },
+            ] as const)
+          : ([{ label: t('editor.editList'), icon: 'create-outline', onPress: () => setEditing(true) }] as const)),
         {
-          label: list.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+          label: list.favorite ? t('editor.removeFavorite') : t('editor.addFavorite'),
           icon: list.favorite ? 'star' : 'star-outline',
           onPress: () => store.toggleFavorite(list.id),
         },
         {
-          label: 'Dupliquer',
+          label: t('editor.duplicate'),
           icon: 'copy-outline',
           onPress: () => {
             const copy = store.duplicateList(list.id);
-            if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy } });
+            if (copy) router.replace({ pathname: '/editor/[id]', params: { id: copy, edit: '1' } });
           },
         },
-        { label: 'Réinitialiser le classement', icon: 'refresh-outline', onPress: confirmReset },
-        { label: 'Supprimer la tier list', icon: 'trash-outline', destructive: true, onPress: confirmDelete },
+        { label: t('editor.resetRanking'), icon: 'refresh-outline', onPress: confirmReset },
+        { label: t('editor.deleteList'), icon: 'trash-outline', destructive: true, onPress: confirmDelete },
       ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.xs }]}>
-        <IconButton icon="chevron-back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
+        <IconButton icon="chevron-back" label={t('editor.back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} size={26} />
         <Clickable
           accessibilityRole="button"
-          accessibilityHint={fixed ? undefined : 'Renommer'}
-          disabled={fixed}
+          accessibilityHint={editable ? t('editor.rename') : undefined}
+          disabled={!editable}
           style={styles.titleWrap}
           onPress={() => {
             setTitle(list.title);
             setRenaming(true);
           }}
         >
-          <Text numberOfLines={1} style={styles.title}>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
             {list.title}
           </Text>
-          {fixed ? null : <Ionicons name="pencil" size={14} color={colors.textMuted} />}
+          {editable ? <Ionicons name="pencil" size={14} color={colors.textMuted} /> : null}
         </Clickable>
-        <IconButton icon="share-outline" label="Partager" onPress={fixed ? exportImage : () => setShareOpen(true)} />
-        <IconButton icon="ellipsis-horizontal-circle-outline" label="Options" onPress={() => setMenuOpen(true)} />
+        {fixed || editing ? null : <IconButton icon="create-outline" label={t('editor.editList')} onPress={() => setEditing(true)} />}
+        <IconButton icon="ellipsis-horizontal-circle-outline" label={t('editor.options')} onPress={() => setMenuOpen(true)} />
       </View>
+      <TierStrip style={styles.strip} />
 
       <View ref={viewportRef} collapsable={false} style={{ flex: 1 }} onLayout={(e) => onScrollLayout(e.nativeEvent.layout.height)}>
         <AnimatedScrollView
@@ -236,56 +297,84 @@ function Editor({ list }: { list: TierList }) {
           contentContainerStyle={{ paddingBottom: spacing.lg }}
           onContentSizeChange={(_w: number, h: number) => onContentSize(h)}
         >
-          <View ref={captureTarget} collapsable={false} style={styles.capture}>
+          <View style={styles.capture}>
             {list.tiers.map((tier) => (
               <TierRow
                 key={tier.id}
                 tier={tier}
                 cards={cardsOf(list.placement[tier.id])}
-                onPressTier={fixed ? undefined : openTier}
+                onPressTier={editable ? openTier : undefined}
                 onPressCard={validated ? noop : openCard}
               />
             ))}
             <Text style={styles.watermark}>Tiercraft</Text>
           </View>
-          {fixed ? null : (
+          {!editable ? null : (
             <View style={styles.below}>
-              <Button label="Ajouter un rang" icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
+              <Button label={t('editor.addTier')} icon="add" variant="ghost" onPress={() => store.addTier(list.id)} />
             </View>
           )}
         </AnimatedScrollView>
+        {/* AI generation: personal lists being edited only (daily and popular cards are fixed). */}
+        {!editable ? null : (
+          <View style={styles.wand} pointerEvents="box-none">
+            <MagicWand onPress={() => setAiOpen(true)} busy={aiRunning !== null} />
+          </View>
+        )}
       </View>
 
-      {validated ? (
+      {validated && mail ? (
         <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Text style={styles.dailyText}>
-            Classement validé le {new Date(daily!.validatedAt!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
-          </Text>
-          <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
+          <Text style={styles.dailyText}>{t('editor.sentTo', { name: mail.from })}</Text>
+          <Button label={t('editor.seeComparison')} icon="git-compare-outline" onPress={showComparison} />
         </View>
       ) : (
         <>
           <Tray
-            bottomInset={!fixed}
+            bottomInset={!fixed && !editing && sentState === 'none'}
             cards={cardsOf(list.pool)}
             total={total}
-            onAdd={fixed ? undefined : () => setCardSheet({ cardId: null })}
+            onAdd={editable ? () => setCardSheet({ cardId: null }) : undefined}
             onPressCard={openCard}
           />
-          {popularUpToDate ? (
+          {editable ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-              <Text style={styles.dailyText}>✓ Classement validé · déplacez des cartes pour le modifier</Text>
-              <Button label="Voir le classement moyen" icon="people-outline" onPress={showResults} />
+              <Text style={styles.dailyText}>{t('editor.editMode')}</Text>
+              <Button label={t('editor.save')} icon="checkmark" onPress={save} disabled={total === 0} />
+              {total === 0 ? <Text style={styles.dailyText}>{t('editor.addCardsToSave')}</Text> : null}
+            </View>
+          ) : !fixed && sentState === 'sent' ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Text style={styles.dailyText}>{t('editor.sentToFriends')}</Text>
+            </View>
+          ) : !fixed && sentState === 'pending' ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Button
+                label={sending ? t('editor.sending') : t('editor.validateMine')}
+                icon="checkmark-done"
+                onPress={validateOwn}
+                disabled={list.pool.length > 0 || sending}
+              />
+              <Text style={styles.dailyText}>
+                {list.pool.length > 0 ? t('editor.rankAll') : t('editor.friendsCompare')}
+              </Text>
+            </View>
+          ) : upToDate ? (
+            <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              <Text style={styles.dailyText}>{t('editor.validated')}</Text>
+              <Button label={t('editor.seeAverage')} icon="people-outline" onPress={showResults} />
             </View>
           ) : fixed ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
+              {mail ? <Text style={styles.dailyText}>{t('editor.sentBy', { name: mail.from })}</Text> : null}
               <Button
-                label={popular?.validatedAt ? 'Valider mes changements' : 'Valider mon classement'}
-                icon="checkmark-done"
+                label={mail ? (sending ? t('editor.sending') : t('editor.sendMineTo', { name: mail.from })) : ranked?.validatedAt ? t('editor.validateChanges') : t('editor.validateMine')}
+                icon={mail ? 'paper-plane' : 'checkmark-done'}
                 onPress={confirmValidate}
-                disabled={list.pool.length > 0}
+                disabled={list.pool.length > 0 || sending}
               />
-              {list.pool.length > 0 ? <Text style={styles.dailyText}>Classez toutes les cartes pour valider.</Text> : null}
+              {list.pool.length > 0 ? <Text style={styles.dailyText}>{t('editor.rankAll')}</Text> : null}
+              {keptTo ? <Text style={styles.dailyText}>{t('editor.voteKept', { countries: keptTo.map(regionName).join(', ') })}</Text> : null}
             </View>
           ) : null}
         </>
@@ -317,31 +406,33 @@ function Editor({ list }: { list: TierList }) {
       <CardSheet
         visible={cardSheet !== null}
         card={editingCard}
-        zone={editingCardZone}
-        tiers={list.tiers}
         onClose={() => setCardSheet(null)}
         onCreate={createCards}
         onUpdate={(patch) => editingCard && store.updateCard(list.id, editingCard.id, patch)}
-        onMove={(zone) => editingCard && store.moveCard(list.id, editingCard.id, zone)}
         onDelete={() => editingCard && store.deleteCard(list.id, editingCard.id)}
       />
 
       <ActionSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        title="Options"
+        title={t('editor.options')}
         actions={menuActions}
       />
 
-      <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={exportImage} />
+      {fixed ? null : (
+        <>
+          <AiSheet visible={aiOpen} onClose={() => setAiOpen(false)} listId={list.id} title={list.title} />
+        </>
+      )}
+
 
       <Sheet
         visible={renaming}
         onClose={() => setRenaming(false)}
-        title="Renommer"
+        title={t('editor.rename')}
         footer={
           <Button
-            label="Enregistrer"
+            label={t('editor.save')}
             onPress={() => {
               store.renameList(list.id, title);
               setRenaming(false);
@@ -349,7 +440,7 @@ function Editor({ list }: { list: TierList }) {
           />
         }
       >
-        <Field value={title} onChangeText={setTitle} autoFocus placeholder="Titre" maxLength={60} />
+        <Field value={title} onChangeText={setTitle} autoFocus placeholder={t('editor.titlePlaceholder')} maxLength={MAX_TITLE} />
       </Sheet>
     </View>
   );
@@ -368,6 +459,8 @@ const styles = StyleSheet.create({
   capture: { backgroundColor: colors.background },
   watermark: { color: colors.border, fontSize: 11, fontWeight: '700', textAlign: 'right', padding: 6 },
   below: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  strip: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
+  wand: { position: 'absolute', right: spacing.lg, bottom: spacing.md, flexDirection: 'row', gap: spacing.md },
   dailyBar: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, backgroundColor: colors.tray },
   dailyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },

@@ -16,13 +16,21 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.guigousse.TierCraft",
-      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "fr",
+        "CFBundleLocalizations": [
+          "fr",
+          "en",
+          "es",
+          "el"
+        ],
+        "CFBundleAllowMixedLocalizations": true
       },
       "associatedDomains": [
-        "applinks:tiercraft.vercel.app"
-      ]
+        "applinks:tier-list-app-share-site.vercel.app"
+      ],
+      "googleServicesFile": "./firebase/GoogleService-Info.plist"
     },
     "android": {
       "package": "com.guigousse.tiercraft",
@@ -32,7 +40,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./firebase/google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -54,6 +63,45 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
+      ],
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ],
+      "expo-iap",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
+      [
+        "@react-native-firebase/analytics",
+        {
+          "ios": {
+            "withoutAdIdSupport": true
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
       ]
     ],
     "extra": {
@@ -61,6 +109,20 @@
         "projectId": "44164e21-47fe-412d-9cd0-38064a2df799"
       }
     },
-    "owner": "guigousse"
+    "owner": "guigousse",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/44164e21-47fe-412d-9cd0-38064a2df799",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "locales": {
+      "fr": "./locales/fr.json",
+      "en": "./locales/en.json",
+      "es": "./locales/es.json",
+      "el": "./locales/el.json"
+    }
   }
 }

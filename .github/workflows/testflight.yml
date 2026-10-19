@@ -1,0 +1,60 @@
+# iOS build on a GitHub macOS runner (free for public repositories), without using
+# EAS cloud builds: `eas build --local` only reads the signing credentials and the
+# build number from EAS. The .ipa is published as a release asset of a draft-free
+# prerelease "build-<run>", then sent to TestFlight with `eas submit --url`
+# (scripts/submit-release.sh), where the App Store Connect key lives.
+#
+# Repository secret needed (Settings → Secrets and variables → Actions):
+#   EXPO_TOKEN  Expo access token (expo.dev → Account settings → Access tokens)
+name: TestFlight
+
+# Runs on a push whose last commit message contains "[testflight]", or by hand from
+# the Actions tab.
+on:
+  push:
+  workflow_dispatch:
+
+# A new build replaces the one in progress.
+concurrency:
+  group: testflight
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  ios:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[testflight]')
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use the newest Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+
+      - run: npm ci
+      - run: npm install -g eas-cli
+
+      - name: Build
+        run: eas build -p ios --profile production --local --non-interactive --output "$RUNNER_TEMP/Tiercraft.ipa"
+
+      - name: Publish the .ipa
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Keep only the latest build.
+          gh release list --limit 50 --json tagName -q '.[].tagName | select(startswith("build-"))' |
+            while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
+          gh release create "build-${{ github.run_number }}" "$RUNNER_TEMP/Tiercraft.ipa" \
+            --prerelease --target "${{ github.sha }}" --title "iOS build ${{ github.run_number }}" \
+            --notes "Build for TestFlight, replaced by the next one."

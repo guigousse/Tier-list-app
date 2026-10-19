@@ -4,7 +4,9 @@ import { submitDailyVote, submitListVote } from './api';
 
 /** Tier index (0 = S … 4 = D) of each published item of a daily list, or null if one isn't ranked. */
 export function dailyRanks(list: TierList): number[] | null {
-  return list.daily ? rankingOf(list, list.daily.cardIds) : null;
+  if (!list.daily) return null;
+  // The validated ranking, not moves made since without validating again.
+  return list.daily.validatedRanks ?? rankingOf(list, list.daily.cardIds);
 }
 
 /**
@@ -13,9 +15,21 @@ export function dailyRanks(list: TierList): number[] | null {
  */
 let syncing: Promise<void> | null = null;
 
+let again = false;
+
 export function syncDailyVotes(): Promise<void> {
-  // Several screens ask at once (validation, results): share one run.
-  syncing ??= sendPendingVotes().finally(() => {
+  // Several screens ask at once (validation, results): share one run. One asked during a
+  // run makes it go round once more, for a ranking validated after the run looked.
+  if (syncing) {
+    again = true;
+    return syncing;
+  }
+  syncing = (async () => {
+    do {
+      again = false;
+      await sendPendingVotes();
+    } while (again);
+  })().finally(() => {
     syncing = null;
   });
   return syncing;
@@ -32,10 +46,15 @@ async function sendPendingVotes(): Promise<void> {
         await submitDailyVote(list.daily.day, deviceId, ranks);
         markVoteSent(list.id);
       } else if (list.popular?.validatedRanks && !list.popular.voteSent) {
-        await submitListVote(list.popular.voteKey, deviceId, list.popular.validatedRanks);
-        markVoteSent(list.id);
+        const ranks = list.popular.validatedRanks;
+        await submitListVote(list.popular.voteKey, deviceId, ranks);
+        // Sent only if still the one validated: ranked again meanwhile, the next round sends it.
+        markVoteSent(list.id, ranks);
       }
-    } catch {
+    } catch (e) {
+      // A list taken out of the catalogue, or whose vote is kept to the players of one
+      // country (an election…): the server will never take this vote.
+      if (e instanceof Error && (e.message === 'unknown list' || e.message === 'region_locked')) markVoteSent(list.id);
       // Offline or server error: retried on the next sync.
     }
   }

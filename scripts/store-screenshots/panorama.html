@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tiercraft · captures App Store</title>
+<!--
+  App Store screenshots, drawn as one continuous panorama and cut into
+  1320 × 2868 slices by render.mjs. The app screens come from store/screens/.
+-->
+<style>
+  :root {
+    --w: 1320px; --h: 2868px;
+    --s: #FF7F7F; --a: #FFBF7F; --b: #FFDF7F; --c: #FFFF7F; --d: #BFFF7F;
+    --primary: #7C5CFF;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { width: calc(var(--w) * 6); height: var(--h); overflow: hidden; background: #0B0C12;
+    font-family: 'Inter Display', Inter, sans-serif; color: #F2F4F8; }
+  #stage { position: relative; width: 100%; height: 100%; overflow: hidden;
+    background:
+      radial-gradient(1400px 1100px at 8% 18%, rgba(124, 92, 255, .38), transparent 70%),
+      radial-gradient(1200px 1000px at 40% 85%, rgba(255, 127, 127, .20), transparent 70%),
+      radial-gradient(1300px 1100px at 68% 15%, rgba(255, 191, 127, .18), transparent 70%),
+      radial-gradient(1400px 1200px at 95% 80%, rgba(124, 92, 255, .32), transparent 70%),
+      linear-gradient(180deg, #12131C 0%, #0B0C12 100%); }
+  /* Faint grid of rounded tiles, like empty card slots. */
+  #stage::before { content: ''; position: absolute; inset: 0; opacity: .5;
+    background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,.07) 0 6px, transparent 7px);
+    background-size: 88px 88px; }
+  svg.ribbon { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .float { position: absolute; width: 190px; height: 190px; border-radius: 40px; display: grid; place-items: center;
+    font-size: 104px; box-shadow: 0 30px 60px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.08); }
+
+  .panel { position: absolute; top: 0; width: var(--w); height: var(--h); }
+  .phone { position: absolute; left: 50%; width: 900px; height: 2022px; margin-left: -450px; border-radius: 150px; padding: 22px;
+    background: linear-gradient(145deg, #5A5F6E 0%, #22252E 22%, #3B3F4A 50%, #1A1C22 78%, #4C505C 100%);
+    box-shadow:
+      0 120px 160px -40px rgba(0,0,0,.75),
+      0 40px 80px rgba(0,0,0,.45),
+      0 0 0 3px rgba(255,255,255,.06),
+      inset 0 0 0 4px rgba(255,255,255,.10),
+      inset 0 0 0 10px #0A0A0D; }
+  .phone::before, .phone::after { content: ''; position: absolute; width: 8px; border-radius: 4px; background: #3A3D47; }
+  .phone::before { left: -8px; top: 330px; height: 110px; box-shadow: 0 170px 0 #3A3D47, 0 340px 0 #3A3D47; }
+  .phone::after { right: -8px; top: 460px; height: 220px; }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 128px; overflow: hidden; background: #0F1115; }
+  .screen img { position: absolute; left: 0; top: 118px; width: 100%; }
+  .status { position: absolute; inset: 0 0 auto 0; height: 118px; background: #0F1115; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between; padding: 18px 92px 0 104px;
+    font: 600 44px Inter, sans-serif; letter-spacing: -.5px; }
+  .status .icons { display: flex; gap: 14px; align-items: center; }
+  .island { position: absolute; top: 34px; left: 50%; width: 230px; height: 70px; margin-left: -115px; border-radius: 40px; background: #000; z-index: 2; }
+  .glare { position: absolute; inset: 0; border-radius: 128px; z-index: 3; pointer-events: none;
+    background: linear-gradient(115deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 28%); }
+
+  .caption { position: absolute; left: 90px; right: 90px; bottom: 210px; text-align: center;
+    font-weight: 800; font-size: 118px; line-height: 1.04; letter-spacing: -3px; text-shadow: 0 8px 40px rgba(0,0,0,.5); }
+  .caption em { font-style: normal; background: linear-gradient(90deg, var(--s), var(--a) 30%, var(--b) 55%, var(--d));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .hero-title { position: absolute; left: 0; right: 0; top: 190px; text-align: center; }
+  .hero-title h1 { font-size: 230px; font-weight: 900; letter-spacing: -8px; line-height: 1; }
+  .hero-title .strip { display: flex; gap: 14px; width: 760px; margin: 46px auto 0; }
+  .hero-title .strip span { flex: 1; height: 18px; border-radius: 9px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <!-- A ribbon of the five tier colours runs across every slice, so the slices read as one panorama. -->
+  <svg class="ribbon" viewBox="0 0 7920 2868" preserveAspectRatio="none">
+    <defs>
+      <filter id="soft"><feGaussianBlur stdDeviation="2"/></filter>
+    </defs>
+    <g fill="none" stroke-linecap="round" opacity=".9" filter="url(#soft)">
+      <path id="r" d="M -200 2150 C 600 1650, 1100 900, 1900 1000 S 3200 2250, 4100 1900 S 5400 700, 6300 1050 S 7600 2050, 8200 1700" />
+    </g>
+    <g fill="none" stroke-width="64" stroke-linecap="round" opacity=".85">
+      <use href="#r" stroke="#FF7F7F" transform="translate(0,-260)"/>
+      <use href="#r" stroke="#FFBF7F" transform="translate(0,-130)"/>
+      <use href="#r" stroke="#FFDF7F"/>
+      <use href="#r" stroke="#FFFF7F" transform="translate(0,130)"/>
+      <use href="#r" stroke="#BFFF7F" transform="translate(0,260)"/>
+    </g>
+  </svg>
+
+  <!-- Cards floating around the phones; some straddle two slices. -->
+  <div class="float" style="left:1180px; top:420px; background:#5B3A8C; transform:rotate(-12deg)">🍕</div>
+  <div class="float" style="left:150px; top:1650px; background:#2E6B4F; transform:rotate(10deg) scale(.8)">🍓</div>
+  <div class="float" style="left:2520px; top:1880px; background:#7A3A4C; transform:rotate(14deg)">🍣</div>
+  <div class="float" style="left:3880px; top:300px; background:#2C5A7A; transform:rotate(-8deg)">🌶️</div>
+  <div class="float" style="left:5180px; top:1950px; background:#7A5A2C; transform:rotate(9deg)">🍉</div>
+  <div class="float" style="left:6500px; top:330px; background:#3B4050; transform:rotate(-14deg)">🇯🇵</div>
+  <div class="float" style="left:7700px; top:1700px; background:#5B3A8C; transform:rotate(12deg) scale(.85)">🥐</div>
+
+  <section class="panel" style="left:0">
+    <div class="hero-title">
+      <h1>Tiercraft</h1>
+      <div class="strip"><span style="background:var(--s)"></span><span style="background:var(--a)"></span><span style="background:var(--b)"></span><span style="background:var(--c)"></span><span style="background:var(--d)"></span></div>
+    </div>
+    <div class="phone" data-screen="accueil" style="top:640px; transform:rotate(-4deg) scale(.8); transform-origin:50% 0"></div>
+    <p class="caption">Classez tout,<br><em>de S à D.</em></p>
+  </section>
+  <section class="panel" style="left:1320px">
+    <div class="phone" data-screen="classement" style="top:180px; transform:rotate(3deg)"></div>
+    <p class="caption">Glissez.<br><em>Tranchez.</em></p>
+  </section>
+  <section class="panel" style="left:2640px">
+    <div class="phone" data-screen="du-jour" style="top:340px; transform:rotate(-3deg) scale(.94); transform-origin:50% 0"></div>
+    <p class="caption">Un défi<br><em>chaque jour.</em></p>
+  </section>
+  <section class="panel" style="left:3960px">
+    <div class="phone" data-screen="comparatif" style="top:180px; transform:rotate(3deg)"></div>
+    <p class="caption">D’accord avec<br><em>les autres ?</em></p>
+  </section>
+  <section class="panel" style="left:5280px">
+    <div class="phone" data-screen="personnalisation" style="top:340px; transform:rotate(-3deg) scale(.94); transform-origin:50% 0"></div>
+    <p class="caption">Vos rangs,<br><em>vos règles.</em></p>
+  </section>
+  <section class="panel" style="left:6600px">
+    <div class="phone" data-screen="partage" style="top:180px; transform:rotate(3deg)"></div>
+    <p class="caption">Un code,<br><em>et c’est partagé.</em></p>
+  </section>
+</div>
+<script>
+  // Phone contents: status bar, Dynamic Island, the app screen and a light glare.
+  const icons = '<svg width="54" height="34" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg>'
+    + '<svg width="48" height="34" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.6 7a6.2 6.2 0 0 1 8.8 0l-1.4 1.4a4.2 4.2 0 0 0-6 0zM1.2 4.6a9.6 9.6 0 0 1 13.6 0l-1.4 1.4a7.6 7.6 0 0 0-10.8 0z" fill="#fff"/></svg>'
+    + '<svg width="80" height="38" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="#fff" fill-opacity=".45"/></svg>';
+  for (const p of document.querySelectorAll('.phone')) {
+    p.innerHTML = `<div class="screen"><div class="island"></div><div class="status"><span>9:41</span><span class="icons">${icons}</span></div>`
+      + `<img src="../../store/screens/${p.dataset.screen}.png"><div class="glare"></div></div>`;
+  }
+</script>
+</body>
+</html>
