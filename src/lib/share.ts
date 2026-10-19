@@ -11,6 +11,8 @@ import { t } from './i18n/useT';
 export type SharedList = {
   /** The encoded form, used to recognise a link that was already imported. */
   code: string;
+  /** Pseudo of the player who shared it, when they had a profile. */
+  from?: string;
   title: string;
   tiers: { label: string; color: string }[];
   /** `tier` is the index in `tiers`, or -1 when the card is not ranked. */
@@ -83,10 +85,13 @@ function utf8Decode(bytes: number[]): string {
   return out;
 }
 
-type Payload = { v: number; t: string; r: [string, string][]; c: [string, string, number][] };
+type Payload = { v: number; t: string; r: [string, string][]; c: [string, string, number][]; f?: string };
 
-/** JSON form of `list` shared through links and codes. */
-export function toPayload(list: TierList): Payload {
+/**
+ * JSON form of `list` shared through links and codes. `from`: the sharer's pseudo, shown
+ * to whoever opens it; an extra key, so older apps reading the payload simply ignore it.
+ */
+export function toPayload(list: TierList, from?: string): Payload {
   const tierIndex = new Map(list.tiers.map((t, i) => [t.id, i]));
   const ordered: [string, number][] = [
     ...list.tiers.flatMap((t) => (list.placement[t.id] ?? []).map((id): [string, number] => [id, tierIndex.get(t.id)!])),
@@ -97,18 +102,22 @@ export function toPayload(list: TierList): Payload {
     t: list.title,
     r: list.tiers.map((t) => [t.label, t.color]),
     c: ordered.filter(([id]) => list.cards[id]).map(([id, tier]) => [list.cards[id].label, list.cards[id].color, tier]),
+    ...(from ? { f: from } : {}),
   };
 }
 
 /** Compact, URL-safe string describing `list`, used by offline links. */
-export function encodeList(list: TierList): string {
-  return toBase64Url(utf8Encode(JSON.stringify(toPayload(list))));
+export function encodeList(list: TierList, from?: string): string {
+  return toBase64Url(utf8Encode(JSON.stringify(toPayload(list, from))));
 }
 
 /** Offline link: carries the whole tier list, works without the share service. */
-export function offlineLink(list: TierList): string {
-  return `https://${SHARE_HOST}/import?d=${encodeList(list)}`;
+export function offlineLink(list: TierList, from?: string): string {
+  return `https://${SHARE_HOST}/import?d=${encodeList(list, from)}`;
 }
+
+/** Whether `code` is a code of the share service (offline links carry the whole list instead). */
+export const isShareCode = (code: string) => normalizeCode(code) === code;
 
 export function codeLink(code: string): string {
   return `https://${SHARE_HOST}/s/${code}`;
@@ -119,7 +128,7 @@ const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, ma
 
 /** Validates a payload received from a link or the share service. */
 export function parsePayload(data: unknown, code: string): SharedList | null {
-  const d = data as Partial<Record<'v' | 't' | 'r' | 'c', unknown>> | null;
+  const d = data as Partial<Record<'v' | 't' | 'r' | 'c' | 'f', unknown>> | null;
   if (!d || d.v !== VERSION || !Array.isArray(d.r) || !Array.isArray(d.c)) return null;
   const tiers = (d.r as unknown[])
     .slice(0, MAX_TIERS)
@@ -135,7 +144,9 @@ export function parsePayload(data: unknown, code: string): SharedList | null {
       tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
     }));
   // A list sent without a title: named in the language of the moment, as a list made here would be.
-  return { code, title: text(d.t, 60) || t('social.sharedListTitle'), tiers, cards };
+  // Pseudos are 20 characters at most on the server.
+  const from = text(d.f, 20).trim();
+  return { code, ...(from ? { from } : {}), title: text(d.t, 60) || t('social.sharedListTitle'), tiers, cards };
 }
 
 /** Normalises a typed share code ("k7f-3qx" → "K7F3QX"), or null if it isn't one. */

@@ -1,7 +1,6 @@
 import { createProfile, submitListVote } from '../lib/api';
 import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
-import { creditsShow, crossedSteps, pendingCelebrations } from '../lib/milestoneEvents';
 import { own } from '../lib/own';
 import { saveProfile } from '../lib/social';
 import type { TierList } from '../store/types';
@@ -21,26 +20,6 @@ jest.mock('../lib/push', () => ({ syncPushToken: jest.fn() }));
 const listVote = submitListVote as jest.Mock;
 const create = createProfile as jest.Mock;
 const restore = restoreIdentity as jest.Mock;
-
-describe('credits of the lists path', () => {
-  it('are celebrated only for a wallet the server pays (attested by Apple)', () => {
-    const won = { lists: 25, flame: 0 };
-    const paid = pendingCelebrations({ lists: 24, flame: 0 }, won, {}, { credits: true }).events;
-    const unpaid = pendingCelebrations({ lists: 24, flame: 0 }, won, {}, { credits: false }).events;
-    expect(paid.some((e) => e.kind === 'credits')).toBe(true);
-    expect(unpaid.some((e) => e.kind === 'credits')).toBe(false);
-    expect(unpaid.length).toBe(crossedSteps('lists', 24, 25, {}).length - 1);
-  });
-
-  it('the counter never shows credits the server didn’t give', () => {
-    // Paid now: counts from the old balance to the new one.
-    expect(creditsShow(10, 15, 5)).toEqual({ from: 10, to: 15, paid: true });
-    // Paid already at launch: the counter replays the last 5.
-    expect(creditsShow(15, 15, 5)).toEqual({ from: 10, to: 15, paid: true });
-    // Offline: the balance stays as it is, and the player is told.
-    expect(creditsShow(10, null, 5)).toEqual({ from: 10, to: 10, paid: false });
-  });
-});
 
 const popular = (ranks: number[], voteSent = false) =>
   ({

@@ -54,6 +54,8 @@ export default function ImportScreen() {
   };
 
   const ranked = shared ? shared.cards.filter((card) => card.tier >= 0).length : 0;
+  // With cards, the list arrives as a challenge: ranked here without seeing the sharer's ranking.
+  const challenge = Boolean(shared && shared.cards.length > 0);
 
   return (
     <View style={{ flex: 1 }}>
@@ -93,6 +95,11 @@ export default function ImportScreen() {
             <Text numberOfLines={4} style={styles.cards}>
               {shared.cards.map((card) => card.label || t('editor.card')).join(' · ')}
             </Text>
+            {challenge ? (
+              <Text style={styles.challenge}>
+                {shared.from ? t('editor.import.challengeBy', { name: shared.from }) : t('editor.import.challengeAnon')}
+              </Text>
+            ) : null}
             <Text style={styles.hint}>{t('editor.import.photosHint')}</Text>
           </View>
         ) : current?.status === 'loading' ? (
@@ -119,7 +126,12 @@ export default function ImportScreen() {
 
       <View style={[styles.footer, { paddingHorizontal: gutter, paddingBottom: insets.bottom + spacing.md }]}>
         <View style={column}>
-          <Button label={t('editor.import.add')} icon="download-outline" onPress={add} disabled={!shared} />
+          <Button
+            label={challenge ? t('editor.import.accept') : t('editor.import.add')}
+            icon={challenge ? 'flash-outline' : 'download-outline'}
+            onPress={add}
+            disabled={!shared}
+          />
         </View>
       </View>
     </View>
@@ -137,6 +149,7 @@ const styles = StyleSheet.create({
   tierLabel: { fontSize: 13, fontWeight: '800' },
   cards: { color: colors.text, fontSize: 14, lineHeight: 20, marginTop: spacing.xs },
   hint: { color: colors.textMuted, fontSize: 12, marginTop: spacing.xs },
+  challenge: { color: colors.text, fontSize: 15, lineHeight: 21, fontWeight: '600', marginTop: spacing.xs },
   error: { color: colors.danger, fontSize: 15, textAlign: 'center' },
   footer: { paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
 });

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -19,21 +19,16 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing } from '../../constants/theme';
-import { claimListCredits } from '../../lib/api';
 import { MANNEQUIN } from '../../lib/avatar';
 import { badgeLabel, chooseBadge, forkQuestion, type Badge } from '../../lib/badges';
-import { BURST, coinTimes, counterAt } from '../../lib/celebration';
-import { setBalance, useCredits, walletForRequest } from '../../lib/credits';
 import { useT } from '../../lib/i18n/useT';
-import { creditsShow, teamLine, type Celebration } from '../../lib/milestoneEvents';
-import { partLabel, rewardLabel, withReward } from '../../lib/rewards';
-import { playCoin, playComplete, playPop, playSparkle, playThunder } from '../../lib/sound';
+import { teamLine, type Celebration } from '../../lib/milestoneEvents';
+import { partLabel, rewardLabel, withReward, type Reward } from '../../lib/rewards';
+import { playComplete, playPop, playSparkle } from '../../lib/sound';
 import { useTierStore } from '../../store/useTierStore';
 import { Avatar, AvatarDrawing } from '../Avatar';
 import { BadgeIcon } from '../BadgeIcon';
 import { Clickable } from '../Clickable';
-import { EnergyIcon } from '../Energy';
-import { PurchaseBurst } from '../PurchaseBurst';
 import { Button } from '../ui';
 
 type Point = { x: number; y: number };
@@ -44,6 +39,9 @@ const TRACK = {
   flame: { color: '#FF7A1F', label: 'play.track.flame', icon: 'flame' as const },
 };
 const ITEM = 150;
+/** Between the items of a step shown side by side, and the room of each one's halo. */
+const ITEM_GAP = 12;
+const ITEM_HALO = 16;
 const STICKER = 112;
 /** Between the two stickers of a VS: the chosen one slides by half of it to the centre. */
 const STICKER_GAP = 36;
@@ -57,33 +55,24 @@ const haptic = (type: Haptics.NotificationFeedbackType) => {
 
 /**
  * Steps crossed on a reward path, full screen and one after the other: the line fills
- * up to the step, which bursts, then the reward. An item is collected ("Récupérer")
- * and flies to the player's profile, which sparkles; credits fly to the balance, which
- * counts up; at a VS the player picks a team and confirms, the other sticker pops and
- * the chosen one takes the centre, with its team's line.
+ * up to the step, which bursts, then its rewards. The items of a step come out all
+ * together, side by side, and one "Récupérer" sends them all flying to the player's
+ * profile, which sparkles; at a VS the player picks a team and confirms, the other
+ * sticker pops and the chosen one takes the centre, with its team's line.
  */
 export function MilestoneCelebration({ queue, onDone }: { queue: Celebration[]; onDone: () => void }) {
   const { t } = useT();
   const [index, setIndex] = useState(0);
   const event = queue[index];
-  // Targets of the flights, in window coordinates (measured once the overlay is laid out).
+  // Target of the flights, in window coordinates (measured once the overlay is laid out).
   const avatarRef = useRef<View>(null);
-  const balanceRef = useRef<View>(null);
-  const [targets, setTargets] = useState<{ avatar: Point; balance: Point } | null>(null);
+  const [target, setTarget] = useState<Point | null>(null);
   const [sparkle, setSparkle] = useState(0);
   const insets = useSafeAreaInsets();
   const profile = useTierStore((s) => s.profile);
-  const balance = useCredits((s) => s.balance);
-  const [shownBalance, setShownBalance] = useState<number | null>(null);
-  // Drawn over the whole screen: its points are in window coordinates.
-  const [burst, setBurst] = useState<{ key: number; from: Point; to: Point } | null>(null);
 
   const measure = () => {
-    avatarRef.current?.measureInWindow((ax, ay, aw, ah) => {
-      balanceRef.current?.measureInWindow((bx, by, bw, bh) => {
-        setTargets({ avatar: { x: ax + aw / 2, y: ay + ah / 2 }, balance: { x: bx + bh / 2, y: by + bh / 2 } });
-      });
-    });
+    avatarRef.current?.measureInWindow((x, y, w, h) => setTarget({ x: x + w / 2, y: y + h / 2 }));
   };
 
   const next = () => {
@@ -108,30 +97,18 @@ export function MilestoneCelebration({ queue, onDone }: { queue: Celebration[]; 
               {index + 1} / {queue.length}
             </Text>
           ) : null}
-          <View ref={balanceRef} collapsable={false} style={styles.pill}>
-            <EnergyIcon size={18} />
-            <Text style={styles.pillText}>{shownBalance ?? balance ?? '–'}</Text>
-          </View>
+          {/* Keeps the avatar on the left and the count in the middle. */}
+          <View style={styles.profile} />
         </View>
 
         <View key={event.key} style={styles.body}>
           <StepOpening at={event.at} color={track.color} icon={track.icon} label={t(track.label)} />
-          {event.kind === 'item' ? (
-            <ItemReveal key={event.key} event={event} target={targets?.avatar ?? null} onArrived={() => setSparkle((n) => n + 1)} onDone={next} />
-          ) : event.kind === 'credits' ? (
-            <CreditsReveal
-              key={event.key}
-              credits={event.credits}
-              target={targets?.balance ?? null}
-              onCount={setShownBalance}
-              onBurst={(from, to) => setBurst({ key: Date.now(), from, to })}
-              onDone={next}
-            />
+          {event.kind === 'step' ? (
+            <StepReveal key={event.key} rewards={event.rewards} target={target} onArrived={() => setSparkle((n) => n + 1)} onDone={next} />
           ) : (
             <VsReveal key={event.key} event={event} onDone={next} />
           )}
         </View>
-        {burst ? <PurchaseBurst key={burst.key} from={burst.from} to={burst.to} /> : null}
       </View>
     </Modal>
   );
@@ -229,147 +206,124 @@ function useRevealed(delay = 1200) {
   return shown;
 }
 
-/** An avatar item on the grey mannequin; "Récupérer" sends it flying to the profile. */
-function ItemReveal({
-  event,
-  target,
-  onArrived,
-  onDone,
-}: {
-  event: Extract<Celebration, { kind: 'item' }>;
-  target: Point | null;
-  onArrived: () => void;
-  onDone: () => void;
-}) {
-  const { t, upper } = useT();
+/**
+ * Width of each item's mannequin, for `count` items side by side on a screen `width`
+ * wide: full size alone, smaller to fit three in a row on the narrowest phone.
+ */
+export function itemSize(count: number, width: number): number {
+  const room = width - spacing.lg * 2 - ITEM_GAP * (count - 1);
+  return Math.min(ITEM, Math.floor(room / count) - ITEM_HALO);
+}
+
+/**
+ * The items of a step on the grey mannequin, all revealed at once; "Récupérer" sends
+ * them all flying to the profile, which sparkles once the last one has landed.
+ */
+function StepReveal({ rewards, target, onArrived, onDone }: { rewards: Reward[]; target: Point | null; onArrived: () => void; onDone: () => void }) {
+  const { t } = useT();
   const shown = useRevealed();
-  const config = useMemo(() => withReward(MANNEQUIN, event.reward), [event.reward]);
-  const box = useRef<View>(null);
+  const { width } = useWindowDimensions();
+  const size = itemSize(rewards.length, width);
   const [collecting, setCollecting] = useState(false);
+  const landed = useRef(0);
+
+  const land = () => {
+    landed.current += 1;
+    if (landed.current < rewards.length) return;
+    onArrived();
+    playComplete();
+    haptic(Haptics.NotificationFeedbackType.Success);
+    setTimeout(onDone, SPARKLE_MS + 300);
+  };
+
+  if (!shown) return <View style={styles.reveal} />;
+  return (
+    <View style={styles.reveal}>
+      {rewards.length > 1 ? (
+        <Animated.View entering={FadeIn}>
+          <Text style={styles.kicker}>{t('play.cel.newItems', { count: rewards.length })}</Text>
+        </Animated.View>
+      ) : null}
+      <View style={styles.itemRow}>
+        {rewards.map((reward) => (
+          <RevealedItem key={`${reward.part}:${reward.id}`} reward={reward} size={size} big={rewards.length === 1} flying={collecting} target={target} onLanded={land} />
+        ))}
+      </View>
+      <Animated.View entering={FadeInDown.delay(450)} style={styles.actions}>
+        <Button label={t('play.cel.collect')} icon="download-outline" onPress={() => setCollecting(true)} disabled={collecting} />
+      </Animated.View>
+    </View>
+  );
+}
+
+/** One item of a step, haloed, its name under it; `flying`: off to the profile. */
+function RevealedItem({
+  reward,
+  size,
+  big,
+  flying,
+  target,
+  onLanded,
+}: {
+  reward: Reward;
+  size: number;
+  big: boolean;
+  flying: boolean;
+  target: Point | null;
+  onLanded: () => void;
+}) {
+  const { upper } = useT();
+  const config = useMemo(() => withReward(MANNEQUIN, reward), [reward]);
+  const box = useRef<View>(null);
   const dx = useSharedValue(0);
   const dy = useSharedValue(0);
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
   const glow = useSharedValue(0);
-  useEffect(() => {
-    if (shown) glow.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }), -1, true);
-  }, [shown, glow]);
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateX: dx.value }, { translateY: dy.value }, { scale: scale.value }] }));
   const fade = useSharedValue(1);
-  const glowStyle = useAnimatedStyle(() => ({ opacity: (0.08 + glow.value * 0.12) * fade.value, transform: [{ scale: 1 + glow.value * 0.08 }] }));
-
-  const collect = () => {
-    if (collecting) return;
-    setCollecting(true);
-    // The halo goes with the item.
+  useEffect(() => {
+    glow.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }), -1, true);
+  }, [glow]);
+  useEffect(() => {
+    if (!flying) return;
+    // The halo and the name go with the item.
     fade.value = withTiming(0, { duration: 200 });
-    const arrive = () => {
-      onArrived();
-      playComplete();
-      haptic(Haptics.NotificationFeedbackType.Success);
-      setTimeout(onDone, SPARKLE_MS + 300);
-    };
     box.current?.measureInWindow((x, y, w, h) => {
       const to = target ?? { x: x + w / 2, y: y - 200 };
       const ease = Easing.inOut(Easing.cubic);
       dx.value = withTiming(to.x - (x + w / 2), { duration: FLIGHT_MS, easing: ease });
       dy.value = withTiming(to.y - (y + h / 2), { duration: FLIGHT_MS, easing: Easing.in(Easing.quad) });
       scale.value = withTiming(0.25, { duration: FLIGHT_MS, easing: ease });
-      opacity.value = withDelay(FLIGHT_MS - 120, withTiming(0, { duration: 120 }, (finished) => {
-        if (finished) runOnJS(arrive)();
-      }));
+      opacity.value = withDelay(
+        FLIGHT_MS - 120,
+        withTiming(0, { duration: 120 }, (finished) => {
+          if (finished) runOnJS(onLanded)();
+        }),
+      );
     });
-  };
+    // Measured once, when "Récupérer" is pressed: the flight doesn't restart on a new render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flying]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateX: dx.value }, { translateY: dy.value }, { scale: scale.value }] }));
+  const glowStyle = useAnimatedStyle(() => ({ opacity: (0.08 + glow.value * 0.12) * fade.value, transform: [{ scale: 1 + glow.value * 0.08 }] }));
+  const labelStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+  const halo = size + (big ? 30 : ITEM_HALO - 4);
 
-  if (!shown) return <View style={styles.reveal} />;
   return (
-    <View style={styles.reveal}>
-      <Animated.View entering={ZoomIn.springify().damping(11)} style={styles.itemStage}>
-        <Animated.View pointerEvents="none" style={[styles.itemGlow, glowStyle]} />
+    <View style={[styles.item, { width: size + ITEM_HALO }]}>
+      <Animated.View entering={ZoomIn.springify().damping(11)} style={[styles.itemStage, { width: size + (big ? 40 : ITEM_HALO), height: size + (big ? 40 : ITEM_HALO) }]}>
+        <Animated.View pointerEvents="none" style={[styles.itemGlow, { width: halo, height: halo, borderRadius: halo / 2 }, glowStyle]} />
         <Animated.View ref={box} collapsable={false} style={style}>
-          <AvatarDrawing config={config} size={ITEM} focus={event.reward.part} />
+          <AvatarDrawing config={config} size={size} focus={reward.part} />
         </Animated.View>
       </Animated.View>
-      <Animated.View entering={FadeIn.delay(250)} style={{ alignItems: 'center', gap: 2 }}>
-        <Text style={styles.kicker}>{upper(partLabel(event.reward.part))}</Text>
-        <Text style={styles.name}>{rewardLabel(event.reward)}</Text>
-      </Animated.View>
-      <Animated.View entering={FadeInDown.delay(450)} style={styles.actions}>
-        <Button label={t('play.cel.collect')} icon="download-outline" onPress={collect} disabled={collecting} />
-      </Animated.View>
-    </View>
-  );
-}
-
-/** Credits: "Récupérer" sends bolts to the balance, which counts up while coins ring. */
-function CreditsReveal({
-  credits,
-  target,
-  onCount,
-  onBurst,
-  onDone,
-}: {
-  credits: number;
-  target: Point | null;
-  onCount: (value: number | null) => void;
-  onBurst: (from: Point, to: Point) => void;
-  onDone: () => void;
-}) {
-  const { t } = useT();
-  const shown = useRevealed();
-  const box = useRef<View>(null);
-  const [collecting, setCollecting] = useState(false);
-  const [later, setLater] = useState(false);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
-
-  const collect = async () => {
-    if (collecting) return;
-    setCollecting(true);
-    const before = useCredits.getState().balance ?? 0;
-    // The server pays the credits of the path; asked now, so the balance shows them.
-    let claimed: number | null = null;
-    try {
-      const { deviceId } = useTierStore.getState();
-      claimed = await claimListCredits(deviceId, await walletForRequest());
-    } catch {
-      // Offline: paid at the next launch, and the counter doesn't pretend otherwise.
-    }
-    const { from, to: after, paid } = creditsShow(before, claimed, credits);
-    setLater(!paid);
-    onCount(from);
-    box.current?.measureInWindow((x, y, w, h) => {
-      onBurst({ x: x + w / 2, y: y + h / 2 }, target ?? { x: x + w / 2, y: y - 240 });
-      playThunder();
-      haptic(Haptics.NotificationFeedbackType.Success);
-      for (const at of coinTimes()) timers.current.push(setTimeout(playCoin, at));
-      const start = Date.now() + BURST.arrive;
-      const tick = () => {
-        const progress = (Date.now() - start) / BURST.count;
-        if (progress >= 0) onCount(counterAt(from, after, progress));
-        if (progress < 1) timers.current.push(setTimeout(tick, 33));
-        else {
-          setBalance(after);
-          onCount(null);
-          timers.current.push(setTimeout(onDone, 500));
-        }
-      };
-      timers.current.push(setTimeout(tick, BURST.arrive));
-    });
-  };
-
-  if (!shown) return <View style={styles.reveal} />;
-  return (
-    <View style={styles.reveal}>
-      <Animated.View ref={box} collapsable={false} entering={ZoomIn.springify().damping(10)} style={styles.credits}>
-        <Text style={styles.creditsText}>+{credits}</Text>
-        <EnergyIcon size={56} />
-      </Animated.View>
-      <Animated.View entering={FadeIn.delay(250)}>
-        <Text style={styles.name}>{later ? t('play.cel.creditsLater') : t('play.cel.creditsGiven', { count: credits })}</Text>
-      </Animated.View>
-      <Animated.View entering={FadeInDown.delay(450)} style={styles.actions}>
-        <Button label={t('play.cel.collect')} icon="download-outline" onPress={collect} disabled={collecting} />
+      <Animated.View entering={FadeIn.delay(250)} style={[{ alignItems: 'center', gap: 2 }, labelStyle]}>
+        <Text numberOfLines={1} style={styles.kicker}>
+          {upper(partLabel(reward.part))}
+        </Text>
+        <Text numberOfLines={2} style={[styles.name, !big && styles.nameSmall]}>
+          {rewardLabel(reward)}
+        </Text>
       </Animated.View>
     </View>
   );
@@ -507,8 +461,6 @@ const styles = StyleSheet.create({
   profile: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
   profileRing: { position: 'absolute', width: 60, height: 60, borderRadius: 30, borderWidth: 3, borderColor: '#FFE58A' },
   spark: { position: 'absolute', width: 8, height: 8, borderRadius: 4 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255, 212, 59, 0.12)', borderWidth: 1, borderColor: 'rgba(255, 212, 59, 0.4)' },
-  pillText: { color: '#FFE58A', fontSize: 16, fontWeight: '800', fontVariant: ['tabular-nums'] },
   body: { flex: 1, justifyContent: 'center', gap: spacing.xl },
   opening: { alignItems: 'center', gap: spacing.md },
   trackRow: { flexDirection: 'row', alignItems: 'center', width: 240 },
@@ -521,13 +473,14 @@ const styles = StyleSheet.create({
   trackLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   trackLabelText: { fontSize: 13, fontWeight: '800', letterSpacing: 1 },
   reveal: { alignItems: 'center', gap: spacing.md, minHeight: 320 },
-  itemStage: { width: ITEM + 40, height: ITEM + 40, alignItems: 'center', justifyContent: 'center' },
-  itemGlow: { position: 'absolute', width: ITEM + 30, height: ITEM + 30, borderRadius: (ITEM + 30) / 2, backgroundColor: '#FFE58A' },
+  itemRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: ITEM_GAP },
+  item: { alignItems: 'center', gap: spacing.xs },
+  itemStage: { alignItems: 'center', justifyContent: 'center' },
+  itemGlow: { position: 'absolute', backgroundColor: '#FFE58A' },
   kicker: { color: colors.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   name: { color: colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  nameSmall: { fontSize: 15 },
   actions: { alignItems: 'center', gap: spacing.md, marginTop: spacing.md, alignSelf: 'stretch' },
-  credits: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
-  creditsText: { color: '#FFE58A', fontSize: 72, fontWeight: '900', letterSpacing: -2 },
   question: { color: colors.text, fontSize: 24, fontWeight: '900', textAlign: 'center' },
   vsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: STICKER_GAP, height: STICKER + 50 },
   vsMark: { position: 'absolute', alignSelf: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, backgroundColor: colors.primary },

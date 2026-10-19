@@ -7,7 +7,8 @@
  * to the defaults.
  *
  * Some items are locked at first and unlocked by playing (daily streak, number of
- * tier lists completed).
+ * tier lists completed). At most 3 per step (MAX_PER_STEP). An item's step only ever
+ * moves earlier: moved later, it would lock again for a player who already had it.
  */
 
 import { t } from './i18n/useT';
@@ -53,7 +54,7 @@ export const HAIR_STYLES: Item[] = [
   { id: 'bun', label: 'Chignon' },
   { id: 'afro', label: 'Afro' },
   { id: 'pony', label: 'Queue', unlock: { completed: 15 } },
-  { id: 'mohawk', label: 'Crête', unlock: { streak: 7 } },
+  { id: 'mohawk', label: 'Crête', unlock: { streak: 5 } },
 ];
 
 export const HAIR_COLORS: HairColor[] = [
@@ -63,9 +64,9 @@ export const HAIR_COLORS: HairColor[] = [
   { id: 'blond', label: 'Blond', fill: '#E3B860' },
   { id: 'red', label: 'Roux', fill: '#C4552C' },
   { id: 'grey', label: 'Gris', fill: '#BDB7B0' },
-  { id: 'pink', label: 'Rose', fill: '#FF86B6', unlock: { streak: 7 } },
+  { id: 'pink', label: 'Rose', fill: '#FF86B6', unlock: { streak: 2 } },
   { id: 'blue', label: 'Bleu', fill: '#4C8DFF', unlock: { completed: 30 } },
-  { id: 'purple', label: 'Violet', fill: '#9466FF', unlock: { streak: 30 } },
+  { id: 'purple', label: 'Violet', fill: '#9466FF', unlock: { streak: 21 } },
   { id: 'green', label: 'Vert', fill: '#3FBF7F', unlock: { completed: 8 } },
   { id: 'flame', label: 'Flamme', fill: '#FF6A2B', unlock: { streak: 3 } },
 ];
@@ -96,7 +97,7 @@ export const BROWS: Item[] = [
   { id: 'arched', label: 'Arqués' },
   { id: 'flat', label: 'Droits' },
   { id: 'bushy', label: 'Broussailleux' },
-  { id: 'raised', label: 'Sceptique', unlock: { streak: 7 } },
+  { id: 'raised', label: 'Sceptique', unlock: { streak: 5 } },
 ];
 
 export const MOUTHS: Item[] = [
@@ -106,7 +107,7 @@ export const MOUTHS: Item[] = [
   { id: 'smirk', label: 'En coin' },
   { id: 'lips', label: 'Lèvres' },
   { id: 'o', label: 'Surpris' },
-  { id: 'tongue', label: 'Langue', unlock: { streak: 14 } },
+  { id: 'tongue', label: 'Langue', unlock: { streak: 10 } },
 ];
 
 export const BEARDS: Item[] = [
@@ -137,7 +138,7 @@ export const GLASSES: Item[] = [
   { id: 'round', label: 'Rondes' },
   { id: 'square', label: 'Carrées' },
   { id: 'sun', label: 'Soleil', unlock: { completed: 20 } },
-  { id: 'heart', label: 'Cœur', unlock: { streak: 14 } },
+  { id: 'heart', label: 'Cœur', unlock: { streak: 10 } },
   { id: 'star', label: 'Étoiles', unlock: { completed: 80 } },
 ];
 

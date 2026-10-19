@@ -6,18 +6,13 @@ export type Track = 'lists' | 'flame';
 
 export type Reward = { part: keyof AvatarConfig; id: string; label: string };
 
-/** A step of a reward path: reached at `at`, with the avatar items it unlocks and the credits it gives. */
-export type Milestone = { at: number; rewards: Reward[]; credits?: number };
-
 /**
- * Credits offered on the lists path: CREDIT_AMOUNT every CREDIT_EVERY lists, with no
- * end. Paid by the server (wallet_milestones), which counts the lists itself: keep
- * both numbers in step with supabase/migrations/*_list_milestones.sql.
+ * A step of a reward path: reached at `at`, with the avatar items it unlocks. Never
+ * more than MAX_PER_STEP: past that, a celebration is a pile, not a reward.
  */
-export const CREDIT_EVERY = 25;
-export const CREDIT_AMOUNT = 5;
-/** Where the lists path stops drawing items; credits go on past it. */
-export const LISTS_END = 300;
+export type Milestone = { at: number; rewards: Reward[] };
+
+export const MAX_PER_STEP = 3;
 
 /** French name of each avatar part, for reward previews. */
 export const PART_LABELS: Record<keyof AvatarConfig, string> = {
@@ -45,11 +40,8 @@ export function rewardLabel(reward: Reward): string {
   return itemLabel(reward.part, reward);
 }
 
-/**
- * The steps of a path, from the avatar items locked behind it. On the lists path,
- * credits too, drawn up to LISTS_END or one step past `value` if the player went further.
- */
-export function milestones(track: Track, value = 0): Milestone[] {
+/** The steps of a path, from the avatar items locked behind it. */
+export function milestones(track: Track): Milestone[] {
   const byStep = new Map<number, Reward[]>();
   for (const part of AVATAR_PARTS) {
     for (const item of part.items) {
@@ -59,16 +51,7 @@ export function milestones(track: Track, value = 0): Milestone[] {
       byStep.set(at, [...(byStep.get(at) ?? []), { part: part.key, id: item.id, label: item.label }]);
     }
   }
-  const steps: Milestone[] = [...byStep.entries()].map(([at, rewards]) => ({ at, rewards }));
-  if (track === 'lists') {
-    const end = Math.max(LISTS_END, (Math.floor(value / CREDIT_EVERY) + 1) * CREDIT_EVERY);
-    for (let at = CREDIT_EVERY; at <= end; at += CREDIT_EVERY) {
-      const step = steps.find((m) => m.at === at);
-      if (step) step.credits = CREDIT_AMOUNT;
-      else steps.push({ at, rewards: [], credits: CREDIT_AMOUNT });
-    }
-  }
-  return steps.sort((a, b) => a.at - b.at);
+  return [...byStep.entries()].map(([at, rewards]) => ({ at, rewards })).sort((a, b) => a.at - b.at);
 }
 
 /**
@@ -78,7 +61,7 @@ export function milestones(track: Track, value = 0): Milestone[] {
 export function trackState(track: Track, progress: Progress & { streak: number }) {
   const value = track === 'flame' ? progress.streak : progress.completed;
   const won = track === 'flame' ? progress.bestStreak : progress.completed;
-  const steps = milestones(track, value);
+  const steps = milestones(track);
   const next = steps.find((m) => m.at > value) ?? null;
   return { value, won, steps, next };
 }

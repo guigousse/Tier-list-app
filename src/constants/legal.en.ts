@@ -16,7 +16,7 @@ export const PRIVACY_EN: LegalSection[] = [
   {
     title: 'What is sent online',
     bullets: [
-      'When you share a tier list: its title, the names and colors of its tiers and cards, and the ranking (never the photos), to create the share code.',
+      'When you share a tier list: its title, the names and colors of its tiers and cards, and the ranking (never the photos), to create the share code. If you have a profile, your username comes with the list, so your friend knows who’s challenging them. The code is also tied to the app’s anonymous wallet: if a new player ranks the list, you get free energy. When you rank a list opened from a code, your anonymous wallet and the app’s random ID are sent to check that you’re a new player; the person who shared it never sees them.',
       'When you submit the daily tier list or a public list: your ranking and the app’s random ID, to calculate the average ranking and prevent duplicate votes.',
       'When you open a public list or add it to your favorites: the list in question and the random ID, for view and favorite counts and trends.',
       'If you create a player profile: your username, its number, your avatar and badges, your friends and friend requests, the players you block, and the reports you make or receive. The profile is linked to the app’s random ID. Your friends see your username, your avatar and your submitted rankings (daily tier lists and public lists, never your personal lists).',
