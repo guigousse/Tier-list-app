@@ -35,5 +35,6 @@ Projet Firebase `tiercraft-517f4` (séparé de BROC). Fichiers dans `firebase/`.
   que Firebase mesure seul (sessions, rétention, achats).
 - Côté Google Analytics : conservation des données réglée à 2 mois, signaux Google coupés
   (la politique de confidentialité l'annonce).
-- iOS : frameworks statiques, Firebase par CocoaPods (`disableSPM`), React Native compilé
-  depuis les sources (`expo-build-properties`).
+- iOS : frameworks statiques et Firebase par CocoaPods (`disableSPM`). Pas de React Native
+  compilé depuis les sources : Expo recompilerait alors tous ses modules, et Xcode 26.3
+  refuse une ligne d'ExpoModulesCore (concurrence Swift 6, run 141).
