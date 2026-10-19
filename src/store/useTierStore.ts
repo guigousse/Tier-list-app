@@ -7,6 +7,7 @@ import { persist } from 'zustand/middleware';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
+import { nextRegionChange } from '../lib/regionChange';
 import { CLASSIC_TIERS, sourceOf, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, duplicateCardImage } from '../lib/images';
@@ -41,6 +42,8 @@ export type Settings = {
   region: string | 'auto' | 'world';
   /** Whether the region was confirmed once, after the welcome screens. */
   regionAsked: boolean;
+  /** Last change of region from the settings: one a month (lib/regionChange.ts). */
+  regionChangedAt?: number;
 };
 
 type NewListInput = {
@@ -111,6 +114,8 @@ type State = {
   resetPlacement: (listId: string) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
+  /** Changes the region from the settings (null: worldwide); false while the month isn't over. */
+  changeRegion: (region: string | null, now?: number) => boolean;
   clearAll: () => void;
 
   /** Creates the local copy of a daily tier list: classic S→D tiers, fixed cards. */
@@ -469,6 +474,12 @@ export const useTierStore = create<State>()(
           })),
 
         updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
+
+        changeRegion: (region, now = Date.now()) => {
+          if (nextRegionChange(get().settings.regionChangedAt, now) !== null) return false;
+          get().updateSettings({ region: region ?? 'world', regionAsked: true, regionChangedAt: now });
+          return true;
+        },
 
         createDailyList: (daily) => {
           const now = Date.now();

@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
 import { flag, REGIONS } from '../lib/i18n/regions';
+import { nextRegionChange, REGION_CHANGE_DAYS } from '../lib/regionChange';
 import { deviceRegion, useRegion, useT } from '../lib/i18n/useT';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from './Clickable';
@@ -52,19 +53,66 @@ function RegionList({ value, onPick }: { value: string | null; onPick: (region: 
   );
 }
 
-/** Picking the region from the settings. */
+/**
+ * Picking the region from the settings: once a month, after a warning to confirm. While
+ * the month runs, the sheet says when the next change is possible.
+ */
 export function RegionSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const region = useRegion();
+  const name = useRegionName();
+  const changedAt = useTierStore((s) => s.settings.regionChangedAt);
+  // The region picked, waiting for the warning to be confirmed.
+  const [picked, setPicked] = useState<string | null | undefined>(undefined);
+  const close = () => {
+    setPicked(undefined);
+    onClose();
+  };
+  // Read once when the settings open: the lock counts in days, not seconds.
+  const [now] = useState(Date.now);
+  const next = nextRegionChange(changedAt, now);
+  if (next !== null) {
+    const date = new Date(next).toLocaleDateString(locale, { day: 'numeric', month: 'long' });
+    return (
+      <Sheet visible={visible} onClose={close} title={t('region.title')}>
+        <View style={{ gap: spacing.sm }}>
+          <Text style={styles.current}>{name(region)}</Text>
+          <Text style={styles.text}>{t('region.locked', { date })}</Text>
+        </View>
+      </Sheet>
+    );
+  }
+  if (picked !== undefined) {
+    return (
+      <Sheet
+        visible={visible}
+        onClose={close}
+        title={t('region.title')}
+        footer={
+          <View style={styles.buttons}>
+            <Button variant="secondary" label={t('app.cancel')} onPress={() => setPicked(undefined)} style={{ flex: 1 }} />
+            <Button
+              icon="checkmark"
+              label={t('region.confirm')}
+              onPress={() => {
+                useTierStore.getState().changeRegion(picked);
+                close();
+              }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        }
+      >
+        <View style={{ gap: spacing.sm }}>
+          <Text style={styles.current}>{name(picked)}</Text>
+          <Text style={styles.text}>{t('region.warning', { days: REGION_CHANGE_DAYS })}</Text>
+        </View>
+      </Sheet>
+    );
+  }
   return (
-    <Sheet visible={visible} onClose={onClose} title={t('region.pick')}>
-      <RegionList
-        value={region}
-        onPick={(r) => {
-          useTierStore.getState().updateSettings({ region: r ?? 'world', regionAsked: true });
-          onClose();
-        }}
-      />
+    <Sheet visible={visible} onClose={close} title={t('region.pick')}>
+      <RegionList value={region} onPick={(r) => (r === region ? close() : setPicked(r))} />
     </Sheet>
   );
 }
