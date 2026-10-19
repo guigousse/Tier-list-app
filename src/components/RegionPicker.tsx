@@ -10,9 +10,23 @@ import { Clickable } from './Clickable';
 import { Button, Sheet } from './ui';
 
 /** A region's flag and name in the app's language; null is worldwide. */
+function regionDisplayName(region: string, locale: string): string | undefined {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'region' }).of(region);
+  } catch {
+    return undefined;
+  }
+}
+
 export function useRegionName() {
-  const { t } = useT();
-  return (region: string | null) => (region ? `${flag(region)} ${t(`region.${region}`)}` : `🌍 ${t('region.world')}`);
+  const { t, locale } = useT();
+  return (region: string | null) => {
+    if (!region) return `🌍 ${t('region.world')}`;
+    const key = `region.${region}`;
+    const named = t(key);
+    // A country outside the pickable ones (a list kept to it): the system names it.
+    return `${flag(region)} ${named !== key ? named : (regionDisplayName(region, locale) ?? region)}`;
+  };
 }
 
 /** The regions to pick from: the phone's first, then the others, then worldwide. */

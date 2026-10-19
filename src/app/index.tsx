@@ -14,7 +14,7 @@ import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
 import { useResponsive } from '../lib/layout';
-import { popularity, useCatalog, usePopularTemplates } from '../store/useCatalog';
+import { popularity, useCatalog, useFeaturedTemplates } from '../store/useCatalog';
 import { forYou, trending } from '../lib/discover';
 import type { Template } from '../constants/presets';
 import { knownBadges, usePendingBadges } from '../lib/badges';
@@ -58,7 +58,7 @@ export default function Home() {
   const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular), [lists]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
-  const popular = usePopularTemplates();
+  const popular = useFeaturedTemplates();
   // "Tendances": the last days' activity; "Pour toi": themes of the lists already completed.
   const [discover, setDiscover] = useState<'trends' | 'forYou'>('trends');
   const discovery = useCatalog((s) => s.discovery);

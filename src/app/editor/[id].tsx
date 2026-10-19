@@ -24,7 +24,8 @@ import { syncDailyVotes } from '../../lib/daily';
 import { TierStrip } from '../../components/TierStrip';
 import { socialError } from '../../lib/social';
 import { sentRanksState, validateSentRanks } from '../../lib/sentRanks';
-import { useCatalog } from '../../store/useCatalog';
+import { useCatalog, useKeptVote } from '../../store/useCatalog';
+import { useRegionName } from '../../components/RegionPicker';
 import { useMail } from '../../store/useMail';
 import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
@@ -109,6 +110,9 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
   const validated = Boolean(mail?.answeredAt);
   const [sending, setSending] = useState(false);
   const ranked = popular ?? daily;
+  // A national vote (an election…) seen from abroad: ranking stays possible, the vote isn't.
+  const keptTo = useKeptVote(list);
+  const regionName = useRegionName();
   const currentRanks = ranked ? rankingOf(list, ranked.cardIds) : null;
   const upToDate = Boolean(currentRanks && ranked?.validatedRanks?.join() === currentRanks.join());
 
@@ -368,6 +372,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
                 disabled={list.pool.length > 0 || sending}
               />
               {list.pool.length > 0 ? <Text style={styles.dailyText}>{t('editor.rankAll')}</Text> : null}
+              {keptTo ? <Text style={styles.dailyText}>{t('editor.voteKept', { countries: keptTo.map(regionName).join(', ') })}</Text> : null}
             </View>
           ) : null}
         </>

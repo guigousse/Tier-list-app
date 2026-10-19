@@ -52,8 +52,9 @@ async function sendPendingVotes(): Promise<void> {
         markVoteSent(list.id, ranks);
       }
     } catch (e) {
-      // A list taken out of the catalogue: the server will never take its vote.
-      if (e instanceof Error && e.message === 'unknown list') markVoteSent(list.id);
+      // A list taken out of the catalogue, or whose vote is kept to the players of one
+      // country (an election…): the server will never take this vote.
+      if (e instanceof Error && (e.message === 'unknown list' || e.message === 'region_locked')) markVoteSent(list.id);
       // Offline or server error: retried on the next sync.
     }
   }

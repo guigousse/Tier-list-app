@@ -19,7 +19,9 @@ import {
   type TemplateStats,
 } from '../lib/api';
 import { contentText, localizeTemplate, type RemoteTranslations } from '../lib/i18n/content';
-import { currentLanguage, useT } from '../lib/i18n/useT';
+import { currentLanguage, useRegion, useT } from '../lib/i18n/useT';
+import { canVote, featuredIn } from '../lib/i18n/regions';
+import type { TierList } from './types';
 import type { Discovery } from '../lib/discover';
 import type { IconLibrary } from '../lib/publicSync';
 
@@ -150,7 +152,15 @@ export function popularity(stats: TemplateStats, key: string): number {
 
 /** Popular tier list made from a past daily tier list. */
 export function dailyTemplate(daily: DailyList): Template {
-  return { key: `daily-${daily.day}`, title: daily.title, emoji: daily.emoji, items: daily.items, day: daily.day };
+  return {
+    key: `daily-${daily.day}`,
+    title: daily.title,
+    emoji: daily.emoji,
+    items: daily.items,
+    day: daily.day,
+    regions: daily.regions,
+    voteRegions: daily.voteRegions,
+  };
 }
 
 /**
@@ -170,4 +180,31 @@ export function usePopularTemplates(): Template[] {
       .sort((a, b) => popularity(stats, b.t.key) - popularity(stats, a.t.key) || a.i - b.i)
       .map(({ t }) => t);
   }, [all, past, stats]);
+}
+
+/** The popular tier lists put forward to the player: regional ones only in their regions. */
+export function useFeaturedTemplates(): Template[] {
+  const popular = usePopularTemplates();
+  const region = useRegion();
+  return useMemo(() => popular.filter((t) => featuredIn(t, region)), [popular, region]);
+}
+
+/** The countries a daily or popular list's vote is kept to, when the player is not of them. */
+export function keptVote(
+  list: TierList | undefined,
+  templates: Template[],
+  dailies: (DailyList | null)[],
+  region: string | null,
+): string[] | null {
+  const day = list?.daily?.day ?? (list?.popular?.key.startsWith('daily-') ? list.popular.key.slice('daily-'.length) : undefined);
+  const source = day ? dailies.find((d) => d?.day === day) : list?.popular && templates.find((t) => t.key === list.popular!.key);
+  return source && !canVote(source, region) ? (source.voteRegions ?? null) : null;
+}
+
+export function useKeptVote(list: TierList | undefined): string[] | null {
+  const templates = useAllTemplates();
+  const daily = useCatalog((s) => s.daily);
+  const pastDailies = useCatalog((s) => s.pastDailies);
+  const region = useRegion();
+  return useMemo(() => keptVote(list, templates, [daily, ...pastDailies], region), [list, templates, daily, pastDailies, region]);
 }

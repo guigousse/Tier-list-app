@@ -15,7 +15,7 @@ import { useResponsive } from '../lib/layout';
 import { popularShown, searchIndex, type PopularFilter } from '../lib/popularSearch';
 import { cardUrls, preloadCovers } from '../lib/preload';
 import { groupByTheme, themeOf } from '../lib/themes';
-import { useCatalog, usePopularTemplates } from '../store/useCatalog';
+import { useCatalog, useFeaturedTemplates } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 
 type Filter = PopularFilter;
@@ -36,7 +36,7 @@ export default function Popular() {
   const { column, gutter } = useResponsive();
   const { t, locale } = useT();
   const themeName = useThemeTitle();
-  const templates = usePopularTemplates();
+  const templates = useFeaturedTemplates();
   const copies = usePopularCopies();
   const favorites = useTierStore((s) => s.favoriteTemplates);
   const [query, setQuery] = useState('');

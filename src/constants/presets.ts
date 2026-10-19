@@ -32,6 +32,9 @@ export type Template = {
    * shows. Copies, votes and the public list's sync are always made from the source.
    */
   source?: Template;
+  /** Online lists: where they are put forward, and who may vote (lib/i18n/regions.ts). */
+  regions?: string[];
+  voteRegions?: string[];
 };
 
 /** The French list behind a template, translated for display or not. */
