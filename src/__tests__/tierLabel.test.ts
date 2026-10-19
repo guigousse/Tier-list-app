@@ -13,7 +13,14 @@ describe('tier label size', () => {
     expect('enchantée'.length * size * 0.6).toBeLessThanOrEqual(72);
   });
 
+  it('counts Greek letters wider: they were cut at the Latin size', () => {
+    // Measured on the screen: a bold Greek letter is up to 0.66 em ("Μπλιαχ"), the Latin
+    // ones 0.52 to 0.59; "Μέτριο" at 20 px broke in a 72 px label.
+    const size = tierLabelFontSize('Μέτριο', 72);
+    expect('Μέτριο'.length * size * 0.66).toBeLessThanOrEqual(72);
+  });
+
   it('never goes below a readable size', () => {
-    expect(tierLabelFontSize('Anticonstitutionnellement', 52)).toBe(11);
+    expect(tierLabelFontSize('Anticonstitutionnellement', 52)).toBe(9);
   });
 });

@@ -90,6 +90,16 @@ describe('content translations', () => {
     expect(Object.values(synced.cards).map((c) => c.label).sort()).toEqual([...fruits.items].sort());
   });
 
+  it('keeps every translated tier word whole in a tier label, at the smallest size', () => {
+    // A label is 72 px wide inside on a phone, its text 9 px at the smallest; measured
+    // widths of a bold letter: 0.66 em in Greek, 0.6 in Latin scripts.
+    const fits = (word: string) => word.length * 9 * (/[\u0370-\u03ff]/.test(word) ? 0.66 : 0.6) <= 72;
+    const cut = (['en', 'es', 'el'] as const).flatMap((lang) =>
+      TEMPLATES.flatMap((template) => (contentText(template.key, lang)?.tiers ?? []).flatMap((tier) => tier.split(/\s+/))).filter((w) => !fits(w)),
+    );
+    expect(cut).toEqual([]);
+  });
+
   it('names the themes in each language', () => {
     expect(themeTitle('cuisine', 'fr')).toBeUndefined();
     expect(themeTitle('cuisine', 'en')).toBeTruthy();
