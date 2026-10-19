@@ -634,8 +634,8 @@ export const app: Strings = {
     'app.results.among_one': 'από {count} συμμετέχοντα',
     'app.results.among_other': 'από {count} συμμετέχοντες',
     'app.results.you': 'Εσείς: {tier}',
-    'app.results.edit': 'Επεξεργασία',
-    'app.results.share': 'Κοινοποίηση',
+    'app.results.edit': 'Αλλαγή',
+    'app.results.share': 'Μοίρασε',
     'app.results.home': 'Αρχική',
     'app.results.shareImage': 'Εικόνα για social media',
 
@@ -691,7 +691,7 @@ export const app: Strings = {
     'app.settings.danger': 'Ζώνη κινδύνου',
     'app.settings.stored_one': '{count} tier list αποθηκευμένη σε αυτή τη συσκευή. Οι λίστες σας μένουν στο τηλέφωνό σας: μόνο οι tier lists που κοινοποιείτε με κωδικό στέλνονται στο διαδίκτυο, χωρίς τις φωτογραφίες.',
     'app.settings.stored_other': '{count} tier lists αποθηκευμένες σε αυτή τη συσκευή. Μένουν στο τηλέφωνό σας: μόνο οι tier lists που κοινοποιείτε με κωδικό στέλνονται στο διαδίκτυο, χωρίς τις φωτογραφίες.',
-    'app.settings.clearAll': 'Διαγραφή όλων των δεδομένων',
+    'app.settings.clearAll': 'Διαγραφή δεδομένων',
     'app.settings.profileOnline': 'Το προφίλ παίκτη σας {code} είναι αποθηκευμένο στο διαδίκτυο μαζί με τους φίλους και τις ψήφους σας.',
     'app.settings.deleteProfile': 'Διαγραφή του προφίλ μου',
 
