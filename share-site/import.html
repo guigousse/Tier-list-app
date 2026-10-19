@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Tier list partagée · Tiercraft</title>
-  <meta name="description" content="Ouvrez cette tier list dans l’app Tiercraft.">
-  <meta property="og:title" content="Une tier list vous attend sur Tiercraft">
-  <meta property="og:description" content="Touchez le lien pour l’ouvrir dans l’app Tiercraft.">
+  <title data-i18n="import.title">Tier list partagée · Tiercraft</title>
+  <meta name="description" data-i18n-attr="content:import.description" content="Ouvrez cette tier list dans l’app Tiercraft.">
+  <meta property="og:title" data-i18n-attr="content:import.ogTitle" content="Une tier list vous attend sur Tiercraft">
+  <meta property="og:description" data-i18n-attr="content:import.ogDescription" content="Touchez le lien pour l’ouvrir dans l’app Tiercraft.">
   <meta property="og:image" content="https://tier-list-app-share-site.vercel.app/img/og.png">
   <meta name="apple-itunes-app" content="app-id=6822017061">
   <link rel="icon" href="/icon.png">
@@ -35,21 +35,24 @@
   <div class="glow"></div>
   <main>
     <img class="icon" src="/icon.png" alt="Tiercraft">
-    <h1>Une tier list vous attend</h1>
-    <p class="title" id="title">Ouvrez-la dans l’app Tiercraft.</p>
+    <h1 data-i18n="import.h1">Une tier list vous attend</h1>
+    <p class="title" id="title" data-i18n="import.sub">Ouvrez-la dans l’app Tiercraft.</p>
     <div class="strip"><span style="background:#FF7F7F"></span><span style="background:#FFBF7F"></span><span style="background:#FFDF7F"></span><span style="background:#FFFF7F"></span><span style="background:#BFFF7F"></span></div>
-    <a class="btn" id="store" href="https://apps.apple.com/app/id6822017061">Télécharger Tiercraft sur l’App Store</a>
-    <a class="btn secondary" id="open" href="tiercraft://import">J’ai déjà l’app : ouvrir la tier list</a>
+    <a class="btn" id="store" href="https://apps.apple.com/app/id6822017061" data-i18n="import.store">Télécharger Tiercraft sur l’App Store</a>
+    <a class="btn secondary" id="open" href="tiercraft://import" data-i18n="import.open">J’ai déjà l’app : ouvrir la tier list</a>
     <p class="code" id="code"></p>
-    <p class="hint">Une fois l’app installée, touchez à nouveau le lien reçu, ou saisissez le code dans Mes listes → Importer.</p>
+    <p class="hint" data-i18n="import.hint">Une fois l’app installée, touchez à nouveau le lien reçu, ou saisissez le code dans Mes listes → Importer.</p>
   </main>
+  <script src="/i18n.js"></script>
   <script>
     (function () {
+      // Without i18n.js (failed to load), the page stays in French and still opens the app.
+      var i18n = window.TC_I18N || { t: function (key, v) { return key === 'import.code' ? 'Code : ' + v.code : '« ' + v.title + ' »'; } };
       var params = new URLSearchParams(location.search);
       var short = (location.pathname.match(/^\/s\/([A-Za-z0-9]{6})$/) || [])[1];
       var code = params.get('d') || '';
       var showTitle = function (t) {
-        if (typeof t === 'string' && t) document.getElementById('title').textContent = '« ' + t.slice(0, 60) + ' »';
+        if (typeof t === 'string' && t) document.getElementById('title').textContent = i18n.t('import.quoted', { title: t.slice(0, 60) });
       };
       if (short) {
         // Short link: the tier list is stored online under this code.
@@ -60,7 +63,7 @@
           headers: { apikey: 'sb_publishable_3nkx7nvNVBbfy4Q_sqEf3w_WXELIyYP', 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: code })
         }).then(function (r) { return r.json(); }).then(function (p) { showTitle(p && p.t); }).catch(function () {});
-        document.getElementById('code').textContent = 'Code : ' + code.slice(0, 3) + ' ' + code.slice(3);
+        document.getElementById('code').textContent = i18n.t('import.code', { code: code.slice(0, 3) + ' ' + code.slice(3) });
       } else if (/^[A-Za-z0-9_-]+$/.test(code)) {
         document.getElementById('open').href = 'tiercraft://import?d=' + code;
         // Show the list title: the code is base64url-encoded UTF-8 JSON (see src/lib/share.ts).
