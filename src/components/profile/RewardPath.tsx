@@ -16,7 +16,6 @@ import { useTierStore } from '../../store/useTierStore';
 import { AvatarDrawing } from '../Avatar';
 import { BadgeIcon } from '../BadgeIcon';
 import { Clickable } from '../Clickable';
-import { EnergyIcon } from '../Energy';
 import { Sheet } from '../ui';
 
 /** Width of a step's column, of a VS's (two stickers side by side) and of the start. */
@@ -161,7 +160,7 @@ function RewardDrawing({ reward, size }: { reward: Reward; size: number }) {
 /**
  * A reward path, left to right: numbered circles on one straight line that fills up
  * with the player's progress, the reward of each step above it (an avatar item on
- * the mannequin, or credits). At a VS, two badges side by side: the player picks one
+ * the mannequin). At a VS, two badges side by side: the player picks one
  * ("Sûr ?"), the other pops and is gone for good. `glow`: the filled line and the
  * circles reached glow like embers. Opens scrolled to where the player stands.
  */
@@ -360,7 +359,7 @@ export function RewardPath({
                       accessibilityRole="button"
                       accessibilityLabel={`${t('play.path.stepA11y', {
                         step: t(`play.path.unit.${unit}`, { count: step.at }),
-                        rewards: [...step.rewards.map(rewardLabel), ...(step.credits ? [t('play.path.credits', { count: step.credits })] : [])].join(', '),
+                        rewards: step.rewards.map(rewardLabel).join(', '),
                       })}${owned ? t('play.path.ownedSuffix') : t('play.path.lockedSuffix')}`}
                       onPress={() => setOpen(step)}
                       style={({ pressed }) => [styles.card, { left: col.x - (COL - 8) / 2 }, !owned && styles.cardLocked, pressed && { opacity: 0.8 }]}
@@ -372,21 +371,11 @@ export function RewardPath({
                             {rewardLabel(item)}
                           </Text>
                         </>
-                      ) : (
-                        <>
-                          <View style={styles.credits}>
-                            <EnergyIcon size={30} />
-                            <Text style={styles.creditsText}>+{step.credits}</Text>
-                          </View>
-                          <Text numberOfLines={1} style={styles.cardTitle}>
-                            {t('play.path.creditsTitle')}
-                          </Text>
-                        </>
-                      )}
-                      {item && step.credits ? (
-                        <View style={styles.creditChip}>
-                          <EnergyIcon size={11} />
-                          <Text style={styles.creditChipText}>+{step.credits}</Text>
+                      ) : null}
+                      {/* The card has room for one item: the others of the step are in its sheet. */}
+                      {step.rewards.length > 1 ? (
+                        <View style={styles.moreChip}>
+                          <Text style={styles.moreChipText}>+{step.rewards.length - 1}</Text>
                         </View>
                       ) : null}
                       {!owned ? (
@@ -410,9 +399,7 @@ export function RewardPath({
           <View style={{ gap: spacing.md }}>
             <Text style={styles.sheetHint}>
               {won >= open.at
-                ? open.rewards.length
-                  ? t('play.path.unlockedItems')
-                  : t('play.path.unlockedCredits')
+                ? t('play.path.unlockedItems')
                 : t('play.path.toUnlock', { step: t(`play.path.unit.${unit}`, { count: open.at }) })}
             </Text>
             <View style={styles.sheetGrid}>
@@ -427,20 +414,6 @@ export function RewardPath({
                   </Text>
                 </View>
               ))}
-              {open.credits ? (
-                <View style={styles.sheetItem}>
-                  <View style={[styles.credits, { height: 80 }]}>
-                    <EnergyIcon size={40} />
-                    <Text style={[styles.creditsText, { fontSize: 26 }]}>+{open.credits}</Text>
-                  </View>
-                  <Text numberOfLines={1} style={styles.cardTitle}>
-                    {t('play.path.credits', { count: open.credits })}
-                  </Text>
-                  <Text numberOfLines={1} style={styles.sheetMeta}>
-                    {t('play.path.energy')}
-                  </Text>
-                </View>
-              ) : null}
             </View>
           </View>
         ) : null}
@@ -505,20 +478,8 @@ const styles = StyleSheet.create({
   cardLocked: { opacity: 0.55 },
   cardTitle: { color: colors.text, fontSize: 11, fontWeight: '700', maxWidth: '100%' },
   stem: { position: 'absolute', top: PAD + ABOVE, width: 2, height: GAP, backgroundColor: colors.border },
-  credits: { height: MANNEQUIN_SIZE, flexDirection: 'row', alignItems: 'center', gap: 2 },
-  creditsText: { color: '#FFD84A', fontSize: 20, fontWeight: '900' },
-  creditChip: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 1,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: '#2D3047',
-  },
-  creditChipText: { color: '#FFD84A', fontSize: 10, fontWeight: '900' },
+  moreChip: { position: 'absolute', top: 4, left: 4, paddingHorizontal: 5, borderRadius: 8, backgroundColor: '#2D3047' },
+  moreChipText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
   lock: {
     position: 'absolute',
     top: 4,

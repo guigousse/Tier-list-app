@@ -6,30 +6,25 @@ import { lineFill, milestones, stretchFill, trackState } from '../lib/rewards';
 
 describe('reward paths', () => {
   it('has a reward at every step of both paths', () => {
-    expect(milestones('flame').map((m) => m.at)).toEqual([1, 3, 7, 14, 21, 30, 50, 100]);
-    expect([...milestones('lists'), ...milestones('flame')].every((m) => m.rewards.length > 0 || (m.credits ?? 0) > 0)).toBe(true);
+    expect(milestones('flame').map((m) => m.at)).toEqual([1, 2, 3, 5, 7, 10, 14, 21, 30, 50, 100]);
+    expect([...milestones('lists'), ...milestones('flame')].every((m) => m.rewards.length > 0)).toBe(true);
+  });
+
+  it('never gives more than 3 items at one step', () => {
+    expect([...milestones('lists'), ...milestones('flame')].every((m) => m.rewards.length <= 3)).toBe(true);
   });
 
   it('spreads the lists path out to 300, one item per step', () => {
-    const items = milestones('lists').filter((m) => m.rewards.length > 0);
+    const items = milestones('lists');
     expect(items.every((m) => m.rewards.length === 1)).toBe(true);
     expect(items[0].at).toBe(1);
     expect(items[items.length - 1].at).toBeGreaterThanOrEqual(250);
     expect(Math.max(...FORKS.map((f) => f.at))).toBeGreaterThanOrEqual(200);
   });
 
-  it('gives 5 credits every 25 lists, and only on the lists path', () => {
-    const credits = milestones('lists').filter((m) => m.credits);
-    expect(credits.map((m) => m.at)).toEqual([25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300]);
-    expect(credits.every((m) => m.credits === 5)).toBe(true);
-    expect(milestones('flame').some((m) => m.credits)).toBe(false);
-  });
-
-  it('keeps giving credits past the end of the path', () => {
-    const ats = milestones('lists', 340).map((m) => m.at);
-    expect(ats).toContain(325);
-    expect(ats).toContain(350);
-    expect(ats).not.toContain(375);
+  it('offers no credits on either path, and no step past the last item', () => {
+    for (const step of [...milestones('lists'), ...milestones('flame')]) expect(Object.keys(step).sort()).toEqual(['at', 'rewards']);
+    expect(trackState('lists', { streak: 0, bestStreak: 0, completed: 340 }).next).toBeNull();
   });
 
   it('never puts two things on the same step of the lists path', () => {

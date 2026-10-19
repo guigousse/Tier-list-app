@@ -108,14 +108,6 @@ export function aiWallet(deviceId: string, wallet: string, attest?: Attestation)
 }
 
 /**
- * Pays the credits of the lists path reached by this device (5 every 25 lists, counted
- * by the server from its votes) into the wallet; returns the balance.
- */
-export function claimListCredits(deviceId: string, wallet: string): Promise<number> {
-  return rpc<number>('claim_list_credits', { wallet, device_id: deviceId });
-}
-
-/**
  * What the server knows of this device's progress, to get it back after a reinstall:
  * lists completed (its votes), days of the daily tier list played, VS chosen.
  */

@@ -1,11 +1,9 @@
-import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../constants/theme';
 import { chooseBadge, FORKS, pendingForks } from '../../lib/badges';
 import { useT } from '../../lib/i18n/useT';
-import { openWallet } from '../../lib/credits';
 import { useResponsive } from '../../lib/layout';
 import { trackState } from '../../lib/rewards';
 import { useProgress } from '../../lib/progress';
@@ -14,7 +12,7 @@ import { RewardPath } from './RewardPath';
 
 /**
  * The two reward paths, one above the other: public tier lists completed (green, with
- * the VS badges and credits every 25 lists) and the daily flame (orange). Each scrolls
+ * the VS badges) and the daily flame (orange). Each scrolls
  * sideways, opened on where the player stands.
  */
 export function ProfileRewards() {
@@ -22,11 +20,6 @@ export function ProfileRewards() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
   const choices = useTierStore((s) => s.badgeChoices);
-
-  // The server pays the credits of the steps reached when the wallet opens.
-  useEffect(() => {
-    openWallet();
-  }, []);
 
   const progress = useProgress();
   const listsState = trackState('lists', progress);
