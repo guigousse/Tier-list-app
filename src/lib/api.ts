@@ -39,9 +39,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 const rpc = <T>(name: string, args: object) => request<T>(`rpc/${name}`, { method: 'POST', body: JSON.stringify(args) });
 
-/** Stores `list` online and returns its 6-character share code. */
-export function createShareCode(list: TierList): Promise<string> {
-  return rpc<string>('share_list', { payload: toPayload(list) });
+/**
+ * Stores `list` online as a challenge and returns its 6-character share code. With a wallet, the
+ * server remembers whose it is, to credit them when a new player ranks it.
+ */
+export function createChallengeCode(list: TierList, wallet?: string | null, from?: string): Promise<string> {
+  const payload = toPayload(list, from);
+  return wallet ? rpc<string>('share_challenge', { payload, wallet }) : rpc<string>('share_list', { payload });
+}
+
+export type ClaimStatus = 'credited' | 'already' | 'own' | 'not_new' | 'cap' | 'unknown';
+
+/** Tells the server this player ranked the challenge `code` (it judges whether its sharer earns credits). */
+export function claimChallenge(wallet: string, deviceId: string, code: string): Promise<{ status: ClaimStatus }> {
+  return rpc<{ status: ClaimStatus }>('claim_challenge', { wallet, device_id: deviceId, code });
 }
 
 /** Tier list stored under `code`, or null if the code doesn't exist. */

@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '../constants/theme';
 import { openWallet } from '../lib/credits';
 import { syncDailyVotes } from '../lib/daily';
+import { claimChallenges } from '../lib/challenge';
 import { restoreIdentity } from '../lib/identity';
 import { coverUrls, preloadCovers } from '../lib/preload';
 import { restoreProgress } from '../lib/progress';
@@ -107,12 +108,20 @@ export default function RootLayout() {
     const sync = () => {
       useCatalog.getState().refresh();
       syncDailyVotes();
+      // Challenges ranked while offline: their sharers told now.
+      claimChallenges();
       useMail.getState().refresh();
     };
     sync();
     const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());
     return () => sub.remove();
   }, []);
+
+  // Apple just vouched for this wallet: the challenges ranked before can be told to the server.
+  const walletAttested = useTierStore((s) => s.walletAttested);
+  useEffect(() => {
+    if (hydrated && walletAttested) claimChallenges();
+  }, [hydrated, walletAttested]);
 
   // A public list enriched online (cards, tiers, images) reaches the copies already made.
   const templates = useAllTemplates();

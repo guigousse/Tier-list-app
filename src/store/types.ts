@@ -65,6 +65,25 @@ export type MailInfo = {
   answeredAt?: number;
 };
 
+/**
+ * Set on a tier list opened from a share code or link: someone's ranking to match.
+ * Fixed tiers and cards; the sharer's ranking stays hidden until the player validates.
+ */
+export type ChallengeInfo = {
+  /** Server share code, when it came from one (offline links have none): to credit the sharer. */
+  code?: string;
+  /** Pseudo of the sharer, as they put it in the link (already moderated with their profile). */
+  from?: string;
+  /** Sharer's tier index for each card of `cardIds`, -1 where they hadn't ranked it. */
+  theirRanks: number[];
+  /** Card ids in the order of the shared cards. */
+  cardIds: string[];
+  /** When the player validated their ranking; frozen afterwards. */
+  answeredAt?: number;
+  /** Whether the server was told the player ranked it (once, whatever it answered). */
+  claimed?: boolean;
+};
+
 export type TierList = {
   id: string;
   title: string;
@@ -81,6 +100,8 @@ export type TierList = {
   daily?: DailyInfo;
   popular?: PopularInfo;
   mail?: MailInfo;
+  /** Optional: lists imported before challenges existed have none and stay ordinary lists. */
+  challenge?: ChallengeInfo;
   /** Share code this list was imported from, so opening the same link twice doesn't duplicate it. */
   importedFrom?: string;
   createdAt: number;

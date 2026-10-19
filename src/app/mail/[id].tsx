@@ -1,13 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Avatar } from '../../components/Avatar';
+import { ComparisonDuel, ComparisonTable } from '../../components/RankingComparison';
 import { Button } from '../../components/ui';
-import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
-import { splitEmoji } from '../../lib/emoji';
+import { colors, spacing } from '../../constants/theme';
 import { useT } from '../../lib/i18n/useT';
 import { useResponsive } from '../../lib/layout';
 import { confirmRerank, openReceived } from '../../lib/mail';
@@ -15,23 +13,11 @@ import { isSameList } from '../../lib/sentRanks';
 import { mailAgreement, useMail } from '../../store/useMail';
 import { useTierStore } from '../../store/useTierStore';
 
-function TierChip({ tier, tiers }: { tier: number | undefined; tiers: { label: string; color: string }[] }) {
-  const shown = tier !== undefined && tier >= 0 ? tiers[tier] : undefined;
-  if (!shown) return <View style={[styles.chip, { backgroundColor: colors.surfaceAlt }]} />;
-  return (
-    <View style={[styles.chip, { backgroundColor: shown.color }]}>
-      <Text numberOfLines={1} style={[styles.chipText, { color: readableTextColor(shown.color) }]}>
-        {shown.label.slice(0, 3)}
-      </Text>
-    </View>
-  );
-}
-
 /** A tier list sent between two friends: both rankings side by side. */
 export default function MailComparison() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { t, upper } = useT();
+  const { t } = useT();
   const { column, gutter } = useResponsive();
   const profile = useTierStore((s) => s.profile);
   const received = useMail((s) => s.inbox.find((m) => m.id === id));
@@ -76,30 +62,12 @@ export default function MailComparison() {
     <ScrollView contentContainerStyle={[column, { padding: gutter, gap: spacing.xl, paddingBottom: insets.bottom + spacing.xl }]}>
       <Stack.Screen options={{ title: list.title }} />
 
-      <View style={styles.duel}>
-        <View style={styles.player}>
-          <Avatar avatar={profile.avatar} seed={profile.id} size={72} />
-          <Text numberOfLines={1} style={styles.playerName}>
-            {t('social.you')}
-          </Text>
-        </View>
-        <View style={styles.score}>
-          {score !== null ? (
-            <>
-              <Text style={styles.scoreValue}>{t('social.percent', { value: score })}</Text>
-              <Text style={styles.scoreLabel}>{t('social.agree')}</Text>
-            </>
-          ) : (
-            <Ionicons name="hourglass-outline" size={32} color={colors.textMuted} />
-          )}
-        </View>
-        <View style={styles.player}>
-          <Avatar avatar={friend.avatar} seed={friend.id} size={72} />
-          <Text numberOfLines={1} style={styles.playerName}>
-            {friend.pseudo}
-          </Text>
-        </View>
-      </View>
+      <ComparisonDuel
+        me={{ name: t('social.you'), avatar: profile.avatar, seed: profile.id }}
+        friend={{ name: friend.pseudo, avatar: friend.avatar, seed: friend.id }}
+        score={score}
+        label={t('social.agree')}
+      />
 
       {done ? (
         <View style={{ gap: spacing.sm }}>
@@ -133,34 +101,7 @@ export default function MailComparison() {
         </View>
       ) : null}
 
-      <View style={styles.table}>
-        <View style={styles.head}>
-          <Text style={[styles.headLabel, { flex: 1, textAlign: 'left' }]}>{upper(t('social.card'))}</Text>
-          <Text style={[styles.headLabel, styles.col]}>{upper(t('social.you'))}</Text>
-          <Text numberOfLines={1} style={[styles.headLabel, styles.col]}>
-            {upper(friend.pseudo)}
-          </Text>
-        </View>
-        {list.cards.map((card, i) => {
-          const { emoji, text } = splitEmoji(card.label);
-          const match = done && mine[i] >= 0 && mine[i] === theirs[i];
-          return (
-            <View key={i} style={[styles.row, match && styles.rowMatch]}>
-              <Text style={styles.cardLabel}>
-                {emoji ? `${emoji} ` : ''}
-                {text || card.label || t('social.card')}
-              </Text>
-              {match ? <Ionicons name="checkmark" size={14} color="#2EAD6B" /> : null}
-              <View style={styles.col}>
-                <TierChip tier={mine?.[i]} tiers={list.tiers} />
-              </View>
-              <View style={styles.col}>
-                <TierChip tier={done ? theirs[i] : undefined} tiers={list.tiers} />
-              </View>
-            </View>
-          );
-        })}
-      </View>
+      <ComparisonTable cards={list.cards} tiers={list.tiers} mine={mine} theirs={done ? theirs : undefined} friendName={friend.pseudo} />
     </ScrollView>
   );
 }
@@ -168,21 +109,6 @@ export default function MailComparison() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, backgroundColor: colors.background },
   muted: { color: colors.textMuted, fontSize: 15 },
-  duel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  player: { alignItems: 'center', gap: spacing.xs, width: 100 },
-  playerName: { color: colors.text, fontSize: 15, fontWeight: '700', maxWidth: 100 },
-  score: { alignItems: 'center' },
-  scoreValue: { color: colors.text, fontSize: 36, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  scoreLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   summary: { color: colors.textMuted, fontSize: 15, textAlign: 'center', lineHeight: 21 },
   note: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18, fontStyle: 'italic' },
-  table: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  headLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  col: { width: 64, alignItems: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, minHeight: 44 },
-  rowMatch: { backgroundColor: 'rgba(46, 173, 107, 0.08)' },
-  cardLabel: { flex: 1, color: colors.text, fontSize: 15 },
-  chip: { minWidth: 40, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  chipText: { fontSize: 13, fontWeight: '800' },
 });
