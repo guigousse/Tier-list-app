@@ -8,7 +8,7 @@ import { aiIcons, aiTiers, aiWords } from './api';
 import { creditsError, setBalance, walletForRequest } from './credits';
 import { cardIconFor } from './cardIcons';
 import { splitEmoji } from './emoji';
-import { t } from './i18n/useT';
+import { currentLanguage, t } from './i18n/useT';
 
 /**
  * AI generation of a tier list's cards, in two steps: the words first (cards added at
@@ -115,7 +115,7 @@ export async function generateWords(listId: string, theme: string, count: number
   useAiJob.setState({ job: { listId, kind: 'words', phase: 'working', cards: 0, icons: 0, failed: 0, replaced: 0 } });
   try {
     const existing = Object.values(list.cards).map((c) => c.label);
-    const { cards, balance } = await aiWords(store.deviceId, await walletForRequest(), theme, count + replace.length, existing);
+    const { cards, balance } = await aiWords(store.deviceId, await walletForRequest(), theme, count + replace.length, existing, currentLanguage());
     setBalance(balance);
     const label = (c: (typeof cards)[number]) => `${c.emoji} ${c.label}`.trim();
     let replaced = 0;
@@ -151,7 +151,7 @@ export async function generateTiers(listId: string, theme: string, tone: TierTon
       .map((c) => splitEmoji(c.label).text || c.label)
       .filter(Boolean)
       .slice(0, 12);
-    const { labels, balance } = await aiTiers(store.deviceId, await walletForRequest(), theme, list.tiers.map((t) => t.label), tone, examples);
+    const { labels, balance } = await aiTiers(store.deviceId, await walletForRequest(), theme, list.tiers.map((t) => t.label), tone, examples, currentLanguage());
     setBalance(balance);
     let tiers = 0;
     list.tiers.forEach((t, i) => {

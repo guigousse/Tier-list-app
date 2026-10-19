@@ -25,6 +25,7 @@ import { hydrationRecovered, useHydrated, useTierStore } from '../store/useTierS
 import { openShop } from '../lib/shop';
 import { t as translateNow, useT } from '../lib/i18n/useT';
 import { useTranslationsFollowLanguage } from '../lib/i18n/useContent';
+import { syncProfileLanguage } from '../lib/profileLanguage';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -46,8 +47,13 @@ const theme = {
 export default function RootLayout() {
   const hydrated = useHydrated();
   // Screen titles read at render: they follow a language changed in the settings.
-  const { t } = useT();
+  const { t, language } = useT();
   useTranslationsFollowLanguage();
+  // A language changed, or a profile just made: the friends' notifications follow it.
+  const profileSecret = useTierStore((s) => s.profile?.secret);
+  useEffect(() => {
+    if (hydrated && profileSecret) syncProfileLanguage();
+  }, [hydrated, profileSecret, language]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -65,6 +71,7 @@ export default function RootLayout() {
       syncDailyVotes();
       // Notifications about friends: this install's push token on the profile.
       syncPushToken();
+      syncProfileLanguage();
       // The wallet after the identity: a reinstall finds its credits through the Keychain.
       openWallet();
       // Same for the reward paths: the server kept the lists completed and the VS chosen.

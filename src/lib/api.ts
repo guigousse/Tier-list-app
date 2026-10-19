@@ -137,9 +137,16 @@ export function aiPurchase(deviceId: string, wallet: string, transaction: string
   return aiCall({ action: 'purchase', deviceId, wallet, transaction }, 30_000);
 }
 
-/** Card names for a theme (without the cards already in the list), paid from `wallet`. */
-export function aiWords(deviceId: string, wallet: string, theme: string, count: number, existing: string[]): Promise<{ cards: AiCard[]; balance: number }> {
-  return aiCall({ action: 'words', deviceId, wallet, theme, count, existing }, 90_000);
+/** Card names for a theme (without the cards already in the list), in `lang`, paid from `wallet`. */
+export function aiWords(
+  deviceId: string,
+  wallet: string,
+  theme: string,
+  count: number,
+  existing: string[],
+  lang: Language,
+): Promise<{ cards: AiCard[]; balance: number }> {
+  return aiCall({ action: 'words', deviceId, wallet, theme, count, existing, lang }, 90_000);
 }
 
 /** New tier names for the theme, in `tone`, best tier first, as many as `current`; `cards`: a few, for context. */
@@ -150,8 +157,9 @@ export function aiTiers(
   current: string[],
   tone: TierTone,
   cards: string[],
+  lang: Language,
 ): Promise<{ labels: string[]; balance: number }> {
-  return aiCall({ action: 'tiers', deviceId, wallet, theme, current, tone, cards }, 60_000);
+  return aiCall({ action: 'tiers', deviceId, wallet, theme, current, tone, cards, lang }, 60_000);
 }
 
 /**
@@ -333,6 +341,11 @@ export function createProfile(deviceId: string, secret: string, pseudo: string, 
 
 export function updateProfile(secret: string, pseudo: string, avatar: string): Promise<PublicProfile> {
   return rpc<PublicProfile>('update_profile', { secret, pseudo, avatar });
+}
+
+/** The app's language on the player's profile: their notifications are written in it. */
+export function setLanguageApi(secret: string, language: Language): Promise<void> {
+  return rpc<void>('set_language', { secret, language });
 }
 
 /** The badges shown on the player's profile, up to 3. */
