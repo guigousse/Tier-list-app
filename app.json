@@ -17,7 +17,15 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.guigousse.TierCraft",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "fr",
+        "CFBundleLocalizations": [
+          "fr",
+          "en",
+          "es",
+          "el"
+        ],
+        "CFBundleAllowMixedLocalizations": true
       },
       "associatedDomains": [
         "applinks:tier-list-app-share-site.vercel.app"
@@ -109,6 +117,12 @@
       "url": "https://u.expo.dev/44164e21-47fe-412d-9cd0-38064a2df799",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
+    },
+    "locales": {
+      "fr": "./locales/fr.json",
+      "en": "./locales/en.json",
+      "es": "./locales/es.json",
+      "el": "./locales/el.json"
     }
   }
 }

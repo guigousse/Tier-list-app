@@ -1,13 +1,11 @@
-/** Publisher details shown in the legal notice and privacy policy. */
-export const PUBLISHER = {
-  name: 'Guillaume Fenard',
-  email: 'broc.le.jeu@gmail.com',
-};
+import type { Language } from '../lib/i18n';
+import { LEGAL_NOTICE_EL, PRIVACY_EL } from './legal.el';
+import { LEGAL_NOTICE_EN, PRIVACY_EN } from './legal.en';
+import { LEGAL_NOTICE_ES, PRIVACY_ES } from './legal.es';
+import { PUBLISHER, type LegalSection } from './publisher';
 
-/** Broc, the other app by the same publisher (App Store id). */
-export const BROC_APP_STORE_URL = 'https://apps.apple.com/app/id6784023113';
-
-export type LegalSection = { title: string; paragraphs?: string[]; bullets?: string[] };
+// The French texts are the reference: the translations follow them point for point.
+export { BROC_APP_STORE_URL, PUBLISHER, type LegalSection } from './publisher';
 
 export const PRIVACY: LegalSection[] = [
   {
@@ -31,6 +29,8 @@ export const PRIVACY: LegalSection[] = [
       'Si vous créez un profil de joueur : votre pseudo, son numéro, votre avatar et vos badges, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes publiques, jamais vos listes personnelles).',
       'Quand vous envoyez une tier list à des amis : son titre, ses rangs et le nom de ses cartes (jamais les photos), votre classement et celui de vos amis, pour les comparer. Seuls vous et les amis destinataires la voient ; elle est conservée 90 jours.',
       'Si vous activez les notifications avec un profil : le jeton de notification de l’appareil, pour vous prévenir quand un ami vous envoie une tier list ou classe la vôtre.',
+      'Si vous avez un profil : la langue de l’app, pour vous écrire dans cette langue les notifications envoyées par le serveur.',
+      'Quand vous votez pour une liste réservée aux joueurs d’un pays (une élection, par exemple) : le pays déduit de votre adresse IP est vérifié à ce moment-là ; il n’est pas conservé. La région que vous choisissez dans l’app reste sur votre téléphone.',
       'Quand vous créez avec l’IA : le thème saisi, les noms des cartes et des rangs (jamais les photos) et l’identifiant aléatoire, pour générer le résultat et limiter l’usage par appareil. Les images générées sont conservées, sans lien avec vous, pour être réutilisées.',
       'Quand vous utilisez ou achetez de l’énergie : un porte-monnaie anonyme (clé aléatoire gardée dans le trousseau), son solde et ses mouvements ; pour un achat, la transaction signée par Apple ; pour l’énergie offerte, une attestation App Attest qui prouve que l’app est authentique. En cas de demande de remboursement, Apple peut nous demander quelle part du pack a été utilisée : nous lui indiquons ce pourcentage, rien d’autre.',
       'À chaque échange avec le serveur : votre adresse IP, conservée moins de 24 heures, pour limiter les abus.',
@@ -120,3 +120,16 @@ export const LEGAL_NOTICE: LegalSection[] = [
     paragraphs: ['Voir la politique de confidentialité, accessible depuis les Réglages.'],
   },
 ];
+
+const TEXTS: Record<Language, { privacy: LegalSection[]; notice: LegalSection[] }> = {
+  fr: { privacy: PRIVACY, notice: LEGAL_NOTICE },
+  en: { privacy: PRIVACY_EN, notice: LEGAL_NOTICE_EN },
+  es: { privacy: PRIVACY_ES, notice: LEGAL_NOTICE_ES },
+  el: { privacy: PRIVACY_EL, notice: LEGAL_NOTICE_EL },
+};
+
+/** The privacy policy in `lang`. */
+export const privacyIn = (lang: Language): LegalSection[] => TEXTS[lang].privacy;
+
+/** The legal notice in `lang`. */
+export const legalNoticeIn = (lang: Language): LegalSection[] => TEXTS[lang].notice;

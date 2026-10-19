@@ -1,4 +1,5 @@
-import { LEGAL_NOTICE, PRIVACY, PUBLISHER } from '../constants/legal';
+import { LEGAL_NOTICE, legalNoticeIn, PRIVACY, privacyIn, PUBLISHER } from '../constants/legal';
+import { LANGUAGES } from '../lib/i18n';
 
 const text = (sections: typeof PRIVACY) => sections.flatMap((s) => [s.title, ...(s.paragraphs ?? []), ...(s.bullets ?? [])]).join('\n');
 
@@ -40,5 +41,34 @@ describe('usage statistics', () => {
     expect(t).toContain('Google Analytics pour Firebase');
     expect(t).toContain('seulement si vous l’acceptez');
     expect(t).toContain('Réglages → Statistiques d’usage');
+  });
+});
+
+describe('legal texts in every language', () => {
+  it('follow the French point for point', () => {
+    const shape = (sections: typeof PRIVACY) => sections.map((s) => [s.paragraphs?.length ?? 0, s.bullets?.length ?? 0]);
+    for (const lang of LANGUAGES) {
+      expect(shape(privacyIn(lang))).toEqual(shape(PRIVACY));
+      expect(shape(legalNoticeIn(lang))).toEqual(shape(LEGAL_NOTICE));
+    }
+  });
+
+  it('are really translated, contact details filled in', () => {
+    for (const lang of LANGUAGES.filter((l) => l !== 'fr')) {
+      expect(privacyIn(lang)[0].title).not.toBe(PRIVACY[0].title);
+    }
+    for (const lang of LANGUAGES) {
+      for (const t of [text(privacyIn(lang)), text(legalNoticeIn(lang))]) {
+        expect(t).not.toMatch(/\$\{/);
+        expect(t).toContain(PUBLISHER.email);
+      }
+      expect(text(privacyIn(lang))).toContain('cnil.fr');
+    }
+  });
+
+  it('say what the language and the country are used for', () => {
+    const t = text(PRIVACY);
+    expect(t).toContain('la langue de l’app');
+    expect(t).toContain('pays déduit de votre adresse IP');
   });
 });

@@ -3,15 +3,16 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../constants/theme';
-import { LEGAL_NOTICE, PRIVACY, type LegalSection } from '../../constants/legal';
+import { legalNoticeIn, privacyIn, type LegalSection } from '../../constants/legal';
+import type { Language } from '../../lib/i18n';
 import { useT } from '../../lib/i18n/useT';
 import { useResponsive } from '../../lib/layout';
 import { own } from '../../lib/own';
 
-// Title as a text key, date as a day: both written in the player's language at render.
-const DOCS: Record<string, { title: string; updated: string; sections: LegalSection[] }> = {
-  confidentialite: { title: 'app.legal.privacy', updated: '2026-10-13', sections: PRIVACY },
-  mentions: { title: 'app.settings.legal', updated: '2026-10-13', sections: LEGAL_NOTICE },
+// Title as a text key, date as a day, sections by language: all in the player's language at render.
+const DOCS: Record<string, { title: string; updated: string; sections: (lang: Language) => LegalSection[] }> = {
+  confidentialite: { title: 'app.legal.privacy', updated: '2026-10-19', sections: privacyIn },
+  mentions: { title: 'app.settings.legal', updated: '2026-10-19', sections: legalNoticeIn },
 };
 
 /** Privacy policy and legal notice, readable offline inside the app. */
@@ -19,7 +20,7 @@ export default function Legal() {
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
-  const { t, locale } = useT();
+  const { t, locale, language } = useT();
   const page = own(DOCS, doc) ?? DOCS.confidentialite;
 
   return (
@@ -28,7 +29,7 @@ export default function Legal() {
       <Text style={styles.updated}>
         {t('app.legal.updated', { date: new Date(`${page.updated}T12:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
       </Text>
-      {page.sections.map((s) => (
+      {page.sections(language).map((s) => (
         <View key={s.title} style={styles.section}>
           <Text style={styles.title}>{s.title}</Text>
           {s.paragraphs?.map((p) => (

@@ -1,0 +1,6 @@
+{
+  "ios": {
+    "NSPhotoLibraryUsageDescription": "Το Tiercraft χρειάζεται πρόσβαση στις φωτογραφίες σας για να εικονογραφήσει τις κάρτες σας.",
+    "NSCameraUsageDescription": "Το Tiercraft χρειάζεται πρόσβαση στην κάμερα για να εικονογραφήσει τις κάρτες σας."
+  }
+}
