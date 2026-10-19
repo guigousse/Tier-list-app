@@ -51,11 +51,17 @@ export function EnergyAmount({ amount, size = 16, style }: { amount: number | nu
  * The player's balance in a gold pill, as long as the number needs: it grows with
  * each digit instead of having a set width. With `onPress`, a "+" ends it: the whole
  * pill opens the shop, not only the small sign, which alone would be a hard target.
+ * `pending`: referral credits waiting in the shop, shown as a dot on the "+".
  */
-export function EnergyPill({ onPress }: { onPress?: () => void }) {
+export function EnergyPill({ onPress, pending = 0 }: { onPress?: () => void; pending?: number }) {
   const { t } = useT();
   const balance = useCredits((s) => s.balance);
-  const label = balance === null ? t('app.energy.loading') : t('app.energy.balance', { count: balance });
+  const label = [
+    balance === null ? t('app.energy.loading') : t('app.energy.balance', { count: balance }),
+    pending > 0 ? t('app.free.badge', { count: pending }) : null,
+  ]
+    .filter(Boolean)
+    .join('. ');
   const content = (
     <>
       <EnergyIcon size={18} />
@@ -63,6 +69,7 @@ export function EnergyPill({ onPress }: { onPress?: () => void }) {
       {onPress ? (
         <View style={styles.plus}>
           <Ionicons name="add" size={16} color="#2A1B00" />
+          {pending > 0 ? <View testID="energy-pot-dot" style={styles.dot} /> : null}
         </View>
       ) : null}
     </>
@@ -105,5 +112,7 @@ const styles = StyleSheet.create({
   // The "+" sits in the pill's round end: the padding shrinks so it keeps the same margin.
   pillWithPlus: { paddingRight: 4 },
   plus: { width: 24, height: 24, borderRadius: 12, backgroundColor: ENERGY, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
+  // On the "+" it leads to: ringed with the page's background so it reads apart from the gold.
+  dot: { position: 'absolute', top: -3, right: -3, width: 12, height: 12, borderRadius: 6, backgroundColor: '#FF5C6C', borderWidth: 2, borderColor: '#0F1115' },
   pillText: { color: ENERGY, fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
 });

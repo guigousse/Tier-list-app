@@ -23,6 +23,7 @@ import { useAllTemplates, useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated, useTierStore } from '../store/useTierStore';
 import { openShop } from '../lib/shop';
+import { refreshReferrals } from '../lib/referrals';
 import { t as translateNow, useT } from '../lib/i18n/useT';
 import { useTranslationsFollowLanguage } from '../lib/i18n/useContent';
 import { syncProfileLanguage } from '../lib/profileLanguage';
@@ -73,7 +74,8 @@ export default function RootLayout() {
       syncPushToken();
       syncProfileLanguage();
       // The wallet after the identity: a reinstall finds its credits through the Keychain.
-      openWallet();
+      // Then the referral pot, which needs the wallet's secret: the badges light at launch.
+      openWallet().then(() => refreshReferrals());
       // Same for the reward paths: the server kept the lists completed and the VS chosen.
       restoreProgress();
       // A pack bought but not credited yet (connection lost): delivered now, as promised.
@@ -111,6 +113,8 @@ export default function RootLayout() {
       // Challenges ranked while offline: their sharers told now.
       claimChallenges();
       useMail.getState().refresh();
+      // Referrals earned while away (throttled inside: returns to the app can be many).
+      refreshReferrals();
     };
     sync();
     const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());
@@ -175,6 +179,7 @@ export default function RootLayout() {
             <Stack.Screen name="results/[id]" options={{ title: t('app.title.results') }} />
             <Stack.Screen name="history" options={{ title: t('app.title.history') }} />
             <Stack.Screen name="store" options={{ title: t('app.title.store') }} />
+            <Stack.Screen name="free-energy" options={{ title: t('app.title.freeEnergy') }} />
             <Stack.Screen
               name="welcome"
               options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}
