@@ -7,12 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AvatarWithBadges } from '../components/BadgeIcon';
 import { RegionQuestion } from '../components/RegionPicker';
 import { DailyCard } from '../components/DailyCard';
+import { InviteCard } from '../components/InviteCard';
 import { EnergyPill } from '../components/Energy';
 import { isValidated, PopularList, usePopularCopies } from '../components/PopularList';
 import { ListRow } from '../components/ListRow';
 import { IconButton, SectionTitle, type IconName } from '../components/ui';
 import { colors, radius, spacing, TIER_COLORS } from '../constants/theme';
 import { createAndOpen } from '../lib/create';
+import { joinStamp, shouldOfferInvite } from '../lib/invite';
 import { useResponsive } from '../lib/layout';
 import { popularity, useCatalog, useFeaturedTemplates } from '../store/useCatalog';
 import { forYou, trending } from '../lib/discover';
@@ -90,6 +92,16 @@ export default function Home() {
     if (!onboarded) router.push('/welcome');
   }, [onboarded]);
 
+  // Arrival date of a new player, then the invitation card for their first days.
+  const settings = useTierStore((s) => s.settings);
+  useEffect(() => {
+    const stamp = joinStamp(settings, Date.now());
+    if (stamp) useTierStore.getState().updateSettings(stamp);
+  }, [settings]);
+  // Read once per visit: the 7 days count in days, not renders.
+  const [now] = useState(Date.now);
+  const invite = useMemo(() => shouldOfferInvite(settings, lists, now), [settings, lists, now]);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Fixed banner: only the content below scrolls. */}
@@ -114,6 +126,7 @@ export default function Home() {
         style={{ flex: 1 }}
         contentContainerStyle={[column, { paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: gutter, gap: spacing.xl }]}
       >
+      {invite ? <InviteCard /> : null}
       <DailyCard />
 
       <View style={styles.tiles}>

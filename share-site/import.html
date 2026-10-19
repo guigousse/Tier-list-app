@@ -41,7 +41,7 @@
     <a class="btn" id="store" href="https://apps.apple.com/app/id6822017061" data-i18n="import.store">Télécharger Tiercraft sur l’App Store</a>
     <a class="btn secondary" id="open" href="tiercraft://import" data-i18n="import.open">J’ai déjà l’app : ouvrir la tier list</a>
     <p class="code" id="code"></p>
-    <p class="hint" data-i18n="import.hint">Une fois l’app installée, touchez à nouveau le lien reçu, ou saisissez le code dans Mes listes → Importer.</p>
+    <p class="hint" data-i18n="import.hint">Le bouton App Store copie le code : à la première ouverture de l’app, touchez « Coller » pour retrouver cette tier list. Vous pouvez aussi toucher à nouveau le lien reçu.</p>
   </main>
   <script src="/i18n.js"></script>
   <script>
@@ -75,6 +75,22 @@
           showTitle(data.t);
         } catch (e) {}
       }
+      // The App Store loses the link: the tap on its button copies the code, which the app
+      // offers to paste on its first launch (src/components/InviteCard.tsx, src/lib/invite.ts).
+      // writeText needs this tap (user activation), and a refusal must not block the way.
+      var store = document.getElementById('store');
+      var invite = short ? 'Tiercraft ' + code : /^[A-Za-z0-9_-]+$/.test(code) ? 'Tiercraft ' + location.origin + '/import?d=' + code : '';
+      store.addEventListener('click', function (e) {
+        var write;
+        try { write = invite && navigator.clipboard && navigator.clipboard.writeText(invite); } catch (err) {}
+        if (!write || typeof write.then !== 'function') return;
+        // Leaving the page at once could cut the write short: wait for it, briefly.
+        e.preventDefault();
+        var gone = false;
+        var go = function () { if (!gone) { gone = true; location.href = store.href; } };
+        write.then(go, go);
+        setTimeout(go, 700);
+      });
       // On iPhone/iPad, a tapped link normally opens the app directly (universal
       // link). It can still land here: link opened inside a browser or an in-app
       // web view, or iOS not having checked the domain yet. Try the app's own

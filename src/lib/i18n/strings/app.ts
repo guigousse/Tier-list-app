@@ -37,6 +37,13 @@ export const app: Strings = {
     'app.home.forYou': 'Pour toi',
     'app.home.seeMore': 'Voir plus',
 
+    'app.invite.title': 'Un ami vous a invité ?',
+    'app.invite.body': 'Vous venez d’un lien reçu ? Son code a été copié : collez-le, ou tapez les 6 caractères.',
+    'app.invite.paste': 'Coller',
+    'app.invite.placeholder': 'Code à 6 caractères',
+    'app.invite.open': 'Ouvrir',
+    'app.invite.empty': 'Aucun code dans le presse-papiers.',
+
     'app.results.reminderTitle': 'Ne ratez aucune tier list du jour',
     'app.results.reminderBody': 'Recevoir un rappel chaque jour à 12 h 30, quand elle sort ? (modifiable dans les Réglages)',
     'app.results.yes': 'Oui',
@@ -227,6 +234,13 @@ export const app: Strings = {
     'app.home.trends': 'Trending',
     'app.home.forYou': 'For you',
     'app.home.seeMore': 'See more',
+
+    'app.invite.title': 'Did a friend invite you?',
+    'app.invite.body': 'Came from a link? Its code was copied: paste it, or type the 6 characters.',
+    'app.invite.paste': 'Paste',
+    'app.invite.placeholder': '6-character code',
+    'app.invite.open': 'Open',
+    'app.invite.empty': 'No code on the clipboard.',
 
     'app.results.reminderTitle': 'Never miss a daily tier list',
     'app.results.reminderBody': 'Get a reminder every day at 12:30 PM Paris time, when it comes out? (You can change this in Settings)',
@@ -419,6 +433,13 @@ export const app: Strings = {
     'app.home.forYou': 'Para ti',
     'app.home.seeMore': 'Ver más',
 
+    'app.invite.title': '¿Te invitó un amigo?',
+    'app.invite.body': '¿Vienes de un enlace? Se copió su código: pégalo o escribe los 6 caracteres.',
+    'app.invite.paste': 'Pegar',
+    'app.invite.placeholder': 'Código de 6 caracteres',
+    'app.invite.open': 'Abrir',
+    'app.invite.empty': 'No hay ningún código en el portapapeles.',
+
     'app.results.reminderTitle': 'No te pierdas ninguna tier list del día',
     'app.results.reminderBody': '¿Quieres un recordatorio cada día a las 12:30 (hora de París), cuando sale? (Puedes cambiarlo en Ajustes)',
     'app.results.yes': 'Sí',
@@ -609,6 +630,13 @@ export const app: Strings = {
     'app.home.trends': 'Τάσεις',
     'app.home.forYou': 'Για εσάς',
     'app.home.seeMore': 'Περισσότερα',
+
+    'app.invite.title': 'Σας προσκάλεσε ένας φίλος;',
+    'app.invite.body': 'Ήρθατε από σύνδεσμο; Ο κωδικός του αντιγράφηκε: επικολλήστε τον ή πληκτρολογήστε τους 6 χαρακτήρες.',
+    'app.invite.paste': 'Επικόλληση',
+    'app.invite.placeholder': 'Κωδικός 6 χαρακτήρων',
+    'app.invite.open': 'Άνοιγμα',
+    'app.invite.empty': 'Δεν υπάρχει κωδικός στο πρόχειρο.',
 
     'app.results.reminderTitle': 'Μη χάνετε καμία tier list της ημέρας',
     'app.results.reminderBody': 'Θέλετε υπενθύμιση κάθε μέρα στις 12:30 (ώρα Παρισιού), όταν βγαίνει; (Αλλάζει από τις Ρυθμίσεις)',

@@ -44,6 +44,13 @@ export type Settings = {
   regionAsked: boolean;
   /** Last change of region from the settings: one a month (lib/regionChange.ts). */
   regionChangedAt?: number;
+  /**
+   * First launch on the welcome screens (lib/invite.ts). Optional, no migration: saves
+   * from before it have none, and those players are not new.
+   */
+  joinedAt?: number;
+  /** The "a friend invited you?" card was closed ("Later" or ×): never shown again. */
+  inviteAsked?: boolean;
 };
 
 type NewListInput = {
