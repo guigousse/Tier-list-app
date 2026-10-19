@@ -11,7 +11,7 @@ export const fr: Catalog = {
   'region.auto': 'Celle du téléphone',
   'region.pick': 'Choisir votre région',
   'region.title': 'Votre région',
-  'region.intro': 'Les listes et les événements de votre pays seront mis en avant. Certaines listes, comme une élection, ne se votent que dans leur pays.',
+  'region.intro': 'Les listes et les événements de votre pays seront mis en avant.',
   'region.confirm': 'Confirmer',
   'region.change': 'Changer',
   'region.later': 'Vous pourrez la changer dans les Réglages.',

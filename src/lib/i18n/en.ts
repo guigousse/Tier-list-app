@@ -11,7 +11,7 @@ export const en: Catalog = {
   'region.auto': 'Your phone’s',
   'region.pick': 'Choose your region',
   'region.title': 'Your region',
-  'region.intro': 'Lists and events from your country will be put forward. Some lists, such as an election, can only be voted on in their country.',
+  'region.intro': 'Lists and events from your country will be put forward.',
   'region.confirm': 'Confirm',
   'region.change': 'Change',
   'region.later': 'You can change it in Settings.',
