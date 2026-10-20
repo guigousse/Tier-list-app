@@ -10,7 +10,7 @@ import { CARD_COLORS, type CardSize } from '../constants/theme';
 import { nextRegionChange } from '../lib/regionChange';
 import { CLASSIC_TIERS, sourceOf, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
-import { deleteCardImage, duplicateCardImage } from '../lib/images';
+import { deleteCardImage, downloadCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
 import { isShareCode, type SharedList } from '../lib/share';
 import { debouncedJSONStorage } from './debouncedStorage';
@@ -269,7 +269,13 @@ export const useTierStore = create<State>()(
         const pool: string[] = [];
         for (const c of shared.cards) {
           const id = newId();
-          cards[id] = { id, label: c.label, color: c.color, ...(c.iconUrl ? { iconUrl: c.iconUrl } : {}) };
+          cards[id] = {
+            id,
+            label: c.label,
+            color: c.color,
+            ...(c.iconUrl ? { iconUrl: c.iconUrl } : {}),
+            ...(c.imageUrl ? { imageUrl: c.imageUrl, imageCredit: c.imageCredit } : {}),
+          };
           if (c.tier >= 0) placement[tiers[c.tier].id].push(id);
           else pool.push(id);
         }
@@ -287,6 +293,16 @@ export const useTierStore = create<State>()(
           openedAt: now,
         };
           set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
+          // Wikimedia pictures come as addresses: fetched in the background, the card keeps its name if offline.
+          for (const card of Object.values(cards)) {
+            if (!card.imageUrl) continue;
+            downloadCardImage(card.imageUrl)
+              .then((imageName) => {
+                if (get().lists[list.id]?.cards[card.id]) get().updateCard(list.id, card.id, { imageName });
+                else deleteCardImage(imageName);
+              })
+              .catch(() => {});
+          }
           return list.id;
       };
 

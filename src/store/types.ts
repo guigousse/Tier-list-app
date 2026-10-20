@@ -12,6 +12,8 @@ export type Card = {
   imageName?: string;
   /** Author and licence of a picture taken from Wikimedia Commons, shown with the card. */
   imageCredit?: string;
+  /** Where a Wikimedia Commons picture was downloaded from: a shared copy of the card fetches it again. */
+  imageUrl?: string;
   /** Icon drawn by the AI (SVG markup, already cleaned by the server). Older generations. */
   iconSvg?: string;
   /** Icon drawn by the AI in a sheet (public PNG URL; a copy is kept on the device). */

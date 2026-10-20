@@ -8,6 +8,7 @@ import { migrateStore, useTierStore } from '../store/useTierStore';
 
 jest.mock('../lib/api', () => ({ ...jest.requireActual('../lib/api'), claimChallenge: jest.fn() }));
 const claim = claimChallenge as jest.MockedFunction<typeof claimChallenge>;
+jest.mock('../lib/images', () => ({ ...jest.requireActual('../lib/images'), downloadCardImage: jest.fn(async () => 'downloaded.jpg') }));
 jest.mock('../../modules/device-check', () => ({ isSupported: jest.fn(), generateTokenAsync: jest.fn() }));
 const deviceCheckSupported = DeviceCheck.isSupported as jest.Mock;
 const deviceToken = DeviceCheck.generateTokenAsync as jest.Mock;
@@ -88,6 +89,16 @@ describe('a list opened from a share link', () => {
     const id = store().importList({ ...shared, code: 'PICT22', cards: shared.cards.map((c, i) => (i === 0 ? { ...c, iconUrl: icon } : c)) });
     const list = store().lists[id];
     expect(list.challenge!.cardIds.map((cid) => list.cards[cid].iconUrl)).toEqual([icon, undefined, undefined]);
+  });
+
+  it('a card sent with its Wikimedia picture gets it downloaded, credit kept', async () => {
+    const wiki = 'https://upload.wikimedia.org/wikipedia/commons/a.png';
+    const id = store().importList({ ...shared, code: 'WIKI22', cards: shared.cards.map((c, i) => (i === 1 ? { ...c, imageUrl: wiki, imageCredit: 'Ana · CC BY — Wikimedia Commons' } : c)) });
+    await new Promise((r) => setTimeout(r, 0));
+    const list = store().lists[id];
+    const banane = list.cards[list.challenge!.cardIds[1]];
+    expect(banane).toMatchObject({ imageName: 'downloaded.jpg', imageUrl: wiki, imageCredit: 'Ana · CC BY — Wikimedia Commons' });
+    expect(list.cards[list.challenge!.cardIds[0]].imageName).toBeUndefined();
   });
 
   it('from an offline link: no code to credit anyone with', () => {
