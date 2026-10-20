@@ -9,15 +9,16 @@ import { Clickable } from '../components/Clickable';
 import { ENERGY, EnergyAmount } from '../components/Energy';
 import { PurchaseBurst } from '../components/PurchaseBurst';
 import { ShareSheet } from '../components/ShareSheet';
-import { Button, Sheet, type IconName } from '../components/ui';
+import { Button, Chip, Sheet, type IconName } from '../components/ui';
 import { useBoltShow } from '../components/useBoltShow';
 import { colors, radius, spacing } from '../constants/theme';
 import { openWallet, useCredits } from '../lib/credits';
+import { useLocalizeList } from '../lib/i18n/useContent';
 import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import {
   collectPot,
-  inviteCandidates,
+  inviteTabs,
   REFERRAL_CAP,
   REFERRAL_REWARD,
   referralName,
@@ -61,14 +62,17 @@ export default function FreeEnergy() {
   const adNotice = ad.notice === 'pending' ? t('app.free.adPending') : ad.notice === 'consent' ? t('app.free.adConsent') : ad.notice === 'failed' ? t('app.free.adFailed') : null;
 
   const lists = useTierStore((s) => s.lists);
-  const candidates = useMemo(() => inviteCandidates(lists), [lists]);
+  const tabs = useMemo(() => inviteTabs(lists), [lists]);
+  const localize = useLocalizeList();
   const [picking, setPicking] = useState(false);
+  const [tab, setTab] = useState<'mine' | 'public'>('mine');
   const [shareFor, setShareFor] = useState<TierList | null>(null);
   const invite = () => {
-    // Nothing of their own to share yet: a public list ranked is the quickest one.
-    if (candidates.length === 0) router.push('/popular');
-    else setPicking(true);
+    // Nothing of their own yet: the public lists they ranked are what they can share.
+    setTab(tabs.mine.length === 0 ? 'public' : 'mine');
+    setPicking(true);
   };
+  const picks = tabs[tab];
 
   const pending = status?.pending ?? 0;
   const steps: { icon: IconName; text: string }[] = [
@@ -202,13 +206,19 @@ export default function FreeEnergy() {
         )}
 
         <Button icon="person-add" label={t('app.free.invite')} onPress={invite} />
-        {candidates.length === 0 ? <Text style={[styles.muted, { textAlign: 'center' }]}>{t('app.free.noList')}</Text> : null}
       </ScrollView>
       {burst ? <PurchaseBurst key={burst.key} from={burst.from} to={burst.to} /> : null}
 
       <Sheet visible={picking} onClose={() => setPicking(false)} title={t('app.free.pickList')}>
         <View style={{ gap: spacing.sm }}>
-          {candidates.map((list) => (
+          <View style={styles.tabs}>
+            <Chip label={t('app.free.tabMine')} selected={tab === 'mine'} onPress={() => setTab('mine')} />
+            <Chip label={t('app.free.tabPublic')} selected={tab === 'public'} onPress={() => setTab('public')} />
+          </View>
+          {picks.length === 0 ? (
+            <Text style={[styles.muted, styles.empty]}>{t(tab === 'mine' ? 'app.free.noMine' : 'app.free.noList')}</Text>
+          ) : null}
+          {picks.map((list) => (
             <Clickable
               key={list.id}
               accessibilityRole="button"
@@ -221,11 +231,23 @@ export default function FreeEnergy() {
             >
               {list.emoji ? <Text style={styles.pickEmoji}>{list.emoji}</Text> : <Ionicons name="list" size={20} color={colors.textMuted} />}
               <Text numberOfLines={1} style={styles.pickTitle}>
-                {list.title}
+                {/* A public list in the player's language, as in the gallery. */}
+                {list.popular ? localize(list).title : list.title}
               </Text>
               <Ionicons name="share-outline" size={20} color={colors.textMuted} />
             </Clickable>
           ))}
+          {tab === 'public' ? (
+            <Button
+              icon="globe-outline"
+              variant="secondary"
+              label={t('app.free.morePublic')}
+              onPress={() => {
+                setPicking(false);
+                router.push('/popular');
+              }}
+            />
+          ) : null}
         </View>
       </Sheet>
       <ShareSheet list={shareFor ? (lists[shareFor.id] ?? null) : null} visible={shareFor !== null} onClose={() => setShareFor(null)} />
@@ -248,6 +270,8 @@ const styles = StyleSheet.create({
   soonText: { color: colors.textMuted, fontSize: 12, fontWeight: '800' },
   round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   step: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  tabs: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
+  empty: { textAlign: 'center', paddingVertical: spacing.md },
   stepNumber: {
     position: 'absolute',
     top: -4,

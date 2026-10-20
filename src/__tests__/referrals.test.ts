@@ -4,7 +4,7 @@ import { t } from '../lib/i18n/useT';
 import {
   collectPot,
   hasPot,
-  inviteCandidates,
+  inviteTabs,
   parseReferralStatus,
   referralName,
   referralStep,
@@ -179,7 +179,7 @@ describe('the lists offered to invite friends with', () => {
     ...extra,
   });
 
-  it('the player’s own rankings, latest first: not the daily, nor what friends sent, nor empty ones', () => {
+  it('two tabs, latest first: the player’s own lists, and the public lists they ranked; not the daily, nor what friends sent, nor empty ones', () => {
     const lists = {
       a1: list('a1', {}),
       a2: list('a2', { popular: { key: 'k', voteKey: 'v', cardIds: ['c'] } }),
@@ -187,7 +187,11 @@ describe('the lists offered to invite friends with', () => {
       a4: list('a4', { challenge: { theirRanks: [0], cardIds: ['c'] } }),
       a5: list('a5', { mail: { id: 'm', from: 'Ana', cardIds: ['c'] } }),
       a6: list('a6', {}, false),
+      a7: list('a7', {}),
+      a8: list('a8', { popular: { key: 'k2', voteKey: 'v2', cardIds: ['c'] } }, false),
     };
-    expect(inviteCandidates(lists).map((l) => l.id)).toEqual(['a2', 'a1']);
+    const tabs = inviteTabs(lists);
+    expect(tabs.mine.map((l) => l.id)).toEqual(['a7', 'a1']);
+    expect(tabs.public.map((l) => l.id)).toEqual(['a2']);
   });
 });

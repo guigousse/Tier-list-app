@@ -118,9 +118,14 @@ export async function collectPot(): Promise<number> {
   return got;
 }
 
-/** The lists the player can share as a challenge: their own rankings, latest first. */
-export function inviteCandidates(lists: Record<string, TierList>): TierList[] {
-  return Object.values(lists)
+/**
+ * The lists the player can share as a challenge, latest first, in the invite picker's two
+ * tabs: the ones they made, and the public ones they ranked. A list must be ranked, since
+ * the friend's ranking is compared with it.
+ */
+export function inviteTabs(lists: Record<string, TierList>): { mine: TierList[]; public: TierList[] } {
+  const ranked = Object.values(lists)
     .filter((l) => !l.daily && !l.mail && !l.challenge && Object.values(l.placement).some((ids) => ids.length > 0))
     .sort((a, b) => b.updatedAt - a.updatedAt);
+  return { mine: ranked.filter((l) => !l.popular), public: ranked.filter((l) => l.popular) };
 }
