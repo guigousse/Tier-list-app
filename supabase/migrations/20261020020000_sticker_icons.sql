@@ -21,3 +21,19 @@ end;
 $$;
 revoke all on function public.get_icon_replacements(text[]) from public;
 grant execute on function public.get_icon_replacements(text[]) to anon, authenticated;
+
+-- The admin action's key: only its SHA-256 is kept (inserted by hand, never in a file),
+-- checked by the function with the service role.
+create table if not exists private.admin_tokens (token_hash text primary key, created_at timestamptz not null default now());
+
+create or replace function public.admin_token_ok(token text)
+ returns boolean
+ language sql
+ stable
+ security definer
+ set search_path to ''
+as $$
+  select exists (select 1 from private.admin_tokens where token_hash = encode(extensions.digest(token, 'sha256'), 'hex'));
+$$;
+revoke all on function public.admin_token_ok(text) from public, anon, authenticated;
+grant execute on function public.admin_token_ok(text) to service_role;

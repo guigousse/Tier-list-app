@@ -5,7 +5,7 @@
 //   { action: "tiers", deviceId, wallet, theme, current, tone, cards? } -> { labels, balance }  (best first)
 //   { action: "icons", deviceId, wallet, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }], balance }
 //   { action: "purchase", deviceId, wallet, transaction } -> { balance, credited, credits }  (an App Store pack, signed by Apple)
-//   { action: "redraw" } + header x-admin-secret -> { drawn, failed, left }  (admin: one sheet of the library redrawn as stickers)
+//   { action: "redraw", skip? } + header x-admin-secret -> { drawn, failed, left }  (admin: one sheet of the library redrawn as stickers)
 // Generations are paid with the wallet's credits (wallet.ts): held first, then only what
 // was delivered is kept. 402 { error: "credits" } when the balance is too low.
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
@@ -225,10 +225,11 @@ Deno.serve(async (req) => {
   } catch {
     return json({ error: "bad request" }, 400);
   }
-  // Admin only (ADMIN_SECRET, an Edge Function secret): scripts/redraw-library.sh.
+  // Admin only: a key whose SHA-256 is in private.admin_tokens (admin_token_ok).
   if (body.action === "redraw") {
-    const secret = Deno.env.get("ADMIN_SECRET");
-    if (!secret || req.headers.get("x-admin-secret") !== secret) return json({ error: "forbidden" }, 403);
+    const token = req.headers.get("x-admin-secret") ?? "";
+    const { data: ok } = token.length >= 32 ? await db.rpc("admin_token_ok", { token }) : { data: false };
+    if (ok !== true) return json({ error: "forbidden" }, 403);
     try {
       return json(await redrawLibrary(Array.isArray(body.skip) ? body.skip.map(String) : []));
     } catch (e) {
