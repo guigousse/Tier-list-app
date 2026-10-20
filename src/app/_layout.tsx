@@ -13,6 +13,7 @@ import { syncDailyVotes } from '../lib/daily';
 import { restoreIdentity } from '../lib/identity';
 import { coverUrls, preloadCovers } from '../lib/preload';
 import { restoreProgress } from '../lib/progress';
+import { upgradeCardIcons } from '../lib/stickerIcons';
 import { onPushReceived, openPush, syncPushToken } from '../lib/push';
 import { syncDailyReminder } from '../lib/reminders';
 import { preloadSounds } from '../lib/sound';
@@ -59,6 +60,7 @@ export default function RootLayout() {
     if (!hydrated) return;
     // Lists left as drafts by an app closed in the editor.
     useTierStore.getState().dropDrafts();
+    upgradeCardIcons();
     SplashScreen.hideAsync().catch(() => {});
     // Sounds loaded now, so the first tap isn't silent.
     preloadSounds();
@@ -122,6 +124,8 @@ export default function RootLayout() {
       useCatalog.getState().refresh();
       syncDailyVotes();
       useMail.getState().refresh();
+      // Cards whose library picture was redrawn as a sticker take the new one.
+      if (useTierStore.persist.hasHydrated()) upgradeCardIcons();
     };
     sync();
     const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());

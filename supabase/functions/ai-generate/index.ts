@@ -5,6 +5,7 @@
 //   { action: "tiers", deviceId, wallet, theme, current, tone, cards? } -> { labels, balance }  (best first)
 //   { action: "icons", deviceId, wallet, cards: [{ label, concept, redraw? }], theme? } -> { icons: [{ concept, url }], balance }
 //   { action: "purchase", deviceId, wallet, transaction } -> { balance, credited, credits }  (an App Store pack, signed by Apple)
+//   { action: "redraw" } + header x-admin-secret -> { drawn, failed, left }  (admin: one sheet of the library redrawn as stickers)
 // Generations are paid with the wallet's credits (wallet.ts): held first, then only what
 // was delivered is kept. 402 { error: "credits" } when the balance is too low.
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
@@ -158,6 +159,52 @@ async function tracked<T>(kind: CostKind, run: (meter: Meter) => Promise<{ value
   }
 }
 
+/** A library picture drawn before the stickers (no white border of its own). */
+const OLD_PICTURE = "%-sticker.png";
+
+/**
+ * Redraws one sheet of the library as die-cut stickers: the oldest concepts whose picture
+ * has no border yet. The new picture becomes the concept's own, and every older picture
+ * of the concept (redraws included) points to it, for the cards already in players' lists.
+ * `skip`: concepts that came out empty in an earlier sheet, not asked again.
+ */
+async function redrawLibrary(skip: string[]) {
+  const { data: rows, error } = await db
+    .from("card_icons")
+    .select("concept, label")
+    .not("image", "is", null)
+    .not("image", "like", OLD_PICTURE)
+    .order("created_at")
+    .limit(20 + skip.length);
+  if (error) throw new Error(error.message);
+  const todo = (rows ?? []).filter((r: { concept: string }) => !skip.includes(r.concept)).slice(0, 20);
+  if (!todo?.length) return { drawn: [], failed: [], left: 0 };
+  const plan = todo.map((r: { concept: string; label: string | null }) => ({ concept: r.concept, label: r.label || r.concept.replace(/-/g, " ") }));
+  const meter = newMeter();
+  let tiles: (Uint8Array | null)[] = [];
+  try {
+    tiles = await drawWithFallback(plan, (cards) => drawSheet(cards, meter));
+  } finally {
+    // What Gemini cost, kept with the players' generations (charged nothing).
+    await db.from("ai_costs").insert(costRow("images", meter, 0, tiles.some(Boolean)));
+  }
+  const drawn: string[] = [], failed: string[] = [];
+  await Promise.all(plan.map(async (card, i) => {
+    const png = tiles[i];
+    if (!png) return void failed.push(card.concept);
+    const path = `${card.concept}-${Date.now().toString(36)}-sticker.png`;
+    const up = await db.storage.from("card-icons").upload(path, png, { contentType: "image/png", upsert: true, cacheControl: "31536000" });
+    if (up.error) return void failed.push(card.concept);
+    const image = db.storage.from("card-icons").getPublicUrl(path).data.publicUrl;
+    await db.from("card_icon_images").update({ replaced_by: image }).eq("concept", card.concept).not("image", "like", OLD_PICTURE);
+    await db.from("card_icon_images").insert({ image, concept: card.concept, label: card.label });
+    await db.from("card_icons").update({ image }).eq("concept", card.concept);
+    drawn.push(card.concept);
+  }));
+  const { count } = await db.from("card_icons").select("concept", { count: "exact", head: true }).not("image", "is", null).not("image", "like", OLD_PICTURE);
+  return { drawn, failed, left: count ?? 0 };
+}
+
 /** A daily limit of the device (ai_allow) reached: nothing is charged. */
 class QuotaError extends Error {}
 
@@ -177,6 +224,17 @@ Deno.serve(async (req) => {
     body = JSON.parse(raw);
   } catch {
     return json({ error: "bad request" }, 400);
+  }
+  // Admin only (ADMIN_SECRET, an Edge Function secret): scripts/redraw-library.sh.
+  if (body.action === "redraw") {
+    const secret = Deno.env.get("ADMIN_SECRET");
+    if (!secret || req.headers.get("x-admin-secret") !== secret) return json({ error: "forbidden" }, 403);
+    try {
+      return json(await redrawLibrary(Array.isArray(body.skip) ? body.skip.map(String) : []));
+    } catch (e) {
+      console.error("redraw", e);
+      return json({ error: e instanceof Error ? e.message : "failed" }, 502);
+    }
   }
   const deviceId = String(body.deviceId ?? "");
   if (!UUID.test(deviceId)) return json({ error: "bad request" }, 400);

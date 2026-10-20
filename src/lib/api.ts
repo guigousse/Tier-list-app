@@ -302,6 +302,16 @@ export async function fetchCardIcons(concepts: string[]): Promise<Record<string,
   return Object.fromEntries((rows ?? []).map((r) => [r.concept, r.image]));
 }
 
+/**
+ * Library pictures redrawn as stickers: for each of these old picture URLs that has a
+ * replacement, the new one (supabase/migrations/*_sticker_icons.sql).
+ */
+export async function fetchIconReplacements(images: string[]): Promise<Record<string, string>> {
+  if (!images.length) return {};
+  const rows = await rpc<{ image: string; replaced_by: string }[]>('get_icon_replacements', { images });
+  return Object.fromEntries((rows ?? []).map((r) => [r.image, r.replaced_by]));
+}
+
 /** Local calendar date, e.g. "2026-10-13". */
 /** Day of the daily tier list on show: it comes out at 12:30 Paris time (lib/dailyClock.ts). */
 export function today(): string {

@@ -120,6 +120,8 @@ type State = {
 
   addCard: (listId: string, card: Omit<Card, 'id'>) => string;
   updateCard: (listId: string, cardId: string, patch: Partial<Omit<Card, 'id'>>) => void;
+  /** Library pictures replaced by new drawings (old URL → new): the cards follow, lists not counted as changed. */
+  replaceIcons: (replacements: Record<string, string>) => void;
   deleteCard: (listId: string, cardId: string) => void;
   moveCard: (listId: string, cardId: string, to: Zone, index?: number) => void;
   resetPlacement: (listId: string) => void;
@@ -467,6 +469,26 @@ export const useTierStore = create<State>()(
           }));
           return id;
         },
+
+        replaceIcons: (replacements) =>
+          set((state) => {
+            let changed = false;
+            const lists = Object.fromEntries(
+              Object.entries(state.lists).map(([id, list]) => {
+                let cards = list.cards;
+                for (const card of Object.values(list.cards)) {
+                  const next = card.iconUrl ? replacements[card.iconUrl] : undefined;
+                  if (!next) continue;
+                  if (cards === list.cards) cards = { ...list.cards };
+                  cards[card.id] = { ...card, iconUrl: next };
+                }
+                if (cards === list.cards) return [id, list];
+                changed = true;
+                return [id, { ...list, cards }];
+              }),
+            );
+            return changed ? { lists } : state;
+          }),
 
         updateCard: (listId, cardId, patch) =>
           patchList(listId, (l) => {
