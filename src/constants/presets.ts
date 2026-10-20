@@ -25,6 +25,8 @@ export type Template = {
    * server writes them: "red-apple"), drawn once and reused by every list.
    */
   concepts?: string[];
+  /** Index of the card whose image stands for the list until players have a favourite. */
+  cover?: number;
   /** Grand theme the list is shown under in the gallery of public tier lists. */
   theme?: string;
   /**

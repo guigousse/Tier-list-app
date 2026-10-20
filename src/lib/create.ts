@@ -42,7 +42,7 @@ export function openDaily(daily: DailyList, replace = false): void {
     go({ pathname: '/results/[id]', params: { id: existing.id } });
     return;
   }
-  const id = existing?.id ?? store.createDailyList(daily);
+  const id = existing?.id ?? store.createDailyList(daily, useCatalog.getState().icons);
   go({ pathname: '/editor/[id]', params: { id } });
 }
 
@@ -60,7 +60,7 @@ export function openPopular(shown: Template): void {
   // Today's daily tier list (e.g. from a friend's profile): play it as the daily one.
   const { daily: today, icons } = useCatalog.getState();
   const id =
-    existing?.id ?? (template.day && template.day === today?.day ? store.createDailyList(today) : store.createPopularList(template, icons));
+    existing?.id ?? (template.day && template.day === today?.day ? store.createDailyList(today, icons) : store.createPopularList(template, icons));
   // Cards added to the list since the copy was made arrive to rank.
   if (existing?.popular) store.syncPopular(existing.id, template, icons);
   router.push({ pathname: '/editor/[id]', params: { id } });

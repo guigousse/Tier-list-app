@@ -28,3 +28,9 @@ How the vector icons on cards are made, to reuse when players create their own t
 - The AI suggests cards; each card name is matched to the icon library (exact name, then synonyms, then the item's emoji).
 - Missing concepts: generate a drawing following the rules above, check it, add it to the shared library so the next list reuses it.
 - Store icons online (Supabase, one row per icon id with its SVG) rather than in the app, so the library grows without app updates and the bundle stays small (~1–4 KB per icon).
+
+## Daily tier lists
+
+- Each daily list has `concepts` (one library concept per item, in order) and `cover` (index of the card whose image stands for the list on the home screen), in `daily_lists`.
+- They are written by `scripts/daily-concepts.py`, which also lists the new concepts with the English description the sheet is drawn from. New concepts go into `card_icons` before the daily list points to them, so the app never gets a concept without its image.
+- The app gives the cards their image when the list is played, and to copies made before (`syncDailyIcons`), without counting them as changed.

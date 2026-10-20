@@ -77,8 +77,18 @@ export const useCatalog = create<CatalogState>()(
         ]);
         // The concepts are known once the published templates are: asked in a second call.
         const remote = templates.status === 'fulfilled' ? templates.value : get().templates;
+        const dailies = [
+          ...(daily.status === 'fulfilled' ? (daily.value ? [daily.value] : []) : get().daily ? [get().daily!] : []),
+          ...(pastDailies.status === 'fulfilled' ? pastDailies.value : get().pastDailies),
+        ];
         const concepts = [
-          ...new Set([...[...TEMPLATES, ...remote].flatMap((t) => t.concepts ?? []), ...THEMES.flatMap((t) => t.preview.map((p) => p.concept))].filter(Boolean)),
+          ...new Set(
+            [
+              ...[...TEMPLATES, ...remote].flatMap((t) => t.concepts ?? []),
+              ...dailies.flatMap((d) => d.concepts ?? []),
+              ...THEMES.flatMap((t) => t.preview.map((p) => p.concept)),
+            ].filter(Boolean),
+          ),
         ];
         const [icons] = await Promise.allSettled([fetchCardIcons(concepts)]);
         set((state) => {
@@ -157,6 +167,8 @@ export function dailyTemplate(daily: DailyList): Template {
     title: daily.title,
     emoji: daily.emoji,
     items: daily.items,
+    concepts: daily.concepts,
+    cover: daily.cover,
     day: daily.day,
     regions: daily.regions,
     voteRegions: daily.voteRegions,

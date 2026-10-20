@@ -18,6 +18,7 @@ import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 import { own } from '../lib/own';
 import { t } from '../lib/i18n/useT';
 import { publicTiers, syncedCopy, type IconLibrary } from '../lib/publicSync';
+import { dailyIcons } from '../lib/dailyIcons';
 
 /** The player's social profile. `secret` proves it is theirs to the server; never shown. */
 export type Profile = { id: string; secret: string; pseudo: string; tag: number; avatar: string };
@@ -146,7 +147,9 @@ type State = {
   clearAll: () => void;
 
   /** Creates the local copy of a daily tier list: classic S→D tiers, fixed cards. */
-  createDailyList: (daily: DailyList) => string;
+  createDailyList: (daily: DailyList, icons?: IconLibrary) => string;
+  /** Daily list copies take the library images of their cards, without counting as changed. */
+  syncDailyIcons: (dailies: DailyList[], icons: IconLibrary) => void;
   /** Freezes the ranking of a daily tier list once every card is placed. */
   validateDaily: (listId: string) => boolean;
   /** Creates the local copy of a public tier list: its tiers, fixed cards, library images. */
@@ -527,6 +530,23 @@ export const useTierStore = create<State>()(
           return id;
         },
 
+        syncDailyIcons: (dailies, icons) =>
+          set((state) => {
+            const byDay = new Map(dailies.map((d) => [d.day, d]));
+            let changed = false;
+            const lists = Object.fromEntries(
+              Object.entries(state.lists).map(([id, list]) => {
+                const found = dailyIcons(list, byDay, icons);
+                if (!Object.keys(found).length) return [id, list];
+                changed = true;
+                const cards = { ...list.cards };
+                for (const [cardId, iconUrl] of Object.entries(found)) cards[cardId] = { ...cards[cardId], iconUrl };
+                return [id, { ...list, cards }];
+              }),
+            );
+            return changed ? { lists } : state;
+          }),
+
         replaceIcons: (replacements) =>
           set((state) => {
             let changed = false;
@@ -594,13 +614,14 @@ export const useTierStore = create<State>()(
           return true;
         },
 
-        createDailyList: (daily) => {
+        createDailyList: (daily, icons = {}) => {
           const now = Date.now();
           const tiers = buildTiers(CLASSIC_TIERS);
           const cards: Record<string, Card> = {};
           const cardIds = daily.items.map((label, i) => {
             const id = newId();
-            cards[id] = { id, label, color: CARD_COLORS[i % 7] };
+            const iconUrl = icons[daily.concepts?.[i] ?? ''];
+            cards[id] = { id, label, color: CARD_COLORS[i % 7], ...(iconUrl ? { iconUrl } : {}) };
             return id;
           });
           const list: TierList = {
@@ -648,7 +669,15 @@ export const useTierStore = create<State>()(
             // Cards were created in the order of the template items.
             const cardIds = Object.keys(list.cards);
             const popular = { key: template.key, voteKey: popularVoteKey(template), cardIds };
-            return { lists: { ...state.lists, [id]: { ...list, popular } } };
+            // A past daily list isn't synced like the public lists: its images are given here.
+            const cards = { ...list.cards };
+            if (template.day) {
+              cardIds.forEach((cardId, i) => {
+                const iconUrl = icons[template.concepts?.[i] ?? ''];
+                if (iconUrl) cards[cardId] = { ...cards[cardId], iconUrl };
+              });
+            }
+            return { lists: { ...state.lists, [id]: { ...list, cards, popular } } };
           });
           get().syncPopular(id, template, icons);
           return id;

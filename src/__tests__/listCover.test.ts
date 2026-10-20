@@ -23,6 +23,11 @@ describe('the picture of a public list', () => {
     expect(listCover(fruits, {}, { mango: 'https://cdn/mango.png' })).toEqual({ url: 'https://cdn/mango.png', emoji: '🥭' });
   });
 
+  it('no vote yet on a daily list: the card chosen for it rather than the first one', () => {
+    expect(listCover({ ...fruits, cover: 2 }, {}, icons)).toEqual({ url: 'https://cdn/mango.png', emoji: '🥭' });
+    expect(listCover({ ...fruits, cover: 2 }, { fruits: 0 }, icons).url).toBe('https://cdn/apple.png');
+  });
+
   it('a favourite past the cards it knows is ignored', () => {
     expect(listCover(fruits, { fruits: 9 }, icons).url).toBe('https://cdn/apple.png');
   });

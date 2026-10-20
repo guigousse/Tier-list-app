@@ -262,6 +262,10 @@ export type DailyList = {
   items: string[];
   regions?: string[];
   voteRegions?: string[];
+  /** Per item: concept of its image in the shared library (as for a public list). */
+  concepts?: string[];
+  /** Index of the card whose image stands for the whole list (home screen). */
+  cover?: number;
 };
 
 type TemplateRow = {
@@ -275,9 +279,9 @@ type TemplateRow = {
   regions: string[] | null;
   vote_regions: string[] | null;
 };
-type DailyRow = Omit<TemplateRow, 'key' | 'tiers' | 'concepts' | 'theme'> & { day: string; description: string | null };
+type DailyRow = Omit<TemplateRow, 'key' | 'tiers' | 'theme'> & { day: string; description: string | null; cover: number | null };
 
-const DAILY_COLUMNS = 'day,title,emoji,description,items,regions,vote_regions';
+const DAILY_COLUMNS = 'day,title,emoji,description,items,regions,vote_regions,concepts,cover';
 const regionsOf = (r: { regions: string[] | null; vote_regions: string[] | null }) => ({
   ...(r.regions ? { regions: r.regions } : {}),
   ...(r.vote_regions ? { voteRegions: r.vote_regions } : {}),
@@ -289,6 +293,8 @@ const dailyOf = (r: DailyRow): DailyList => ({
   description: r.description ?? undefined,
   items: r.items,
   ...regionsOf(r),
+  ...(r.concepts ? { concepts: r.concepts } : {}),
+  ...(r.cover !== null && r.cover !== undefined ? { cover: r.cover } : {}),
 });
 
 /** Templates published from the Supabase dashboard. */

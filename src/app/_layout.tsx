@@ -154,6 +154,14 @@ export default function RootLayout() {
     syncAllCopies(Object.values(store.lists), templates, icons, store.syncPopular);
   }, [hydrated, templates, icons]);
 
+  // Daily lists already played take the library images drawn for their cards.
+  const daily = useCatalog((s) => s.daily);
+  const pastDailies = useCatalog((s) => s.pastDailies);
+  useEffect(() => {
+    if (!hydrated) return;
+    useTierStore.getState().syncDailyIcons(daily ? [daily, ...pastDailies] : pastDailies, icons);
+  }, [hydrated, daily, pastDailies, icons]);
+
   // The pictures of the public lists copied to the device ahead: the page shows them at once.
   const tops = useCatalog((s) => s.tops);
   useEffect(() => {

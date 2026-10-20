@@ -1,28 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { radius, spacing } from '../constants/theme';
+import { aiIconUri } from '../lib/aiIconFiles';
 import { openDaily } from '../lib/create';
 import { useT } from '../lib/i18n/useT';
 import { useContentText } from '../lib/i18n/useContent';
-import { dailyStreak } from '../lib/streak';
 import { useCatalog } from '../store/useCatalog';
 import { useTierStore } from '../store/useTierStore';
 import { Clickable } from './Clickable';
 
 const SHINE_WIDTH = 80;
 
-/** Home screen card for the daily tier list: coloured, with a sweeping shine. */
+/** Home screen card for the daily tier list: coloured, with a sweeping shine and the list's picture. */
 export function DailyCard() {
   const { t, upper } = useT();
   const daily = useCatalog((s) => s.daily);
   const text = useContentText();
   const existing = useTierStore((s) => (daily ? Object.values(s.lists).find((l) => l.daily?.day === daily.day) : undefined));
-  const lists = useTierStore((s) => s.lists);
-  const streak = useMemo(() => dailyStreak(Object.values(lists)), [lists]);
+  const icons = useCatalog((s) => s.icons);
   const [width, setWidth] = useState(0);
 
   // Shine: a light band crossing the card every few seconds.
@@ -44,6 +43,8 @@ export function DailyCard() {
   if (!daily) return null;
   const title = text(`daily-${daily.day}`)?.title ?? daily.title;
   const validated = Boolean(existing?.daily?.validatedAt);
+  // The image of its most telling card (chosen with the list), else its emoji.
+  const cover = icons[daily.concepts?.[daily.cover ?? -1] ?? ''];
 
   return (
     <Clickable
@@ -64,9 +65,9 @@ export function DailyCard() {
         />
       </Animated.View>
 
-      <Text style={styles.emoji}>{daily.emoji}</Text>
+      {cover ? <Image source={{ uri: aiIconUri(cover) }} style={styles.cover} resizeMode="contain" /> : <Text style={styles.emoji}>{daily.emoji}</Text>}
       <View style={{ flex: 1 }}>
-        <Text style={styles.kicker}>{upper(t('app.dailyList'))}{streak > 0 ? `  ·  🔥 ${streak}` : ''}</Text>
+        <Text style={styles.kicker}>{upper(t('app.dailyList'))}</Text>
         <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
           {title}
         </Text>
@@ -96,6 +97,7 @@ const styles = StyleSheet.create({
   },
   shine: { position: 'absolute', top: -20, bottom: -20, left: 0, width: SHINE_WIDTH },
   emoji: { fontSize: 32 },
+  cover: { width: 52, height: 52, marginVertical: -6 },
   // Capitals through upper(), not textTransform: Greek capitals drop their accents.
   kicker: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '800', letterSpacing: 0.6 },
   title: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },
