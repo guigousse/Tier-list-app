@@ -25,30 +25,40 @@ import {
   refreshReferrals,
   useReferrals,
 } from '../lib/referrals';
+import { adsSupported, nextAdText, refreshAdStatus, useRewardedAd, watchAd } from '../lib/rewardedAd';
 import type { TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
 
 const GREEN = '#7BE495';
 
-/** Energy without paying: a rewarded ad (coming with a later build), and referrals. */
+/** Energy without paying: a rewarded ad once a week (iOS), and referrals. */
 export default function FreeEnergy() {
   const insets = useSafeAreaInsets();
   const { column, gutter } = useResponsive();
-  const { t } = useT();
+  const { t, locale } = useT();
   const balance = useCredits((s) => s.balance);
   const { status, offline, collecting, collectFailed, celebration } = useReferrals();
+  const ad = useRewardedAd();
+  const showAd = useMemo(() => adsSupported(), []);
   useEffect(() => {
     openWallet();
     refreshReferrals();
+    refreshAdStatus();
   }, []);
 
-  // The pot collected: bolts from it to the balance, as for a pack bought.
+  // The pot collected, or the ad paid: bolts from it to the balance, as for a pack bought.
   const pot = useRef<View>(null);
+  const adCard = useRef<View>(null);
   const { root, counter, burst, shown, pulseStyle } = useBoltShow(
-    celebration,
-    () => pot.current,
-    () => useReferrals.setState({ celebration: null }),
+    celebration ?? ad.celebration,
+    () => (celebration ? pot.current : adCard.current),
+    () => (celebration ? useReferrals.setState({ celebration: null }) : useRewardedAd.setState({ celebration: null })),
   );
+  const show = celebration ?? ad.celebration;
+  // Unknown (offline at opening): the tap asks the server anyway.
+  const adAvailable = ad.status?.available ?? true;
+  const adBusy = ad.phase !== 'idle';
+  const adNotice = ad.notice === 'pending' ? t('app.free.adPending') : ad.notice === 'consent' ? t('app.free.adConsent') : ad.notice === 'failed' ? t('app.free.adFailed') : null;
 
   const lists = useTierStore((s) => s.lists);
   const candidates = useMemo(() => inviteCandidates(lists), [lists]);
@@ -74,25 +84,56 @@ export default function FreeEnergy() {
           <Text style={styles.balanceLabel}>{t('app.store.balance')}</Text>
           <Animated.View ref={counter} style={pulseStyle}>
             {/* While the bolts fly, still the old balance: the new one is counted up to. */}
-            <EnergyAmount amount={shown ?? (celebration ? celebration.from : balance)} size={22} style={styles.balanceValue} />
+            <EnergyAmount amount={shown ?? (show ? show.from : balance)} size={22} style={styles.balanceValue} />
           </Animated.View>
         </View>
 
-        {/* No ad SDK in this build: the place is kept, said to come. */}
-        <View style={[styles.card, styles.ad]} accessible accessibilityState={{ disabled: true }}>
-          <View style={[styles.round, { backgroundColor: colors.surfaceAlt }]}>
-            <Ionicons name="play" size={22} color={colors.textMuted} />
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <View style={styles.adHead}>
-              <Text style={styles.cardTitle}>{t('app.free.adTitle')}</Text>
-              <View style={styles.soon}>
-                <Text style={styles.soonText}>{t('app.free.soon')}</Text>
-              </View>
+        {showAd ? (
+          <Clickable
+            ref={adCard}
+            collapsable={false}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !adAvailable || adBusy, busy: adBusy }}
+            disabled={!adAvailable || adBusy}
+            onPress={() => watchAd()}
+            style={({ pressed }) => [styles.card, styles.adOn, adAvailable && styles.adReady, pressed && { opacity: 0.8 }]}
+          >
+            <View style={[styles.round, { backgroundColor: adAvailable ? ENERGY : colors.surfaceAlt }]}>
+              {adBusy ? (
+                <ActivityIndicator color="#2A1B00" />
+              ) : (
+                <Ionicons name={adAvailable ? 'play' : 'time-outline'} size={22} color={adAvailable ? '#2A1B00' : colors.textMuted} />
+              )}
             </View>
-            <Text style={styles.muted}>{t('app.free.adBody')}</Text>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={styles.cardTitle}>{t('app.free.adTitle')}</Text>
+              <Text style={styles.muted}>
+                {!adAvailable && ad.status?.nextAt ? nextAdText(ad.status.nextAt, t, locale) : t('app.free.adBody')}
+              </Text>
+            </View>
+          </Clickable>
+        ) : (
+          // Web and Android: no ad there, the place is kept, said to come.
+          <View style={[styles.card, styles.ad]} accessible accessibilityState={{ disabled: true }}>
+            <View style={[styles.round, { backgroundColor: colors.surfaceAlt }]}>
+              <Ionicons name="play" size={22} color={colors.textMuted} />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <View style={styles.adHead}>
+                <Text style={styles.cardTitle}>{t('app.free.adTitle')}</Text>
+                <View style={styles.soon}>
+                  <Text style={styles.soonText}>{t('app.free.soon')}</Text>
+                </View>
+              </View>
+              <Text style={styles.muted}>{t('app.free.adBody')}</Text>
+            </View>
           </View>
-        </View>
+        )}
+        {adNotice ? (
+          <View style={styles.message} accessibilityLiveRegion="polite">
+            <Text style={styles.messageText}>{adNotice}</Text>
+          </View>
+        ) : null}
 
         <View style={[styles.card, { gap: spacing.md }]}>
           <Text style={styles.cardTitle}>{t('app.free.referTitle')}</Text>
@@ -200,6 +241,8 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.text, fontSize: 17, fontWeight: '800', flexShrink: 1 },
   muted: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
   ad: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, opacity: 0.7 },
+  adOn: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  adReady: { borderColor: ENERGY, backgroundColor: 'rgba(255, 216, 74, 0.08)' },
   adHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   soon: { backgroundColor: colors.surfaceAlt, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   soonText: { color: colors.textMuted, fontSize: 12, fontWeight: '800' },
