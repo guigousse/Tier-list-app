@@ -276,8 +276,12 @@ export function cellObject(px: Pixels, w: number, h: number, grid: { cols: numbe
   const largest = Math.max(0, ...solidParts.map((p) => p.size));
   // An object smaller than 0.5 % of its cell is noise, not a drawing.
   if (largest < cw * ch * 0.005) return null;
-  // Pieces of the same drawing (chopsticks beside a sushi) stay; specks go.
-  const kept = solidParts.filter((p) => p.size >= largest * 0.02);
+  // Pieces of the same drawing (chopsticks beside a sushi) stay; specks go. So does a piece
+  // touching the cell's edge, unless it is the drawing itself: the bottom of a drawing of
+  // the row above that overflowed into this cell (a bust's shoulders, a pot's base).
+  const touchesEdge = (p: { minX: number; minY: number; maxX: number; maxY: number }) =>
+    p.minX === 0 || p.minY === 0 || p.maxX === cw - 1 || p.maxY === ch - 1;
+  const kept = solidParts.filter((p) => p.size >= largest * 0.02 && (p.size === largest || !touchesEdge(p)));
   const minX = Math.min(...kept.map((p) => p.minX)), maxX = Math.max(...kept.map((p) => p.maxX));
   const minY = Math.min(...kept.map((p) => p.minY)), maxY = Math.max(...kept.map((p) => p.maxY));
   return { x: x0 + minX, y: y0 + minY, w: maxX - minX + 1, h: maxY - minY + 1 };
@@ -330,7 +334,7 @@ export function sheetPrompt(cards: { label: string; concept: string; theme?: str
     "The attached image shows the art style to copy exactly (not its objects): cozy cartoon sticker icons with bold rounded dark-brown outlines (#2A1B14), flat vivid colors, one darker shade and one soft light highlight per main shape, simple shapes that stay readable at 55 pixels.",
     `Draw one single image: a grid of ${cols} columns by ${rows} rows of equal square cells, on a flat uniform pure magenta background (#FF00FF) that fills the whole picture, including the space between the icons. The cells are invisible: only magenta between the icons.`,
     "Each cell holds exactly one icon, centered, about 70% of the cell size, with magenta space all around it. Each icon is a die-cut sticker: a thick even white border, about 4% of the cell wide, follows the icon's own outline all round, and the magenta starts right outside it. No tile, card, square or frame behind the icon. The icons use any colors except magenta and pink.",
-    "The picture contains only drawings: text, letters, numbers and logos are left out.",
+    "The picture contains only drawings: text, letters, numbers and logos are left out. No caption, name or label under or on the icons: the card names below are for you only, never written in the picture.",
     "Row by row, left to right, the cells contain:",
     list + empty,
   ].join("\n");

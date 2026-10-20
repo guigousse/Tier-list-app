@@ -381,3 +381,23 @@ Deno.test("chaque icône est demandée en sticker découpé, avec son contour bl
   const prompt = sheetPrompt([{ label: "Tomate", concept: "tomato" }], 1, 1);
   if (!/white (die-cut )?border/i.test(prompt)) throw new Error(prompt);
 });
+
+Deno.test("le bas d'un dessin de la rangée du dessus, qui déborde dans la case, n'est pas gardé", () => {
+  const w = 40, h = 80, px = sheet(w, h);
+  paint(px, w, 8, 6, 32, 42, [200, 50, 50]); // case 0 : déborde de 2 px dans la case 1 (y ≥ 40)
+  paint(px, w, 10, 50, 30, 74, [50, 50, 200]); // case 1 : son objet
+  clearBackground(px, w, h);
+  same(cellObject(px, w, h, { cols: 1, rows: 2 }, 1), { x: 10, y: 50, w: 20, h: 24 });
+});
+
+Deno.test("un dessin qui touche le bord de sa case, mais en est la plus grande partie, reste entier", () => {
+  const w = 40, h = 40, px = sheet(w, h);
+  paint(px, w, 4, 6, 36, 40, [200, 50, 50]); // buste : les épaules touchent le bas de la case
+  clearBackground(px, w, h);
+  same(cellObject(px, w, h, { cols: 1, rows: 1 }, 0), { x: 4, y: 6, w: 32, h: 34 });
+});
+
+Deno.test("la consigne interdit toute légende : les noms de cartes ne sont là que pour Gemini", () => {
+  const prompt = sheetPrompt([{ label: "Matcha", concept: "matcha" }], 1, 1);
+  if (!/no caption/i.test(prompt)) throw new Error(prompt);
+});
