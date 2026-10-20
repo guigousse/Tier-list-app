@@ -1,4 +1,4 @@
-import { aiIconUri } from '../lib/aiIconFiles';
+import { aiIconUri, hasStickerBorder } from '../lib/aiIconFiles';
 import { imageUri } from '../lib/images';
 
 // Counts the file system lookups a card display costs (synchronous native calls).
@@ -37,5 +37,13 @@ describe('showing the same cards again', () => {
     expect(lookups).toBeLessThanOrEqual(3);
     expect(imageUri('photo.jpg')).toBe('file:///photo.jpg');
     expect(aiIconUri('https://cdn/pizza-1.png')).toBe('file:///pizza-1.png');
+  });
+});
+
+describe('library pictures drawn as stickers', () => {
+  it('knows the ones that bring their own white border, so the previews add none', () => {
+    expect(hasStickerBorder('https://x.supabase.co/storage/v1/object/public/card-icons/tomato-mvq1-sticker.png')).toBe(true);
+    expect(hasStickerBorder('https://x.supabase.co/storage/v1/object/public/card-icons/banana-mvcje9tr.png')).toBe(false);
+    expect(hasStickerBorder('https://x.supabase.co/storage/v1/object/public/card-icons/sticker-mule-mvq1.png')).toBe(false);
   });
 });

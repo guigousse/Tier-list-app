@@ -351,3 +351,33 @@ Deno.test("une planche sans visage qui échoue n'est pas retentée", async () =>
   }
   throw new Error("aurait dû échouer");
 });
+
+/** A die-cut sticker: a white rim following a round icon, then its dark outline and colour. */
+function stickerSheet() {
+  const w = 200, h = 100, px = sheet(w, h);
+  for (let i = 0; i < 8; i++) {
+    const cx = (i % 4) * 50 + 25, cy = Math.floor(i / 4) * 50 + 25;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const d = Math.hypot(x - cx, y - cy);
+        if (d <= 19) px.set(d <= 15 ? (d <= 13 ? [220, 60, 40, 255] : [42, 27, 20, 255]) : [255, 255, 255, 255], (y * w + x) * 4);
+      }
+    }
+  }
+  return { w, h, px };
+}
+
+Deno.test("le contour blanc d'un sticker, qui épouse le dessin, reste : seul le magenta part", () => {
+  const { w, h, px } = stickerSheet();
+  clearBackground(px, w, h, { cols: 4, rows: 2 });
+  same(alpha(px, w, 25, 25 - 17), 255); // le liseré blanc au-dessus de la tomate
+  same(alpha(px, w, 25 + 17, 25), 255); // à droite
+  same(alpha(px, w, 25, 25), 255);
+  same(alpha(px, w, 3, 3), 0); // le magenta du coin
+  same(cellObject(px, w, h, { cols: 4, rows: 2 }, 0), { x: 6, y: 6, w: 39, h: 39 });
+});
+
+Deno.test("chaque icône est demandée en sticker découpé, avec son contour blanc", () => {
+  const prompt = sheetPrompt([{ label: "Tomate", concept: "tomato" }], 1, 1);
+  if (!/white (die-cut )?border/i.test(prompt)) throw new Error(prompt);
+});

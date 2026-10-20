@@ -371,7 +371,8 @@ Deno.serve(async (req) => {
             if (!png) return;
             // Name unique to this drawing: the CDN and the players' copies keep a file a
             // year, a concept redrawn under the same name would stay the old picture.
-            const path = `${card.concept}-${Date.now().toString(36)}.png`;
+            // "-sticker": drawn with its own white border, the app adds none (STICKER_FILE).
+            const path = `${card.concept}-${Date.now().toString(36)}-sticker.png`;
             const { error } = await db.storage.from("card-icons").upload(path, png, { contentType: "image/png", upsert: true, cacheControl: "31536000" });
             if (error) return console.error("upload", card.concept, error.message);
             const image = db.storage.from("card-icons").getPublicUrl(path).data.publicUrl;

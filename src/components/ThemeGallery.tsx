@@ -3,7 +3,7 @@ import { BlurView } from 'expo-blur';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing } from '../constants/theme';
-import { aiIconUri } from '../lib/aiIconFiles';
+import { aiIconUri, hasStickerBorder } from '../lib/aiIconFiles';
 import { useT } from '../lib/i18n/useT';
 import { useThemeTitle } from '../lib/i18n/useContent';
 import type { Template } from '../constants/presets';
@@ -74,7 +74,8 @@ function StickerView({
         tintColor={hero ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'}
         resizeMode="contain"
       />
-      {(hero ? HERO_AROUND : AROUND).map((offset, i) => (
+      {/* A picture drawn with its own white border keeps it alone. */}
+      {(hasStickerBorder(url) ? [] : hero ? HERO_AROUND : AROUND).map((offset, i) => (
         <Image key={i} source={source} style={[styles.layer, { transform: offset }]} tintColor="#FFFFFF" resizeMode="contain" />
       ))}
       <Image source={source} style={styles.layer} resizeMode="contain" />

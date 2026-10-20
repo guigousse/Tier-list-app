@@ -4,7 +4,7 @@ How the vector icons on cards are made, to reuse when players create their own t
 
 ## Style (validated)
 
-- The badge sticker drawings (`src/lib/stickers.ts`), **without the white die-cut border**.
+- The badge sticker drawings (`src/lib/stickers.ts`). Pictures drawn on a Gemini sheet keep **their white die-cut border** (since 2026-10-20): only the magenta background is removed, and the file is named `…-sticker.png` so the app's previews don't draw a second border around it. Older library pictures have none: the previews still draw it for them.
 - viewBox `0 0 100 100`, dark warm outline (`#2A1B14`, ~2.4 wide), flat colours plus one shade and one highlight per shape.
 - A soft drop shadow under the drawing (silhouette, black, 22 % opacity, shifted 3 down).
 - Rendered by `cardIconSvg(id)` in `src/lib/cardIcons.ts`, shown by `CardIcon` in `CardView`.

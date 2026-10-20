@@ -129,9 +129,14 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
   // White tile behind each icon: flooded in from the background, it stops at the
   // icon's dark outline, so the white inside a drawing stays. Only a region spanning
   // most of a cell is a tile; a small white thing touching the magenta is a drawing.
+  // And only a rectangle: the white die-cut border of a sticker, which follows the
+  // drawing, spans as much of the cell but is the look asked for, so it stays.
   if (grid) {
     const cw = w / grid.cols, ch = h / grid.rows;
     const seen = new Uint8Array(n);
+    // Which region each pixel joined (1-based), to measure a region's own outline.
+    const owner = new Int32Array(n);
+    let regions = 0;
     // The flood's stack is free again: it holds each region, which is also its queue.
     const region = stack;
     for (let s = 0; s < n; s++) {
@@ -141,7 +146,15 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
       if (!touches) continue;
       let minX = sx, maxX = sx, minY = sy, maxY = sy;
       let size = 0;
+      const id = ++regions;
+      const join = (q: number) => {
+        if (seen[q] || clear[q] || !tileWhite(px, q * 4)) return;
+        seen[q] = 1;
+        owner[q] = id;
+        region[size++] = q;
+      };
       seen[s] = 1;
+      owner[s] = id;
       region[size++] = s;
       for (let k = 0; k < size; k++) {
         const p = region[k];
@@ -150,12 +163,26 @@ export function clearBackground(px: Pixels, w: number, h: number, grid?: { cols:
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
         if (y > maxY) maxY = y;
-        if (x > 0 && !seen[p - 1] && !clear[p - 1] && tileWhite(px, (p - 1) * 4)) (seen[p - 1] = 1), (region[size++] = p - 1);
-        if (x < w - 1 && !seen[p + 1] && !clear[p + 1] && tileWhite(px, (p + 1) * 4)) (seen[p + 1] = 1), (region[size++] = p + 1);
-        if (y > 0 && !seen[p - w] && !clear[p - w] && tileWhite(px, (p - w) * 4)) (seen[p - w] = 1), (region[size++] = p - w);
-        if (y < h - 1 && !seen[p + w] && !clear[p + w] && tileWhite(px, (p + w) * 4)) (seen[p + w] = 1), (region[size++] = p + w);
+        if (x > 0) join(p - 1);
+        if (x < w - 1) join(p + 1);
+        if (y > 0) join(p - w);
+        if (y < h - 1) join(p + w);
       }
-      if (maxX - minX + 1 >= cw * 0.6 && maxY - minY + 1 >= ch * 0.6) for (let k = 0; k < size; k++) clear[region[k]] = 1;
+      if (maxX - minX + 1 < cw * 0.6 || maxY - minY + 1 < ch * 0.6) continue;
+      // A tile fills the edge of its own box nearly all round (rounded corners aside);
+      // a sticker's border, around a round or ragged drawing, only touches it here and there.
+      let edge = 0, filled = 0;
+      for (let x = minX; x <= maxX; x++) {
+        edge += 2;
+        if (owner[minY * w + x] === id) filled++;
+        if (owner[maxY * w + x] === id) filled++;
+      }
+      for (let y = minY + 1; y < maxY; y++) {
+        edge += 2;
+        if (owner[y * w + minX] === id) filled++;
+        if (owner[y * w + maxX] === id) filled++;
+      }
+      if (filled >= edge * 0.7) for (let k = 0; k < size; k++) clear[region[k]] = 1;
     }
   }
 
@@ -302,7 +329,7 @@ export function sheetPrompt(cards: { label: string; concept: string; theme?: str
   return [
     "The attached image shows the art style to copy exactly (not its objects): cozy cartoon sticker icons with bold rounded dark-brown outlines (#2A1B14), flat vivid colors, one darker shade and one soft light highlight per main shape, simple shapes that stay readable at 55 pixels.",
     `Draw one single image: a grid of ${cols} columns by ${rows} rows of equal square cells, on a flat uniform pure magenta background (#FF00FF) that fills the whole picture, including the space between the icons. The cells are invisible: only magenta between the icons.`,
-    "Each cell holds exactly one icon, centered, about 70% of the cell size, with magenta space all around it. Each icon stands directly on the magenta background: no tile, card, square or frame behind it. The icons use any colors except magenta and pink.",
+    "Each cell holds exactly one icon, centered, about 70% of the cell size, with magenta space all around it. Each icon is a die-cut sticker: a thick even white border, about 4% of the cell wide, follows the icon's own outline all round, and the magenta starts right outside it. No tile, card, square or frame behind the icon. The icons use any colors except magenta and pink.",
     "The picture contains only drawings: text, letters, numbers and logos are left out.",
     "Row by row, left to right, the cells contain:",
     list + empty,

@@ -12,6 +12,14 @@ function iconsDir(): Directory {
   return (icons = dir);
 }
 
+/**
+ * Library pictures drawn with their own white die-cut border (supabase/functions/
+ * ai-generate/index.ts names them so): shown as they are. Older ones have none, and
+ * get the border drawn around them in the previews.
+ */
+const STICKER_FILE = /-sticker\.png(\?|$)/;
+export const hasStickerBorder = (url: string) => STICKER_FILE.test(url);
+
 /** Device copies known to exist, by URL. */
 const copies = new Map<string, string>();
 

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { aiIconUri } from '../lib/aiIconFiles';
+import { aiIconUri, hasStickerBorder } from '../lib/aiIconFiles';
 
 // The white die-cut border: the picture drawn eight times in white, pushed a few points
 // each way, under the picture itself (as on the themes' circles).
@@ -14,7 +14,8 @@ const AROUND = around(2);
 
 /**
  * A card's library picture as a sticker: white border, soft shadow, a little tilt. Its
- * emoji on a round white sticker while the picture isn't drawn.
+ * emoji on a round white sticker while the picture isn't drawn. A picture drawn with its
+ * own border keeps it alone: a second one around it would thicken it.
  */
 export const Sticker = memo(function Sticker({ url, emoji, size, tilt = -6 }: { url?: string; emoji: string; size: number; tilt?: number }) {
   const box = { width: size, height: size, transform: [{ rotate: `${tilt}deg` }] };
@@ -31,7 +32,7 @@ export const Sticker = memo(function Sticker({ url, emoji, size, tilt = -6 }: { 
   return (
     <View style={[styles.box, box]}>
       <Image source={source} style={[styles.layer, styles.shadow]} tintColor="rgba(0,0,0,0.45)" resizeMode="contain" />
-      {AROUND.map((offset, i) => (
+      {(hasStickerBorder(url) ? [] : AROUND).map((offset, i) => (
         <Image key={i} source={source} style={[styles.layer, { transform: offset }]} tintColor="#FFFFFF" resizeMode="contain" />
       ))}
       <Image source={source} style={styles.layer} resizeMode="contain" />
