@@ -34,6 +34,8 @@ export type Settings = {
   reminderAsked: boolean;
   /** Whether the welcome screens were seen. */
   onboarded: boolean;
+  /** Whether the player profile was offered, after the first list validated (onboarding). */
+  profileAsked: boolean;
   cardSize: CardSize;
   showCardLabels: boolean;
   /** Usage statistics (Firebase Analytics): asked once, changed in the settings. */
@@ -144,6 +146,7 @@ const DEFAULT_SETTINGS: Settings = {
   friendNotifications: true,
   reminderAsked: false,
   onboarded: false,
+  profileAsked: false,
   cardSize: 'medium',
   showCardLabels: true,
   analyticsConsent: 'unknown',
@@ -219,6 +222,11 @@ export function migrateStore(persisted: unknown, version: number): Persisted {
   if (version < 7) {
     // v7: progress kept by the server. Nothing yet: it comes at the next launch.
     data.restored = { completed: 0, days: [] };
+  }
+  if (version < 8) {
+    // v8: the profile offered after the first list validated. Players already past the
+    // welcome screens saw it there.
+    data.settings = { ...data.settings, profileAsked: data.settings?.onboarded ?? false };
   }
   return data;
 }
@@ -596,7 +604,7 @@ export const useTierStore = create<State>()(
     {
       name: STORE_KEY,
       // Bump with every change to the persisted shape, and handle it in `migrate`.
-      version: 7,
+      version: 8,
       migrate: (persisted, version) => migrateStore(persisted, version),
       // Unreadable data (corrupted, or a migration that throws): keep a copy aside
       // and start from the defaults, rather than staying on a blank screen.

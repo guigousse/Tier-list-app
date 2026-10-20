@@ -32,6 +32,7 @@ import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
+import { asksProfile } from '../../lib/onboarding';
 import { own } from '../../lib/own';
 import { track } from '../../lib/analytics';
 import { MAX_TITLE } from '../../lib/listTitle';
@@ -215,7 +216,10 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
     // Count this player's first completed ranking right away (stats refresh later).
     if (list.popular && first) useCatalog.getState().bumpStat(list.popular.key, 'completions', 1);
     syncDailyVotes();
-    showResults();
+    // The first list validated: the onboarding's profile step comes before the results.
+    const { settings, profile } = useTierStore.getState();
+    if (asksProfile(settings, profile)) router.replace({ pathname: '/welcome-profile', params: { id: list.id } });
+    else showResults();
   };
 
   const confirmDelete = () =>

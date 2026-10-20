@@ -91,12 +91,17 @@ describe('popular tier lists', () => {
 describe('migrateStore', () => {
   it('drops the removed tier preset setting from v1 data', () => {
     const migrated = migrateStore({ settings: { haptics: true, defaultPresetKey: 'classic' }, lists: {} }, 1);
-    expect(migrated.settings).toEqual({ haptics: true, onboarded: false });
+    expect(migrated.settings).toEqual({ haptics: true, onboarded: false, profileAsked: false });
   });
 
   it('shows the welcome screens only to people without tier lists', () => {
     expect(migrateStore({ settings: {}, lists: { a: {} } }, 2).settings?.onboarded).toBe(true);
     expect(migrateStore({ settings: {}, lists: {} }, 2).settings?.onboarded).toBe(false);
+  });
+
+  it('offers the profile after the first list only to players new to the welcome screens', () => {
+    expect(migrateStore({ settings: { onboarded: true }, lists: {} }, 7).settings?.profileAsked).toBe(true);
+    expect(migrateStore({ settings: { onboarded: false }, lists: {} }, 7).settings?.profileAsked).toBe(false);
   });
 
   it('keeps the welcome screens seen in v3 data', () => {

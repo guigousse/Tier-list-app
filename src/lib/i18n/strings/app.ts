@@ -148,6 +148,9 @@ export const app: Strings = {
 
     'app.welcome.slide1': 'Glisse. Valide.\nCompare.',
     'app.welcome.play': 'Jouer la tier list du jour',
+    'app.welcome.profile': 'Ton profil\nde joueur.',
+    'app.welcome.profileSub': 'Bien joué ! Crée ton profil pour ajouter tes amis et comparer vos classements.',
+    'app.welcome.seeResults': 'Voir mes résultats',
     'app.welcome.fallback': 'Bienvenue sur\nTiercraft !',
 
     'app.history.empty': 'Valide la tier list du jour pour la retrouver ici, avec le classement moyen des joueurs.',
@@ -332,6 +335,9 @@ export const app: Strings = {
 
     'app.welcome.slide1': 'Drag. Submit.\nCompare.',
     'app.welcome.play': 'Play today’s tier list',
+    'app.welcome.profile': 'Your player\nprofile.',
+    'app.welcome.profileSub': 'Nice one! Create your profile to add your friends and compare your rankings.',
+    'app.welcome.seeResults': 'See my results',
     'app.welcome.fallback': 'Welcome to\nTiercraft!',
 
     'app.history.empty': 'Submit the daily tier list to find it here, with the players’ average ranking.',
@@ -516,6 +522,9 @@ export const app: Strings = {
 
     'app.welcome.slide1': 'Arrastra. Envía.\nCompara.',
     'app.welcome.play': 'Jugar la tier list del día',
+    'app.welcome.profile': 'Tu perfil\nde jugador.',
+    'app.welcome.profileSub': '¡Bien hecho! Crea tu perfil para añadir a tus amigos y comparar vuestras clasificaciones.',
+    'app.welcome.seeResults': 'Ver mis resultados',
     'app.welcome.fallback': '¡Bienvenido a\nTiercraft!',
 
     'app.history.empty': 'Envía la tier list del día para encontrarla aquí, con la clasificación media de los jugadores.',
@@ -700,6 +709,9 @@ export const app: Strings = {
 
     'app.welcome.slide1': 'Σύρετε. Υποβάλετε.\nΣυγκρίνετε.',
     'app.welcome.play': 'Παίξτε την tier list της ημέρας',
+    'app.welcome.profile': 'Το προφίλ\nπαίκτη σας.',
+    'app.welcome.profileSub': 'Μπράβο! Φτιάξτε το προφίλ σας για να προσθέσετε φίλους και να συγκρίνετε τις κατατάξεις σας.',
+    'app.welcome.seeResults': 'Δείτε τα αποτελέσματα',
     'app.welcome.fallback': 'Καλώς ήρθατε\nστο Tiercraft!',
 
     'app.history.empty': 'Υποβάλετε την tier list της ημέρας για να τη βρίσκετε εδώ, μαζί με τη μέση κατάταξη των παικτών.',
