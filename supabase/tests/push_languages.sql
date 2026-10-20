@@ -1,4 +1,4 @@
--- Notifications in the receiver's language (20261019020000_push_languages.sql, 20261020010000_push_texts_tutoiement.sql). Run on the
+-- Notifications in the receiver's language (20261019020000_push_languages.sql, 20261020123855_push_texts_tutoiement.sql). Run on the
 -- project: the block always fails at the end, nothing kept. Expected error message: 'OK'.
 do $$
 declare

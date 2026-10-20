@@ -207,7 +207,7 @@
       es: 'Tu primera tier list<br><span class="rainbow">te espera.</span>',
       el: 'Η πρώτη σας tier list<br><span class="rainbow">σας περιμένει.</span>',
     },
-    'index.final.lead': { en: 'Free, no ads, no email account.', es: 'Gratis, sin publicidad, sin cuenta de correo.', el: 'Δωρεάν, χωρίς διαφημίσεις, χωρίς λογαριασμό email.' },
+    'index.final.lead': { en: 'Free, no forced ads, no email account.', es: 'Gratis, sin publicidad impuesta, sin cuenta de correo.', el: 'Δωρεάν, χωρίς υποχρεωτικές διαφημίσεις, χωρίς λογαριασμό email.' },
 
     // Support (support.html).
     'support.title': { en: 'Support · Tiercraft', es: 'Soporte · Tiercraft', el: 'Υποστήριξη · Tiercraft' },
@@ -289,9 +289,9 @@
     'import.store': { en: 'Download Tiercraft on the App Store', es: 'Descarga Tiercraft en la App Store', el: 'Λήψη του Tiercraft από το App Store' },
     'import.open': { en: 'I have the app: open the tier list', es: 'Ya tengo la app: abrir la tier list', el: 'Άνοιγμα στην εφαρμογή' },
     'import.hint': {
-      en: 'Once the app is installed, tap the link you received again, or enter the code in My lists → Import.',
-      es: 'Cuando tengas la app, vuelve a tocar el enlace que recibiste o escribe el código en Mis listas → Importar.',
-      el: 'Αφού εγκαταστήσετε την εφαρμογή, πατήστε ξανά τον σύνδεσμο που λάβατε ή πληκτρολογήστε τον κωδικό στο Οι λίστες μου → Εισαγωγή.',
+      en: 'The App Store button copies the code: when you first open the app, tap “Paste” to get this tier list. You can also tap the link you received again.',
+      es: 'El botón de la App Store copia el código: la primera vez que abras la app, toca «Pegar» para recuperar esta tier list. También puedes volver a tocar el enlace que recibiste.',
+      el: 'Το κουμπί του App Store αντιγράφει τον κωδικό: την πρώτη φορά που θα ανοίξετε την εφαρμογή, πατήστε «Επικόλληση» για να βρείτε αυτή την tier list. Μπορείτε επίσης να πατήσετε ξανά τον σύνδεσμο που λάβατε.',
     },
     'import.code': { fr: 'Code : {code}', en: 'Code: {code}', es: 'Código: {code}', el: 'Κωδικός: {code}' },
     'import.quoted': { fr: '« {title} »', en: '“{title}”', es: '«{title}»', el: '«{title}»' },

@@ -198,7 +198,7 @@ export function ActionSheet({
   );
 }
 
-export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
+export function Chip({ label, selected, onPress, style }: { label: string; selected?: boolean; onPress: () => void; style?: StyleProp<ViewStyle> }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -207,7 +207,7 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
         playClick();
         onPress();
       }}
-      style={[styles.chip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+      style={[styles.chip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }, style]}
     >
       <Text style={[styles.chipLabel, selected && { color: colors.primaryText }]}>{label}</Text>
     </Pressable>

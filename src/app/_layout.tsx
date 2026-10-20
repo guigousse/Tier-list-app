@@ -10,6 +10,7 @@ import { colors } from '../constants/theme';
 import { applyConsent, trackScreen } from '../lib/analytics';
 import { openWallet } from '../lib/credits';
 import { syncDailyVotes } from '../lib/daily';
+import { claimChallenges } from '../lib/challenge';
 import { restoreIdentity } from '../lib/identity';
 import { coverUrls, preloadCovers } from '../lib/preload';
 import { restoreProgress } from '../lib/progress';
@@ -24,6 +25,7 @@ import { useAllTemplates, useCatalog } from '../store/useCatalog';
 import { useMail } from '../store/useMail';
 import { hydrationRecovered, useHydrated, useTierStore } from '../store/useTierStore';
 import { openShop } from '../lib/shop';
+import { refreshReferrals } from '../lib/referrals';
 import { t as translateNow, useT } from '../lib/i18n/useT';
 import { useTranslationsFollowLanguage } from '../lib/i18n/useContent';
 import { syncProfileLanguage } from '../lib/profileLanguage';
@@ -77,7 +79,8 @@ export default function RootLayout() {
       syncPushToken();
       syncProfileLanguage();
       // The wallet after the identity: a reinstall finds its credits through the Keychain.
-      openWallet();
+      // Then the referral pot, which needs the wallet's secret: the badges light at launch.
+      openWallet().then(() => refreshReferrals());
       // Same for the reward paths: the server kept the lists completed and the VS chosen.
       restoreProgress();
       // A pack bought but not credited yet (connection lost): delivered now, as promised.
@@ -123,14 +126,24 @@ export default function RootLayout() {
     const sync = () => {
       useCatalog.getState().refresh();
       syncDailyVotes();
+      // Challenges ranked while offline: their sharers told now.
+      claimChallenges();
       useMail.getState().refresh();
       // Cards whose library picture was redrawn as a sticker take the new one.
       if (useTierStore.persist.hasHydrated()) upgradeCardIcons();
+      // Referrals earned while away (throttled inside: returns to the app can be many).
+      refreshReferrals();
     };
     sync();
     const sub = AppState.addEventListener('change', (s) => s === 'active' && sync());
     return () => sub.remove();
   }, []);
+
+  // Apple just vouched for this wallet: the challenges ranked before can be told to the server.
+  const walletAttested = useTierStore((s) => s.walletAttested);
+  useEffect(() => {
+    if (hydrated && walletAttested) claimChallenges();
+  }, [hydrated, walletAttested]);
 
   // A public list enriched online (cards, tiers, images) reaches the copies already made.
   const templates = useAllTemplates();
@@ -184,6 +197,7 @@ export default function RootLayout() {
             <Stack.Screen name="results/[id]" options={{ title: t('app.title.results') }} />
             <Stack.Screen name="history" options={{ title: t('app.title.history') }} />
             <Stack.Screen name="store" options={{ title: t('app.title.store') }} />
+            <Stack.Screen name="free-energy" options={{ title: t('app.title.freeEnergy') }} />
             <Stack.Screen
               name="welcome"
               options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}

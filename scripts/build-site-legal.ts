@@ -14,7 +14,7 @@ import { privacyIn, PUBLISHER, type LegalSection } from '../src/constants/legal'
 import type { Language } from '../src/lib/i18n';
 
 /** The day the policy last changed, shown at the top of each page. */
-const UPDATED = new Date(Date.UTC(2026, 9, 19));
+const UPDATED = new Date(Date.UTC(2026, 9, 20));
 
 const SITE = 'https://tier-list-app-share-site.vercel.app';
 const APP_STORE = 'https://apps.apple.com/app/id6822017061';

@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../constants/theme';
-import { createShareCode } from '../lib/api';
+import { createChallengeCode } from '../lib/api';
 import { useT } from '../lib/i18n/useT';
 import { codeLink, copyText, offlineLink, shareUrl } from '../lib/share';
 import { socialError } from '../lib/social';
 import type { TierList } from '../store/types';
+import { useTierStore } from '../store/useTierStore';
 import { SendToFriends } from './SendToFriends';
 import { Button, Sheet } from './ui';
 
@@ -22,7 +23,10 @@ type Props = {
   imageLabel?: string;
 };
 
-/** Shares a tier list with a short code (stored online), or an offline link as a fallback. */
+/**
+ * Shares a tier list as a challenge, with a short code (stored online) or an offline link as
+ * a fallback: whoever opens it ranks the same cards, then compares with the player's ranking.
+ */
 export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }: Props) {
   const { t, upper } = useT();
   const key = list ? `${list.id}:${list.updatedAt}` : '';
@@ -30,11 +34,14 @@ export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }:
   const [attempt, setAttempt] = useState(0);
   // Sending to friends happens in the same sheet.
   const [toFriends, setToFriends] = useState(false);
+  // Shown to whoever opens the link; the pseudo was moderated when the profile was made.
+  const pseudo = useTierStore((s) => s.profile?.pseudo);
 
   useEffect(() => {
     if (!visible || !list || codes.has(key)) return;
     let cancelled = false;
-    createShareCode(list)
+    // The wallet ties the code to this player, credited when a new player ranks it.
+    createChallengeCode(list, useTierStore.getState().walletSecret, pseudo)
       .then((code) => {
         codes.set(key, code);
         if (!cancelled) setState({ key, code });
@@ -43,12 +50,12 @@ export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }:
     return () => {
       cancelled = true;
     };
-  }, [visible, key, list, attempt]);
+  }, [visible, key, list, attempt, pseudo]);
 
   if (!list) return null;
   const code = codes.get(key) ?? (state.key === key ? state.code : undefined);
   const error = state.key === key && state.error;
-  const intro = (c: string) => t('social.shareIntro', { title: list.title, code: c });
+  const intro = (c: string) => t('social.challengeIntro', { title: list.title, code: c });
 
   const later = (fn: () => void) => () => {
     onClose();
@@ -121,7 +128,7 @@ export function ShareSheet({ list, visible, onClose, onShareImage, imageLabel }:
               style={styles.flex}
               icon="link-outline"
               label={t('social.sendLink')}
-              onPress={later(() => shareUrl(list.title, t('social.shareIntroLink', { title: list.title }), offlineLink(list)))}
+              onPress={later(() => shareUrl(list.title, t('social.challengeIntroLink', { title: list.title }), offlineLink(list, pseudo)))}
             />
           </View>
         </View>

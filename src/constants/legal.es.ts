@@ -16,7 +16,7 @@ export const PRIVACY_ES: LegalSection[] = [
   {
     title: 'Lo que se envía en línea',
     bullets: [
-      'Cuando compartes una tier list: su título, los nombres y colores de los niveles y de las cartas, y la clasificación (nunca las fotos), para crear el código para compartir.',
+      'Cuando compartes una tier list: su título, los nombres y colores de los niveles y de las cartas, y la clasificación (nunca las fotos), para crear el código para compartir. Si tienes un perfil, tu nombre de usuario va con la lista, para que tu amigo sepa quién lo reta. El código también queda vinculado al monedero anónimo de la app: si un jugador nuevo clasifica la lista, recibes energía gratis. Cuando clasificas una lista abierta desde un código, se envían tu monedero anónimo y el identificador aleatorio de la app para comprobar que eres un jugador nuevo; quien la compartió nunca los ve. También se envía a Apple, a través de nuestro servidor, un token DeviceCheck de Apple para comprobar que este dispositivo no ha sido ya referido; no contiene ningún dato personal, y Apple solo guarda dos bits por dispositivo para nuestra app.',
       'Cuando envías la tier list del día o una lista pública: tu clasificación y el identificador aleatorio de la app, para calcular la clasificación media y evitar votos duplicados.',
       'Cuando abres una lista pública o la añades a favoritos: la lista en cuestión y el identificador aleatorio, para los contadores de visitas y de favoritos y las tendencias.',
       'Si creas un perfil de jugador: tu nombre de usuario, su número, tu avatar y tus insignias, tus amigos y solicitudes de amistad, los jugadores que bloqueas y las denuncias que haces o recibes. El perfil está vinculado al identificador aleatorio de la app. Tus amigos ven tu nombre de usuario, tu avatar y tus clasificaciones enviadas (tier lists del día y listas públicas, nunca tus listas personales).',
@@ -39,13 +39,13 @@ export const PRIVACY_ES: LegalSection[] = [
       'Vercel: sitio web de la app y páginas de los enlaces para compartir.',
       'Wikimedia y App Store: cuando buscas una imagen, se les envía el nombre de la carta; las plantillas con iconos de apps consultan la App Store. No se transmite ningún dato personal.',
       'Expo: descarga de las actualizaciones de la app.',
-      'Google Analytics para Firebase: estadísticas de uso, solo si lo aceptas, sin identificador publicitario ni intercambio con la publicidad de Google. Los datos pueden tratarse fuera de la Unión Europea, con las garantías previstas por el RGPD, y se conservan 2 meses.',
+      'Google Analytics para Firebase: estadísticas de uso, solo si lo aceptas, sin identificador publicitario ni intercambio con la publicidad de Google. Los datos pueden tratarse fuera de la Unión Europea, con las garantías previstas por el RGPD, y se conservan 2 meses. Google AdMob: solo si eliges ver un anuncio a cambio de energía, un anuncio no personalizado; Google recibe entonces información técnica del dispositivo (dirección IP, modelo, idioma) para mostrarlo y luchar contra el fraude, y nos confirma que se ha visto con un código aleatorio, sin saber nada de ti.',
     ],
   },
   {
     title: 'Lo que no hacemos',
     bullets: [
-      'Sin cuenta de correo, sin publicidad, sin rastreo publicitario.',
+      'Sin cuenta de correo, sin publicidad impuesta (solo la que eliges ver a cambio de energía), sin rastreo publicitario.',
       'No vendemos ni compartimos datos con terceros.',
       'Sin acceso a tus fotos, salvo las que eliges para una carta.',
     ],

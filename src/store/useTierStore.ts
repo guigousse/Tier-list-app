@@ -10,9 +10,9 @@ import { CARD_COLORS, type CardSize } from '../constants/theme';
 import { nextRegionChange } from '../lib/regionChange';
 import { CLASSIC_TIERS, sourceOf, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
-import { deleteCardImage, duplicateCardImage } from '../lib/images';
+import { deleteCardImage, downloadCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
-import type { SharedList } from '../lib/share';
+import { isShareCode, type SharedList } from '../lib/share';
 import { debouncedJSONStorage } from './debouncedStorage';
 import { POOL, type Card, type Tier, type TierList, type Zone } from './types';
 import { own } from '../lib/own';
@@ -46,6 +46,13 @@ export type Settings = {
   regionAsked: boolean;
   /** Last change of region from the settings: one a month (lib/regionChange.ts). */
   regionChangedAt?: number;
+  /**
+   * First launch on the welcome screens (lib/invite.ts). Optional, no migration: saves
+   * from before it have none, and those players are not new.
+   */
+  joinedAt?: number;
+  /** The "a friend invited you?" card was closed ("Later" or ×): never shown again. */
+  inviteAsked?: boolean;
 };
 
 type NewListInput = {
@@ -94,8 +101,15 @@ type State = {
   walletAttested: boolean;
 
   createList: (input: NewListInput) => string;
-  /** Adds a tier list received from someone else (or finds the one already imported) and returns its id. */
+  /**
+   * Adds a tier list opened from a share code or link (or finds the one already imported)
+   * and returns its id: a challenge, its cards to rank without seeing the sharer's ranking.
+   */
   importList: (shared: SharedList) => string;
+  /** Freezes the ranking of a challenge once every card is placed. */
+  answerChallenge: (listId: string) => boolean;
+  /** The server was told the challenge was ranked: never again. */
+  markChallengeClaimed: (listId: string) => void;
   /** The tier list a friend sent, to rank (created the first time; `again`: to rank it once more). */
   receiveMail: (mail: { id: string; from: string; list: SharedList }, again?: boolean) => string;
   /** Marks a received list as ranked and sent back. */
@@ -262,6 +276,52 @@ export const useTierStore = create<State>()(
           };
         });
 
+      /** Creates the local copy of a shared list, cards in the order sent, and returns its id. */
+      const addImported = (shared: SharedList): string => {
+        const now = Date.now();
+        const tiers = shared.tiers.map((t) => ({ id: newId(), label: t.label, color: t.color }));
+        const cards: Record<string, Card> = {};
+        const placement: Record<string, string[]> = Object.fromEntries(tiers.map((t) => [t.id, []]));
+        const pool: string[] = [];
+        for (const c of shared.cards) {
+          const id = newId();
+          cards[id] = {
+            id,
+            label: c.label,
+            color: c.color,
+            ...(c.iconUrl ? { iconUrl: c.iconUrl } : {}),
+            ...(c.imageUrl ? { imageUrl: c.imageUrl, imageCredit: c.imageCredit } : {}),
+          };
+          if (c.tier >= 0) placement[tiers[c.tier].id].push(id);
+          else pool.push(id);
+        }
+        const list: TierList = {
+          id: newId(),
+          title: clampTitle(shared.title) || t('app.list.defaultTitle'),
+          tiers,
+          cards,
+          placement,
+          pool,
+          favorite: false,
+          importedFrom: shared.code,
+          createdAt: now,
+          updatedAt: now,
+          openedAt: now,
+        };
+          set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
+          // Wikimedia pictures come as addresses: fetched in the background, the card keeps its name if offline.
+          for (const card of Object.values(cards)) {
+            if (!card.imageUrl) continue;
+            downloadCardImage(card.imageUrl)
+              .then((imageName) => {
+                if (get().lists[list.id]?.cards[card.id]) get().updateCard(list.id, card.id, { imageName });
+                else deleteCardImage(imageName);
+              })
+              .catch(() => {});
+          }
+          return list.id;
+      };
+
       return {
         lists: {},
         settings: DEFAULT_SETTINGS,
@@ -311,33 +371,30 @@ export const useTierStore = create<State>()(
         importList: (shared) => {
           const existing = Object.values(get().lists).find((l) => l.importedFrom === shared.code);
           if (existing) return existing.id;
-          const now = Date.now();
-          const tiers = shared.tiers.map((t) => ({ id: newId(), label: t.label, color: t.color }));
-          const cards: Record<string, Card> = {};
-          const placement: Record<string, string[]> = Object.fromEntries(tiers.map((t) => [t.id, []]));
-          const pool: string[] = [];
-          for (const c of shared.cards) {
-            const id = newId();
-            cards[id] = { id, label: c.label, color: c.color };
-            if (c.tier >= 0) placement[tiers[c.tier].id].push(id);
-            else pool.push(id);
-          }
-          const list: TierList = {
-            id: newId(),
-            title: clampTitle(shared.title) || t('app.list.defaultTitle'),
-            tiers,
-            cards,
-            placement,
-            pool,
-            favorite: false,
-            importedFrom: shared.code,
-            createdAt: now,
-            updatedAt: now,
-            openedAt: now,
-          };
-          set((state) => ({ lists: { ...state.lists, [list.id]: list } }));
-          return list.id;
+          // Nothing to rank: an ordinary list to fill in, as before challenges.
+          if (shared.cards.length === 0) return addImported(shared);
+          const listId = addImported({ ...shared, cards: shared.cards.map((c) => ({ ...c, tier: -1 })) });
+          patchList(listId, (l) => ({
+            challenge: {
+              ...(isShareCode(shared.code) ? { code: shared.code } : {}),
+              ...(shared.from ? { from: shared.from } : {}),
+              theirRanks: shared.cards.map((c) => c.tier),
+              // addImported creates the cards in the order sent.
+              cardIds: [...l.pool],
+            },
+          }));
+          return listId;
         },
+
+        answerChallenge: (listId) => {
+          const list = get().lists[listId];
+          if (!list?.challenge || list.challenge.answeredAt || list.pool.length > 0) return false;
+          if (!rankingOf(list, list.challenge.cardIds)) return false;
+          patchList(listId, (l) => ({ challenge: { ...l.challenge!, answeredAt: Date.now() } }));
+          return true;
+        },
+
+        markChallengeClaimed: (listId) => patchList(listId, (l) => (l.challenge ? { challenge: { ...l.challenge, claimed: true } } : {})),
 
         receiveMail: ({ id, from, list: shared }, again) => {
           const existing = Object.values(get().lists).find((l) => l.mail?.id === id);
@@ -347,8 +404,8 @@ export const useTierStore = create<State>()(
             return existing.id;
           }
           // Cards to rank: the sender's ranking isn't shown.
-          const listId = get().importList({ ...shared, code: `mail:${id}`, cards: shared.cards.map((c) => ({ ...c, tier: -1 })) });
-          // importList creates the cards in the order sent.
+          const listId = addImported({ ...shared, code: `mail:${id}`, cards: shared.cards.map((c) => ({ ...c, tier: -1 })) });
+          // addImported creates the cards in the order sent.
           patchList(listId, (l) => ({ mail: { id, from, cardIds: [...l.pool] } }));
           return listId;
         },

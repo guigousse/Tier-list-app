@@ -14,10 +14,10 @@ export const useCelebrating = () => useCelebrations((s) => s.queue.length > 0);
 
 /** Steps newly crossed join the queue; they then count as celebrated. */
 function check() {
-  const { lists, restored, celebrated, badgeChoices, walletAttested } = useTierStore.getState();
+  const { lists, restored, celebrated, badgeChoices } = useTierStore.getState();
   const progress = playerProgress(Object.values(lists), restored);
   const won = { lists: progress.completed, flame: progress.bestStreak };
-  const { events, celebrated: next } = pendingCelebrations(celebrated, won, badgeChoices, { credits: walletAttested });
+  const { events, celebrated: next } = pendingCelebrations(celebrated, won, badgeChoices);
   if (!celebrated || next.lists !== celebrated.lists || next.flame !== celebrated.flame) useTierStore.setState({ celebrated: next });
   if (events.length) {
     const { queue } = useCelebrations.getState();

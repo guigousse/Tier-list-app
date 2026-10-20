@@ -39,12 +39,53 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 const rpc = <T>(name: string, args: object) => request<T>(`rpc/${name}`, { method: 'POST', body: JSON.stringify(args) });
 
-/** Stores `list` online and returns its 6-character share code. */
-export function createShareCode(list: TierList): Promise<string> {
-  return rpc<string>('share_list', { payload: toPayload(list) });
+/**
+ * Stores `list` online as a challenge and returns its 6-character share code. With a wallet, the
+ * server remembers whose it is, to credit them when a new player ranks it.
+ */
+export function createChallengeCode(list: TierList, wallet?: string | null, from?: string): Promise<string> {
+  const payload = toPayload(list, from);
+  return wallet ? rpc<string>('share_challenge', { payload, wallet }) : rpc<string>('share_list', { payload });
+}
+
+/**
+ * claim_challenge's answers, plus the edge function's own: 'device_used' (Apple's DeviceCheck says
+ * this iPhone was already sponsored, even under another install) and 'retry' (Apple couldn't be
+ * asked: nothing was claimed).
+ */
+export type ClaimStatus = 'credited' | 'already' | 'own' | 'not_new' | 'cap' | 'unknown' | 'device_used' | 'retry';
+
+/**
+ * Tells the server this player ranked the challenge `code` (it judges whether its sharer earns
+ * credits), through the edge function `referral-claim`: it first asks Apple, with this iPhone's
+ * DeviceCheck `deviceToken`, whether the device was already sponsored.
+ */
+export function claimChallenge(wallet: string, deviceId: string, code: string, deviceToken: string): Promise<{ status: ClaimStatus }> {
+  // Builds run from Xcode get development tokens, which only Apple's development server knows.
+  return edgeCall('referral-claim', { wallet, deviceId, code, deviceToken, ...(__DEV__ && { development: true }) }, 20_000);
+}
+
+/** The sponsor's referrals and uncollected pot, as the server sends it (read by parseReferralStatus). */
+export function referralStatus(wallet: string): Promise<unknown> {
+  return rpc<unknown>('referral_status', { wallet });
+}
+
+/** Moves the referral pot onto the wallet; the credits collected (0 when it was empty). */
+export function collectReferrals(wallet: string): Promise<number> {
+  return rpc<number>('collect_referrals', { wallet });
 }
 
 /** Tier list stored under `code`, or null if the code doesn't exist. */
+/** Whether the week's rewarded ad can be watched: { available, next_at } (supabase/migrations/*_ad_rewards.sql). */
+export function adStatus(wallet: string): Promise<unknown> {
+  return rpc<unknown>('ad_status', { wallet });
+}
+
+/** A single-use ticket for the ad about to play, { available, ticket }, or { available: false, next_at }. */
+export function adTicket(wallet: string): Promise<unknown> {
+  return rpc<unknown>('ad_ticket', { wallet });
+}
+
 export async function fetchSharedList(code: string): Promise<SharedList | null> {
   const payload = await rpc<unknown>('get_shared_list', { code });
   return payload ? parsePayload(payload, code) : null;
@@ -71,24 +112,27 @@ export function setTemplateFavorite(templateKey: string, deviceId: string, favor
 
 export type TemplateStats = Record<string, { completions: number; favorites: number }>;
 
-/** AI generation (edge function `ai-generate`): the AI key stays on the server. */
-async function aiCall<T>(body: object, timeoutMs: number): Promise<T> {
+/** A Supabase edge function; its `{ error }` becomes the thrown message. */
+async function edgeCall<T>(name: string, body: object, timeoutMs: number): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-generate`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
       method: 'POST',
       signal: controller.signal,
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(data?.error ?? `ai ${res.status}`);
+    if (!res.ok) throw new Error(data?.error ?? `${name} ${res.status}`);
     return data as T;
   } finally {
     clearTimeout(timer);
   }
 }
+
+/** AI generation (edge function `ai-generate`): the AI key stays on the server. */
+const aiCall = <T>(body: object, timeoutMs: number) => edgeCall<T>('ai-generate', body, timeoutMs);
 
 export type AiCard = { label: string; emoji: string; concept: string };
 
@@ -105,14 +149,6 @@ export type Attestation = { keyId: string; attestation: string; challenge: strin
  */
 export function aiWallet(deviceId: string, wallet: string, attest?: Attestation): Promise<{ balance: number; attested: boolean }> {
   return aiCall({ action: 'wallet', deviceId, wallet, ...attest }, 20_000);
-}
-
-/**
- * Pays the credits of the lists path reached by this device (5 every 25 lists, counted
- * by the server from its votes) into the wallet; returns the balance.
- */
-export function claimListCredits(deviceId: string, wallet: string): Promise<number> {
-  return rpc<number>('claim_list_credits', { wallet, device_id: deviceId });
 }
 
 /**

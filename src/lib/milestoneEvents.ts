@@ -4,29 +4,23 @@ import { milestones, type Reward, type Track } from './rewards';
 
 /**
  * A step crossed on a reward path, to celebrate full screen (MilestoneCelebration):
- * an avatar item, credits, or a VS to choose. One reward per celebration, so each is
- * revealed and collected on its own.
+ * its avatar items, all revealed together and collected at once, or a VS to choose.
  */
-export type Celebration = { key: string; track: Track; at: number } & (
-  | { kind: 'item'; reward: Reward }
-  | { kind: 'credits'; credits: number }
-  | { kind: 'vs'; fork: Fork }
-);
+export type Celebration = { key: string; track: Track; at: number } & ({ kind: 'step'; rewards: Reward[] } | { kind: 'vs'; fork: Fork });
 
-const ORDER = { item: 0, credits: 1, vs: 2 } as const;
+const ORDER = { step: 0, vs: 1 } as const;
 
 /**
  * What the player won going from `from` to `to` on a path (lists completed, or best
- * flame): every step in between, in order; at one step the items first, then the
- * credits, then the VS. A VS already chosen (`choices`) is not offered again.
+ * flame): every step in between, in order; at one step the items first, then the VS.
+ * A VS already chosen (`choices`) is not offered again.
  */
 export function crossedSteps(track: Track, from: number, to: number, choices: Record<string, string>): Celebration[] {
   if (to <= from) return [];
   const events: Celebration[] = [];
-  for (const step of milestones(track, to)) {
-    if (step.at <= from || step.at > to) continue;
-    for (const reward of step.rewards) events.push({ key: `${track}:${step.at}:${reward.part}:${reward.id}`, track, at: step.at, kind: 'item', reward });
-    if (step.credits) events.push({ key: `${track}:${step.at}:credits`, track, at: step.at, kind: 'credits', credits: step.credits });
+  for (const step of milestones(track)) {
+    if (step.at <= from || step.at > to || step.rewards.length === 0) continue;
+    events.push({ key: `${track}:${step.at}`, track, at: step.at, kind: 'step', rewards: step.rewards });
   }
   if (track === 'lists') {
     for (const fork of FORKS) {
@@ -67,37 +61,19 @@ export type Celebrated = { lists: number; flame: number };
  * deleted then completed again doesn't celebrate its step twice. First time (`null`):
  * nothing, the player's progress counts as celebrated.
  */
-export function pendingCelebrations(
-  celebrated: Celebrated | null,
-  won: Celebrated,
-  choices: Record<string, string>,
-  { credits = true }: { credits?: boolean } = {},
-) {
+export function pendingCelebrations(celebrated: Celebrated | null, won: Celebrated, choices: Record<string, string>) {
   if (!celebrated) return { events: [] as Celebration[], celebrated: won };
-  const events = [...crossedSteps('lists', celebrated.lists, won.lists, choices), ...crossedSteps('flame', celebrated.flame, won.flame, {})]
-    // The server pays the path's credits to wallets Apple vouched for only: no "+5" it won't give.
-    .filter((e) => credits || e.kind !== 'credits');
+  const events = [...crossedSteps('lists', celebrated.lists, won.lists, choices), ...crossedSteps('flame', celebrated.flame, won.flame, {})];
   return { events, celebrated: { lists: Math.max(celebrated.lists, won.lists), flame: Math.max(celebrated.flame, won.flame) } };
 }
 
 /**
  * Test tool (long press on « Version » in Settings): the lists path is celebrated again
- * from the start, its VS open again, while lists and flame stay as they are. The
- * credits already paid aren't paid twice: the server pays each step once.
+ * from the start, its VS open again, while lists and flame stay as they are.
  */
 export function replayListSteps(
   state: { celebrated: Celebrated | null; badgeChoices: Record<string, string>; shownBadges: string[] },
   flame = 0,
 ) {
   return { celebrated: { lists: 0, flame: state.celebrated?.flame ?? flame }, badgeChoices: {}, shownBadges: [] as string[] };
-}
-
-/**
- * The balance counter when the credits of a step are collected. `claimed`: the balance
- * the server answered (it may have paid them already, at launch: the counter then replays
- * the last `credits`), or null offline: nothing shown that wasn't given.
- */
-export function creditsShow(before: number, claimed: number | null, credits: number) {
-  if (claimed === null) return { from: before, to: before, paid: false };
-  return { from: Math.max(0, Math.min(before, claimed - credits)), to: claimed, paid: true };
 }

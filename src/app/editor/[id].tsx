@@ -21,6 +21,7 @@ import { isFixed, placementLocked, startsEditing } from '../../lib/editorMode';
 import { colors, spacing } from '../../constants/theme';
 import { answerMail } from '../../lib/api';
 import { syncDailyVotes } from '../../lib/daily';
+import { claimChallenges } from '../../lib/challenge';
 import { TierStrip } from '../../components/TierStrip';
 import { socialError } from '../../lib/social';
 import { sentRanksState, validateSentRanks } from '../../lib/sentRanks';
@@ -102,13 +103,15 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
   const daily = list.daily;
   const popular = list.popular;
   const mail = list.mail;
+  // A list opened from a share link: ranked once, then compared with the sharer's ranking.
+  const challenge = list.challenge;
   const fixed = isFixed(list);
   // The player's own lists have two modes: editing (title, tiers, cards, never their
   // place) and ranking (only placing the cards), where they land once saved.
   const editable = !fixed && editing;
   // A received list's ranking is frozen once sent back; daily and popular ones can
   // change and be validated again.
-  const validated = Boolean(mail?.answeredAt);
+  const validated = Boolean(mail?.answeredAt || challenge?.answeredAt);
   const [sending, setSending] = useState(false);
   const ranked = popular ?? daily;
   // A national vote (an election…) seen from abroad: ranking stays possible, the vote isn't.
@@ -178,7 +181,17 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
       { text: t('editor.reset'), style: 'destructive', onPress: () => store.resetPlacement(list.id) },
     ]);
 
-  const showComparison = () => mail && router.push({ pathname: '/mail/[id]', params: { id: mail.id } });
+  const showComparison = () =>
+    mail
+      ? router.push({ pathname: '/mail/[id]', params: { id: mail.id } })
+      : challenge && router.push({ pathname: '/challenge/[id]', params: { id: list.id } });
+
+  const validateChallenge = () => {
+    if (!store.answerChallenge(list.id)) return;
+    // The sharer may earn credits: told to the server once Apple vouched for this wallet.
+    claimChallenges();
+    showComparison();
+  };
 
   // A received list: the ranking goes back to the friend, then both are compared.
   const sendRanking = async () => {
@@ -201,7 +214,12 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
   // Sent to a friend, the ranking is frozen: asked first. Daily and popular rankings can
   // be validated again, so they go at once, no dialog in the way of the results.
   const confirmValidate = () =>
-    mail
+    challenge
+      ? Alert.alert(t('editor.challengeTitle'), challenge.from ? t('editor.challengeBody', { name: challenge.from }) : t('editor.challengeBodyAnon'), [
+          { text: t('editor.cancel'), style: 'cancel' },
+          { text: t('editor.validate'), onPress: validateChallenge },
+        ])
+      : mail
       ? Alert.alert(t('editor.sendTitle'), t('editor.sendBody', { name: mail.from }), [
           { text: t('editor.cancel'), style: 'cancel' },
           { text: t('editor.send'), onPress: sendRanking },
@@ -282,7 +300,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
 
   const menuActions: MenuAction[] = fixed
     ? [
-        ...(mail?.answeredAt ? [{ label: t('editor.seeComparison'), icon: 'git-compare-outline', onPress: showComparison } as const] : []),
+        ...(validated ? [{ label: t('editor.seeComparison'), icon: 'git-compare-outline', onPress: showComparison } as const] : []),
         ...(!mail && ranked?.validatedAt ? [{ label: t('editor.seeAverage'), icon: 'people-outline', onPress: showResults } as const] : []),
         ...(validated ? [] : [{ label: t('editor.resetRanking'), icon: 'refresh-outline', onPress: confirmReset } as const]),
         { label: t('editor.deleteList'), icon: 'trash-outline', destructive: true, onPress: confirmDelete },
@@ -367,9 +385,9 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
         )}
       </View>
 
-      {validated && mail ? (
+      {validated ? (
         <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Text style={styles.dailyText}>{t('editor.sentTo', { name: mail.from })}</Text>
+          <Text style={styles.dailyText}>{mail ? t('editor.sentTo', { name: mail.from }) : t('editor.challengeDone')}</Text>
           <Button label={t('editor.seeComparison')} icon="git-compare-outline" onPress={showComparison} />
         </View>
       ) : (
@@ -414,6 +432,9 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
           ) : fixed ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
               {mail ? <Text style={styles.dailyText}>{t('editor.sentBy', { name: mail.from })}</Text> : null}
+              {challenge ? (
+                <Text style={styles.dailyText}>{challenge.from ? t('editor.challengeBy', { name: challenge.from }) : t('editor.challengeAnon')}</Text>
+              ) : null}
               <Button
                 label={mail ? (sending ? t('editor.sending') : t('editor.sendMineTo', { name: mail.from })) : ranked?.validatedAt ? t('editor.validateChanges') : t('editor.validateMine')}
                 icon={mail ? 'paper-plane' : 'checkmark-done'}

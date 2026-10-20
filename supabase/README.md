@@ -73,3 +73,22 @@ l'appareil et ne paie chaque palier qu'une fois par portefeuille et par appareil
 (table `credit_milestones`), aux seuls portefeuilles attestés par Apple. Le pas et
 le montant sont écrits en dur dans `wallet_milestones` et dans `src/lib/rewards.ts`
 (`CREDIT_EVERY`, `CREDIT_AMOUNT`) : les changer aux deux endroits.
+
+## Pub récompensée (« Énergie gratuite »)
+
+Une pub regardée rapporte 5 crédits, une fois par semaine (fenêtre glissante de
+7 jours). L'app ne dit jamais elle-même qu'une pub a été vue : elle demande un
+ticket à usage unique (`ad_ticket(wallet)`, valable 1 h), le passe à la pub comme
+`custom_data`, et c'est le rappel de vérification côté serveur d'AdMob qui crédite.
+
+- Fonction Edge `ad-reward` (verify_jwt désactivé, Google appelle sans jeton) :
+  vérifie la signature ECDSA de Google (clés de
+  `https://www.gstatic.com/admob/reward/verifier-keys.json`), le bloc
+  `7429871139`, puis appelle `ad_reward(ticket, transaction_id)` (clé service
+  uniquement) → `private.ad_credit`, idempotent sur `transaction_id`.
+- URL de rappel à déclarer dans AdMob (bloc récompensé → vérification côté
+  serveur) : `https://mefhdtpyhtvplpfleyhi.supabase.co/functions/v1/ad-reward`
+- `ad_status(wallet)` → `{available, next_at}` pour l'écran.
+- Tables `ad_rewards` (une ligne par pub payée) et `ad_tickets`.
+- Test : `supabase/tests/ad_rewards.sql` (doit finir sur l'erreur `OK`) ;
+  `deno test supabase/functions/ad-reward/ssv.test.ts`.

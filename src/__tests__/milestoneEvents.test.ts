@@ -9,25 +9,29 @@ describe('the steps crossed on a reward path', () => {
     expect(crossedSteps('flame', 3, 2, {})).toEqual([]);
   });
 
-  it('every step crossed, in order, each reward on its own, credits apart', () => {
+  it('every step crossed, in order, its items together, the VS apart', () => {
     const events = crossedSteps('lists', 0, 60, {});
     // Every step of the path between the two values, none outside.
     expect(events.every((e) => e.at > 0 && e.at <= 60)).toBe(true);
     expect(events.map((e) => e.at)).toEqual([...events.map((e) => e.at)].sort((a, b) => a - b));
-    const items = milestones('lists').filter((m) => m.at <= 60).flatMap((m) => m.rewards);
-    expect(events.filter((e) => e.kind === 'item')).toHaveLength(items.length);
-    // Credits at 25 and 50.
-    expect(events.filter((e) => e.kind === 'credits').map((e) => [e.at, e.kind === 'credits' && e.credits])).toEqual([
-      [25, 5],
-      [50, 5],
-    ]);
+    const steps = milestones('lists').filter((m) => m.at <= 60);
+    expect(events.filter((e) => e.kind === 'step').map((e) => e.kind === 'step' && e.rewards)).toEqual(steps.map((m) => m.rewards));
+    // No credits any more.
+    expect(events.every((e) => e.kind === 'step' || e.kind === 'vs')).toBe(true);
     // The VS of 12, 35 and 60.
     expect(events.filter((e) => e.kind === 'vs').map((e) => e.kind === 'vs' && e.fork.id)).toEqual(['food', 'pet', 'sauce']);
     // Keys tell two events apart, for the queue.
     expect(new Set(events.map((e) => e.key)).size).toBe(events.length);
   });
 
-  it('at one step, the item first, then the credits, then the VS', () => {
+  it('a step with several items is one celebration, all of them in it', () => {
+    const step = milestones('flame').find((m) => m.rewards.length > 1)!;
+    const events = crossedSteps('flame', step.at - 1, step.at, {});
+    expect(events).toHaveLength(1);
+    expect(events[0].kind === 'step' && events[0].rewards).toEqual(step.rewards);
+  });
+
+  it('at one step, the items first, then the VS', () => {
     const at = 60;
     const kinds = crossedSteps('lists', at - 1, at, {}).map((e) => e.kind);
     expect(kinds.indexOf('vs')).toBe(kinds.length - 1);
@@ -41,8 +45,8 @@ describe('the steps crossed on a reward path', () => {
   it('the flame path has items only, no credits nor VS', () => {
     const first = milestones('flame')[0];
     const events = crossedSteps('flame', 0, first.at, {});
-    expect(events.length).toBe(first.rewards.length);
-    expect(events.every((e) => e.kind === 'item' && e.track === 'flame')).toBe(true);
+    expect(events).toHaveLength(1);
+    expect(events.every((e) => e.kind === 'step' && e.track === 'flame')).toBe(true);
   });
 });
 
@@ -53,7 +57,7 @@ describe('what is left to celebrate', () => {
 
   it('the steps crossed since, on both paths, and never twice', () => {
     const { events, celebrated } = pendingCelebrations({ lists: 24, flame: 0 }, { lists: 25, flame: 1 }, {});
-    expect(events.some((e) => e.track === 'lists' && e.kind === 'credits' && e.at === 25)).toBe(true);
+    expect(events.some((e) => e.track === 'flame' && e.kind === 'step' && e.at === 1)).toBe(true);
     expect(celebrated).toEqual({ lists: 25, flame: 1 });
     // A list deleted then redone: 24 then 25 again, nothing new.
     expect(pendingCelebrations({ lists: 25, flame: 1 }, { lists: 24, flame: 1 }, {}).celebrated).toEqual({ lists: 25, flame: 1 });

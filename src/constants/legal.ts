@@ -23,7 +23,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Ce qui est envoyé en ligne',
     bullets: [
-      'Quand vous partagez une tier list : son titre, les noms et couleurs des rangs et des cartes, et le classement (jamais les photos), pour créer le code de partage.',
+      'Quand vous partagez une tier list : son titre, les noms et couleurs des rangs et des cartes, et le classement (jamais les photos), pour créer le code de partage. Si vous avez un profil, votre pseudo est joint à la liste, pour que votre ami sache qui le défie. Le code est aussi relié au porte-monnaie anonyme de l’app : si un nouveau joueur classe la liste, de l’énergie vous est offerte. Quand vous classez une liste ouverte depuis un code, votre porte-monnaie anonyme et l’identifiant aléatoire de l’app sont envoyés pour vérifier que vous êtes un nouveau joueur ; celui qui l’a partagée ne les voit jamais. Un jeton DeviceCheck d’Apple est aussi transmis à Apple, via notre serveur, pour vérifier que cet appareil n’a pas déjà été parrainé ; il ne contient aucune donnée personnelle, et Apple ne conserve pour notre app que deux bits par appareil.',
       'Quand vous validez la tier list du jour ou une liste publique : votre classement et l’identifiant aléatoire de l’app, pour calculer le classement moyen et éviter les votes en double.',
       'Quand vous ouvrez une liste publique ou l’ajoutez en favori : la liste concernée et l’identifiant aléatoire, pour les compteurs de vues et de favoris et les tendances.',
       'Si vous créez un profil de joueur : votre pseudo, son numéro, votre avatar et vos badges, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes publiques, jamais vos listes personnelles).',
@@ -46,13 +46,13 @@ export const PRIVACY: LegalSection[] = [
       'Vercel : site de l’app et pages des liens de partage.',
       'Wikimedia et App Store : quand vous cherchez une image, le nom de la carte leur est envoyé ; les modèles avec des icônes d’apps interrogent l’App Store. Aucune donnée personnelle n’est transmise.',
       'Expo : téléchargement des mises à jour de l’app.',
-      'Google Analytics pour Firebase : statistiques d’usage, seulement si vous l’acceptez, sans identifiant publicitaire ni partage avec la publicité de Google. Les données peuvent être traitées hors de l’Union européenne, sous les garanties prévues par le RGPD, et sont conservées 2 mois.',
+      'Google Analytics pour Firebase : statistiques d’usage, seulement si vous l’acceptez, sans identifiant publicitaire ni partage avec la publicité de Google. Les données peuvent être traitées hors de l’Union européenne, sous les garanties prévues par le RGPD, et sont conservées 2 mois. Google AdMob : seulement si vous choisissez de regarder une pub contre de l’énergie, une pub non personnalisée ; Google reçoit alors des informations techniques sur l’appareil (adresse IP, modèle, langue) pour l’afficher et lutter contre la fraude, et nous confirme qu’elle a été vue avec un code aléatoire, sans rien savoir de vous.',
     ],
   },
   {
     title: 'Ce que nous ne faisons pas',
     bullets: [
-      'Pas de compte e-mail, pas de publicité, pas de pistage publicitaire.',
+      'Pas de compte e-mail, aucune publicité imposée (seulement celles que vous choisissez de regarder contre de l’énergie), pas de pistage publicitaire.',
       'Pas de revente ni de partage de données à des tiers.',
       'Pas d’accès à vos photos en dehors de celles que vous choisissez pour une carte.',
     ],

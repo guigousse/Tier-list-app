@@ -48,6 +48,59 @@ describe('share codec', () => {
   });
 });
 
+describe('card pictures in a shared list', () => {
+  const ICON = 'https://mefhdtpyhtvplpfleyhi.supabase.co/storage/v1/object/public/card-icons/apple';
+  const withIcons: TierList = {
+    ...list,
+    cards: {
+      a: { ...list.cards.a, iconUrl: ICON },
+      b: { ...list.cards.b, iconUrl: 'https://evil.example/x.png' },
+      c: list.cards.c,
+    },
+  };
+
+  it('a card of the icon library comes with its picture; a picture from elsewhere or a photo of the phone does not', () => {
+    expect(decodeShared(offlineLink(withIcons))?.cards).toEqual([
+      { label: 'Été ☀️', color: '#FFFFFF', tier: 0 },
+      { label: '🍎 Pomme', color: '#2B2F3A', tier: 0, iconUrl: ICON },
+      { label: '', color: '#1E88E5', tier: -1 },
+    ]);
+  });
+
+  it('a Wikimedia picture comes with its credit; a photo of the phone does not', () => {
+    const WIKI = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.jpg/600px-Red_Apple.jpg';
+    const photos: TierList = {
+      ...list,
+      cards: {
+        a: { ...list.cards.a, imageName: 'a.jpg', imageUrl: WIKI, imageCredit: 'Abhijit Tembhekar · CC BY 2.0 — Wikimedia Commons' },
+        b: { ...list.cards.b, imageName: 'b.jpg', imageUrl: 'https://evil.example/b.jpg', imageCredit: 'x' },
+        c: list.cards.c,
+      },
+    };
+    expect(decodeShared(offlineLink(photos))?.cards).toEqual([
+      { label: 'Été ☀️', color: '#FFFFFF', tier: 0 },
+      { label: '🍎 Pomme', color: '#2B2F3A', tier: 0, imageUrl: WIKI, imageCredit: 'Abhijit Tembhekar · CC BY 2.0 — Wikimedia Commons' },
+      { label: '', color: '#1E88E5', tier: -1 },
+    ]);
+  });
+
+  it('a Wikimedia picture sent without its credit is still credited to Wikimedia Commons', () => {
+    const WIKI = 'https://upload.wikimedia.org/wikipedia/commons/a.png';
+    const payload = { ...toPayload(list), c: [['X', '#000000', 0, WIKI]] };
+    const code = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    expect(decodeShared(code)?.cards[0]).toEqual({ label: 'X', color: '#000000', tier: 0, imageUrl: WIKI, imageCredit: 'Wikimedia Commons' });
+  });
+
+  it('a payload naming a picture outside the library: the card arrives without it', () => {
+    const payload = { ...toPayload(list), c: [['X', '#000000', 0, 'https://evil.example/x.png'], ['Y', '#000000', 0, 42]] };
+    const code = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    expect(decodeShared(code)?.cards).toEqual([
+      { label: 'X', color: '#000000', tier: 0 },
+      { label: 'Y', color: '#000000', tier: 0 },
+    ]);
+  });
+});
+
 describe('normalizeCode', () => {
   it('accepts codes typed loosely or inside a short link', () => {
     expect(normalizeCode('k7f-3qx')).toBe('K7F3QX');

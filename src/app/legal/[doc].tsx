@@ -11,7 +11,7 @@ import { own } from '../../lib/own';
 
 // Title as a text key, date as a day, sections by language: all in the player's language at render.
 const DOCS: Record<string, { title: string; updated: string; sections: (lang: Language) => LegalSection[] }> = {
-  confidentialite: { title: 'app.legal.privacy', updated: '2026-10-19', sections: privacyIn },
+  confidentialite: { title: 'app.legal.privacy', updated: '2026-10-20', sections: privacyIn },
   mentions: { title: 'app.settings.legal', updated: '2026-10-19', sections: legalNoticeIn },
 };
 

@@ -1,10 +1,11 @@
 import { fitText } from '../../lib/fitText';
+import { FORK_COL, forkSides, STICKER_BOX, stickerFit } from '../../lib/forkSticker';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, LinearTransition, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
 
 import { colors, radius, spacing } from '../../constants/theme';
 import { MANNEQUIN } from '../../lib/avatar';
@@ -16,12 +17,10 @@ import { useTierStore } from '../../store/useTierStore';
 import { AvatarDrawing } from '../Avatar';
 import { BadgeIcon } from '../BadgeIcon';
 import { Clickable } from '../Clickable';
-import { EnergyIcon } from '../Energy';
 import { Sheet } from '../ui';
 
-/** Width of a step's column, of a VS's (two stickers side by side) and of the start. */
+/** Width of a step's column and of the start (a VS's is in `forkSticker`). */
 const COL = 92;
-const FORK_COL = 150;
 const START_COL = 60;
 const NODE = 44;
 /** Room above the line for a reward card or a VS's stickers. */
@@ -34,17 +33,10 @@ const HEIGHT = LINE_Y + NODE / 2 + 22;
 const LINE = 8;
 const MANNEQUIN_SIZE = 56;
 const STICKER = 52;
-const STICKER_BOX = 72;
 // Names whole rather than « Chapeau d… »: a reward's name shrinks to hold on its card's
-// line (card 84 wide, less border and padding); a badge's pill takes a second line
-// (« Team / Montagne »), narrower by its tick once chosen.
+// line (card 84 wide, less border and padding).
 const CARD_TEXT = COL - 8 - 2 - 8;
 const titleFit = (label: string, width: number) => fitText(label, width, { maxLines: 1, max: 11, min: 8 });
-const stickerFit = (label: string, mine: boolean) => {
-  const width = STICKER_BOX - 14 - (mine ? 13 : 0);
-  const one = fitText(label, width, { maxLines: 1, max: 10, min: 8.5 });
-  return one.fits ? one : fitText(label, width, { maxLines: 2, max: 10, min: 8 });
-};
 /** How long the losing sticker takes to pop. */
 const POP_MS = 420;
 
@@ -72,13 +64,15 @@ const SHARDS = Array.from({ length: 9 }, (_, i) => (Math.PI * 2 * i) / 9 + 0.3);
 /**
  * A badge of a VS, side by side with the other above the line. While the player can
  * choose it wiggles; tapped, its label turns into "Sûr ?"; once the other side is
- * chosen it pops (bigger, gone, with a burst) and disappears.
+ * chosen it pops (bigger, gone, with a burst) and disappears, and the chosen one stands
+ * alone over its VS.
  */
 function ForkSticker({
   badge,
   side,
   locked,
   mine,
+  alone,
   popping,
   asking,
   color,
@@ -90,6 +84,8 @@ function ForkSticker({
   side: 0 | 1;
   locked: boolean;
   mine: boolean;
+  /** The other side has popped: the pill has the whole VS for its name. */
+  alone: boolean;
   popping: boolean;
   asking: boolean;
   color: string;
@@ -109,13 +105,14 @@ function ForkSticker({
     burst.value = withDelay(150, withTiming(1, { duration: POP_MS - 150, easing: Easing.out(Easing.quad) }));
   }, [popping, scale, opacity, burst]);
   const direction = side === 0 ? 1 : -1;
+  const fit = stickerFit(label, alone);
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ scale: scale.value * (mine ? 1.05 : 1) }, { rotate: `${wiggle ? (wiggle.value * 2 - 1) * 7 * direction : 0}deg` }],
   }));
 
   return (
-    <View style={styles.stickerBox}>
+    <View style={[styles.stickerBox, alone && { width: FORK_COL }]}>
       <Clickable
         accessibilityRole="button"
         accessibilityLabel={`${label}${mine ? t('play.path.mineSuffix') : locked ? t('play.path.lockedSuffix') : ''}`}
@@ -141,11 +138,8 @@ function ForkSticker({
           </Clickable>
         </Animated.View>
       ) : (
-        <View style={[styles.stickerLabel, mine && styles.stickerLabelMine]}>
-          {mine ? <Ionicons name="checkmark" size={10} color="#FFFFFF" /> : null}
-          <Text style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }, { fontSize: stickerFit(label, mine).fontSize }]}>
-            {stickerFit(label, mine).lines.join('\n')}
-          </Text>
+        <View style={[styles.stickerLabel, mine && styles.stickerLabelMine, alone && { maxWidth: FORK_COL }]}>
+          <Text style={[styles.stickerLabelText, mine && { color: '#FFFFFF' }, { fontSize: fit.fontSize }]}>{fit.lines.join('\n')}</Text>
         </View>
       )}
     </View>
@@ -161,7 +155,7 @@ function RewardDrawing({ reward, size }: { reward: Reward; size: number }) {
 /**
  * A reward path, left to right: numbered circles on one straight line that fills up
  * with the player's progress, the reward of each step above it (an avatar item on
- * the mannequin, or credits). At a VS, two badges side by side: the player picks one
+ * the mannequin). At a VS, two badges side by side: the player picks one
  * ("Sûr ?"), the other pops and is gone for good. `glow`: the filled line and the
  * circles reached glow like embers. Opens scrolled to where the player stands.
  */
@@ -307,28 +301,33 @@ export function RewardPath({
             if (fork) {
               const choice = chosen(col);
               const toPick = reached && choice === -1;
+              // Chosen, the VS is won and lit like a step reached, even if the count of public
+              // lists has since fallen back below it: the badge stays the player's.
+              const lit = choice !== -1 || reached;
+              const sides = forkSides(choice, popping?.fork === fork.id ? popping.side : null);
               return (
                 <View key={`fork-${fork.id}`} style={StyleSheet.absoluteFill} pointerEvents="box-none">
                   <View style={[styles.stickers, { left: col.x - FORK_COL / 2 }]} pointerEvents="box-none">
-                    {fork.options.map((badge, n) => {
-                      const side = n as 0 | 1;
+                    {sides.map((side) => {
+                      const badge = fork.options[side];
                       const isPopping = popping?.fork === fork.id && popping.side === side;
-                      // The side given up is gone, once its pop is over; the chosen one stays put.
-                      if (choice !== -1 && choice !== side && !isPopping) return <View key={badge.id} style={{ width: STICKER_BOX }} />;
+                      // Once the side given up has popped, the chosen one slides to the middle, over its VS.
                       return (
-                        <ForkSticker
-                          key={badge.id}
-                          badge={badge}
-                          side={side}
-                          locked={!reached}
-                          mine={choice === side}
-                          popping={isPopping}
-                          asking={asking?.fork === fork.id && asking.side === side}
-                          color={palette.node}
-                          wiggle={toPick ? breath : null}
-                          onPress={() => (choice === -1 ? tapSticker(fork, side) : undefined)}
-                          onConfirm={() => confirm(fork, side)}
-                        />
+                        <Animated.View key={badge.id} layout={LinearTransition.springify().damping(14)}>
+                          <ForkSticker
+                            badge={badge}
+                            side={side}
+                            locked={!lit}
+                            mine={choice === side}
+                            alone={sides.length === 1}
+                            popping={isPopping}
+                            asking={asking?.fork === fork.id && asking.side === side}
+                            color={palette.node}
+                            wiggle={toPick ? breath : null}
+                            onPress={() => (choice === -1 ? tapSticker(fork, side) : undefined)}
+                            onConfirm={() => confirm(fork, side)}
+                          />
+                        </Animated.View>
                       );
                     })}
                   </View>
@@ -337,12 +336,12 @@ export function RewardPath({
                     <Animated.View
                       style={[
                         styles.node,
-                        reached ? { backgroundColor: palette.node, borderColor: palette.from } : i === nextIndex ? { borderColor: palette.node, borderWidth: 3 } : null,
+                        lit ? { backgroundColor: palette.node, borderColor: palette.from } : i === nextIndex ? { borderColor: palette.node, borderWidth: 3 } : null,
                         toPick && styles.vsLive,
                         toPick && vsStyle,
                       ]}
                     >
-                      <Text style={[styles.vsText, !reached && { color: colors.textMuted }]}>VS</Text>
+                      <Text style={[styles.vsText, !lit && { color: colors.textMuted }]}>VS</Text>
                     </Animated.View>
                   </View>
                 </View>
@@ -360,7 +359,7 @@ export function RewardPath({
                       accessibilityRole="button"
                       accessibilityLabel={`${t('play.path.stepA11y', {
                         step: t(`play.path.unit.${unit}`, { count: step.at }),
-                        rewards: [...step.rewards.map(rewardLabel), ...(step.credits ? [t('play.path.credits', { count: step.credits })] : [])].join(', '),
+                        rewards: step.rewards.map(rewardLabel).join(', '),
                       })}${owned ? t('play.path.ownedSuffix') : t('play.path.lockedSuffix')}`}
                       onPress={() => setOpen(step)}
                       style={({ pressed }) => [styles.card, { left: col.x - (COL - 8) / 2 }, !owned && styles.cardLocked, pressed && { opacity: 0.8 }]}
@@ -372,21 +371,11 @@ export function RewardPath({
                             {rewardLabel(item)}
                           </Text>
                         </>
-                      ) : (
-                        <>
-                          <View style={styles.credits}>
-                            <EnergyIcon size={30} />
-                            <Text style={styles.creditsText}>+{step.credits}</Text>
-                          </View>
-                          <Text numberOfLines={1} style={styles.cardTitle}>
-                            {t('play.path.creditsTitle')}
-                          </Text>
-                        </>
-                      )}
-                      {item && step.credits ? (
-                        <View style={styles.creditChip}>
-                          <EnergyIcon size={11} />
-                          <Text style={styles.creditChipText}>+{step.credits}</Text>
+                      ) : null}
+                      {/* The card has room for one item: the others of the step are in its sheet. */}
+                      {step.rewards.length > 1 ? (
+                        <View style={styles.moreChip}>
+                          <Text style={styles.moreChipText}>+{step.rewards.length - 1}</Text>
                         </View>
                       ) : null}
                       {!owned ? (
@@ -410,9 +399,7 @@ export function RewardPath({
           <View style={{ gap: spacing.md }}>
             <Text style={styles.sheetHint}>
               {won >= open.at
-                ? open.rewards.length
-                  ? t('play.path.unlockedItems')
-                  : t('play.path.unlockedCredits')
+                ? t('play.path.unlockedItems')
                 : t('play.path.toUnlock', { step: t(`play.path.unit.${unit}`, { count: open.at }) })}
             </Text>
             <View style={styles.sheetGrid}>
@@ -427,20 +414,6 @@ export function RewardPath({
                   </Text>
                 </View>
               ))}
-              {open.credits ? (
-                <View style={styles.sheetItem}>
-                  <View style={[styles.credits, { height: 80 }]}>
-                    <EnergyIcon size={40} />
-                    <Text style={[styles.creditsText, { fontSize: 26 }]}>+{open.credits}</Text>
-                  </View>
-                  <Text numberOfLines={1} style={styles.cardTitle}>
-                    {t('play.path.credits', { count: open.credits })}
-                  </Text>
-                  <Text numberOfLines={1} style={styles.sheetMeta}>
-                    {t('play.path.energy')}
-                  </Text>
-                </View>
-              ) : null}
             </View>
           </View>
         ) : null}
@@ -505,20 +478,8 @@ const styles = StyleSheet.create({
   cardLocked: { opacity: 0.55 },
   cardTitle: { color: colors.text, fontSize: 11, fontWeight: '700', maxWidth: '100%' },
   stem: { position: 'absolute', top: PAD + ABOVE, width: 2, height: GAP, backgroundColor: colors.border },
-  credits: { height: MANNEQUIN_SIZE, flexDirection: 'row', alignItems: 'center', gap: 2 },
-  creditsText: { color: '#FFD84A', fontSize: 20, fontWeight: '900' },
-  creditChip: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 1,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: '#2D3047',
-  },
-  creditChipText: { color: '#FFD84A', fontSize: 10, fontWeight: '900' },
+  moreChip: { position: 'absolute', top: 4, left: 4, paddingHorizontal: 5, borderRadius: 8, backgroundColor: '#2D3047' },
+  moreChipText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
   lock: {
     position: 'absolute',
     top: 4,

@@ -16,7 +16,7 @@ export const PRIVACY_EN: LegalSection[] = [
   {
     title: 'What is sent online',
     bullets: [
-      'When you share a tier list: its title, the names and colors of its tiers and cards, and the ranking (never the photos), to create the share code.',
+      'When you share a tier list: its title, the names and colors of its tiers and cards, and the ranking (never the photos), to create the share code. If you have a profile, your username comes with the list, so your friend knows who’s challenging them. The code is also tied to the app’s anonymous wallet: if a new player ranks the list, you get free energy. When you rank a list opened from a code, your anonymous wallet and the app’s random ID are sent to check that you’re a new player; the person who shared it never sees them. An Apple DeviceCheck token is also sent to Apple, through our server, to check that this device hasn’t already been referred; it contains no personal data, and Apple keeps only two bits per device for our app.',
       'When you submit the daily tier list or a public list: your ranking and the app’s random ID, to calculate the average ranking and prevent duplicate votes.',
       'When you open a public list or add it to your favorites: the list in question and the random ID, for view and favorite counts and trends.',
       'If you create a player profile: your username, its number, your avatar and badges, your friends and friend requests, the players you block, and the reports you make or receive. The profile is linked to the app’s random ID. Your friends see your username, your avatar and your submitted rankings (daily tier lists and public lists, never your personal lists).',
@@ -39,13 +39,13 @@ export const PRIVACY_EN: LegalSection[] = [
       'Vercel: the app’s website and the share link pages.',
       'Wikimedia and App Store: when you search for an image, the card’s name is sent to them; templates with app icons query the App Store. No personal data is shared.',
       'Expo: downloading app updates.',
-      'Google Analytics for Firebase: usage statistics, only if you agree, with no advertising ID and no sharing with Google’s advertising. The data may be processed outside the European Union, under the safeguards provided by the GDPR, and is kept for 2 months.',
+      'Google Analytics for Firebase: usage statistics, only if you agree, with no advertising ID and no sharing with Google’s advertising. The data may be processed outside the European Union, under the safeguards provided by the GDPR, and is kept for 2 months. Google AdMob: only if you choose to watch an ad for energy, a non-personalized ad; Google then receives technical information about the device (IP address, model, language) to show it and fight fraud, and confirms to us that it was watched using a random code, without learning anything about you.',
     ],
   },
   {
     title: 'What we don’t do',
     bullets: [
-      'No email account, no ads, no ad tracking.',
+      'No email account, no forced ads (only the ones you choose to watch for energy), no ad tracking.',
       'No selling or sharing of data with third parties.',
       'No access to your photos other than the ones you choose for a card.',
     ],

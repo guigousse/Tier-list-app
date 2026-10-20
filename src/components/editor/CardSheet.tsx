@@ -29,6 +29,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
   const [color, setColor] = useState(CARD_COLORS[0]);
   const [imageName, setImageName] = useState<string | undefined>();
   const [imageCredit, setImageCredit] = useState<string | undefined>();
+  const [imageUrl, setImageUrl] = useState<string | undefined>();
   /** The player took the card's AI image off: the image wand can draw it again. */
   const [iconRemoved, setIconRemoved] = useState(false);
   const [bulk, setBulk] = useState(false);
@@ -51,6 +52,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
       setColor(card?.color ?? CARD_COLORS[0]);
       setImageName(card?.imageName);
       setImageCredit(card?.imageCredit);
+      setImageUrl(card?.imageUrl);
       setIconRemoved(false);
       setBulk(false);
       setBulkText('');
@@ -75,6 +77,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
       pending.current.add(name);
       setImageName(name);
       setImageCredit(undefined);
+      setImageUrl(undefined);
     } catch {
       Alert.alert(t('editor.cardSheet.imageUnavailable'), t('editor.cardSheet.importFailed'));
     }
@@ -108,6 +111,8 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
       setImageName(name);
       // Stored on the card as text, in the language of the moment (it already was text).
       setImageCredit(`${image.credit || t('editor.cardSheet.unknownAuthor')} — Wikimedia Commons`);
+      // Kept so that a shared copy of the card can fetch the same picture.
+      setImageUrl(image.url);
       setWeb(null);
     } catch {
       Alert.alert(t('editor.cardSheet.imageUnavailable'), t('editor.cardSheet.downloadFailed'));
@@ -121,6 +126,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
     color,
     imageName,
     imageCredit: imageName ? imageCredit : undefined,
+    imageUrl: imageName ? imageUrl : undefined,
     // Its concept goes too: kept, the library would hand back the very same picture.
     ...(iconRemoved ? { iconUrl: undefined, iconSvg: undefined, aiConcept: undefined } : {}),
   });
@@ -139,6 +145,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
       setLabel('');
       setImageName(undefined);
       setImageCredit(undefined);
+      setImageUrl(undefined);
     } else {
       onClose();
     }
@@ -279,6 +286,7 @@ export function CardSheet({ visible, card, onClose, onCreate, onUpdate, onDelete
                   if (imageName) {
                     setImageName(undefined);
                     setImageCredit(undefined);
+                    setImageUrl(undefined);
                   } else setIconRemoved(true);
                 }}
               />
