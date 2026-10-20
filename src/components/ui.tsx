@@ -32,11 +32,18 @@ type ButtonProps = {
   style?: StyleProp<ViewStyle>;
   /** Shown after the label, such as a price. */
   after?: ReactNode;
+  /**
+   * Share done (0 → 1) of what the button waits for: below 1, the button fills with its
+   * colour as it gets there, instead of only looking disabled.
+   */
+  progress?: number;
 };
 
-export function Button({ label, onPress, icon, variant = 'primary', disabled, style, after }: ButtonProps) {
-  const bg =
+export function Button({ label, onPress, icon, variant = 'primary', disabled, style, after, progress }: ButtonProps) {
+  const filling = progress !== undefined && progress < 1;
+  const fill =
     variant === 'primary' ? colors.primary : variant === 'danger' ? colors.danger : variant === 'secondary' ? colors.surfaceAlt : 'transparent';
+  const bg = filling ? colors.surfaceAlt : fill;
   const fg = variant === 'ghost' ? colors.textMuted : colors.text;
   return (
     <Pressable
@@ -48,10 +55,12 @@ export function Button({ label, onPress, icon, variant = 'primary', disabled, st
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: bg, opacity: disabled ? 0.4 : pressed ? 0.75 : 1 },
+        { backgroundColor: bg, opacity: disabled && !filling ? 0.4 : pressed ? 0.75 : 1 },
+        filling && styles.buttonFilling,
         style,
       ]}
     >
+      {filling ? <View pointerEvents="none" style={[styles.buttonFill, { backgroundColor: fill, width: `${Math.max(0, progress) * 100}%` }]} /> : null}
       {icon ? <Ionicons name={icon} size={18} color={fg} /> : null}
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.buttonLabel, { color: fg, flexShrink: 1 }]}>
         {label}
@@ -216,6 +225,8 @@ export const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   buttonLabel: { fontSize: 16, fontWeight: '600' },
+  buttonFilling: { overflow: 'hidden' },
+  buttonFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
   iconButton: { padding: 6, borderRadius: radius.sm },
   // Capitals through upper(), not textTransform: Greek capitals drop their accents.
   fieldLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },

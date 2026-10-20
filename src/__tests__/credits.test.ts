@@ -91,6 +91,6 @@ describe('credits wallet', () => {
   });
 
   it('says why generation stopped after refunds of spent energy', () => {
-    expect(creditsError(new Error('blocked'))).toBe('Génération IA suspendue après des remboursements d’achats : contactez le support.');
+    expect(creditsError(new Error('blocked'))).toBe('Génération IA suspendue après des remboursements d’achats : contacte le support.');
   });
 });

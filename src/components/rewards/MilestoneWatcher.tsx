@@ -9,6 +9,9 @@ import { MilestoneCelebration } from './MilestoneCelebration';
 /** The steps waiting to be celebrated, in order. */
 const useCelebrations = create<{ queue: Celebration[] }>(() => ({ queue: [] }));
 
+/** Whether a step is being celebrated full screen: other sheets wait for it to end. */
+export const useCelebrating = () => useCelebrations((s) => s.queue.length > 0);
+
 /** Steps newly crossed join the queue; they then count as celebrated. */
 function check() {
   const { lists, restored, celebrated, badgeChoices, walletAttested } = useTierStore.getState();

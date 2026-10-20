@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { radius, spacing } from '../constants/theme';
+import { openDaily } from '../lib/create';
 import { useT } from '../lib/i18n/useT';
 import { useContentText } from '../lib/i18n/useContent';
 import { dailyStreak } from '../lib/streak';
@@ -45,21 +45,12 @@ export function DailyCard() {
   const title = text(`daily-${daily.day}`)?.title ?? daily.title;
   const validated = Boolean(existing?.daily?.validatedAt);
 
-  const open = () => {
-    if (existing && validated) {
-      router.push({ pathname: '/results/[id]', params: { id: existing.id } });
-      return;
-    }
-    const id = existing?.id ?? useTierStore.getState().createDailyList(daily);
-    router.push({ pathname: '/editor/[id]', params: { id } });
-  };
-
   return (
     <Clickable
       accessibilityRole="button"
       accessibilityLabel={t('app.daily.label', { title })}
       accessibilityHint={validated ? t('app.daily.hintResults') : t('app.daily.hintRank')}
-      onPress={open}
+      onPress={() => openDaily(daily)}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.98 }] }]}
     >

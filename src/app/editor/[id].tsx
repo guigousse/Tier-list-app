@@ -117,6 +117,9 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
   const currentRanks = ranked ? rankingOf(list, ranked.cardIds) : null;
   const upToDate = Boolean(currentRanks && ranked?.validatedRanks?.join() === currentRanks.join());
 
+  // Nothing ever ranked, in any list: the tray shows how to place a card.
+  const firstGame = useTierStore((s) => Object.values(s.lists).every((l) => Object.values(l.placement).every((ids) => ids.length === 0)));
+
   const cardsOf = (ids: string[] | undefined) => (ids ?? []).map((cid) => list.cards[cid]).filter(Boolean) as Card[];
   const total = Object.keys(list.cards).length;
 
@@ -193,32 +196,27 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
     }
   };
 
+  // Sent to a friend, the ranking is frozen: asked first. Daily and popular rankings can
+  // be validated again, so they go at once, no dialog in the way of the results.
   const confirmValidate = () =>
     mail
       ? Alert.alert(t('editor.sendTitle'), t('editor.sendBody', { name: mail.from }), [
           { text: t('editor.cancel'), style: 'cancel' },
           { text: t('editor.send'), onPress: sendRanking },
         ])
-      : Alert.alert(
-      t('editor.validateTitle'),
-      t('editor.validateBody'),
-      [
-        { text: t('editor.cancel'), style: 'cancel' },
-        {
-          text: t('editor.validate'),
-          onPress: () => {
-            const first = !list.popular?.validatedAt;
-            const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
-            if (!ok) return;
-            track('list_validated', { kind: daily ? 'daily' : 'public', first: first ? 1 : 0 });
-            // Count this player's first completed ranking right away (stats refresh later).
-            if (list.popular && first) useCatalog.getState().bumpStat(list.popular.key, 'completions', 1);
-            syncDailyVotes();
-            showResults();
-          },
-        },
-      ],
-    );
+      : validate();
+
+  const validate = () => {
+    const first = !list.popular?.validatedAt;
+    const ok = daily ? store.validateDaily(list.id) : store.validatePopular(list.id);
+    if (!ok) return;
+    if (useTierStore.getState().settings.haptics) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    track('list_validated', { kind: daily ? 'daily' : 'public', first: first ? 1 : 0 });
+    // Count this player's first completed ranking right away (stats refresh later).
+    if (list.popular && first) useCatalog.getState().bumpStat(list.popular.key, 'completions', 1);
+    syncDailyVotes();
+    showResults();
+  };
 
   const confirmDelete = () =>
     Alert.alert(t('editor.deleteTitle'), t('editor.deleteBody', { title: list.title }), [
@@ -336,6 +334,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
             total={total}
             onAdd={editable ? () => setCardSheet({ cardId: null }) : undefined}
             onPressCard={openCard}
+            hint={firstGame && !editable}
           />
           {editable ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
@@ -354,6 +353,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
                 icon="checkmark-done"
                 onPress={validateOwn}
                 disabled={list.pool.length > 0 || sending}
+                progress={total > 0 ? 1 - list.pool.length / total : undefined}
               />
               <Text style={styles.dailyText}>
                 {list.pool.length > 0 ? t('editor.rankAll') : t('editor.friendsCompare')}
@@ -372,6 +372,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
                 icon={mail ? 'paper-plane' : 'checkmark-done'}
                 onPress={confirmValidate}
                 disabled={list.pool.length > 0 || sending}
+                progress={total > 0 ? 1 - list.pool.length / total : undefined}
               />
               {list.pool.length > 0 ? <Text style={styles.dailyText}>{t('editor.rankAll')}</Text> : null}
               {keptTo ? <Text style={styles.dailyText}>{t('editor.voteKept', { countries: keptTo.map(regionName).join(', ') })}</Text> : null}

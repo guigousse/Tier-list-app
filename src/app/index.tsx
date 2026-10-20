@@ -77,9 +77,14 @@ export default function Home() {
   const shownBadges = useTierStore((s) => s.shownBadges);
 
   // Lists received from friends: the badge on Profil is up to date when coming back here.
+  // The questions of this screen (statistics, region) only while it is shown: the first
+  // game opens over it, and they wait until the player comes back.
+  const [focused, setFocused] = useState(false);
   useFocusEffect(
     useCallback(() => {
       useMail.getState().refresh();
+      setFocused(true);
+      return () => setFocused(false);
     }, []),
   );
 
@@ -181,8 +186,12 @@ export default function Home() {
         </View>
       ) : null}
       </ScrollView>
-      <AnalyticsConsent />
-      <RegionQuestion />
+      {focused ? (
+        <>
+          <AnalyticsConsent />
+          <RegionQuestion />
+        </>
+      ) : null}
     </View>
   );
 }

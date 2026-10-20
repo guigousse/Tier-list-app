@@ -1,8 +1,10 @@
 # Glossaire de traduction
 
 Le français est la langue source : chaque texte garde sa formulation française telle quelle.
-Anglais américain. Espagnol avec « tú ». Grec avec le pluriel de politesse (« εσείς »), comme
-le « vous » français. Les boutons restent courts : un bouton traduit ne doit pas dépasser
+Français avec « tu » : l'app tutoie le joueur (« Valide ton classement »), « vous » reste
+pour le joueur et ses amis ensemble (« comparez vos classements »). Les textes légaux gardent
+le « vous ». Anglais américain. Espagnol avec « tú ». Grec avec le pluriel de politesse
+(« εσείς ») pour l'instant : à passer au « εσύ » avec une relecture par un locuteur natif. Les boutons restent courts : un bouton traduit ne doit pas dépasser
 d'un tiers la longueur du français.
 
 | Français | English | Español | Ελληνικά |

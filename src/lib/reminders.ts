@@ -55,19 +55,3 @@ export async function syncDailyReminder(): Promise<void> {
     // Notifications unavailable: the reminder already scheduled stays.
   }
 }
-
-/**
- * Turns the daily reminder on by default, once: after the welcome screens, iOS asks
- * for the notification permission. If refused, the reminder stays off.
- */
-export async function enableDefaultReminder(): Promise<void> {
-  const { settings, updateSettings } = useTierStore.getState();
-  if (settings.reminderAsked || Platform.OS === 'web') return;
-  updateSettings({ reminderAsked: true });
-  try {
-    const ok = await setDailyReminder(true);
-    updateSettings({ dailyReminder: ok });
-  } catch {
-    // Notifications unavailable: the reminder stays off.
-  }
-}

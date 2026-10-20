@@ -6,7 +6,7 @@ import { popularVoteKey, useTierStore } from '../store/useTierStore';
 import { fetchAppIcons } from './appstore';
 import { t } from './i18n/useT';
 import { downloadCardImage } from './images';
-import { recordTemplateView } from './api';
+import { recordTemplateView, type DailyList } from './api';
 import { copiesByKey } from './publicSync';
 
 /**
@@ -25,6 +25,22 @@ export function createAndOpen(template?: Template): void {
   });
   router.push({ pathname: '/editor/[id]', params: { id, edit: '1' } });
   if (template?.appStoreIds) attachAppIcons(id, template).catch(() => {});
+}
+
+/**
+ * Opens the daily tier list: its results once validated, otherwise the player's copy
+ * to rank, created the first time. `replace`: in place of the screen shown (the welcome).
+ */
+export function openDaily(daily: DailyList, replace = false): void {
+  const store = useTierStore.getState();
+  const go = (href: Parameters<typeof router.push>[0]) => (replace ? router.replace(href) : router.push(href));
+  const existing = Object.values(store.lists).find((l) => l.daily?.day === daily.day);
+  if (existing?.daily?.validatedAt) {
+    go({ pathname: '/results/[id]', params: { id: existing.id } });
+    return;
+  }
+  const id = existing?.id ?? store.createDailyList(daily);
+  go({ pathname: '/editor/[id]', params: { id } });
 }
 
 /** Opens the player's copy of a popular tier list, creating it the first time. */

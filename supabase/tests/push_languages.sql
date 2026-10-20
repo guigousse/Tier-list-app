@@ -1,4 +1,4 @@
--- Notifications in the receiver's language (20261019020000_push_languages.sql). Run on the
+-- Notifications in the receiver's language (20261019020000_push_languages.sql, 20261020010000_push_texts_tutoiement.sql). Run on the
 -- project: the block always fails at the end, nothing kept. Expected error message: 'OK'.
 do $$
 declare
@@ -11,7 +11,7 @@ begin
   got := private.push_text('el', 'agree.title', 'Nikos');
   if got <> 'Nikos συμφωνεί μαζί σας 🤝' then raise exception 'FAIL: greek text %', got; end if;
   got := private.push_text('de', 'mail.title', 'Hans');
-  if got <> 'Hans vous a envoyé une tier list 📬' then raise exception 'FAIL: unknown language falls back to French: %', got; end if;
+  if got <> 'Hans t’a envoyé une tier list 📬' then raise exception 'FAIL: unknown language falls back to French: %', got; end if;
 
   got := (private.agreement_message_in('Ana', 'Fruits', 40, 'en'))[2];
   if got <> 'Ana ranked “Fruits”: only 40% agreement. See who’s right!' then raise exception 'FAIL: english agreement %', got; end if;

@@ -9,6 +9,8 @@ import { CardView } from '../../components/CardView';
 import { Clickable } from '../../components/Clickable';
 import { FriendsResults } from '../../components/FriendsResults';
 import { ShareCard } from '../../components/ShareCard';
+import { ReminderPrompt } from '../../components/ReminderPrompt';
+import { useCelebrating } from '../../components/rewards/MilestoneWatcher';
 import { ShareSheet } from '../../components/ShareSheet';
 import { Button } from '../../components/ui';
 import { colors, radius, readableTextColor, spacing } from '../../constants/theme';
@@ -17,10 +19,9 @@ import { syncDailyVotes } from '../../lib/daily';
 import { formatDay } from '../../lib/format';
 import { track } from '../../lib/analytics';
 import { fitText } from '../../lib/fitText';
-import { t as translateNow, useT } from '../../lib/i18n/useT';
+import { useT } from '../../lib/i18n/useT';
 import { useLocalizedList } from '../../lib/i18n/useContent';
 import { useResponsive } from '../../lib/layout';
-import { setDailyReminder } from '../../lib/reminders';
 import { dailyStreak } from '../../lib/streak';
 import type { Card } from '../../store/types';
 import { rankingOf, useTierStore } from '../../store/useTierStore';
@@ -60,32 +61,33 @@ export default function ResultsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the list object changes on every edit
   }, [key, validated, attempt]);
 
-  // After the first daily validation, offer the daily reminder once.
+  // After the first daily validation, offer the daily reminder once: the player has just
+  // started a streak, the moment the reminder means something. iOS asks only on "yes".
+  // It waits for the steps celebrated full screen (the first list, the first flame): iOS
+  // shows one modal at a time.
+  const [reminderDue, setReminderDue] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const celebrating = useCelebrating();
   const isDailyValidated = Boolean(list?.daily?.validatedAt);
   useEffect(() => {
-    const { settings, updateSettings } = useTierStore.getState();
-    if (!isDailyValidated || settings.reminderAsked) return;
-    updateSettings({ reminderAsked: true });
-    const timer = setTimeout(
-      () =>
-        // Read when the alert shows, outside the render: the effect doesn't depend on the language.
-        Alert.alert(
-          translateNow('app.results.reminderTitle'),
-          translateNow('app.results.reminderBody'),
-          [
-            { text: translateNow('app.later'), style: 'cancel' },
-            {
-              text: translateNow('app.results.yes'),
-              onPress: async () => {
-                if (await setDailyReminder(true)) useTierStore.getState().updateSettings({ dailyReminder: true });
-              },
-            },
-          ],
-        ),
-      1200,
-    );
+    if (!isDailyValidated || useTierStore.getState().settings.reminderAsked) return;
+    const timer = setTimeout(() => setReminderDue(true), 1200);
     return () => clearTimeout(timer);
   }, [isDailyValidated]);
+  useEffect(() => {
+    if (!reminderDue || celebrating) return;
+    // Room for the celebration to fade out first.
+    const timer = setTimeout(() => {
+      // Asked once, counted when it really shows (not if the player left the page before).
+      useTierStore.getState().updateSettings({ reminderAsked: true });
+      setReminderOpen(true);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [reminderDue, celebrating]);
+  const closeReminder = () => {
+    setReminderDue(false);
+    setReminderOpen(false);
+  };
 
   if (!list || !ranked) {
     return (
@@ -280,6 +282,7 @@ export default function ResultsScreen() {
       <View style={styles.offscreen} pointerEvents="none">
         <ShareCard ref={shareCard} list={list} rows={myRows} agreement={data && data.votes > 1 && agreement !== null ? agreement : undefined} />
       </View>
+      <ReminderPrompt visible={reminderOpen} onClose={closeReminder} />
       <ShareSheet list={list} visible={shareOpen} onClose={() => setShareOpen(false)} onShareImage={shareImage} imageLabel={t('app.results.shareImage')} />
     </View>
   );
