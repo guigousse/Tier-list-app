@@ -1,3 +1,4 @@
+import * as DeviceCheck from '../../modules/device-check';
 import { claimChallenge } from '../lib/api';
 import { challengeResult, claimChallenges } from '../lib/challenge';
 import { isFixed, placementLocked } from '../lib/editorMode';
@@ -7,6 +8,9 @@ import { migrateStore, useTierStore } from '../store/useTierStore';
 
 jest.mock('../lib/api', () => ({ ...jest.requireActual('../lib/api'), claimChallenge: jest.fn() }));
 const claim = claimChallenge as jest.MockedFunction<typeof claimChallenge>;
+jest.mock('../../modules/device-check', () => ({ isSupported: jest.fn(), generateTokenAsync: jest.fn() }));
+const deviceCheckSupported = DeviceCheck.isSupported as jest.Mock;
+const deviceToken = DeviceCheck.generateTokenAsync as jest.Mock;
 
 const store = () => useTierStore.getState();
 
@@ -48,6 +52,9 @@ function rankAll(id: string, ranks: number[]) {
 beforeEach(() => {
   useTierStore.setState({ lists: {}, walletSecret: 'w', walletAttested: true });
   claim.mockReset();
+  deviceCheckSupported.mockReset().mockReturnValue(true);
+  let n = 0;
+  deviceToken.mockReset().mockImplementation(async () => `token-${++n}`);
 });
 
 describe('the sharer’s pseudo in the payload', () => {
@@ -143,7 +150,7 @@ describe('crediting the sharer', () => {
     await claimChallenges();
     await claimChallenges();
     expect(claim).toHaveBeenCalledTimes(1);
-    expect(claim).toHaveBeenCalledWith('w', store().deviceId, 'K7F3QX');
+    expect(claim).toHaveBeenCalledWith('w', store().deviceId, 'K7F3QX', 'token-1');
     expect(store().lists[id].challenge?.claimed).toBe(true);
     expect(store().lists[pending].challenge?.claimed).toBeFalsy();
   });
@@ -172,6 +179,59 @@ describe('crediting the sharer', () => {
     await claimChallenges();
     expect(claim).toHaveBeenCalledTimes(3);
     expect(store().lists[id].challenge?.claimed).toBe(true);
+  });
+
+  it('sends a fresh DeviceCheck token with each claim, so the server asks Apple about this iPhone', async () => {
+    const first = answered('AAAAAA');
+    const second = answered('BBBBBB');
+    claim.mockResolvedValue({ status: 'credited' });
+    await claimChallenges();
+    expect(claim.mock.calls.map((c) => [c[2], c[3]])).toEqual([
+      ['AAAAAA', 'token-1'],
+      ['BBBBBB', 'token-2'],
+    ]);
+    expect(store().lists[first].challenge?.claimed).toBe(true);
+    expect(store().lists[second].challenge?.claimed).toBe(true);
+  });
+
+  it('an iPhone already sponsored, or no device check: final answers', async () => {
+    const used = answered('AAAAAA');
+    const unchecked = answered('BBBBBB');
+    claim.mockResolvedValueOnce({ status: 'device_used' }).mockResolvedValueOnce({ status: 'not_new' });
+    await claimChallenges();
+    expect(store().lists[used].challenge?.claimed).toBe(true);
+    expect(store().lists[unchecked].challenge?.claimed).toBe(true);
+  });
+
+  it('Apple out of reach for the server: asked again later', async () => {
+    const id = answered();
+    claim.mockResolvedValueOnce({ status: 'retry' });
+    await claimChallenges();
+    expect(store().lists[id].challenge?.claimed).toBeFalsy();
+    claim.mockResolvedValueOnce({ status: 'credited' });
+    await claimChallenges();
+    expect(claim).toHaveBeenCalledTimes(2);
+    expect(store().lists[id].challenge?.claimed).toBe(true);
+  });
+
+  it('no token from the phone: nothing claimed, tried again later', async () => {
+    const id = answered();
+    deviceToken.mockRejectedValueOnce(new Error('DCError 1'));
+    await claimChallenges();
+    expect(claim).not.toHaveBeenCalled();
+    expect(store().lists[id].challenge?.claimed).toBeFalsy();
+    claim.mockResolvedValueOnce({ status: 'credited' });
+    await claimChallenges();
+    expect(store().lists[id].challenge?.claimed).toBe(true);
+  });
+
+  it('without DeviceCheck (Android, web, simulator): nothing is sent', async () => {
+    deviceCheckSupported.mockReturnValue(false);
+    const id = answered();
+    await claimChallenges();
+    expect(claim).not.toHaveBeenCalled();
+    expect(deviceToken).not.toHaveBeenCalled();
+    expect(store().lists[id].challenge?.claimed).toBeFalsy();
   });
 
   it('nothing to claim for a list opened from an offline link', async () => {
@@ -208,5 +268,28 @@ describe('sharing a challenge', () => {
     const { url, body } = await calls(own, null);
     expect(url).toMatch(/rpc\/share_list$/);
     expect(body).toEqual({ payload: expect.not.objectContaining({ f: expect.anything() }) });
+  });
+});
+
+describe('the claim request', () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  it('goes through the referral-claim function, with the DeviceCheck token', async () => {
+    const fetchMock = jest.fn(async () => ({ ok: true, json: async () => ({ status: 'device_used' }) }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const api = jest.requireActual<typeof import('../lib/api')>('../lib/api');
+    expect(await api.claimChallenge('w', 'd', 'K7F3QX', 'TOKEN')).toEqual({ status: 'device_used' });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toMatch(/functions\/v1\/referral-claim$/);
+    expect(JSON.parse(init.body as string)).toMatchObject({ wallet: 'w', deviceId: 'd', code: 'K7F3QX', deviceToken: 'TOKEN' });
+  });
+
+  it('a refusal of the server is an error: the claim waits', async () => {
+    global.fetch = jest.fn(async () => ({ ok: false, status: 429, json: async () => ({ error: 'too many requests' }) })) as unknown as typeof fetch;
+    const api = jest.requireActual<typeof import('../lib/api')>('../lib/api');
+    await expect(api.claimChallenge('w', 'd', 'K7F3QX', 'TOKEN')).rejects.toThrow('too many requests');
   });
 });

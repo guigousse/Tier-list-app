@@ -1,3 +1,4 @@
+import * as DeviceCheck from '../../modules/device-check';
 import type { TierList } from '../store/types';
 import { mailAgreement } from '../store/useMail';
 import { rankingOf, useTierStore } from '../store/useTierStore';
@@ -35,21 +36,28 @@ let claiming: Promise<void> | null = null;
 /**
  * Tells the server about each challenge ranked from a share code, once per list, so it can
  * credit the sharer. Not before Apple vouched for this wallet: the server would see a player
- * who isn't new and answer not_new, and that answer is final. Called again at each launch,
- * return to the app and attestation, so a failed call is only postponed.
+ * who isn't new and answer not_new, and that answer is final. Nor without a DeviceCheck token,
+ * by which the server asks Apple whether this iPhone was already sponsored (a reinstall makes
+ * a new wallet and device id, not a new iPhone): without DeviceCheck (Android, web, simulator)
+ * nothing is sent. Called again at each launch, return to the app and attestation, so a
+ * failed call is only postponed.
  */
 export function claimChallenges(): Promise<void> {
   claiming ??= (async () => {
     const { walletSecret, walletAttested, deviceId } = useTierStore.getState();
-    if (!walletSecret || !walletAttested) return;
+    if (!walletSecret || !walletAttested || !DeviceCheck.isSupported()) return;
     const due = Object.values(useTierStore.getState().lists).filter((l) => l.challenge?.code && l.challenge.answeredAt && !l.challenge.claimed);
     for (const list of due) {
       try {
-        await claimChallenge(walletSecret, deviceId, list.challenge!.code!);
-        // Whatever the status, the server has decided: asking again would change nothing.
+        // A fresh token each time: Apple's tokens are meant for one request.
+        const token = await DeviceCheck.generateTokenAsync();
+        const { status } = await claimChallenge(walletSecret, deviceId, list.challenge!.code!, token);
+        // Apple couldn't be asked: nothing was decided.
+        if (status === 'retry') continue;
+        // Any other status is the server's decision: asking again would change nothing.
         useTierStore.getState().markChallengeClaimed(list.id);
       } catch {
-        // Offline or rate-limited: the next call tries again.
+        // No token from the phone, offline or rate-limited: the next call tries again.
       }
     }
   })().finally(() => {

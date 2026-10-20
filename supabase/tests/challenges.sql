@@ -1,4 +1,5 @@
--- Challenge lists and referrals (20261020010000_challenges.sql, 20261020020000_referral_pending.sql). Run on the project: the
+-- Challenge lists and referrals (20261020010000_challenges.sql, 20261020020000_referral_pending.sql,
+-- 20261020040000_referral_devicecheck.sql). Run on the project: the
 -- block always fails at the end, nothing kept. Expected error message: 'OK'.
 do $$
 declare
@@ -88,6 +89,21 @@ begin
   -- Nobody else's referrals: an unknown wallet sees nothing.
   r := public.referral_status('not-a-wallet');
   if (r->>'count')::int <> 0 then raise exception 'FAIL: unknown wallet %', r; end if;
+
+  -- Only the Edge Function referral-claim (service role) claims: it checks the device with Apple first.
+  if has_function_privilege('anon', 'public.claim_challenge(text, uuid, text)', 'execute')
+    or has_function_privilege('authenticated', 'public.claim_challenge(text, uuid, text)', 'execute') then
+    raise exception 'FAIL: claim_challenge callable without DeviceCheck';
+  end if;
+  if not has_function_privilege('service_role', 'public.claim_challenge(text, uuid, text)', 'execute') then
+    raise exception 'FAIL: the function cannot claim';
+  end if;
+  -- Its calls are rate-limited per player: the address it passes on, and only from it.
+  perform set_config('request.headers', '{"x-client-ip":"203.0.113.7","x-forwarded-for":"198.51.100.1"}', true);
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  if private.client_ip() <> '203.0.113.7' then raise exception 'FAIL: player address %', private.client_ip(); end if;
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  if private.client_ip() <> '198.51.100.1' then raise exception 'FAIL: forged address trusted %', private.client_ip(); end if;
 
   raise exception 'OK';
 end $$;
