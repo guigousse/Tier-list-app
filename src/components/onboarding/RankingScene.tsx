@@ -7,7 +7,8 @@ import { TEMPLATES } from '../../constants/presets';
 import { CARD_COLORS, colors, TIER_COLORS } from '../../constants/theme';
 import { fetchAppIcons } from '../../lib/appstore';
 import { useT } from '../../lib/i18n/useT';
-import { Finger, FINGER, fingerOffset, MiniCard, Stage, step, useLoop, type SceneProps } from './kit';
+import { Finger, FINGER, fingerOffset, MiniCard, Stage, step, useCues, useLoop, type SceneProps } from './kit';
+import type { Sound } from '../../lib/sound';
 
 const GAMES = TEMPLATES.find((t) => t.key === 'mobile-games')!;
 const BROC = { name: 'Broc', emoji: '🏺' };
@@ -38,6 +39,13 @@ const BROC_VOTES = [72, 16, 7, 3, 2];
 
 export const RANKING_DURATION = 8000;
 const DURATION = RANKING_DURATION;
+/** Sounds: Broc picked up, dropped in S, « Valider » tapped, the players' verdict. */
+const CUES: [number, Sound][] = [
+  [1180, 'tick'],
+  [2500, 'pop'],
+  [3650, 'click'],
+  [4000, 'complete'],
+];
 
 /** Height of the scenes for a given width (the ranking scene sets it, the others match). */
 export function sceneHeight(W: number): number {
@@ -70,6 +78,7 @@ function useIcons(): Record<string, string> {
 export function RankingScene({ width: W, active, once }: SceneProps) {
   const icons = useIcons();
   const t = useLoop(active, DURATION, once);
+  useCues(t, DURATION, CUES);
   // `t` is the loop's clock here: the texts go through `tr`.
   const { t: tr } = useT();
 

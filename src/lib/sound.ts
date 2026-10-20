@@ -2,7 +2,7 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 
 import { useTierStore } from '../store/useTierStore';
 
-type Sound = 'click' | 'tick' | 'pop' | 'sparkle' | 'thunder' | 'coin' | 'complete';
+export type Sound = 'click' | 'tick' | 'pop' | 'sparkle' | 'thunder' | 'coin' | 'complete' | 'key' | 'whoosh' | 'notify';
 
 const SOURCES: Record<Sound, number> = {
   click: require('../../assets/sounds/click.wav'),
@@ -15,19 +15,25 @@ const SOURCES: Record<Sound, number> = {
   coin: require('../../assets/sounds/coin.wav'),
   // Made by scripts/generate-reward-sounds.py: a reward reaching the player's profile.
   complete: require('../../assets/sounds/complete.wav'),
+  // Made by scripts/generate-story-sounds.py: the welcome story (letters typed, sheets, a friend's answer).
+  key: require('../../assets/sounds/key.wav'),
+  whoosh: require('../../assets/sounds/whoosh.wav'),
+  notify: require('../../assets/sounds/notify.wav'),
 };
 // Files peak at 0.8: these volumes give Broc's own levels (click 0.4, tick 0.18, pop 0.42).
 // The sparkle lasts 0.65 s, ten times the click: softer, or it would cover the screen.
 // The coin rings ~16 times in a row while the balance counts: low, or it would grate.
-const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525, sparkle: 0.35, thunder: 0.6, coin: 0.3, complete: 0.4 };
+// The key comes ~12 times a second while a title is typed: very low, like the coin.
+const VOLUMES: Record<Sound, number> = { click: 0.5, tick: 0.225, pop: 0.525, sparkle: 0.35, thunder: 0.6, coin: 0.3, complete: 0.4, key: 0.25, whoosh: 0.3, notify: 0.45 };
 /** Players per sound, used in turn so quick repeats can overlap instead of cutting each other. */
-const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 2, sparkle: 1, thunder: 1, coin: 3, complete: 1 };
+const POOL: Record<Sound, number> = { click: 3, tick: 4, pop: 3, sparkle: 1, thunder: 1, coin: 3, complete: 1, key: 4, whoosh: 2, notify: 1 };
 /** The same sound asked again within this time is one sound (two handlers on one tap). */
 const SAME_TAP_MS = 60;
 
 const pools: Partial<Record<Sound, AudioPlayer[]>> = {};
-const next: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0, complete: 0 };
-const lastPlayed: Record<Sound, number> = { click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0, complete: 0 };
+const zero = (): Record<Sound, number> => ({ click: 0, tick: 0, pop: 0, sparkle: 0, thunder: 0, coin: 0, complete: 0, key: 0, whoosh: 0, notify: 0 });
+const next = zero();
+const lastPlayed = zero();
 let modeSet = false;
 
 function pool(sound: Sound): AudioPlayer[] {
@@ -48,7 +54,8 @@ function pool(sound: Sound): AudioPlayer[] {
   return players;
 }
 
-function play(sound: Sound): void {
+/** Plays a sound (unless sounds are off in the settings): the welcome story times its own. */
+export function play(sound: Sound): void {
   if (!useTierStore.getState().settings.sounds) return;
   const now = Date.now();
   if (now - lastPlayed[sound] < SAME_TAP_MS) return;
@@ -95,13 +102,7 @@ export function playSparkle(): void {
 export function preloadSounds(): void {
   if (!useTierStore.getState().settings.sounds) return;
   try {
-    pool('click');
-    pool('tick');
-    pool('pop');
-    pool('sparkle');
-    pool('thunder');
-    pool('coin');
-    pool('complete');
+    (Object.keys(SOURCES) as Sound[]).forEach(pool);
   } catch {
     // Audio unavailable.
   }

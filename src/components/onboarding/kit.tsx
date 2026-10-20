@@ -1,8 +1,9 @@
-import { useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, type ReactNode } from 'react';
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -10,7 +11,10 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { scheduleOnRN } from 'react-native-worklets';
+
 import { colors, radius } from '../../constants/theme';
+import { play, type Sound } from '../../lib/sound';
 
 /** Size of the pointing finger. Declared before the worklets that capture it. */
 export const FINGER = 44;
@@ -33,6 +37,24 @@ export function useLoop(active: boolean, duration: number, once = false): Shared
     return () => cancelAnimation(t);
   }, [active, duration, once, t]);
   return t;
+}
+
+/**
+ * Sound effects in time with a scene: each [ms, sound] plays when the scene's clock
+ * goes past it (cues at 0 never play: keep them after the start). `cues` must not
+ * change between renders (a module constant, or memoized).
+ */
+export function useCues(t: SharedValue<number>, duration: number, cues: [number, Sound][]): void {
+  const times = cues.map(([at]) => at);
+  const fire = useCallback((i: number) => play(cues[i][1]), [cues]);
+  useAnimatedReaction(
+    () => t.value * duration,
+    (now, before) => {
+      // First frame, or the loop starting again: nothing was crossed.
+      if (before === null || now < before) return;
+      for (let i = 0; i < times.length; i++) if (times[i] > before && times[i] <= now) scheduleOnRN(fire, i);
+    },
+  );
 }
 
 /** Progress (0 → 1, eased) of the step running from `from` to `to` ms of a loop of `duration` ms. */

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo } from 'react';
 import { Image, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 import Animated, { useAnimatedStyle, useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
@@ -7,7 +8,8 @@ import { AvatarDrawing } from '../Avatar';
 import { colors, TIER_COLORS } from '../../constants/theme';
 import { DEFAULT_AVATAR, type AvatarConfig } from '../../lib/avatar';
 import { useT } from '../../lib/i18n/useT';
-import { FINGER, Finger, fingerOffset, MiniCard, Stage, step, useLoop, type SceneProps } from './kit';
+import { FINGER, Finger, fingerOffset, MiniCard, Stage, step, useCues, useLoop, type SceneProps } from './kit';
+import type { Sound } from '../../lib/sound';
 
 type Props = SceneProps & { height: number };
 
@@ -78,10 +80,18 @@ const OTHER_FRIEND: AvatarConfig = { ...DEFAULT_AVATAR, hair: 'buzz', hairColor:
 const HELLO_CARDS: Picture[] = ['pizza', 'croissant', 'sushi', 'donut', 'burger', 'taco'];
 const HELLO_COLORS = ['#7A3A4E', '#7A5A2E', '#2E5A7A', '#5B3A7A', '#2E6A4F', '#3D4454'];
 export const HELLO_DURATION = 3800;
+/** The welcome's sounds: the name sweeping in, the colours ticking, each card popping, a glint. */
+const HELLO_CUES: [number, Sound][] = [
+  [450, 'whoosh'],
+  ...[0, 1, 2, 3, 4].map((i): [number, Sound] => [760 + i * 90, 'tick']),
+  ...HELLO_CARDS.map((_, i): [number, Sound] => [1320 + i * 160, 'pop']),
+  [2500, 'sparkle'],
+];
 
 /** The welcome: the tier colours sweep in, the name, and cards popping around it. */
 export function HelloScene({ width: W, height: H, active, once }: Props) {
   const t = useLoop(active, HELLO_DURATION, once);
+  useCues(t, HELLO_DURATION, HELLO_CUES);
   const { t: tr } = useT();
   const c = Math.round(Math.min(W / 5.2, 72));
   const wave = useAnimatedStyle(() => {
@@ -163,6 +173,26 @@ const AT = {
   compare: 14100,
 };
 export const CREATE_SHARE_DURATION = 18000;
+
+/** The story's sounds, on the finger's taps and what they set off (the keys of the title apart). */
+const CREATE_SHARE_CUES: [number, Sound][] = [
+  [AT.wand, 'click'],
+  [AT.wand + 20, 'sparkle'],
+  ...FRUITS.map((_, i): [number, Sound] => [AT.words + i * 160 + 120, 'tick']),
+  [AT.wandAgain, 'click'],
+  [AT.wandAgain + 20, 'sparkle'],
+  ...FRUITS.map((_, i): [number, Sound] => [AT.images + i * 200 + 150, 'pop']),
+  [AT.share, 'click'],
+  [AT.sheet + 20, 'whoosh'],
+  [AT.friend, 'tick'],
+  [AT.send, 'click'],
+  [AT.sheetDown + 20, 'whoosh'],
+  [AT.notif + 100, 'notify'],
+  [AT.discover, 'click'],
+  [AT.compare + 20, 'whoosh'],
+  [AT.compare + 700, 'complete'],
+  ...COMPARED.map((_, i): [number, Sound] => [AT.compare + 950 + i * 300, 'tick']),
+];
 /** When the captions of the story change in this scene (ms): creation, sharing, comparison. */
 export const CREATE_SHARE_CAPTIONS = [0, 8200, 12400];
 
@@ -177,6 +207,12 @@ export function CreateShareScene({ width: W, height: H, active, once }: Props) {
   const { t: tr, upper } = useT();
   const title = tr('play.onb.listTitle');
   const words = tr('play.onb.fruitNames').split(',');
+  // A key for each letter typed (spaces too), then the taps.
+  const cues = useMemo(
+    () => [...[...title].map((_, i): [number, Sound] => [typedAt(i, title.length) + 1, 'key']), ...CREATE_SHARE_CUES],
+    [title],
+  );
+  useCues(t, D, cues);
 
   // Layout, from the size: the editor as the app shows it, in small.
   const pad = 12;
@@ -274,7 +310,7 @@ export function CreateShareScene({ width: W, height: H, active, once }: Props) {
         <Text style={styles.fieldLabel}>{upper(tr('play.onb.titleLabel'))}</Text>
         <View style={styles.typedRow}>
           {[...title].map((ch, i) => (
-            <TypedChar key={i} t={t} at={AT.typed[0] + ((AT.typed[1] - AT.typed[0]) * i) / Math.max(1, title.length)} ch={ch} />
+            <TypedChar key={i} t={t} at={typedAt(i, title.length)} ch={ch} />
           ))}
           <Caret t={t} />
         </View>
@@ -392,6 +428,11 @@ export function CreateShareScene({ width: W, height: H, active, once }: Props) {
       <Finger pressed={pressed} style={fingerStyle} size={FINGER} />
     </Stage>
   );
+}
+
+/** When the letter `i` of a title of `length` letters is typed (ms). */
+function typedAt(i: number, length: number): number {
+  return AT.typed[0] + ((AT.typed[1] - AT.typed[0]) * i) / Math.max(1, length);
 }
 
 function TypedChar({ t, at, ch }: { t: SharedValue<number>; at: number; ch: string }) {
