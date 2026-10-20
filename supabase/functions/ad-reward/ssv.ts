@@ -1,14 +1,14 @@
 // AdMob's server-side verification (SSV) of a rewarded ad, as Google documents it:
 // https://developers.google.com/admob/android/ssv#manual_verification
 // The callback is a GET whose query string ends with "&signature=…&key_id=…". The signed
-// message is the query string as received, up to (not including) "&signature=": the
-// parameters stay URL-encoded and in Google's order, so nothing is rebuilt from parsed
-// values. The signature is ECDSA P-256 / SHA-256, DER-encoded, in URL-safe base64.
+// message is the query string up to (not including) "&signature=", in Google's order,
+// percent-decoded: AdMob's "Verify URL" test, reward item "Énergie", only verified once
+// %C3%89 was read back as É. The signature is ECDSA P-256 / SHA-256, DER, URL-safe base64.
 
 export const VERIFIER_KEYS_URL = "https://www.gstatic.com/admob/reward/verifier-keys.json";
 
 export type Callback = {
-  /** The signed bytes: the raw query string before "&signature=". */
+  /** The signed text: the decoded query string before "&signature=". */
   message: string;
   signature: string;
   keyId: string;
@@ -24,12 +24,18 @@ export function parseCallback(url: string): Callback | null {
   const query = url.slice(q + 1);
   const cut = query.indexOf("&signature=");
   if (cut <= 0) return null;
+  let message: string;
+  try {
+    message = decodeURIComponent(query.slice(0, cut));
+  } catch {
+    return null;
+  }
   const params = new URLSearchParams(query);
   const signature = params.get("signature") ?? "";
   const keyId = params.get("key_id") ?? "";
   if (!signature || !/^\d+$/.test(keyId)) return null;
   return {
-    message: query.slice(0, cut),
+    message,
     signature,
     keyId,
     adUnit: params.get("ad_unit") ?? "",

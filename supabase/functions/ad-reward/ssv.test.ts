@@ -31,8 +31,9 @@ async function signer() {
   const sign = async (message: string) =>
     b64url(rawToDer(new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, pair.privateKey, new TextEncoder().encode(message)))));
   const url = async (params: Record<string, string>, keyId = "1234") => {
-    const message = new URLSearchParams(params).toString();
-    return `https://x.supabase.co/functions/v1/ad-reward?${message}&signature=${await sign(message)}&key_id=${keyId}`;
+    // Google signs the decoded query and sends it encoded.
+    const query = new URLSearchParams(params).toString();
+    return `https://x.supabase.co/functions/v1/ad-reward?${query}&signature=${await sign(decodeURIComponent(query))}&key_id=${keyId}`;
   };
   return { spki, sign, url };
 }
@@ -48,16 +49,37 @@ const PARAMS = {
   user_id: "",
 };
 
-Deno.test("le message signé est la requête telle que reçue, jusqu'avant &signature", () => {
+Deno.test("le message signé est la requête décodée, jusqu'avant &signature", () => {
   const cb = parseCallback("https://h/f?ad_network=1&ad_unit=7429871139&custom_data=t%2Bx&transaction_id=9&signature=abc-_&key_id=42");
   same(cb, {
-    message: "ad_network=1&ad_unit=7429871139&custom_data=t%2Bx&transaction_id=9",
+    message: "ad_network=1&ad_unit=7429871139&custom_data=t+x&transaction_id=9",
     signature: "abc-_",
     keyId: "42",
     adUnit: "7429871139",
     customData: "t+x",
     transactionId: "9",
   });
+});
+
+// The "Verify URL" callback AdMob sent on 2026-10-20, reward item "Énergie", and the key
+// gstatic served that day: the accent is what showed the signed text is the decoded one.
+const GOOGLE_KEY =
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE+nzvoGqvDeB9+SzE6igTl7TyK4JBbglwir9oTcQta8NuG26ZpZFxt+F2NDk7asTE6/2Yc8i1ATcGIqtuS5hv0Q==";
+const GOOGLE_CALLBACK =
+  "https://mefhdtpyhtvplpfleyhi.supabase.co/functions/v1/ad-reward?ad_network=5450213213286189855&ad_unit=1234567890&reward_amount=5&reward_item=%C3%89nergie&timestamp=1792458289682&transaction_id=123456789&signature=MEUCIQDmwG5iIvIvSOq5-W8F2cWqLrq36mnW6xrgQ7ycA1uztAIgL4FaOwyu7rT3XirsV1ZbOzIwZ-oqSs29D6wLmacX6BQ&key_id=3335741209";
+
+Deno.test("le vrai rappel de test d'AdMob, accent compris, est reconnu signé", async () => {
+  const cb = parseCallback(GOOGLE_CALLBACK)!;
+  same(await verifySignature(cb.message, cb.signature, GOOGLE_KEY), true);
+  const res = await handle(new Request(GOOGLE_CALLBACK), {
+    key: async () => GOOGLE_KEY,
+    reward: () => Promise.reject(new Error("pas de ticket : rien à créditer")),
+  });
+  same(res.status, 200);
+});
+
+Deno.test("un pourcentage mal formé n'est pas un rappel d'AdMob", () => {
+  same(parseCallback("https://h/f?ad_unit=%E0%A4%A&signature=abc&key_id=42"), null);
 });
 
 Deno.test("sans signature ni key_id numérique, ce n'est pas un rappel d'AdMob", () => {
