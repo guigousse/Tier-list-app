@@ -53,6 +53,10 @@ begin
   if me is null then
     raise exception 'unknown wallet';
   end if;
+  -- Only a wallet App Attest vouched for: wallets made by a script would each farm a paid ad.
+  if (select w.attest_key_id from public.credit_wallets w where w.id = me) is null then
+    raise exception 'unverified';
+  end if;
   next_at := private.ad_next_at(me);
   return jsonb_build_object('available', next_at is null, 'next_at', next_at);
 end;
@@ -73,6 +77,10 @@ begin
   perform private.hit('ad_ticket', 30);
   if me is null then
     raise exception 'unknown wallet';
+  end if;
+  -- Only a wallet App Attest vouched for: wallets made by a script would each farm a paid ad.
+  if (select w.attest_key_id from public.credit_wallets w where w.id = me) is null then
+    raise exception 'unverified';
   end if;
   next_at := private.ad_next_at(me);
   if next_at is not null then

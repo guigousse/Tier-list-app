@@ -6,12 +6,22 @@ declare
   other_secret text := 'test-ad-other-' || gen_random_uuid();
   w uuid;
   other uuid;
+  unverified_secret text := 'test-ad-unverified-' || gen_random_uuid();
   r jsonb;
   ticket text;
   tx text := 'test-tx-' || gen_random_uuid();
 begin
-  insert into public.credit_wallets (secret_hash, balance) values (encode(sha256(convert_to(secret, 'UTF8')), 'hex'), 10) returning id into w;
-  insert into public.credit_wallets (secret_hash, balance) values (encode(sha256(convert_to(other_secret, 'UTF8')), 'hex'), 0) returning id into other;
+  insert into public.credit_wallets (secret_hash, balance, attest_key_id) values (encode(sha256(convert_to(secret, 'UTF8')), 'hex'), 10, 'test-key-' || gen_random_uuid()) returning id into w;
+  insert into public.credit_wallets (secret_hash, balance, attest_key_id) values (encode(sha256(convert_to(other_secret, 'UTF8')), 'hex'), 0, 'test-key-' || gen_random_uuid()) returning id into other;
+  insert into public.credit_wallets (secret_hash, balance) values (encode(sha256(convert_to(unverified_secret, 'UTF8')), 'hex'), 0);
+
+  -- A wallet App Attest never vouched for gets no ticket: scripted wallets can't farm ads.
+  begin
+    perform public.ad_ticket(unverified_secret);
+    raise exception 'FAIL: ticket for an unverified wallet';
+  exception when others then
+    if sqlerrm <> 'unverified' then raise; end if;
+  end;
 
   -- No ad watched yet: available, and a ticket.
   r := public.ad_status(secret);
