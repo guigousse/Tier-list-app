@@ -23,6 +23,11 @@ type Props = {
   bottomInset?: boolean;
   /** First game: a finger taps the first card to show how to rank. */
   hint?: boolean;
+  /**
+   * Edit mode: the tray holds the list's cards to edit, not cards to rank (they can't
+   * be moved there): no "à classer", no hint about dragging.
+   */
+  editing?: boolean;
 };
 
 /** A finger tapping the first card again and again, until the player places one. */
@@ -34,7 +39,7 @@ function TapHint({ left, top }: { left: number; top: number }) {
   return <Finger pressed={pressed} size={36} style={{ left, top }} />;
 }
 
-export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true, hint = false }: Props) {
+export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true, hint = false, editing = false }: Props) {
   const insets = useSafeAreaInsets();
   const { ref, highlight } = useDropZone(POOL, false);
   const { cardSize } = useDragContext();
@@ -48,11 +53,17 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true, hin
     <View ref={ref} collapsable={false} style={[styles.tray, { paddingBottom: (bottomInset ? insets.bottom : 0) + spacing.sm }]}>
       <Animated.View style={[StyleSheet.absoluteFill, highlight]} pointerEvents="none" />
       <View style={styles.header}>
-        <Text numberOfLines={1} style={styles.title}>
-          {t('editor.toRank')} · {cards.length}
-          <Text style={styles.muted}> / {total}</Text>
-        </Text>
-        {showHint ? (
+        {editing ? (
+          <Text numberOfLines={1} style={styles.title}>
+            {t('editor.tray.cards')} · {cards.length}
+          </Text>
+        ) : (
+          <Text numberOfLines={1} style={styles.title}>
+            {t('editor.toRank')} · {cards.length}
+            <Text style={styles.muted}> / {total}</Text>
+          </Text>
+        )}
+        {editing ? null : showHint ? (
           <Text numberOfLines={1} style={[styles.muted, styles.hint, styles.hintOn]}>
             {t('editor.tray.firstHint')}
           </Text>
@@ -82,7 +93,7 @@ export function Tray({ cards, total, onAdd, onPressCard, bottomInset = true, hin
           <DraggableCard key={c.id} card={c} zone={POOL} scrolls={false} onPress={onPressCard} />
         ))}
         {showHint ? <TapHint left={firstLeft + cardSize * 0.35} top={cardSize * 0.4} /> : null}
-        {cards.length === 0 && total > 0 ? (
+        {!editing && cards.length === 0 && total > 0 ? (
           <View style={[styles.done, { height: cardSize }]}>
             <Text style={styles.muted}>{t('editor.tray.allRanked')}</Text>
           </View>

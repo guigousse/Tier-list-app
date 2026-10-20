@@ -335,6 +335,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
             onAdd={editable ? () => setCardSheet({ cardId: null }) : undefined}
             onPressCard={openCard}
             hint={firstGame && !editable}
+            editing={editable}
           />
           {editable ? (
             <View style={[styles.dailyBar, { paddingBottom: insets.bottom + spacing.md }]}>
