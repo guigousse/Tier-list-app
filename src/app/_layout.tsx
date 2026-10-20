@@ -183,7 +183,6 @@ export default function RootLayout() {
               options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade', gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } }}
             />
             <Stack.Screen name="editor/[id]" options={{ headerShown: false, gestureEnabled: false }} />
-            <Stack.Screen name="welcome-profile" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
           <MilestoneWatcher />
         </ThemeProvider>
