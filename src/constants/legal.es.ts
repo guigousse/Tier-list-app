@@ -39,13 +39,13 @@ export const PRIVACY_ES: LegalSection[] = [
       'Vercel: sitio web de la app y páginas de los enlaces para compartir.',
       'Wikimedia y App Store: cuando buscas una imagen, se les envía el nombre de la carta; las plantillas con iconos de apps consultan la App Store. No se transmite ningún dato personal.',
       'Expo: descarga de las actualizaciones de la app.',
-      'Google Analytics para Firebase: estadísticas de uso, solo si lo aceptas, sin identificador publicitario ni intercambio con la publicidad de Google. Los datos pueden tratarse fuera de la Unión Europea, con las garantías previstas por el RGPD, y se conservan 2 meses.',
+      'Google Analytics para Firebase: estadísticas de uso, solo si lo aceptas, sin identificador publicitario ni intercambio con la publicidad de Google. Los datos pueden tratarse fuera de la Unión Europea, con las garantías previstas por el RGPD, y se conservan 2 meses. Google AdMob: solo si eliges ver un anuncio a cambio de energía, un anuncio no personalizado; Google recibe entonces información técnica del dispositivo (dirección IP, modelo, idioma) para mostrarlo y luchar contra el fraude, y nos confirma que se ha visto con un código aleatorio, sin saber nada de ti.',
     ],
   },
   {
     title: 'Lo que no hacemos',
     bullets: [
-      'Sin cuenta de correo, sin publicidad, sin rastreo publicitario.',
+      'Sin cuenta de correo, sin publicidad impuesta (solo la que eliges ver a cambio de energía), sin rastreo publicitario.',
       'No vendemos ni compartimos datos con terceros.',
       'Sin acceso a tus fotos, salvo las que eliges para una carta.',
     ],

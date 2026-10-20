@@ -39,13 +39,13 @@ export const PRIVACY_EN: LegalSection[] = [
       'Vercel: the app’s website and the share link pages.',
       'Wikimedia and App Store: when you search for an image, the card’s name is sent to them; templates with app icons query the App Store. No personal data is shared.',
       'Expo: downloading app updates.',
-      'Google Analytics for Firebase: usage statistics, only if you agree, with no advertising ID and no sharing with Google’s advertising. The data may be processed outside the European Union, under the safeguards provided by the GDPR, and is kept for 2 months.',
+      'Google Analytics for Firebase: usage statistics, only if you agree, with no advertising ID and no sharing with Google’s advertising. The data may be processed outside the European Union, under the safeguards provided by the GDPR, and is kept for 2 months. Google AdMob: only if you choose to watch an ad for energy, a non-personalized ad; Google then receives technical information about the device (IP address, model, language) to show it and fight fraud, and confirms to us that it was watched using a random code, without learning anything about you.',
     ],
   },
   {
     title: 'What we don’t do',
     bullets: [
-      'No email account, no ads, no ad tracking.',
+      'No email account, no forced ads (only the ones you choose to watch for energy), no ad tracking.',
       'No selling or sharing of data with third parties.',
       'No access to your photos other than the ones you choose for a card.',
     ],

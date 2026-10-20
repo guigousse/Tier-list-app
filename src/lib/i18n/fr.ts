@@ -37,9 +37,9 @@ export const fr: Catalog = {
   'consent.no': 'Non merci',
   'consent.yes': 'Accepter',
   'consent.body': 'Avec votre accord, Tiercraft mesure comment l’app est utilisée, sans votre nom ni votre e-mail : écrans ouverts, durée des parties, retour d’un jour à l’autre. Ça nous aide à savoir ce qui plaît et ce qui bloque.',
-  'consent.privacy': 'Aucune publicité, aucun suivi entre les apps, aucun contenu de vos listes. Les mesures passent par Google Analytics pour Firebase.',
+  'consent.privacy': 'Aucun usage publicitaire, aucun suivi entre les apps, aucun contenu de vos listes. Les mesures passent par Google Analytics pour Firebase.',
   'consent.later': 'Vous pouvez changer d’avis à tout moment dans les Réglages.',
   'settings.privacy': 'Confidentialité',
   'settings.analytics': 'Statistiques d’usage',
-  'settings.analyticsHint': 'Mesure de l’audience, sans votre nom ni votre e-mail (Google Analytics pour Firebase) : écrans ouverts, durée des parties. Jamais de publicité ni le contenu de vos listes.',
+  'settings.analyticsHint': 'Mesure de l’audience, sans votre nom ni votre e-mail (Google Analytics pour Firebase) : écrans ouverts, durée des parties. Jamais à des fins publicitaires, jamais le contenu de vos listes.',
 };

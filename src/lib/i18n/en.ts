@@ -37,9 +37,9 @@ export const en: Catalog = {
   'consent.no': 'No thanks',
   'consent.yes': 'Accept',
   'consent.body': 'With your consent, Tiercraft measures how the app is used, without your name or email: screens opened, session length, coming back from one day to the next. It helps us see what people enjoy and where they get stuck.',
-  'consent.privacy': 'No ads, no tracking across apps, none of your lists’ content. Measurements go through Google Analytics for Firebase.',
+  'consent.privacy': 'No advertising use, no tracking across apps, none of your lists’ content. Measurements go through Google Analytics for Firebase.',
   'consent.later': 'You can change your mind anytime in Settings.',
   'settings.privacy': 'Privacy',
   'settings.analytics': 'Usage statistics',
-  'settings.analyticsHint': 'Audience measurement, without your name or email (Google Analytics for Firebase): screens opened, session length. Never ads or your lists’ content.',
+  'settings.analyticsHint': 'Audience measurement, without your name or email (Google Analytics for Firebase): screens opened, session length. Never used for ads, never your lists’ content.',
 };

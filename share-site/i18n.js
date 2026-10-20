@@ -207,7 +207,7 @@
       es: 'Tu primera tier list<br><span class="rainbow">te espera.</span>',
       el: 'Η πρώτη σας tier list<br><span class="rainbow">σας περιμένει.</span>',
     },
-    'index.final.lead': { en: 'Free, no ads, no email account.', es: 'Gratis, sin publicidad, sin cuenta de correo.', el: 'Δωρεάν, χωρίς διαφημίσεις, χωρίς λογαριασμό email.' },
+    'index.final.lead': { en: 'Free, no forced ads, no email account.', es: 'Gratis, sin publicidad impuesta, sin cuenta de correo.', el: 'Δωρεάν, χωρίς υποχρεωτικές διαφημίσεις, χωρίς λογαριασμό email.' },
 
     // Support (support.html).
     'support.title': { en: 'Support · Tiercraft', es: 'Soporte · Tiercraft', el: 'Υποστήριξη · Tiercraft' },
