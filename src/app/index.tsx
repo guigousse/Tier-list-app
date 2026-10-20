@@ -56,7 +56,7 @@ export default function Home() {
   const { t } = useT();
   const lists = useTierStore((s) => s.lists);
   // Daily and popular tier lists live in their own sections.
-  const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular), [lists]);
+  const all = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular && !l.draft), [lists]);
   const favorites = useMemo(() => all.filter((l) => l.favorite).sort((a, b) => b.updatedAt - a.updatedAt), [all]);
 
   const popular = useFeaturedTemplates();

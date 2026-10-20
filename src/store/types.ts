@@ -83,6 +83,8 @@ export type TierList = {
   mail?: MailInfo;
   /** Share code this list was imported from, so opening the same link twice doesn't duplicate it. */
   importedFrom?: string;
+  /** A list just made, not saved yet: kept out of "Mes listes" until "Enregistrer". */
+  draft?: boolean;
   createdAt: number;
   updatedAt: number;
   openedAt: number;

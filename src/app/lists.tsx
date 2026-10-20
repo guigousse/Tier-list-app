@@ -32,10 +32,10 @@ export default function Lists() {
   const [renaming, setRenaming] = useState<TierList | null>(null);
   const [newTitle, setNewTitle] = useState('');
 
-  const ownCount = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular).length, [lists]);
+  const ownCount = useMemo(() => Object.values(lists).filter((l) => !l.daily && !l.popular && !l.draft).length, [lists]);
   const data = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let items = Object.values(lists).filter((l) => !l.daily && !l.popular && (!q || l.title.toLowerCase().includes(q)));
+    let items = Object.values(lists).filter((l) => !l.daily && !l.popular && !l.draft && (!q || l.title.toLowerCase().includes(q)));
     if (sort === 'favorites') items = items.filter((l) => l.favorite);
     return items.sort((a, b) => {
       if (sort === 'name') return a.title.localeCompare(b.title, locale);

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,7 +30,7 @@ import { useMail } from '../../store/useMail';
 import { playClick } from '../../lib/sound';
 import { useResponsive } from '../../lib/layout';
 import { POOL, type Card, type TierList, type Zone } from '../../store/types';
-import { rankingOf, useTierStore } from '../../store/useTierStore';
+import { isUntouchedDraft, rankingOf, useTierStore } from '../../store/useTierStore';
 import { Clickable } from '../../components/Clickable';
 import { own } from '../../lib/own';
 import { track } from '../../lib/analytics';
@@ -165,6 +165,8 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
 
   const save = () => {
     playClick();
+    // A new list joins "Mes listes" now.
+    store.keepList(list.id);
     setEditing(false);
     setCardSheet(null);
     setEditingTierId(null);
@@ -218,6 +220,49 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
     showResults();
   };
 
+  // Leaving a new list never saved: nothing in it, it goes quietly; with the player's
+  // work in it (AI cards are paid for), they choose. Every way out: back, gesture, replace.
+  const navigation = useNavigation();
+  const leaving = useRef(false);
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (e) => {
+        const current = useTierStore.getState().lists[list.id];
+        if (leaving.current || !current?.draft) return;
+        const drop = () => setTimeout(() => useTierStore.getState().deleteList(list.id), 300);
+        if (isUntouchedDraft(current)) {
+          drop();
+          return;
+        }
+        // No dialog on the web build (screenshots): the work is kept.
+        if (Platform.OS === 'web') {
+          useTierStore.getState().keepList(list.id);
+          return;
+        }
+        e.preventDefault();
+        Alert.alert(t('editor.draftTitle'), t('editor.draftBody'), [
+          { text: t('editor.cancel'), style: 'cancel' },
+          {
+            text: t('editor.discard'),
+            style: 'destructive',
+            onPress: () => {
+              leaving.current = true;
+              navigation.dispatch(e.data.action);
+              drop();
+            },
+          },
+          {
+            text: t('editor.save'),
+            onPress: () => {
+              useTierStore.getState().keepList(list.id);
+              navigation.dispatch(e.data.action);
+            },
+          },
+        ]);
+      }),
+    [navigation, list.id, t],
+  );
+
   const confirmDelete = () =>
     Alert.alert(t('editor.deleteTitle'), t('editor.deleteBody', { title: list.title }), [
       { text: t('editor.cancel'), style: 'cancel' },
@@ -225,6 +270,7 @@ function Editor({ list, editing, setEditing }: { list: TierList; editing: boolea
         text: t('editor.delete'),
         style: 'destructive',
         onPress: () => {
+          leaving.current = true;
           router.back();
           setTimeout(() => store.deleteList(list.id), 300);
         },

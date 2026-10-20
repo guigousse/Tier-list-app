@@ -12,6 +12,7 @@ import { copiesByKey } from './publicSync';
 /**
  * Creates a tier list (classic S → D tiers, or the template's) and opens it in the
  * editor in edit mode, where its title, tiers and cards can be customised right away.
+ * It stays a draft, out of the player's lists, until they save it.
  */
 export function createAndOpen(template?: Template): void {
   const store = useTierStore.getState();
@@ -22,6 +23,8 @@ export function createAndOpen(template?: Template): void {
     cardLabels: template?.items,
     cardRanks: template?.ranks,
     emoji: template?.emoji,
+    // In "Mes listes" only once saved.
+    draft: true,
   });
   router.push({ pathname: '/editor/[id]', params: { id, edit: '1' } });
   if (template?.appStoreIds) attachAppIcons(id, template).catch(() => {});

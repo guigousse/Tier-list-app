@@ -57,6 +57,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!hydrated) return;
+    // Lists left as drafts by an app closed in the editor.
+    useTierStore.getState().dropDrafts();
     SplashScreen.hideAsync().catch(() => {});
     // Sounds loaded now, so the first tap isn't silent.
     preloadSounds();

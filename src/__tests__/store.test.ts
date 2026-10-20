@@ -113,3 +113,26 @@ describe('template favourites', () => {
     expect(useTierStore.getState().favoriteTemplates).not.toContain('fruits');
   });
 });
+
+describe('new lists as drafts', () => {
+  it('stays a draft until saved', () => {
+    const id = store().createList({ title: 'T', tierLabels: ['S', 'A'], draft: true });
+    expect(store().lists[id].draft).toBe(true);
+    store().keepList(id);
+    expect(store().lists[id].draft).toBeUndefined();
+  });
+
+  it('drops at launch the drafts with nothing in them, keeps those with the player’s work', () => {
+    const empty = store().createList({ title: 'Vide', tierLabels: ['S'], draft: true });
+    const untouched = store().createList({ title: 'Modèle', tierLabels: ['S'], cardLabels: ['x'], draft: true });
+    const worked = store().createList({ title: 'Faite', tierLabels: ['S'], draft: true });
+    useTierStore.setState((s) => ({ lists: { ...s.lists, [worked]: { ...s.lists[worked], createdAt: 1, updatedAt: 2 } } }));
+    store().addCard(worked, { label: 'Carte', color: '#000000' });
+    const saved = store().createList({ title: 'Enregistrée', tierLabels: ['S'] });
+    store().dropDrafts();
+    expect(store().lists[empty]).toBeUndefined();
+    expect(store().lists[untouched]).toBeUndefined();
+    expect(store().lists[worked].draft).toBeUndefined();
+    expect(store().lists[saved]).toBeDefined();
+  });
+});

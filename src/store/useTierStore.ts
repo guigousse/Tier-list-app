@@ -57,6 +57,8 @@ type NewListInput = {
   /** Where the list comes from (e.g. "daily:2026-10-13"), to find it again instead of duplicating it. */
   importedFrom?: string;
   emoji?: string;
+  /** A new list the player still has to save ("Enregistrer") to see it in their lists. */
+  draft?: boolean;
 };
 
 type State = {
@@ -99,6 +101,13 @@ type State = {
   /** Marks a received list as ranked and sent back. */
   markMailAnswered: (listId: string) => void;
   deleteList: (id: string) => void;
+  /** Saves a draft: it joins the player's lists. */
+  keepList: (id: string) => void;
+  /**
+   * At launch, drafts left by an app closed in the editor: dropped if nothing was put
+   * in them, kept as lists otherwise (the player's work, AI cards included, isn't lost).
+   */
+  dropDrafts: () => void;
   duplicateList: (id: string) => string | undefined;
   renameList: (id: string, title: string) => void;
   toggleFavorite: (id: string) => void;
@@ -151,6 +160,11 @@ const DEFAULT_SETTINGS: Settings = {
   region: 'auto',
   regionAsked: false,
 };
+
+/** A draft with nothing to keep: no card, or never changed since it was made. */
+export function isUntouchedDraft(list: TierList): boolean {
+  return Object.keys(list.cards).length === 0 || list.updatedAt === list.createdAt;
+}
 
 /** Tier index (0 = S …) of each card of `cardIds`, or null if one isn't ranked. */
 export function rankingOf(list: TierList, cardIds: string[]): number[] | null {
@@ -260,7 +274,7 @@ export const useTierStore = create<State>()(
         walletSecret: null,
         walletAttested: false,
 
-        createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji }) => {
+        createList: ({ title, tierLabels, cardLabels = [], cardRanks = [], importedFrom, emoji, draft }) => {
           const now = Date.now();
           const tiers = buildTiers(tierLabels.length ? tierLabels : ['S']);
           const cards: Record<string, Card> = {};
@@ -283,6 +297,7 @@ export const useTierStore = create<State>()(
             favorite: false,
             importedFrom,
             emoji,
+            ...(draft ? { draft: true } : {}),
             createdAt: now,
             updatedAt: now,
             openedAt: now,
@@ -347,6 +362,22 @@ export const useTierStore = create<State>()(
             delete lists[id];
             return { lists };
           });
+        },
+
+        keepList: (id) =>
+          set((state) => {
+            const list = own(state.lists, id);
+            if (!list?.draft) return state;
+            const { draft: _, ...kept } = list;
+            return { lists: { ...state.lists, [id]: kept } };
+          }),
+
+        dropDrafts: () => {
+          for (const list of Object.values(get().lists)) {
+            if (!list.draft) continue;
+            if (isUntouchedDraft(list)) get().deleteList(list.id);
+            else get().keepList(list.id);
+          }
         },
 
         duplicateList: (id) => {
