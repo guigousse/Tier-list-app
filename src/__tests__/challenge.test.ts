@@ -83,6 +83,13 @@ describe('a list opened from a share link', () => {
     expect(store().importList(shared)).toBe(id);
   });
 
+  it('its cards keep the pictures that came with them', () => {
+    const icon = 'https://mefhdtpyhtvplpfleyhi.supabase.co/storage/v1/object/public/card-icons/apple';
+    const id = store().importList({ ...shared, code: 'PICT22', cards: shared.cards.map((c, i) => (i === 0 ? { ...c, iconUrl: icon } : c)) });
+    const list = store().lists[id];
+    expect(list.challenge!.cardIds.map((cid) => list.cards[cid].iconUrl)).toEqual([icon, undefined, undefined]);
+  });
+
   it('from an offline link: no code to credit anyone with', () => {
     const fromLink = decodeShared(offlineLink(own))!;
     const id = store().importList(fromLink);

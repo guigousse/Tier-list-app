@@ -269,7 +269,7 @@ export const useTierStore = create<State>()(
         const pool: string[] = [];
         for (const c of shared.cards) {
           const id = newId();
-          cards[id] = { id, label: c.label, color: c.color };
+          cards[id] = { id, label: c.label, color: c.color, ...(c.iconUrl ? { iconUrl: c.iconUrl } : {}) };
           if (c.tier >= 0) placement[tiers[c.tier].id].push(id);
           else pool.push(id);
         }

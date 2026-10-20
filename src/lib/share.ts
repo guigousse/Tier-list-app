@@ -16,10 +16,19 @@ export type SharedList = {
   title: string;
   tiers: { label: string; color: string }[];
   /** `tier` is the index in `tiers`, or -1 when the card is not ranked. */
-  cards: { label: string; color: string; tier: number }[];
+  cards: { label: string; color: string; tier: number; iconUrl?: string }[];
 };
 
 const VERSION = 1;
+
+/**
+ * Pictures a shared card may carry: the drawn icons of the app's own library. Anything else
+ * (a photo of the phone, a link from elsewhere) stays behind: whoever opens the list sees
+ * nothing the app did not draw itself.
+ */
+const ICON_LIBRARY = 'https://mefhdtpyhtvplpfleyhi.supabase.co/storage/v1/object/public/';
+const libraryIcon = (v: unknown): string | undefined =>
+  typeof v === 'string' && v.startsWith(ICON_LIBRARY) && v.length <= 300 && !v.includes('..') ? v : undefined;
 /**
  * Website serving the share pages (share-site/ deployed on Vercel). iOS opens
  * https://SHARE_HOST/import?d=… links straight in the app thanks to the
@@ -85,7 +94,8 @@ function utf8Decode(bytes: number[]): string {
   return out;
 }
 
-type Payload = { v: number; t: string; r: [string, string][]; c: [string, string, number][]; f?: string };
+// A card's picture is a 4th element: older apps read the first three and ignore it.
+type Payload = { v: number; t: string; r: [string, string][]; c: ([string, string, number] | [string, string, number, string])[]; f?: string };
 
 /**
  * JSON form of `list` shared through links and codes. `from`: the sharer's pseudo, shown
@@ -101,7 +111,13 @@ export function toPayload(list: TierList, from?: string): Payload {
     v: VERSION,
     t: list.title,
     r: list.tiers.map((t) => [t.label, t.color]),
-    c: ordered.filter(([id]) => list.cards[id]).map(([id, tier]) => [list.cards[id].label, list.cards[id].color, tier]),
+    c: ordered
+      .filter(([id]) => list.cards[id])
+      .map(([id, tier]) => {
+        const { label, color, iconUrl } = list.cards[id];
+        const icon = libraryIcon(iconUrl);
+        return icon ? [label, color, tier, icon] : [label, color, tier];
+      }),
     ...(from ? { f: from } : {}),
   };
 }
@@ -138,11 +154,15 @@ export function parsePayload(data: unknown, code: string): SharedList | null {
   const cards = (d.c as unknown[])
     .slice(0, MAX_CARDS)
     .filter(Array.isArray)
-    .map(([label, color, tier]) => ({
-      label: text(label, 80),
-      color: isHex(color) ? color : '#2B2F3A',
-      tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
-    }));
+    .map(([label, color, tier, icon]) => {
+      const iconUrl = libraryIcon(icon);
+      return {
+        label: text(label, 80),
+        color: isHex(color) ? color : '#2B2F3A',
+        tier: typeof tier === 'number' && Number.isInteger(tier) && tier >= 0 && tier < tiers.length ? tier : -1,
+        ...(iconUrl ? { iconUrl } : {}),
+      };
+    });
   // A list sent without a title: named in the language of the moment, as a list made here would be.
   // Pseudos are 20 characters at most on the server.
   const from = text(d.f, 20).trim();

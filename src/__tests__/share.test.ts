@@ -48,6 +48,35 @@ describe('share codec', () => {
   });
 });
 
+describe('card pictures in a shared list', () => {
+  const ICON = 'https://mefhdtpyhtvplpfleyhi.supabase.co/storage/v1/object/public/card-icons/apple';
+  const withIcons: TierList = {
+    ...list,
+    cards: {
+      a: { ...list.cards.a, iconUrl: ICON },
+      b: { ...list.cards.b, iconUrl: 'https://evil.example/x.png' },
+      c: list.cards.c,
+    },
+  };
+
+  it('a card of the icon library comes with its picture; a picture from elsewhere or a photo of the phone does not', () => {
+    expect(decodeShared(offlineLink(withIcons))?.cards).toEqual([
+      { label: 'Été ☀️', color: '#FFFFFF', tier: 0 },
+      { label: '🍎 Pomme', color: '#2B2F3A', tier: 0, iconUrl: ICON },
+      { label: '', color: '#1E88E5', tier: -1 },
+    ]);
+  });
+
+  it('a payload naming a picture outside the library: the card arrives without it', () => {
+    const payload = { ...toPayload(list), c: [['X', '#000000', 0, 'https://evil.example/x.png'], ['Y', '#000000', 0, 42]] };
+    const code = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    expect(decodeShared(code)?.cards).toEqual([
+      { label: 'X', color: '#000000', tier: 0 },
+      { label: 'Y', color: '#000000', tier: 0 },
+    ]);
+  });
+});
+
 describe('normalizeCode', () => {
   it('accepts codes typed loosely or inside a short link', () => {
     expect(normalizeCode('k7f-3qx')).toBe('K7F3QX');

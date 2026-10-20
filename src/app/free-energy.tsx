@@ -9,11 +9,13 @@ import { Clickable } from '../components/Clickable';
 import { ENERGY, EnergyAmount } from '../components/Energy';
 import { PurchaseBurst } from '../components/PurchaseBurst';
 import { ShareSheet } from '../components/ShareSheet';
+import { Sticker } from '../components/Sticker';
 import { Button, Chip, Sheet, type IconName } from '../components/ui';
 import { useBoltShow } from '../components/useBoltShow';
 import { colors, radius, spacing } from '../constants/theme';
 import { openWallet, useCredits } from '../lib/credits';
 import { useLocalizeList } from '../lib/i18n/useContent';
+import { listCover } from '../lib/listCover';
 import { useT } from '../lib/i18n/useT';
 import { useResponsive } from '../lib/layout';
 import {
@@ -27,6 +29,7 @@ import {
   useReferrals,
 } from '../lib/referrals';
 import { adsSupported, nextAdText, refreshAdStatus, useRewardedAd, watchAd } from '../lib/rewardedAd';
+import { useCatalog, usePopularTemplates } from '../store/useCatalog';
 import type { TierList } from '../store/types';
 import { useTierStore } from '../store/useTierStore';
 
@@ -64,6 +67,11 @@ export default function FreeEnergy() {
   const lists = useTierStore((s) => s.lists);
   const tabs = useMemo(() => inviteTabs(lists), [lists]);
   const localize = useLocalizeList();
+  // A public list shows its cover, as in the catalogue: its favourite card's picture.
+  const popular = usePopularTemplates();
+  const tops = useCatalog((s) => s.tops);
+  const icons = useCatalog((s) => s.icons);
+  const covers = useMemo(() => new Map(popular.map((tpl) => [tpl.key, listCover(tpl, tops, icons)])), [popular, tops, icons]);
   const [picking, setPicking] = useState(false);
   const [tab, setTab] = useState<'mine' | 'public'>('mine');
   const [shareFor, setShareFor] = useState<TierList | null>(null);
@@ -212,8 +220,8 @@ export default function FreeEnergy() {
       <Sheet visible={picking} onClose={() => setPicking(false)} title={t('app.free.pickList')}>
         <View style={{ gap: spacing.sm }}>
           <View style={styles.tabs}>
-            <Chip label={t('app.free.tabMine')} selected={tab === 'mine'} onPress={() => setTab('mine')} />
-            <Chip label={t('app.free.tabPublic')} selected={tab === 'public'} onPress={() => setTab('public')} />
+            <Chip label={t('app.free.tabMine')} selected={tab === 'mine'} onPress={() => setTab('mine')} style={styles.tab} />
+            <Chip label={t('app.free.tabPublic')} selected={tab === 'public'} onPress={() => setTab('public')} style={styles.tab} />
           </View>
           {picks.length === 0 ? (
             <Text style={[styles.muted, styles.empty]}>{t(tab === 'mine' ? 'app.free.noMine' : 'app.free.noList')}</Text>
@@ -229,7 +237,13 @@ export default function FreeEnergy() {
               }}
               style={({ pressed }) => [styles.pick, pressed && { opacity: 0.7 }]}
             >
-              {list.emoji ? <Text style={styles.pickEmoji}>{list.emoji}</Text> : <Ionicons name="list" size={20} color={colors.textMuted} />}
+              {list.popular ? (
+                <Sticker url={covers.get(list.popular.key)?.url} emoji={covers.get(list.popular.key)?.emoji ?? list.emoji ?? '⭐'} size={40} />
+              ) : list.emoji ? (
+                <Text style={styles.pickEmoji}>{list.emoji}</Text>
+              ) : (
+                <Ionicons name="list" size={20} color={colors.textMuted} />
+              )}
               <Text numberOfLines={1} style={styles.pickTitle}>
                 {/* A public list in the player's language, as in the gallery. */}
                 {list.popular ? localize(list).title : list.title}
@@ -270,7 +284,8 @@ const styles = StyleSheet.create({
   soonText: { color: colors.textMuted, fontSize: 12, fontWeight: '800' },
   round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   step: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  tabs: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
+  tabs: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  tab: { flex: 1, maxWidth: 200, alignItems: 'center', paddingVertical: 10 },
   empty: { textAlign: 'center', paddingVertical: spacing.md },
   stepNumber: {
     position: 'absolute',
