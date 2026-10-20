@@ -15,11 +15,11 @@ import { colors, radius } from '../../constants/theme';
 /** Size of the pointing finger. Declared before the worklets that capture it. */
 export const FINGER = 44;
 
-/** Shared props of the welcome scenes. */
-export type SceneProps = { width: number; active: boolean };
+/** Shared props of the welcome scenes. `once`: played to the end and held, not looped. */
+export type SceneProps = { width: number; active: boolean; once?: boolean };
 
-/** Time of the loop, from 0 to 1, replayed while the scene is shown. */
-export function useLoop(active: boolean, duration: number): SharedValue<number> {
+/** Time of the loop, from 0 to 1, replayed while the scene is shown (played once with `once`). */
+export function useLoop(active: boolean, duration: number, once = false): SharedValue<number> {
   const t = useSharedValue(0);
   useEffect(() => {
     if (!active) {
@@ -28,9 +28,10 @@ export function useLoop(active: boolean, duration: number): SharedValue<number> 
       return;
     }
     t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration, easing: Easing.linear }), -1, false);
+    const play = withTiming(1, { duration, easing: Easing.linear });
+    t.value = once ? play : withRepeat(play, -1, false);
     return () => cancelAnimation(t);
-  }, [active, duration, t]);
+  }, [active, duration, once, t]);
   return t;
 }
 

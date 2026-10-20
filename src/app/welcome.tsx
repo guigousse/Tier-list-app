@@ -1,36 +1,62 @@
 import { router } from 'expo-router';
-import { useRef, useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CreateScene, DailyScene, DuelScene, TiersScene } from '../components/onboarding/OtherScenes';
-import { RankingScene, sceneHeight } from '../components/onboarding/RankingScene';
+import { RANKING_DURATION, RankingScene, sceneHeight } from '../components/onboarding/RankingScene';
+import { CREATE_SHARE_CAPTIONS, CREATE_SHARE_DURATION, CreateShareScene, HELLO_DURATION, HelloScene } from '../components/onboarding/StoryScenes';
 import { ProfileForm } from '../components/ProfileForm';
 import { Button } from '../components/ui';
 import { colors, spacing } from '../constants/theme';
 import { useT } from '../lib/i18n/useT';
 import { useTierStore } from '../store/useTierStore';
 
-type Scene = ComponentType<{ width: number; height: number; active: boolean }>;
+type Scene = ComponentType<{ width: number; height: number; active: boolean; once?: boolean }>;
 
-// Captions as text keys: read in the language of the moment.
-const SLIDES: { Scene: Scene; caption: string }[] = [
-  { Scene: RankingScene, caption: 'app.welcome.slide1' },
-  { Scene: CreateScene, caption: 'app.welcome.slide2' },
-  { Scene: TiersScene, caption: 'app.welcome.slide3' },
-  { Scene: DailyScene, caption: 'app.welcome.slide4' },
-  { Scene: DuelScene, caption: 'app.welcome.slide5' },
+/**
+ * The welcome story, chapter by chapter: each plays once, then the next follows.
+ * `captions`: when each caption shows (ms) and its text key, read in the language of the moment.
+ */
+const CHAPTERS: { Scene: Scene; duration: number; captions: [number, string][] }[] = [
+  { Scene: HelloScene, duration: HELLO_DURATION, captions: [[0, 'app.welcome.hello']] },
+  { Scene: RankingScene, duration: RANKING_DURATION, captions: [[0, 'app.welcome.slide1']] },
+  {
+    Scene: CreateShareScene,
+    duration: CREATE_SHARE_DURATION,
+    captions: [
+      [CREATE_SHARE_CAPTIONS[0], 'app.welcome.create'],
+      [CREATE_SHARE_CAPTIONS[1], 'app.welcome.share'],
+      [CREATE_SHARE_CAPTIONS[2], 'app.welcome.compare'],
+    ],
+  },
 ];
 
-/** Shown on the first launch, over the blurred home screen: animated scenes of the app. */
+/** A chapter's bar at the top: filling while it plays, full once seen. */
+function Segment({ state, duration }: { state: 'done' | 'playing' | 'next'; duration: number }) {
+  const fill = useSharedValue(state === 'done' ? 1 : 0);
+  useEffect(() => {
+    fill.value = state === 'done' ? 1 : 0;
+    if (state === 'playing') fill.value = withTiming(1, { duration, easing: Easing.linear });
+  }, [state, duration, fill]);
+  const style = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
+  return (
+    <View style={styles.segment}>
+      <Animated.View style={[styles.segmentFill, style]} />
+    </View>
+  );
+}
+
+/** Shown on the first launch, over the blurred home screen: the story of the app, then the player profile. */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { t } = useT();
-  const scroll = useRef<ScrollView>(null);
-  const [page, setPage] = useState(0);
-  const last = page === SLIDES.length - 1;
-  // After the slides: the player profile, unless it already exists.
+  const [chapter, setChapter] = useState(0);
+  // The caption shown, for the chapter it belongs to (a new chapter starts at its first).
+  const [shown, setShown] = useState({ chapter: 0, caption: 0 });
+  const last = chapter === CHAPTERS.length - 1;
+  // After the story: the player profile, unless it already exists.
   const [profileStep, setProfileStep] = useState(false);
   const hasProfile = useTierStore((s) => Boolean(s.profile));
 
@@ -40,11 +66,21 @@ export default function Welcome() {
   while (sceneW > 220 && sceneHeight(sceneW) > room) sceneW -= 10;
   const sceneH = sceneHeight(sceneW);
 
+  // The captions of the chapter in time with it, then the next chapter (the last one stays).
+  const { Scene, duration, captions } = CHAPTERS[chapter];
+  const caption = shown.chapter === chapter ? shown.caption : 0;
+  useEffect(() => {
+    const timers = captions.slice(1).map(([at], i) => setTimeout(() => setShown({ chapter, caption: i + 1 }), at));
+    if (!last) timers.push(setTimeout(() => setChapter((c) => c + 1), duration + 400));
+    return () => timers.forEach(clearTimeout);
+  }, [chapter, captions, duration, last]);
+
   const finish = () => {
     useTierStore.getState().updateSettings({ onboarded: true });
     if (router.canGoBack()) router.back();
     else router.replace('/');
   };
+  const toProfile = () => (hasProfile ? finish() : setProfileStep(true));
 
   return (
     <View style={styles.root}>
@@ -70,48 +106,28 @@ export default function Welcome() {
           </ScrollView>
         </KeyboardAvoidingView>
       ) : (
-        <View
-          style={{
-            flex: 1,
-            paddingTop: insets.top + spacing.sm,
-            paddingBottom: insets.bottom + spacing.lg,
-          }}
-        >
-          <View style={styles.skipRow}>
-            {last ? null : <Button variant="ghost" label={t('app.welcome.skip')} onPress={() => (hasProfile ? finish() : setProfileStep(true))} />}
+        <View style={{ flex: 1, paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.lg }}>
+          <View style={styles.segments}>
+            {CHAPTERS.map((c, i) => (
+              <Segment key={i} duration={c.duration} state={i < chapter ? 'done' : i === chapter ? 'playing' : 'next'} />
+            ))}
           </View>
-          <ScrollView
-            ref={scroll}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-            contentContainerStyle={{ alignItems: 'center' }}
-          >
-            {SLIDES.map(({ Scene, caption }, i) => (
-              <View key={i} style={[styles.slide, { width }]}>
-                <Scene width={sceneW} height={sceneH} active={i === page} />
-                <Text style={styles.caption}>{t(caption)}</Text>
-              </View>
-            ))}
-          </ScrollView>
-          <View style={styles.dots}>
-            {SLIDES.map((_, i) => (
-              <View key={i} style={[styles.dot, i === page && styles.dotActive]} />
-            ))}
+          <View style={styles.skipRow}>
+            {last ? null : <Button variant="ghost" label={t('app.welcome.skip')} onPress={toProfile} />}
+          </View>
+          <View style={styles.slide}>
+            <Animated.View key={chapter} entering={FadeIn.duration(400)}>
+              <Scene width={sceneW} height={sceneH} active once />
+            </Animated.View>
+            <Animated.Text key={`${chapter}-${caption}`} entering={FadeInDown.duration(350)} style={styles.caption}>
+              {t(captions[caption][1])}
+            </Animated.Text>
           </View>
           <View style={styles.footer}>
             <Button
               label={last ? t('app.letsGo') : t('app.welcome.next')}
               icon={last ? 'checkmark' : 'arrow-forward'}
-              onPress={() => {
-                if (last) return hasProfile ? finish() : setProfileStep(true);
-                scroll.current?.scrollTo({
-                  x: (page + 1) * width,
-                  animated: true,
-                });
-                setPage(page + 1);
-              }}
+              onPress={() => (last ? toProfile() : setChapter(chapter + 1))}
             />
           </View>
         </View>
@@ -130,6 +146,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   slide: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xl,
@@ -158,19 +175,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginVertical: spacing.md,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  dotActive: { width: 22, backgroundColor: colors.primary },
+  segments: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  segment: { flex: 1, height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)' },
+  segmentFill: { height: 4, borderRadius: 2, backgroundColor: colors.primary },
   footer: {
     paddingHorizontal: spacing.lg,
     width: '100%',

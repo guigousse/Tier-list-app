@@ -36,7 +36,8 @@ const ROWS: { name: string; emoji: string }[][] = [
 /** Share of players per tier for Broc, shown once the ranking is validated. */
 const BROC_VOTES = [72, 16, 7, 3, 2];
 
-const DURATION = 8000;
+export const RANKING_DURATION = 8000;
+const DURATION = RANKING_DURATION;
 
 /** Height of the scenes for a given width (the ranking scene sets it, the others match). */
 export function sceneHeight(W: number): number {
@@ -66,9 +67,9 @@ function useIcons(): Record<string, string> {
  * First welcome scene: a finger drags Broc into the S tier, taps « Valider »,
  * and the players' statistics appear.
  */
-export function RankingScene({ width: W, active }: SceneProps) {
+export function RankingScene({ width: W, active, once }: SceneProps) {
   const icons = useIcons();
-  const t = useLoop(active, DURATION);
+  const t = useLoop(active, DURATION, once);
   // `t` is the loop's clock here: the texts go through `tr`.
   const { t: tr } = useT();
 
