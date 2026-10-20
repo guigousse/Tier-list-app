@@ -43,6 +43,7 @@ const SERVER_ERRORS: [string, string][] = [
   ['unknown profile', 'social.error.unknownProfile'],
   ['content refused', 'social.error.contentRefused'],
   ['mail not found', 'social.error.mailNotFound'],
+  ['mail expired', 'social.error.mailExpired'],
   ['too many requests', 'social.error.tooMany'],
 ];
 

@@ -33,6 +33,18 @@ type MailState = {
   markSeen: (id: string) => void;
 };
 
+/** A list sent to a friend expires after this many days without an answer (server rule). */
+export const MAIL_DAYS = 7;
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Days left to rank a list sent at `sentAt` (1: its last day, 0: expired). */
+export function mailDaysLeft(sentAt: string, now = Date.now()): number {
+  return Math.max(0, Math.ceil((Date.parse(sentAt) + MAIL_DAYS * DAY - now) / DAY));
+}
+
+/** Still in the mailboxes: ranked, or waiting less than MAIL_DAYS days. */
+const live = (m: Mail) => m.status === 'ranked' || mailDaysLeft(m.sentAt) > 0;
+
 let refreshing: Promise<void> | null = null;
 
 /** Received and sent tier lists, fetched from the server (not kept on the device). */
@@ -69,12 +81,15 @@ export const useMail = create<MailState>()((set, get) => ({
               }
             : null;
         };
+        const received = inbox.map((r) => toMail(r, r.from, true)).filter((m): m is Mail => m !== null && live(m));
         set({
-          inbox: inbox.map((r) => toMail(r, r.from, true)).filter((m): m is Mail => m !== null),
-          outbox: outbox.map((r) => toMail(r, r.to, r.seen)).filter((m): m is Mail => m !== null),
+          inbox: received,
+          outbox: outbox.map((r) => toMail(r, r.to, r.seen)).filter((m): m is Mail => m !== null && live(m)),
           loaded: true,
           offline: false,
         });
+        // Received lists gone from the server (expired, ignored): their copy to rank goes too.
+        useTierStore.getState().dropGoneMail(received.map((m) => m.id));
       })
       .catch(() => set({ loaded: true, offline: true }))
       .finally(() => {

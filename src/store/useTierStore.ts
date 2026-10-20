@@ -115,6 +115,8 @@ type State = {
   receiveMail: (mail: { id: string; from: string; list: SharedList }, again?: boolean) => string;
   /** Marks a received list as ranked and sent back. */
   markMailAnswered: (listId: string) => void;
+  /** Copies of received lists not ranked yet whose mail is no longer in the inbox (expired, ignored). */
+  dropGoneMail: (inboxIds: string[]) => void;
   deleteList: (id: string) => void;
   /** Saves a draft: it joins the player's lists. */
   keepList: (id: string) => void;
@@ -414,6 +416,13 @@ export const useTierStore = create<State>()(
         },
 
         markMailAnswered: (listId) => patchList(listId, (l) => (l.mail ? { mail: { ...l.mail, answeredAt: Date.now() } } : {})),
+
+        dropGoneMail: (inboxIds) => {
+          const live = new Set(inboxIds);
+          Object.values(get().lists)
+            .filter((l) => l.mail && !l.mail.answeredAt && !live.has(l.mail.id))
+            .forEach((l) => get().deleteList(l.id));
+        },
 
         deleteList: (id) => {
           const list = get().lists[id];

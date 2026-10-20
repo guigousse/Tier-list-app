@@ -20,7 +20,7 @@ export const PRIVACY_EN: LegalSection[] = [
       'When you submit the daily tier list or a public list: your ranking and the app’s random ID, to calculate the average ranking and prevent duplicate votes.',
       'When you open a public list or add it to your favorites: the list in question and the random ID, for view and favorite counts and trends.',
       'If you create a player profile: your username, its number, your avatar and badges, your friends and friend requests, the players you block, and the reports you make or receive. The profile is linked to the app’s random ID. Your friends see your username, your avatar and your submitted rankings (daily tier lists and public lists, never your personal lists).',
-      'When you send a tier list to friends: its title, its tiers and the names of its cards (never the photos), your ranking and your friends’ rankings, to compare them. Only you and the friends you sent it to can see it; it is kept for 90 days.',
+      'When you send a tier list to friends: its title, its tiers and the names of its cards (never the photos), your ranking and your friends’ rankings, to compare them. Only you and the friends you sent it to can see it; it is deleted after 7 days if it hasn’t been ranked, after 90 days otherwise.',
       'If you turn on notifications with a profile: the device’s notification token, to let you know when a friend sends you a tier list or ranks yours.',
       'If you have a profile: the app’s language, so notifications sent by the server are written to you in that language.',
       'When you vote on a list restricted to players from one country (an election, for example): the country inferred from your IP address is checked at that moment; it is not stored. The region you choose in the app stays on your phone.',
@@ -59,7 +59,7 @@ export const PRIVACY_EN: LegalSection[] = [
   {
     title: 'How long we keep data',
     paragraphs: [
-      'Shared tier lists are deleted if nobody has opened them in 6 months. Tier lists sent to friends are no longer shown after 90 days. Votes are kept for statistics. Wallet and purchase history is kept for accounting and for handling refunds. IP addresses are deleted after 24 hours. A profile is kept until you ask for it to be deleted.',
+      'Shared tier lists are deleted if nobody has opened them in 6 months. Tier lists sent to friends are deleted after 7 days if they haven’t been ranked, after 90 days otherwise. Votes are kept for statistics. Wallet and purchase history is kept for accounting and for handling refunds. IP addresses are deleted after 24 hours. A profile is kept until you ask for it to be deleted.',
     ],
   },
   {

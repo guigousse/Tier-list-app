@@ -20,7 +20,7 @@ export const PRIVACY_ES: LegalSection[] = [
       'Cuando envías la tier list del día o una lista pública: tu clasificación y el identificador aleatorio de la app, para calcular la clasificación media y evitar votos duplicados.',
       'Cuando abres una lista pública o la añades a favoritos: la lista en cuestión y el identificador aleatorio, para los contadores de visitas y de favoritos y las tendencias.',
       'Si creas un perfil de jugador: tu nombre de usuario, su número, tu avatar y tus insignias, tus amigos y solicitudes de amistad, los jugadores que bloqueas y las denuncias que haces o recibes. El perfil está vinculado al identificador aleatorio de la app. Tus amigos ven tu nombre de usuario, tu avatar y tus clasificaciones enviadas (tier lists del día y listas públicas, nunca tus listas personales).',
-      'Cuando envías una tier list a amigos: su título, sus niveles y el nombre de sus cartas (nunca las fotos), tu clasificación y la de tus amigos, para compararlas. Solo tú y los amigos destinatarios la ven; se conserva 90 días.',
+      'Cuando envías una tier list a amigos: su título, sus niveles y el nombre de sus cartas (nunca las fotos), tu clasificación y la de tus amigos, para compararlas. Solo tú y los amigos destinatarios la ven; se elimina después de 7 días si no se ha clasificado, o después de 90 días.',
       'Si activas las notificaciones con un perfil: el token de notificación del dispositivo, para avisarte cuando un amigo te envía una tier list o clasifica la tuya.',
       'Si tienes un perfil: el idioma de la app, para escribirte en ese idioma las notificaciones que envía el servidor.',
       'Cuando votas en una lista reservada a los jugadores de un país (unas elecciones, por ejemplo): el país deducido de tu dirección IP se comprueba en ese momento; no se conserva. La región que eliges en la app se queda en tu teléfono.',
@@ -59,7 +59,7 @@ export const PRIVACY_ES: LegalSection[] = [
   {
     title: 'Plazo de conservación',
     paragraphs: [
-      'Las tier lists compartidas se eliminan si nadie las ha abierto en 6 meses. Las tier lists enviadas a amigos dejan de mostrarse después de 90 días. Los votos se conservan para las estadísticas. El historial del monedero y de las compras se conserva para la contabilidad y la gestión de los reembolsos. Las direcciones IP se eliminan después de 24 horas. Un perfil se conserva mientras no pidas su eliminación.',
+      'Las tier lists compartidas se eliminan si nadie las ha abierto en 6 meses. Las tier lists enviadas a amigos se eliminan después de 7 días si no se han clasificado, y después de 90 días en caso contrario. Los votos se conservan para las estadísticas. El historial del monedero y de las compras se conserva para la contabilidad y la gestión de los reembolsos. Las direcciones IP se eliminan después de 24 horas. Un perfil se conserva mientras no pidas su eliminación.',
     ],
   },
   {

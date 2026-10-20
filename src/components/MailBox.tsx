@@ -6,7 +6,7 @@ import { colors, radius, spacing } from '../constants/theme';
 import { relativeTime } from '../lib/format';
 import { useT } from '../lib/i18n/useT';
 import { confirmIgnore, confirmReportMail, openMail } from '../lib/mail';
-import { isArchived, isToRank, mailAgreement, useMail, type Mail } from '../store/useMail';
+import { isArchived, isToRank, mailAgreement, mailDaysLeft, useMail, type Mail } from '../store/useMail';
 import { useTierStore } from '../store/useTierStore';
 import { Avatar } from './Avatar';
 import { Clickable } from './Clickable';
@@ -21,13 +21,15 @@ function MailRow({ mail, received }: { mail: Mail; received: boolean }) {
   const fresh = !received && ranked && !mail.seen;
   const when = relativeTime(Date.parse(mail.sentAt));
   const name = mail.friend.pseudo;
+  // Not answered yet: the days left before it expires.
+  const left = mail.status === 'sent' ? ` · ${t('social.daysLeft', { count: mailDaysLeft(mail.sentAt) })}` : '';
   const subtitle = received
     ? mail.auto
       ? t('social.fromAuto', { name })
-      : t('social.fromWhen', { name, when })
+      : t('social.fromWhen', { name, when }) + left
     : ranked
       ? t('social.theyRanked', { name })
-      : t('social.toPending', { name });
+      : t('social.toPending', { name }) + left;
 
   const more = () =>
     Alert.alert(mail.list.title, t('social.sentBy', { name }), [
