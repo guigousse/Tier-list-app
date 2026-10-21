@@ -1,7 +1,7 @@
 -- A tier list sent to a friend expires after 7 days without an answer: it leaves both
 -- mailboxes at once, can no longer be ranked, and is deleted by the daily cleanup. One
--- the friend ranked stays 90 days, as the privacy policy says (that purge, written in
--- 20261017010000_list_mail_purge.sql, wasn't in the cleanup run online).
+-- the friend ranked stays in both players' archives, with no time limit (the 90-day
+-- purge of 20261017010000_list_mail_purge.sql, never run online, is dropped).
 
 -- Ranked, or sent less than 7 days ago (ignored or reported ones stay "pending" for the
 -- sender until then, so they don't learn of it).
@@ -33,7 +33,7 @@ begin
           'recipient_ranks', to_jsonb(m.recipient_ranks))
         order by m.created_at desc)
       from public.list_mail m
-      where m.recipient = me and m.status in ('sent', 'ranked') and m.created_at > now() - interval '90 days'
+      where m.recipient = me and m.status in ('sent', 'ranked')
         and private.mail_live(m.status, m.created_at)
         and not private.is_blocked(m.sender, me)), '[]'::jsonb),
     'outbox', coalesce((
@@ -45,7 +45,7 @@ begin
           'recipient_ranks', case when m.status = 'ranked' then to_jsonb(m.recipient_ranks) end)
         order by m.created_at desc)
       from public.list_mail m
-      where m.sender = me and m.created_at > now() - interval '90 days'
+      where m.sender = me
         and private.mail_live(m.status, m.created_at)), '[]'::jsonb)
   );
 end;
@@ -175,8 +175,8 @@ language sql
 set search_path = ''
 as $$
   delete from public.shared_lists where coalesce(last_opened_at, created_at) < now() - interval '180 days';
-  -- Unanswered (or ignored) after 7 days; kept for moderation when reported.
+  -- Unanswered (or ignored) after 7 days; reported ones are kept 90 days for moderation.
   delete from public.list_mail where status in ('sent', 'ignored') and created_at < now() - interval '7 days';
-  delete from public.list_mail where created_at < now() - interval '90 days';
+  delete from public.list_mail where status = 'reported' and created_at < now() - interval '90 days';
   delete from private.rate_limits where window_start < now() - interval '1 day';
 $$;

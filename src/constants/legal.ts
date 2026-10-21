@@ -27,7 +27,7 @@ export const PRIVACY: LegalSection[] = [
       'Quand vous validez la tier list du jour ou une liste publique : votre classement et l’identifiant aléatoire de l’app, pour calculer le classement moyen et éviter les votes en double.',
       'Quand vous ouvrez une liste publique ou l’ajoutez en favori : la liste concernée et l’identifiant aléatoire, pour les compteurs de vues et de favoris et les tendances.',
       'Si vous créez un profil de joueur : votre pseudo, son numéro, votre avatar et vos badges, vos amis et demandes d’amis, les joueurs que vous bloquez, et les signalements que vous faites ou recevez. Le profil est relié à l’identifiant aléatoire de l’app. Vos amis voient votre pseudo, votre avatar et vos classements validés (tier lists du jour et listes publiques, jamais vos listes personnelles).',
-      'Quand vous envoyez une tier list à des amis : son titre, ses rangs et le nom de ses cartes (jamais les photos), votre classement et celui de vos amis, pour les comparer. Seuls vous et les amis destinataires la voient ; elle est supprimée après 7 jours si elle n’a pas été classée, après 90 jours sinon.',
+      'Quand vous envoyez une tier list à des amis : son titre, ses rangs et le nom de ses cartes (jamais les photos), votre classement et celui de vos amis, pour les comparer. Seuls vous et les amis destinataires la voient ; elle est supprimée après 7 jours si elle n’a pas été classée, et conservée dans vos archives sinon.',
       'Si vous activez les notifications avec un profil : le jeton de notification de l’appareil, pour vous prévenir quand un ami vous envoie une tier list ou classe la vôtre.',
       'Si vous avez un profil : la langue de l’app, pour vous écrire dans cette langue les notifications envoyées par le serveur.',
       'Quand vous votez pour une liste réservée aux joueurs d’un pays (une élection, par exemple) : le pays déduit de votre adresse IP est vérifié à ce moment-là ; il n’est pas conservé. La région que vous choisissez dans l’app reste sur votre téléphone.',
@@ -66,7 +66,7 @@ export const PRIVACY: LegalSection[] = [
   {
     title: 'Durée de conservation',
     paragraphs: [
-      'Les tier lists partagées sont supprimées si personne ne les a ouvertes depuis 6 mois. Les tier lists envoyées à des amis sont supprimées après 7 jours si elles n’ont pas été classées, après 90 jours sinon. Les votes sont conservés pour les statistiques. L’historique du porte-monnaie et des achats est conservé pour la comptabilité et la gestion des remboursements. Les adresses IP sont supprimées après 24 heures. Un profil est conservé tant que vous ne demandez pas sa suppression.',
+      'Les tier lists partagées sont supprimées si personne ne les a ouvertes depuis 6 mois. Les tier lists envoyées à des amis sont supprimées après 7 jours si elles n’ont pas été classées ; classées, elles restent dans les archives des deux amis jusqu’à la suppression de l’un des profils. Les votes sont conservés pour les statistiques. L’historique du porte-monnaie et des achats est conservé pour la comptabilité et la gestion des remboursements. Les adresses IP sont supprimées après 24 heures. Un profil est conservé tant que vous ne demandez pas sa suppression.',
     ],
   },
   {

@@ -729,8 +729,9 @@ export const useTierStore = create<State>()(
 
         markMailViewed: (mailId) =>
           set((state) =>
-            // Mail older than 90 days is gone from the server: the last 300 ids are plenty.
-            state.viewedMail.includes(mailId) ? state : { viewedMail: [...state.viewedMail, mailId].slice(-300) },
+            // Ranked lists stay in the archives for good: the last 2000 ids keep them there
+            // (an older one coming back would only show again among the lists received).
+            state.viewedMail.includes(mailId) ? state : { viewedMail: [...state.viewedMail, mailId].slice(-2000) },
           ),
 
         clearAll: () => {

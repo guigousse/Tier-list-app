@@ -41,11 +41,11 @@ begin
   if public.mail_sent_to(a_secret, list) <> '[]'::jsonb then raise exception 'FAIL: still counted as sent'; end if;
   if public.send_list(a_secret, array[b], list) <> 1 then raise exception 'FAIL: not sent again'; end if;
 
-  -- A list ranked in time stays, even past 7 days.
+  -- A list ranked in time stays in the archives, even after months.
   perform public.send_list(a_secret, array[b], other);
   select id into kept from public.list_mail where sender = a and payload->>'t' = 'Légumes';
   perform public.answer_mail(b_secret, kept, array[0, 1]::smallint[]);
-  update public.list_mail set created_at = now() - interval '20 days' where id = kept;
+  update public.list_mail set created_at = now() - interval '200 days' where id = kept;
   r := public.get_mail(a_secret);
   if not exists (select 1 from jsonb_array_elements(r->'outbox') m where m->>'id' = kept::text) then raise exception 'FAIL: ranked list hidden'; end if;
 
