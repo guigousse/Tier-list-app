@@ -1305,6 +1305,1145 @@
         "🦞 Lobster",
         "🍰 Yule log"
       ]
+    },
+    "2026-11-12": {
+      "title": "Savanna Animals",
+      "description": "Who's really king?",
+      "items": [
+        "🦁 Lion",
+        "🐘 Elephant",
+        "🦒 Giraffe",
+        "🦓 Zebra",
+        "🦛 Hippo",
+        "🦏 Rhino",
+        "🐆 Cheetah",
+        "🐺 Hyena",
+        "🐃 Wildebeest",
+        "🦦 Meerkat",
+        "🐊 Crocodile",
+        "🪶 Ostrich"
+      ]
+    },
+    "2026-11-13": {
+      "title": "Burger Toppings",
+      "description": "What makes the perfect burger.",
+      "items": [
+        "🧀 Cheddar",
+        "🥓 Bacon",
+        "🧅 Fried onions",
+        "🥒 Pickles",
+        "🍅 Tomato",
+        "🥬 Lettuce",
+        "🍳 Egg",
+        "🥑 Avocado",
+        "🍄 Mushrooms",
+        "🍖 Barbecue sauce",
+        "🌶️ Jalapeños",
+        "🍍 Pineapple"
+      ]
+    },
+    "2026-11-14": {
+      "title": "Playground Games",
+      "description": "The best playground memory.",
+      "items": [
+        "🙈 Hide and seek",
+        "🏃 Tag",
+        "🚦 Red light, green light",
+        "🔢 Hopscotch",
+        "🔮 Marbles",
+        "🎗️ Chinese jump rope",
+        "🪢 Jump rope",
+        "🏐 Dodgeball",
+        "🪑 Musical chairs",
+        "🌀 Spinning top",
+        "🪁 Kite"
+      ]
+    },
+    "2026-11-15": {
+      "title": "Sleeping Styles",
+      "description": "Everyone has their position.",
+      "items": [
+        "🛌 On your back",
+        "😴 On your stomach",
+        "⭐ Starfish",
+        "🦐 Curled up",
+        "🦵 One leg out",
+        "🌀 Duvet in a ball",
+        "🧸 With a teddy",
+        "🛏️ With 3 pillows",
+        "🪟 Window open",
+        "🌬️ With a fan"
+      ]
+    },
+    "2026-11-16": {
+      "title": "Eggs",
+      "description": "Fried or scrambled?",
+      "items": [
+        "🍳 Fried",
+        "🥄 Scrambled",
+        "🥚 Soft-boiled",
+        "🫕 Medium-boiled",
+        "⚪ Hard-boiled",
+        "🍳 Omelette",
+        "💧 Poached",
+        "🍲 Baked in a ramekin",
+        "🌼 Deviled",
+        "✨ Slow-cooked"
+      ]
+    },
+    "2026-11-17": {
+      "title": "Weather",
+      "description": "The weather that puts you in a good mood.",
+      "items": [
+        "☀️ Bright sunshine",
+        "🌦️ Drizzle",
+        "⛈️ Thunderstorm",
+        "❄️ Snow",
+        "🌫️ Fog",
+        "💨 Strong wind",
+        "🥵 Heatwave",
+        "🧊 Hail",
+        "🌈 Rainbow",
+        "☁️ Grey sky",
+        "🌨️ Frost"
+      ]
+    },
+    "2026-11-18": {
+      "title": "Dinosaurs",
+      "description": "Which one would have won?",
+      "items": [
+        "🦖 T. rex",
+        "🦕 Triceratops",
+        "🦎 Velociraptor",
+        "🦕 Diplodocus",
+        "🦖 Stegosaurus",
+        "🦅 Pterodactyl",
+        "🛡️ Ankylosaurus",
+        "🦕 Brachiosaurus",
+        "🐊 Spinosaurus",
+        "🎺 Parasaurolophus"
+      ]
+    },
+    "2026-11-19": {
+      "title": "Aperitif Drinks",
+      "description": "What are we toasting with?",
+      "items": [
+        "🍷 Red wine",
+        "🌸 Rosé",
+        "🍺 Beer",
+        "🥛 Pastis",
+        "🍹 Spritz",
+        "🍇 Kir",
+        "🍃 Mojito",
+        "🍏 Cider",
+        "🍾 Champagne",
+        "🍊 Sangria",
+        "🍅 Tomato juice",
+        "🧃 Fruit syrup"
+      ]
+    },
+    "2026-11-20": {
+      "title": "Aperitif Snacks",
+      "description": "Impossible to stop.",
+      "items": [
+        "🥔 Crisps",
+        "🥜 Peanuts",
+        "🫒 Olives",
+        "🥖 Dry sausage",
+        "🫙 Tapenade",
+        "🥣 Hummus",
+        "🥨 Pretzels",
+        "🍕 Mini pizzas",
+        "🥢 Breadsticks",
+        "🧀 Cheese cubes",
+        "🥑 Guacamole",
+        "🌮 Tortilla chips"
+      ]
+    },
+    "2026-11-21": {
+      "title": "TV Series Genres",
+      "description": "What you put on in the evening.",
+      "items": [
+        "😂 Sitcom",
+        "🕵️ Crime",
+        "🐉 Fantasy",
+        "🚀 Sci-fi",
+        "🎥 Reality TV",
+        "😱 Thriller",
+        "🌸 Anime",
+        "🏰 Period drama",
+        "🎞️ Docuseries",
+        "👻 Horror",
+        "🎒 Teen drama",
+        "💔 Soap opera"
+      ]
+    },
+    "2026-11-22": {
+      "title": "Childhood Toys",
+      "description": "The one you'd have kept.",
+      "items": [
+        "🧱 Building bricks",
+        "🪖 Action figures",
+        "🧸 Stuffed animal",
+        "🪆 Doll",
+        "🚗 Toy cars",
+        "🪀 Yo-yo",
+        "🎨 Modeling clay",
+        "🪵 Wooden planks",
+        "🚂 Train set",
+        "🧩 Jigsaw",
+        "🛴 Scooter",
+        "🥚 Virtual pet"
+      ]
+    },
+    "2026-11-23": {
+      "title": "Excuses for Being Late",
+      "description": "The most believable, the most outrageous.",
+      "items": [
+        "⏰ Alarm didn't go off",
+        "🚗 Traffic jam",
+        "🚆 Train cancelled",
+        "🔑 Lost my keys",
+        "🛠️ Car broke down",
+        "🐈 The cat threw up",
+        "📅 \"I thought it was tomorrow\"",
+        "🚌 Missed the bus",
+        "🔋 Phone died",
+        "🪧 Strike"
+      ]
+    },
+    "2026-11-24": {
+      "title": "Soups",
+      "description": "The best one to warm up.",
+      "items": [
+        "🎃 Pumpkin soup",
+        "🧅 French onion soup",
+        "🍝 Minestrone",
+        "🍅 Gazpacho",
+        "🐟 Fish soup",
+        "🍗 Chicken soup",
+        "🍜 Pho",
+        "🥣 Lentil soup",
+        "🥔 Vichyssoise",
+        "🍲 Harira",
+        "🍵 Miso soup"
+      ]
+    },
+    "2026-11-25": {
+      "title": "Birds",
+      "description": "The classiest in the sky.",
+      "items": [
+        "🐦 Sparrow",
+        "🐦 Robin",
+        "🐦‍⬛ Magpie",
+        "🐦‍⬛ Crow",
+        "🐤 Blue tit",
+        "🦅 Eagle",
+        "🦉 Owl",
+        "🦩 Flamingo",
+        "🦜 Parrot",
+        "🐧 Penguin",
+        "🌺 Hummingbird",
+        "🕊️ Pigeon"
+      ]
+    },
+    "2026-11-26": {
+      "title": "Potatoes",
+      "description": "In every shape.",
+      "items": [
+        "🍟 Fries",
+        "🥣 Mashed",
+        "🧀 Gratin dauphinois",
+        "🥔 Crisps",
+        "🥞 Rösti",
+        "🍳 Sautéed",
+        "🌶️ Wedges",
+        "🔥 Baked potato",
+        "🧀 Tartiflette",
+        "🫕 Aligot",
+        "🟤 Croquettes"
+      ]
+    },
+    "2026-11-27": {
+      "title": "Things You Never Use",
+      "description": "Black Friday: the one you regret least.",
+      "items": [
+        "🚴 Exercise bike",
+        "🍞 Bread maker",
+        "🥛 Yogurt maker",
+        "🫕 Fondue set",
+        "🏋️ Gym membership",
+        "🎂 Stand mixer",
+        "🧇 Waffle maker",
+        "🧘 Yoga mat",
+        "🍝 Pasta machine",
+        "⌚ Smartwatch"
+      ]
+    },
+    "2026-11-28": {
+      "title": "Funfair",
+      "description": "The first stand you run to.",
+      "items": [
+        "🚗 Bumper cars",
+        "🎡 Ferris wheel",
+        "🦆 Hook-a-duck",
+        "👻 Ghost train",
+        "🎠 Carousel",
+        "🎯 Shooting gallery",
+        "🍭 Candy floss",
+        "🪞 Hall of mirrors",
+        "🍎 Candy apple",
+        "🎢 Roller coaster",
+        "🥫 Tin can alley"
+      ]
+    },
+    "2026-11-29": {
+      "title": "Comforting Smells",
+      "description": "First Sunday of Advent: the smell that does you good.",
+      "items": [
+        "🔥 Fireplace",
+        "🌰 Cinnamon",
+        "🌲 Pine tree",
+        "🍪 Gingerbread",
+        "🍊 Orange",
+        "🌰 Roasted chestnuts",
+        "☕ Hot chocolate",
+        "👕 Clean laundry",
+        "🥖 Fresh bread",
+        "🕯️ Scented candle",
+        "🌱 Cut grass"
+      ]
+    },
+    "2026-11-30": {
+      "title": "Office Colleagues",
+      "description": "The one you want next to you.",
+      "items": [
+        "⏱️ The latecomer",
+        "🤡 The joker",
+        "🥪 The desk-luncher",
+        "☕ The endless coffee break",
+        "😊 The nice boss",
+        "📧 The reply-all-er",
+        "🎓 The intern",
+        "😤 The grumbler",
+        "📞 The loud phone talker",
+        "🏃 The lunchtime runner"
+      ]
+    },
+    "2026-12-01": {
+      "title": "Christmas Decorations",
+      "description": "The one that really feels like Christmas.",
+      "items": [
+        "🎄 Christmas tree",
+        "💡 Fairy lights",
+        "🔴 Baubles",
+        "⭐ Star",
+        "🐑 Nativity scene",
+        "🕯️ Advent wreath",
+        "🌿 Mistletoe",
+        "📅 Advent calendar",
+        "🧦 Stockings",
+        "🧶 Ugly sweater",
+        "⛄ Snowman",
+        "🍃 Holly"
+      ]
+    },
+    "2026-12-02": {
+      "title": "Rooms of the House",
+      "description": "Your favourite room.",
+      "items": [
+        "🛏️ Bedroom",
+        "🛋️ Living room",
+        "🍳 Kitchen",
+        "🛁 Bathroom",
+        "💻 Study",
+        "📦 Attic",
+        "🍷 Cellar",
+        "🌳 Garden",
+        "🌇 Balcony",
+        "🚗 Garage",
+        "🧺 Laundry room",
+        "🚪 Hallway"
+      ]
+    },
+    "2026-12-03": {
+      "title": "Chocolates",
+      "description": "The square you won't share.",
+      "items": [
+        "🍫 Dark 70%",
+        "🥛 Milk",
+        "⚪ White",
+        "🌰 Praline",
+        "🌰 Whole hazelnut",
+        "🧂 Salted caramel",
+        "🍊 Chocolate orange peel",
+        "🍇 Fruit and nut discs",
+        "🟤 Chocolate rock",
+        "🫙 Chocolate spread",
+        "🫕 Chocolate fondue"
+      ]
+    },
+    "2026-12-04": {
+      "title": "Nights With Friends",
+      "description": "The night you'd do again in a heartbeat.",
+      "items": [
+        "🎲 Board games",
+        "🎤 Karaoke",
+        "🎬 Movie night",
+        "🔐 Escape room",
+        "🎳 Bowling",
+        "🍕 Homemade pizza",
+        "🎵 Music quiz",
+        "🎭 Costume party",
+        "🐺 Werewolf game",
+        "❓ Quiz",
+        "🔥 Barbecue"
+      ]
+    },
+    "2026-12-05": {
+      "title": "Christmas Market",
+      "description": "The stall you stop at first.",
+      "items": [
+        "🍷 Mulled wine",
+        "🥞 Crêpes",
+        "🍩 Churros",
+        "🥨 Pretzel",
+        "🌰 Roasted chestnuts",
+        "🍪 Gingerbread",
+        "🧀 Tartiflette",
+        "🎠 Carousel",
+        "🪆 Nativity figurines",
+        "🌭 Grilled sausage",
+        "🍬 Nougat"
+      ]
+    },
+    "2026-12-06": {
+      "title": "Christmas Characters",
+      "description": "Saint Nicholas Day: your favourite.",
+      "items": [
+        "🎅 Santa Claus",
+        "🤶 Mrs. Claus",
+        "🧝 Elves",
+        "🦌 Reindeer",
+        "⛄ Snowman",
+        "⛪ Saint Nicholas",
+        "🖤 Father Whipper",
+        "🪖 Nutcracker",
+        "👼 Angel",
+        "👑 Three Wise Men"
+      ]
+    },
+    "2026-12-07": {
+      "title": "Sports to Watch on TV",
+      "description": "The one that glues you to the couch.",
+      "items": [
+        "⚽ Football",
+        "🏉 Rugby",
+        "🎾 Tennis",
+        "🏎️ Formula 1",
+        "🚴 Cycling",
+        "🏀 Basketball",
+        "🤾 Handball",
+        "🎯 Biathlon",
+        "⛷️ Alpine skiing",
+        "🏊 Swimming",
+        "🏃 Athletics",
+        "⚫ Pétanque"
+      ]
+    },
+    "2026-12-08": {
+      "title": "Most Beautiful Lights",
+      "description": "Festival of Lights: the most magical.",
+      "items": [
+        "🕯️ Candles",
+        "💡 Fairy lights",
+        "🎆 Fireworks",
+        "🏮 Paper lanterns",
+        "🌌 Northern lights",
+        "🔆 Neon signs",
+        "🗼 Lighthouse",
+        "✨ Starry sky",
+        "🪲 Fireflies",
+        "🔥 Campfire",
+        "🌅 Sunset"
+      ]
+    },
+    "2026-12-09": {
+      "title": "Cold-Weather Animals",
+      "description": "The cutest on the ice.",
+      "items": [
+        "🐻‍❄️ Polar bear",
+        "🐧 Penguin",
+        "🦭 Seal",
+        "🦭 Walrus",
+        "🦊 Arctic fox",
+        "🦉 Snowy owl",
+        "🐋 Orca",
+        "🦄 Narwhal",
+        "🦌 Reindeer",
+        "🐺 Arctic wolf",
+        "🐳 Beluga"
+      ]
+    },
+    "2026-12-10": {
+      "title": "Book Genres",
+      "description": "The shelf you get lost in.",
+      "items": [
+        "🔍 Crime novel",
+        "🐉 Fantasy",
+        "🚀 Sci-fi",
+        "💬 Comics",
+        "🌸 Manga",
+        "💕 Romance",
+        "👤 Biography",
+        "🏰 Historical novel",
+        "🪶 Poetry",
+        "🌱 Self-help",
+        "👻 Horror",
+        "🍳 Cookbook"
+      ]
+    },
+    "2026-12-11": {
+      "title": "Movie Snacks",
+      "description": "What you need on the couch.",
+      "items": [
+        "🍿 Sweet popcorn",
+        "🧂 Salted popcorn",
+        "🌮 Nachos",
+        "🍬 Sweets",
+        "🍨 Ice cream",
+        "🥤 Soda",
+        "🥔 Crisps",
+        "🍫 Chocolate",
+        "🥨 Pretzels",
+        "🍎 Fruit",
+        "🚫 Nothing at all"
+      ]
+    },
+    "2026-12-12": {
+      "title": "Christmas Songs",
+      "description": "The one on repeat at your place.",
+      "items": [
+        "🔔 Jingle Bells",
+        "🎅 Petit Papa Noël",
+        "🎁 All I Want for Christmas Is You",
+        "💔 Last Christmas",
+        "🎸 Jingle Bell Rock",
+        "🌙 Silent Night",
+        "🎄 O Christmas Tree",
+        "❄️ Let It Snow",
+        "🪇 Feliz Navidad",
+        "⭐ He Is Born, the Holy Child"
+      ]
+    },
+    "2026-12-13": {
+      "title": "Winter Dishes",
+      "description": "The dish that warms you most.",
+      "items": [
+        "🧀 Tartiflette",
+        "🫕 Fondue",
+        "🥕 Pot-au-feu",
+        "🌭 Sauerkraut",
+        "🫘 Cassoulet",
+        "🍷 Beef bourguignon",
+        "🥘 Blanquette",
+        "🥔 Shepherd's pie",
+        "🥣 Vegetable soup",
+        "🫕 Aligot",
+        "🍲 Potée"
+      ]
+    },
+    "2026-12-14": {
+      "title": "Winter Clothes",
+      "description": "The one you won't go out without.",
+      "items": [
+        "🧥 Puffer jacket",
+        "🧶 Beanie",
+        "🧣 Scarf",
+        "🧤 Gloves",
+        "🧤 Mittens",
+        "🎄 Christmas jumper",
+        "👢 Fur-lined boots",
+        "🎧 Earmuffs",
+        "🧥 Wool coat",
+        "🐑 Fleece",
+        "🧦 Wool socks"
+      ]
+    },
+    "2026-12-15": {
+      "title": "Gifts for a Colleague",
+      "description": "The gift that always pleases.",
+      "items": [
+        "☕ Mug",
+        "🕯️ Candle",
+        "🍫 Chocolates",
+        "🪴 Plant",
+        "📓 Notebook",
+        "🧦 Funny socks",
+        "🍷 Bottle of wine",
+        "📖 Book",
+        "💳 Gift card",
+        "🍵 Tea",
+        "🚫 Nothing"
+      ]
+    },
+    "2026-12-16": {
+      "title": "Planets",
+      "description": "The most beautiful in the solar system.",
+      "items": [
+        "☄️ Mercury",
+        "🌕 Venus",
+        "🌍 Earth",
+        "🔴 Mars",
+        "🟠 Jupiter",
+        "🪐 Saturn",
+        "🔵 Uranus",
+        "🌀 Neptune",
+        "⚪ Pluto",
+        "🌙 Moon",
+        "☀️ Sun"
+      ]
+    },
+    "2026-12-17": {
+      "title": "Yule Log Flavours",
+      "description": "The flavour that ends the meal in style.",
+      "items": [
+        "🍫 Chocolate",
+        "🌰 Praline",
+        "🌰 Chestnut",
+        "🍓 Berries",
+        "☕ Coffee",
+        "🍦 Vanilla",
+        "🧊 Ice cream log",
+        "🥭 Mango-passion fruit",
+        "🍋 Lemon meringue",
+        "🍒 Black Forest"
+      ]
+    },
+    "2026-12-18": {
+      "title": "Christmas Movies",
+      "description": "The one you watch every year.",
+      "items": [
+        "🏠 Home Alone",
+        "🎅 Le Père Noël est une ordure",
+        "💌 Love Actually",
+        "🎃 The Nightmare Before Christmas",
+        "💚 The Grinch",
+        "🧝 Elf",
+        "🚂 The Polar Express",
+        "⛷️ Les Bronzés font du ski",
+        "✉️ Klaus",
+        "👻 A Christmas Carol"
+      ]
+    },
+    "2026-12-19": {
+      "title": "Holiday Plans",
+      "description": "What fills your Christmas break.",
+      "items": [
+        "😴 Lie-ins",
+        "⛷️ Skiing",
+        "👨‍👩‍👧 Family",
+        "📺 TV series",
+        "🎮 Video games",
+        "✈️ Travel",
+        "📖 Reading",
+        "🍳 Cooking",
+        "🎉 Going out",
+        "🛋️ Doing nothing"
+      ]
+    },
+    "2026-12-20": {
+      "title": "Worst Christmas Gifts",
+      "description": "The one that ends up at the back of a cupboard.",
+      "items": [
+        "🧦 Socks",
+        "🧴 Random perfume",
+        "🧶 Itchy sweater",
+        "🧼 Shower gel set",
+        "📅 Calendar",
+        "🕯️ Candle",
+        "☕ Personalized mug",
+        "🔌 USB gadget",
+        "💳 Gift card",
+        "🤧 Embroidered hankies"
+      ]
+    },
+    "2026-12-21": {
+      "title": "Snow Games",
+      "description": "Winter solstice: your favourite game.",
+      "items": [
+        "⚪ Snowball fight",
+        "⛄ Snowman",
+        "🛷 Sledging",
+        "👼 Snow angel",
+        "🏠 Igloo",
+        "⛷️ Skiing",
+        "🥾 Snowshoeing",
+        "🧊 Sliding on ice",
+        "👣 Footprints",
+        "☕ Hot chocolate after"
+      ]
+    },
+    "2026-12-22": {
+      "title": "Festive Starters",
+      "description": "The one that opens the meal in style.",
+      "items": [
+        "🥩 Foie gras",
+        "🦪 Oysters",
+        "🐟 Smoked salmon",
+        "🐌 Snails",
+        "🐚 Scallops",
+        "🍞 Canapés",
+        "🥣 Cream soup",
+        "🍸 Verrines",
+        "🥞 Blinis",
+        "🥧 Vol-au-vent",
+        "🩷 Taramasalata",
+        "🍤 Prawns"
+      ]
+    },
+    "2026-12-23": {
+      "title": "Christmas Moments",
+      "description": "The moment you wait for all year.",
+      "items": [
+        "🎁 Opening presents",
+        "🍽️ The meal",
+        "🍰 The yule log",
+        "🎄 Decorating the tree",
+        "🎬 The movies",
+        "⛪ Midnight Mass",
+        "🎲 Family games",
+        "😴 The nap",
+        "🎶 The carols",
+        "✉️ The letter to Santa"
+      ]
+    },
+    "2026-12-24": {
+      "title": "Gifts Under the Tree",
+      "description": "The one you're hoping for tonight.",
+      "items": [
+        "🎮 Games console",
+        "📖 Book",
+        "👕 Clothes",
+        "🎲 Board game",
+        "🧱 Building bricks",
+        "🧴 Perfume",
+        "💍 Jewellery",
+        "📱 Smartphone",
+        "🧸 Stuffed animal",
+        "🎟️ An outing (concert, trip)",
+        "🍫 Chocolates",
+        "💶 Money"
+      ]
+    },
+    "2026-12-25": {
+      "title": "Christmas Leftovers",
+      "description": "The best to finish the next day.",
+      "items": [
+        "🦃 Cold turkey",
+        "🍰 Half a yule log",
+        "🧀 Cheese",
+        "🍫 Chocolates",
+        "🥩 Foie gras",
+        "🍪 Gingerbread",
+        "🍊 Clementines",
+        "🌰 Chestnuts",
+        "🥔 Gratin",
+        "🍾 Flat champagne"
+      ]
+    },
+    "2026-12-26": {
+      "title": "The Day After",
+      "description": "The ideal plan for the 26th.",
+      "items": [
+        "😴 Nap",
+        "📺 TV series",
+        "🚶 Digestive walk",
+        "🎲 Games",
+        "🧹 Tidying up",
+        "🍽️ Finishing leftovers",
+        "🎁 Trying out presents",
+        "🏃 Exercise",
+        "🛋️ Nothing",
+        "🔄 Returning presents"
+      ]
+    },
+    "2026-12-27": {
+      "title": "Family Arguments",
+      "description": "The one that comes back every year.",
+      "items": [
+        "🗳️ Politics",
+        "🧽 Who does the dishes",
+        "🎩 Board game rules",
+        "📺 The remote",
+        "🪑 Seating plan",
+        "🌡️ The heating",
+        "🎵 The music",
+        "🍰 The last piece",
+        "🏖️ Holidays",
+        "🔊 The noise"
+      ]
+    },
+    "2026-12-28": {
+      "title": "Best Moments of the Year",
+      "description": "What you'll remember from 2026.",
+      "items": [
+        "🏖️ Summer holidays",
+        "⚽ The World Cup",
+        "🎂 Birthday",
+        "🎄 Christmas",
+        "🎤 A concert",
+        "✈️ A trip",
+        "💞 Meeting someone",
+        "💼 A new job",
+        "🎉 A party",
+        "🌸 The first day of spring"
+      ]
+    },
+    "2026-12-29": {
+      "title": "Crêpe Fillings",
+      "description": "Sweet or savoury?",
+      "items": [
+        "🍚 Sugar",
+        "🫙 Chocolate spread",
+        "🍓 Jam",
+        "🧂 Salted caramel",
+        "🍋 Lemon and sugar",
+        "🍯 Honey",
+        "☁️ Whipped cream",
+        "🍌 Banana and chocolate",
+        "🥪 Ham and cheese",
+        "🍳 Ham, egg and cheese",
+        "🍄 Mushrooms",
+        "🐟 Salmon"
+      ]
+    },
+    "2026-12-30": {
+      "title": "New Year's Eve Plans",
+      "description": "Your ideal New Year's Eve.",
+      "items": [
+        "🎉 Big party",
+        "🍽️ Dinner with friends",
+        "🎤 Concert",
+        "🏡 With family",
+        "😴 In bed before midnight",
+        "⛷️ Skiing",
+        "🏝️ On a faraway beach",
+        "🎆 Fireworks",
+        "🎙️ Karaoke",
+        "🎲 Board games"
+      ]
+    },
+    "2026-12-31": {
+      "title": "New Year's Eve Moments",
+      "description": "The best moment of the night.",
+      "items": [
+        "⏳ The countdown",
+        "💋 Midnight kisses",
+        "🍾 The champagne",
+        "🎆 The fireworks",
+        "📱 New Year texts",
+        "🍽️ The dinner",
+        "💃 The dancing",
+        "🎊 Party favours",
+        "🌙 The after-party",
+        "😵 The next day"
+      ]
+    },
+    "2027-01-01": {
+      "title": "New Year's Resolutions",
+      "description": "The one you'll actually keep.",
+      "items": [
+        "🏃 Exercise more",
+        "🥗 Eat better",
+        "📚 Read more",
+        "📵 Less screen time",
+        "💰 Save money",
+        "✈️ Travel",
+        "🚭 Quit smoking",
+        "🗣️ Learn a language",
+        "🛌 Go to bed early",
+        "💧 Dry month",
+        "🧘 Meditate",
+        "🧹 Declutter"
+      ]
+    },
+    "2027-01-02": {
+      "title": "Cures for Tiredness",
+      "description": "The most effective after the holidays.",
+      "items": [
+        "😴 Nap",
+        "☕ Coffee",
+        "🚿 Cold shower",
+        "🚶 A walk",
+        "🛌 Lie-in",
+        "🍊 Vitamin C",
+        "🍵 Tea",
+        "🎧 Music",
+        "🏃 Exercise",
+        "🍲 Soup"
+      ]
+    },
+    "2027-01-03": {
+      "title": "King Cakes",
+      "description": "Epiphany: which one deserves the charm?",
+      "items": [
+        "🥧 Frangipane",
+        "🍞 Kings' brioche",
+        "🍎 Apple",
+        "🍫 Chocolate",
+        "🍐 Pear and chocolate",
+        "💚 Pistachio",
+        "🌰 Chestnut",
+        "🍓 Berries",
+        "🍋 Lemon",
+        "🍮 Caramel"
+      ]
+    },
+    "2027-01-04": {
+      "title": "School Supplies",
+      "description": "The one you couldn't do without.",
+      "items": [
+        "🖊️ 4-colour pen",
+        "👝 Pencil case",
+        "📒 Planner",
+        "📐 Compass",
+        "🧮 Calculator",
+        "🩹 Eraser",
+        "🖍️ Highlighters",
+        "📓 Exercise book",
+        "🗂️ Ring binder",
+        "✏️ Ink eraser",
+        "📏 Ruler",
+        "🎒 School bag"
+      ]
+    },
+    "2027-01-05": {
+      "title": "World Cuisines",
+      "description": "The one you'd eat for the rest of your life.",
+      "items": [
+        "🍝 Italian",
+        "🍣 Japanese",
+        "🌮 Mexican",
+        "🍛 Indian",
+        "🧆 Lebanese",
+        "🥟 Chinese",
+        "🍜 Thai",
+        "🫕 Moroccan",
+        "🥗 Greek",
+        "🍔 American",
+        "🍲 Korean",
+        "🥘 Spanish"
+      ]
+    },
+    "2027-01-06": {
+      "title": "Zodiac Signs",
+      "description": "The best sign, objectively.",
+      "items": [
+        "♈ Aries",
+        "♉ Taurus",
+        "♊ Gemini",
+        "♋ Cancer",
+        "♌ Leo",
+        "♍ Virgo",
+        "♎ Libra",
+        "♏ Scorpio",
+        "♐ Sagittarius",
+        "♑ Capricorn",
+        "♒ Aquarius",
+        "♓ Pisces"
+      ]
+    },
+    "2027-01-07": {
+      "title": "Indoor Sports",
+      "description": "The one that keeps your resolutions.",
+      "items": [
+        "🏋️ Weight training",
+        "🧘 Yoga",
+        "🤸 Pilates",
+        "💃 Zumba",
+        "🚴 Indoor cycling",
+        "🥊 Boxing",
+        "🧗 Climbing",
+        "🔥 Cross-training",
+        "🏊 Swimming",
+        "🏸 Badminton",
+        "🎾 Squash",
+        "🩰 Dance"
+      ]
+    },
+    "2027-01-08": {
+      "title": "TV Shows",
+      "description": "The one you never miss.",
+      "items": [
+        "❓ Game shows",
+        "🎥 Reality TV",
+        "📰 The news",
+        "🛋️ Talk show",
+        "👨‍🍳 Cooking contest",
+        "🦁 Wildlife documentaries",
+        "🌦️ Weather forecast",
+        "⚽ Sport",
+        "🎤 Talent show",
+        "🕵️ Crime series",
+        "🐭 Cartoons"
+      ]
+    },
+    "2027-01-09": {
+      "title": "Brain Teasers",
+      "description": "The one that keeps you up at night.",
+      "items": [
+        "🔢 Sudoku",
+        "✏️ Crossword",
+        "🟥 Rubik's cube",
+        "🧩 1000-piece jigsaw",
+        "🔤 Word search",
+        "🔐 Escape room",
+        "❓ Riddles",
+        "♟️ Chess",
+        "🔷 Tangram",
+        "🌀 Maze",
+        "🦢 Origami"
+      ]
+    },
+    "2027-01-10": {
+      "title": "Sunday Brunch",
+      "description": "The plate worth sleeping in for.",
+      "items": [
+        "🍳 Eggs Benedict",
+        "🥞 Pancakes",
+        "🥑 Avocado toast",
+        "🥣 Granola",
+        "🍓 Fruit salad",
+        "🥐 Croissants",
+        "🥓 Bacon",
+        "🥤 Smoothie",
+        "🍊 Orange juice",
+        "🧇 Waffles",
+        "🥛 Yogurt",
+        "🐟 Smoked salmon"
+      ]
+    },
+    "2027-01-11": {
+      "title": "Cat Habits",
+      "description": "The most endearing.",
+      "items": [
+        "🏺 Knocking things off",
+        "💤 Sleeping 16 hours a day",
+        "😻 Purring",
+        "⏰ Meowing at 5 am",
+        "🦵 Rubbing against legs",
+        "🪰 Chasing a fly",
+        "📦 Sitting in a box",
+        "🙉 Ignoring its name",
+        "🍞 Kneading",
+        "🪟 Looking out the window"
+      ]
+    },
+    "2027-01-12": {
+      "title": "Colours",
+      "description": "Simply the most beautiful.",
+      "items": [
+        "🔴 Red",
+        "🔵 Blue",
+        "🟢 Green",
+        "🟡 Yellow",
+        "🟠 Orange",
+        "🟣 Purple",
+        "🩷 Pink",
+        "⚫ Black",
+        "⚪ White",
+        "🟤 Brown",
+        "🩶 Grey",
+        "🩵 Turquoise"
+      ]
+    },
+    "2027-01-13": {
+      "title": "Favourite Shops",
+      "description": "Sales season: where you head first.",
+      "items": [
+        "📚 Bookshop",
+        "🧸 Toy shop",
+        "🛒 Supermarket",
+        "👗 Second-hand shop",
+        "👟 Sports shop",
+        "🔨 DIY store",
+        "💐 Florist",
+        "🥖 Bakery",
+        "💻 Electronics",
+        "🖊️ Stationery",
+        "🪴 Garden centre",
+        "🏺 Flea market"
+      ]
+    },
+    "2027-01-14": {
+      "title": "Citrus Fruits",
+      "description": "The zingiest one.",
+      "items": [
+        "🍊 Orange",
+        "🍋 Lemon",
+        "🍊 Clementine",
+        "🍑 Grapefruit",
+        "🍈 Lime",
+        "🍊 Mandarin",
+        "🟠 Kumquat",
+        "🟡 Yuzu",
+        "🍋 Bergamot",
+        "🩸 Blood orange",
+        "🟢 Pomelo"
+      ]
+    },
+    "2027-01-15": {
+      "title": "Starting the Weekend Right",
+      "description": "Friday night, your first move.",
+      "items": [
+        "🍻 Drinks",
+        "🎬 Cinema",
+        "🛋️ Couch",
+        "🍽️ Restaurant",
+        "🏃 Exercise",
+        "🎉 Party",
+        "😴 Early night",
+        "🎮 Video games",
+        "🛁 Bath",
+        "🛍️ Shopping"
+      ]
+    },
+    "2027-01-16": {
+      "title": "French Landmarks",
+      "description": "The one to see once in your life.",
+      "items": [
+        "🗼 Eiffel Tower",
+        "🏰 Mont-Saint-Michel",
+        "👑 Palace of Versailles",
+        "🏛️ Arc de Triomphe",
+        "⛪ Notre-Dame",
+        "🌉 Pont du Gard",
+        "🏯 Chambord",
+        "🧱 Carcassonne",
+        "⛪ Sacré-Cœur",
+        "🔺 Louvre",
+        "🏜️ Dune of Pilat",
+        "🌁 Millau Viaduct"
+      ]
+    },
+    "2027-01-17": {
+      "title": "Sunday Night Dinners",
+      "description": "The meal that closes the weekend.",
+      "items": [
+        "🥪 Croque-monsieur",
+        "🥣 Soup",
+        "🍝 Pasta",
+        "🍳 Omelette",
+        "🍕 Pizza",
+        "🥞 Crêpes",
+        "🍱 Leftovers",
+        "🥗 Salad",
+        "🍞 Toast",
+        "🥣 Cereal",
+        "🍔 Burger",
+        "🍣 Sushi"
+      ]
     }
   }
 }
