@@ -1,6 +1,6 @@
 {
   "ios": {
-    "NSPhotoLibraryUsageDescription": "Tiercraft a besoin d'accéder à vos photos pour illustrer vos cartes.",
-    "NSCameraUsageDescription": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer vos cartes."
+    "NSPhotoLibraryUsageDescription": "Tiercraft a besoin d'accéder à tes photos pour illustrer tes cartes.",
+    "NSCameraUsageDescription": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer tes cartes."
   }
 }

@@ -5,7 +5,7 @@
 <title>Tiercraft · captures App Store</title>
 <!--
   App Store screenshots, drawn as one continuous panorama and cut into
-  1320 × 2868 slices by render.mjs. The app screens come from store/screens/.
+  1320 × 2868 slices by render.mjs. The app screens come from store/screens/<lang>/ (capture.mjs).
 -->
 <style>
   :root {
@@ -99,27 +99,27 @@
       <div class="strip"><span style="background:var(--s)"></span><span style="background:var(--a)"></span><span style="background:var(--b)"></span><span style="background:var(--c)"></span><span style="background:var(--d)"></span></div>
     </div>
     <div class="phone" data-screen="accueil" style="top:640px; transform:rotate(-4deg) scale(.8); transform-origin:50% 0"></div>
-    <p class="caption">Classez tout,<br><em>de S à D.</em></p>
+    <p class="caption" data-caption="home"></p>
   </section>
   <section class="panel" style="left:1320px">
     <div class="phone" data-screen="classement" style="top:180px; transform:rotate(3deg)"></div>
-    <p class="caption">Glissez.<br><em>Tranchez.</em></p>
+    <p class="caption" data-caption="rank"></p>
   </section>
   <section class="panel" style="left:2640px">
     <div class="phone" data-screen="du-jour" style="top:340px; transform:rotate(-3deg) scale(.94); transform-origin:50% 0"></div>
-    <p class="caption">Un défi<br><em>chaque jour.</em></p>
+    <p class="caption" data-caption="daily"></p>
   </section>
   <section class="panel" style="left:3960px">
     <div class="phone" data-screen="comparatif" style="top:180px; transform:rotate(3deg)"></div>
-    <p class="caption">D’accord avec<br><em>les autres ?</em></p>
+    <p class="caption" data-caption="others"></p>
   </section>
   <section class="panel" style="left:5280px">
     <div class="phone" data-screen="personnalisation" style="top:340px; transform:rotate(-3deg) scale(.94); transform-origin:50% 0"></div>
-    <p class="caption">Vos rangs,<br><em>vos règles.</em></p>
+    <p class="caption" data-caption="tiers"></p>
   </section>
   <section class="panel" style="left:6600px">
     <div class="phone" data-screen="partage" style="top:180px; transform:rotate(3deg)"></div>
-    <p class="caption">Un code,<br><em>et c’est partagé.</em></p>
+    <p class="caption" data-caption="share"></p>
   </section>
 </div>
 <script>
@@ -127,9 +127,19 @@
   const icons = '<svg width="54" height="34" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg>'
     + '<svg width="48" height="34" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.6 7a6.2 6.2 0 0 1 8.8 0l-1.4 1.4a4.2 4.2 0 0 0-6 0zM1.2 4.6a9.6 9.6 0 0 1 13.6 0l-1.4 1.4a7.6 7.6 0 0 0-10.8 0z" fill="#fff"/></svg>'
     + '<svg width="80" height="38" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="#fff"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" fill="#fff" fill-opacity=".45"/></svg>';
+  // ?lang=fr|en|es|el: the screens captured in that language (capture.mjs) and its captions.
+  const lang = new URLSearchParams(location.search).get('lang') || 'fr';
+  const CAPTIONS = {
+    fr: { home: 'Classe tout,<br><em>de S à D.</em>', rank: 'Glisse.<br><em>Tranche.</em>', daily: 'Un défi<br><em>chaque jour.</em>', others: 'D’accord avec<br><em>les autres ?</em>', tiers: 'Tes rangs,<br><em>tes règles.</em>', share: 'Un code,<br><em>et c’est partagé.</em>' },
+    en: { home: 'Rank everything,<br><em>from S to D.</em>', rank: 'Drag.<br><em>Decide.</em>', daily: 'A new challenge<br><em>every day.</em>', others: 'Do others<br><em>agree?</em>', tiers: 'Your tiers,<br><em>your rules.</em>', share: 'One code,<br><em>and it’s shared.</em>' },
+    es: { home: 'Clasifícalo todo,<br><em>de la S a la D.</em>', rank: 'Arrastra.<br><em>Decide.</em>', daily: 'Un reto<br><em>cada día.</em>', others: '¿Los demás<br><em>opinan igual?</em>', tiers: 'Tus niveles,<br><em>tus reglas.</em>', share: 'Un código,<br><em>y compartido.</em>' },
+    el: { home: 'Κατάταξε τα πάντα,<br><em>από το S ως το D.</em>', rank: 'Σύρε.<br><em>Αποφάσισε.</em>', daily: 'Μια πρόκληση<br><em>κάθε μέρα.</em>', others: 'Συμφωνούν<br><em>οι άλλοι;</em>', tiers: 'Τα επίπεδά σου,<br><em>οι κανόνες σου.</em>', share: 'Ένας κωδικός,<br><em>και μοιράστηκε.</em>' },
+  }[lang];
+  document.documentElement.lang = lang;
+  for (const c of document.querySelectorAll('.caption')) c.innerHTML = CAPTIONS[c.dataset.caption];
   for (const p of document.querySelectorAll('.phone')) {
     p.innerHTML = `<div class="screen"><div class="island"></div><div class="status"><span>9:41</span><span class="icons">${icons}</span></div>`
-      + `<img src="../../store/screens/${p.dataset.screen}.png"><div class="glare"></div></div>`;
+      + `<img src="../../store/screens/${lang}/${p.dataset.screen}.png"><div class="glare"></div></div>`;
   }
 </script>
 </body>

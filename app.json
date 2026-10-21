@@ -14,7 +14,7 @@
       "backgroundColor": "#0F1115"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.guigousse.TierCraft",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -51,8 +51,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Tiercraft a besoin d'accéder à vos photos pour illustrer vos cartes.",
-          "cameraPermission": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer vos cartes.",
+          "photosPermission": "Tiercraft a besoin d'accéder à tes photos pour illustrer tes cartes.",
+          "cameraPermission": "Tiercraft a besoin d'accéder à l'appareil photo pour illustrer tes cartes.",
           "microphonePermission": false
         }
       ],
