@@ -85,6 +85,8 @@ iPhone 6,9 pouces (1320 × 2868) obligatoires, une série par langue : `store/sc
 5. « Tes rangs, tes règles. » : personnalisation
 6. « Un code, et c’est partagé. » : partage
 
+Apple demande aussi la taille « iPhone avec Dynamic Island (écran moyen) », 6,3 pouces (1206 × 2622) : mêmes images réduites, dans `store/screenshots-6.3/<langue>/`.
+
 Pas de captures iPad : l’app est déclarée iPhone seul pour la 1.0 (l’iPad pourra être ajouté dans une mise à jour).
 
 Pour les régénérer : lancer l’app web (`npx expo start --web --port 8081`), capturer les écrans avec `node scripts/store-screenshots/capture.mjs <langue> 8081` (dans `store/screens/<langue>/`, les envois au serveur sont simulés), puis `node scripts/store-screenshots/render.mjs <langue>` (Playwright).
