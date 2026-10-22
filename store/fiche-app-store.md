@@ -110,6 +110,8 @@ User-generated content: nicknames and list words are filtered; a player can be r
 
 ## Droits sur le contenu
 
+Réponse : oui, l’app contient du contenu tiers ; case des droits cochée.
+
 « Contient du contenu tiers » : images Wikimedia (licences indiquées sur chaque carte) et icônes d’apps de l’App Store.
 
 ## Avant de soumettre
@@ -119,4 +121,4 @@ User-generated content: nicknames and list words are filtered; a player can be r
 - [ ] Coller dans Supabase le nettoyage quotidien de `supabase/migrations/20261020190000_mail_expiry.sql` (fonction `private.cleanup`).
 - [ ] Supprimer les fonctions Edge de test `appstore-test` et `words-bench` (tableau de bord Supabase → Edge Functions).
 - [ ] Passer Supabase en offre Pro (le projet gratuit se met en pause après 7 jours sans activité).
-- [ ] Vérifier les icônes d’apps du modèle « Jeux mobiles » (droits des éditeurs).
+- [x] Icônes d’apps du modèle « Jeux mobiles » : gardées pour la 1.0 (décidé le 22 octobre 2026). En cas de rejet (règle 5.2) ou de réclamation d’un éditeur, les remplacer par des dessins de la bibliothèque (seule celle de Broc, notre jeu, peut rester).
