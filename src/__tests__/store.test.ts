@@ -64,6 +64,13 @@ describe('daily tier list', () => {
     expect(store().lists[id].daily!.validatedAt).toBe(firstValidation);
     expect(store().lists[id].daily!.voteSent).toBe(false);
   });
+
+  it('takes its own five tiers, the classic letters otherwise', () => {
+    const tiers = ['Divin', 'Bon', 'Correct', 'Bof', 'Beurk'];
+    const labels = (id: string) => store().lists[id].tiers.map((t) => t.label);
+    expect(labels(store().createDailyList({ ...daily, tiers }))).toEqual(tiers);
+    expect(labels(store().createDailyList({ ...daily, day: '2026-10-14', tiers: ['Oui', 'Non'] }))).toEqual(['S', 'A', 'B', 'C', 'D']);
+  });
 });
 
 describe('popular tier lists', () => {

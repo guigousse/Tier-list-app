@@ -8,10 +8,10 @@ import { newId } from './id';
 export type IconLibrary = Record<string, string>;
 
 /**
- * Tiers of a public tier list: its own names when it has five (votes are tier indexes
+ * Tiers of a public or daily tier list: its own names when it has five (votes are tier indexes
  * 0 to 4, checked by the server), the classic letters otherwise.
  */
-export function publicTiers(template: Template): string[] {
+export function publicTiers(template: Pick<Template, 'tiers'>): string[] {
   return template.tiers?.length === CLASSIC_TIERS.length ? template.tiers : CLASSIC_TIERS;
 }
 

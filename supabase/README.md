@@ -17,33 +17,19 @@ insert into public.daily_lists (day, title, emoji, description, items) values
  array['🍦 Glace vanille', '🍧 Granité', '🍨 Sorbet citron', '🧁 Vacherin']);
 ```
 
-### Éditeur des listes du jour
+### Revue de la semaine
 
-Plus simple que le SQL : la page `share-site/editeur-listes.html` (ouvrable telle
-quelle dans un navigateur, ou en ligne sur le site à `/editeur-listes`). Elle demande
-la clé admin (celle dont le SHA-256 est dans `private.admin_tokens`, la même que pour
-`ai-generate` « redraw ») et parle à la fonction `daily-admin` (`verify_jwt` désactivé :
-elle vérifie la clé elle-même). On y voit les jours passés récents et les 120 suivants,
-et on peut :
-
-- modifier titre, emoji, description, cartes (emoji, nom, concept d'image), image de la
-  liste (`cover`) et traductions EN/ES/EL, puis enregistrer ;
-- générer une liste complète à partir d'un thème, ajouter ou remplacer des cartes,
-  proposer les concepts manquants, tout traduire, demander des idées de thèmes (IA,
-  coût noté dans `ai_costs` avec 0 crédit) ;
-- dessiner tout de suite les images manquantes (une planche Gemini, les cases libres
-  dessinent la file `icon_wishlist`) ; sinon, les concepts non dessinés rejoignent la file ;
-- déplacer une liste à une autre date (échangée si ce jour-là est déjà pris), la supprimer.
-
+Les listes à venir sont relues chaque dimanche avec Claude (tâche planifiée « Revue des
+listes de la semaine ») : il présente les 7 listes de la semaine suivante, on les retouche
+ensemble, puis il écrit les changements dans `daily_lists` et `content_translations`.
 Une liste qui a des votes garde ses cartes (ni ajout, ni retrait, ni ordre) : seuls ses
-textes, concepts et traductions changent. Les modifications ne sont pas reportées dans
-`content-i18n/` : ces fichiers restent la source des listes écrites par migration.
+textes, rangs, concepts et traductions changent. Les modifications ne sont pas reportées
+dans `content-i18n/` : ces fichiers restent la source des listes écrites par migration.
 
-Déployer la fonction : elle importe des modules de `ai-generate/` (concepts, coûts,
-planche d'icônes), à envoyer avec elle (`supabase functions deploy daily-admin --no-verify-jwt`).
-
-Les tier lists du jour utilisent toujours les rangs classiques S, A, B, C, D
-(la colonne `tiers` est ignorée) et ne sont pas modifiables dans l'app : le
+Les rangs d'une tier list du jour sont ceux de la colonne `tiers` (cinq noms, du meilleur
+au pire, traduits dans `content_translations.tiers`), et S, A, B, C, D quand elle est vide
+ou n'en a pas cinq. Les votes sont rangés par position (0 à 4) : renommer les rangs ne
+change pas les statistiques. Les listes du jour ne sont pas modifiables dans l'app : le
 joueur classe les cartes puis valide.
 
 ## Votes et classement moyen

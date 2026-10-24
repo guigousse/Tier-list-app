@@ -260,6 +260,8 @@ export type DailyList = {
   emoji: string;
   description?: string;
   items: string[];
+  /** Names of its five tiers, best first; the classic letters when missing. */
+  tiers?: string[];
   regions?: string[];
   voteRegions?: string[];
   /** Per item: concept of its image in the shared library (as for a public list). */
@@ -279,9 +281,9 @@ type TemplateRow = {
   regions: string[] | null;
   vote_regions: string[] | null;
 };
-type DailyRow = Omit<TemplateRow, 'key' | 'tiers' | 'theme'> & { day: string; description: string | null; cover: number | null };
+type DailyRow = Omit<TemplateRow, 'key' | 'theme'> & { day: string; description: string | null; cover: number | null };
 
-const DAILY_COLUMNS = 'day,title,emoji,description,items,regions,vote_regions,concepts,cover';
+const DAILY_COLUMNS = 'day,title,emoji,description,items,tiers,regions,vote_regions,concepts,cover';
 const regionsOf = (r: { regions: string[] | null; vote_regions: string[] | null }) => ({
   ...(r.regions ? { regions: r.regions } : {}),
   ...(r.vote_regions ? { voteRegions: r.vote_regions } : {}),
@@ -292,6 +294,7 @@ const dailyOf = (r: DailyRow): DailyList => ({
   emoji: r.emoji,
   description: r.description ?? undefined,
   items: r.items,
+  ...(r.tiers ? { tiers: r.tiers } : {}),
   ...regionsOf(r),
   ...(r.concepts ? { concepts: r.concepts } : {}),
   ...(r.cover !== null && r.cover !== undefined ? { cover: r.cover } : {}),

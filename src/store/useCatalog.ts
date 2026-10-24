@@ -167,6 +167,7 @@ export function dailyTemplate(daily: DailyList): Template {
     title: daily.title,
     emoji: daily.emoji,
     items: daily.items,
+    tiers: daily.tiers,
     concepts: daily.concepts,
     cover: daily.cover,
     day: daily.day,

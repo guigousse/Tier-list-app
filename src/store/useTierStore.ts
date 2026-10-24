@@ -8,7 +8,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 
 import { CARD_COLORS, type CardSize } from '../constants/theme';
 import { nextRegionChange } from '../lib/regionChange';
-import { CLASSIC_TIERS, sourceOf, tierColorAt, type Template } from '../constants/presets';
+import { sourceOf, tierColorAt, type Template } from '../constants/presets';
 import { newId } from '../lib/id';
 import { deleteCardImage, downloadCardImage, duplicateCardImage } from '../lib/images';
 import type { DailyList } from '../lib/api';
@@ -148,7 +148,7 @@ type State = {
   changeRegion: (region: string | null, now?: number) => boolean;
   clearAll: () => void;
 
-  /** Creates the local copy of a daily tier list: classic S→D tiers, fixed cards. */
+  /** Creates the local copy of a daily tier list: its own tiers (S→D when it has none), fixed cards. */
   createDailyList: (daily: DailyList, icons?: IconLibrary) => string;
   /** Daily list copies take the library images of their cards, without counting as changed. */
   syncDailyIcons: (dailies: DailyList[], icons: IconLibrary) => void;
@@ -625,7 +625,7 @@ export const useTierStore = create<State>()(
 
         createDailyList: (daily, icons = {}) => {
           const now = Date.now();
-          const tiers = buildTiers(CLASSIC_TIERS);
+          const tiers = buildTiers(publicTiers(daily));
           const cards: Record<string, Card> = {};
           const cardIds = daily.items.map((label, i) => {
             const id = newId();

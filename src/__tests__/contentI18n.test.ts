@@ -70,6 +70,18 @@ describe('content translations', () => {
     expect(shown.cards[second].label).toBe(list.cards[second].label);
   });
 
+  it('translates the tiers of a daily list, not the letters of a copy made before they were named', () => {
+    const store = useTierStore.getState();
+    const daily = { day: '2026-10-30', title: 'Corvées', emoji: '🧹', items: ['Vaisselle', 'Lessive'] };
+    const text = { items: ['Dishes', 'Laundry'], tiers: ['Almost fun', 'Fine', 'Must do', 'Later', 'I move out'] };
+    const namedId = store.createDailyList({ ...daily, tiers: ['Presque un plaisir', 'Ça se fait', 'Par obligation', 'Je repousse', 'Je déménage'] });
+    const named = useTierStore.getState().lists[namedId];
+    expect(localizeList(named, text).tiers.map((t) => t.label)).toEqual(text.tiers);
+    const letteredId = store.createDailyList({ ...daily, day: '2026-10-31' });
+    const lettered = useTierStore.getState().lists[letteredId];
+    expect(localizeList(lettered, text).tiers.map((t) => t.label)).toEqual(['S', 'A', 'B', 'C', 'D']);
+  });
+
   it('does not touch the player’s own lists', () => {
     const store = useTierStore.getState();
     const id = store.createList({ title: 'Ma liste', tierLabels: ['S'], cardLabels: ['Pomme'] });

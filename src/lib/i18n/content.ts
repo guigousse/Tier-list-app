@@ -1,4 +1,4 @@
-import { sourceOf, type Template } from '../../constants/presets';
+import { CLASSIC_TIERS, sourceOf, type Template } from '../../constants/presets';
 import type { TierList } from '../../store/types';
 import type { Language } from './index';
 import el from '../../../content-i18n/translations-el.json';
@@ -49,6 +49,8 @@ export function themeTitle(key: string, lang: Language): string | undefined {
   return lang === 'fr' ? undefined : BUNDLED[lang].themes[key];
 }
 
+const isClassic = (list: TierList) => list.tiers.every((tier, i) => tier.label === CLASSIC_TIERS[i]);
+
 const pick = (source: string[], translated: string[] | undefined) => source.map((s, i) => translated?.[i] ?? s);
 
 /** A template as shown in the gallery: same key and cards, words in the player's language. */
@@ -79,7 +81,8 @@ export function localizeList(list: TierList, text: ContentText | undefined): Tie
   return {
     ...list,
     title: text.title ?? list.title,
-    tiers: list.popular && text.tiers ? list.tiers.map((tier, i) => ({ ...tier, label: text.tiers![i] ?? tier.label })) : list.tiers,
+    // A daily copy made before its tiers were named keeps its letters, untranslated.
+    tiers: text.tiers && (list.popular || !isClassic(list)) ? list.tiers.map((tier, i) => ({ ...tier, label: text.tiers![i] ?? tier.label })) : list.tiers,
     cards,
   };
 }
