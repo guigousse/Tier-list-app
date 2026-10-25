@@ -265,6 +265,9 @@ export const play: Strings = {
     'play.avatar.bg.ember': 'Braise',
     'play.avatar.bg.inferno': 'Volcan',
     'play.avatar.bg.diamond': 'Diamant',
+    'play.avatar.bg.storm': 'Orage',
+    'play.avatar.bg.aurora': 'Aurore',
+    'play.avatar.bg.psyche': 'Psyché',
   },
   en: {
     'play.onb.gamesTitle': 'Mobile games',
@@ -525,6 +528,9 @@ export const play: Strings = {
     'play.avatar.bg.ember': 'Ember',
     'play.avatar.bg.inferno': 'Volcano',
     'play.avatar.bg.diamond': 'Diamond',
+    'play.avatar.bg.storm': 'Storm',
+    'play.avatar.bg.aurora': 'Aurora',
+    'play.avatar.bg.psyche': 'Psychedelic',
   },
   es: {
     'play.onb.gamesTitle': 'Juegos móviles',
@@ -785,6 +791,9 @@ export const play: Strings = {
     'play.avatar.bg.ember': 'Brasa',
     'play.avatar.bg.inferno': 'Volcán',
     'play.avatar.bg.diamond': 'Diamante',
+    'play.avatar.bg.storm': 'Tormenta',
+    'play.avatar.bg.aurora': 'Aurora',
+    'play.avatar.bg.psyche': 'Psicodélico',
   },
   el: {
     'play.onb.gamesTitle': 'Παιχνίδια κινητού',
@@ -1045,5 +1054,8 @@ export const play: Strings = {
     'play.avatar.bg.ember': 'Θράκα',
     'play.avatar.bg.inferno': 'Ηφαίστειο',
     'play.avatar.bg.diamond': 'Διαμάντι',
+    'play.avatar.bg.storm': 'Καταιγίδα',
+    'play.avatar.bg.aurora': 'Σέλας',
+    'play.avatar.bg.psyche': 'Ψυχεδελικό',
   },
 };

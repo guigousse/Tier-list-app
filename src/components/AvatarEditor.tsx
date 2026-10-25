@@ -27,6 +27,7 @@ import {
   unlockLabel,
   type AvatarConfig,
   type AvatarZoom,
+  type Background,
   type Progress,
   type Unlock,
 } from '../lib/avatar';
@@ -35,6 +36,7 @@ import { playTick } from '../lib/sound';
 import { useProgress as usePlayerProgress } from '../lib/progress';
 import { useTierStore } from '../store/useTierStore';
 import { AvatarDrawing } from './Avatar';
+import { AvatarBackdrop } from './AvatarBackdrop';
 import { Clickable } from './Clickable';
 import { Button, IconButton } from './ui';
 
@@ -464,7 +466,15 @@ function Thumb({ category, option, config }: { category: Category; option: Optio
       </View>
     );
   }
-  // Skin and hair colours; backgrounds show their gradient's first and last colours.
+  // Premium backgrounds show themselves, still; the others their gradient's first and last colours.
+  if ((option as Background).fx) {
+    return (
+      <View style={styles.swatch}>
+        <AvatarBackdrop bg={option as Background} size={40} animated={false} />
+      </View>
+    );
+  }
+  // Skin and hair colours.
   const stops = (option as { stops?: string[] }).stops;
   return (
     <View style={[styles.swatch, { backgroundColor: stops ? stops[stops.length - 1] : option.fill }]}>

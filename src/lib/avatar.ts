@@ -20,7 +20,9 @@ type Item = { id: string; label: string; unlock?: Unlock };
 export type Skin = Item & { fill: string; shade: string };
 export type HairColor = Item & { fill: string };
 export type EyeColor = Item & { fill: string };
-export type Background = Item & { stops: string[]; shirt: string; stars?: boolean };
+/** How a premium background moves (see AvatarBackdrop). */
+export type BackgroundFx = 'flames' | 'storm' | 'psyche' | 'aurora' | 'stars' | 'sparkle';
+export type Background = Item & { stops: string[]; shirt: string; stars?: boolean; fx?: BackgroundFx };
 
 export const FACES: Item[] = [
   { id: 'oval', label: 'Ovale' },
@@ -151,10 +153,13 @@ export const BACKGROUNDS: Background[] = [
   { id: 'night', label: 'Nuit', stops: ['#3E4566', '#191D2B'], shirt: '#7C5CFF' },
   { id: 'rainbow', label: 'Arc-en-ciel', stops: ['#FF7F7F', '#FFD36E', '#7FE3A0', '#7FB8FF', '#B98BFF'], shirt: '#FFFFFF', unlock: { streak: 7 } },
   { id: 'gold', label: 'Or', stops: ['#FFE9A6', '#E2A72E'], shirt: '#2D3047', unlock: { completed: 140 } },
-  { id: 'galaxy', label: 'Galaxie', stops: ['#4B2C8F', '#0F0B26'], shirt: '#FF86B6', stars: true, unlock: { streak: 30 } },
+  { id: 'galaxy', label: 'Galaxie', stops: ['#4B2C8F', '#0F0B26'], shirt: '#FF86B6', stars: true, fx: 'stars', unlock: { streak: 30 } },
   { id: 'ember', label: 'Braise', stops: ['#FFB36B', '#E2462B'], shirt: '#2D3047', unlock: { streak: 1 } },
-  { id: 'inferno', label: 'Volcan', stops: ['#FFD36E', '#FF5A1F', '#4A0D0D'], shirt: '#FFD36E', stars: true, unlock: { streak: 100 } },
-  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, unlock: { completed: 290 } },
+  { id: 'inferno', label: 'Volcan', stops: ['#FFD36E', '#FF5A1F', '#4A0D0D'], shirt: '#FFD36E', stars: true, fx: 'flames', unlock: { streak: 100 } },
+  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, fx: 'sparkle', unlock: { completed: 290 } },
+  { id: 'storm', label: 'Orage', stops: ['#3D4C8F', '#0D1130'], shirt: '#FFD166', fx: 'storm', unlock: { streak: 50 } },
+  { id: 'aurora', label: 'Aurore', stops: ['#1C3B5E', '#070D1C'], shirt: '#7FE3C8', stars: true, fx: 'aurora', unlock: { completed: 150 } },
+  { id: 'psyche', label: 'Psyché', stops: ['#FF5FD2', '#7C5CFF', '#2EE6C5'], shirt: '#FFFFFF', fx: 'psyche', unlock: { completed: 200 } },
 ];
 
 export type AvatarConfig = {
@@ -389,11 +394,18 @@ function hair(style: string, paint: string, strands: string, shine: string, fill
         const a = (Math.PI * 2 * k) / 14;
         return [+(60 + Math.cos(a) * 29).toFixed(1), +(50 + Math.sin(a) * 29).toFixed(1), 10];
       });
+      const hairline: [number, number, number][] = [
+        [37.5, 54, 5.2], [40.5, 47, 5.8], [46, 42, 6.2], [53, 39.5, 6.4], [60, 39, 6.4], [67, 39.5, 6.4], [74, 42, 6.2], [79.5, 47, 5.8], [82.5, 54, 5.2],
+      ];
       return {
         back:
           curls([...ring, [60, 50, 31]]) +
           ring.map(([x, y]) => `<path ${strands} d="M${x - 3} ${y + 1} C${x - 2} ${y - 3} ${x + 3} ${y - 3} ${x + 2.5} ${y + 1.5}"/>`).join('') + gloss('M40 32 C44 26 51 22.5 58 21.5 C52 24 46 28 42 34 Z'),
-        front: p('M35.5 58 C35.5 44 45.5 36 60 36 C74.5 36 84.5 44 84.5 58 C80.5 51 75.5 48 71.5 47 C63.5 49 56.5 49 48.5 47 C44.5 48 39.5 51 35.5 58 Z'),
+        // A row of curls along the hairline, over the hair covering the top of the head.
+        front:
+          `<path fill="${fill}" d="M37 54 C36 40 46 30.5 60 30.5 C74 30.5 84 40 83 54 C78 46 70 42 60 42 C50 42 42 46 37 54 Z"/>` +
+          curls(hairline) +
+          hairline.map(([x, y]) => `<path ${strands} d="M${x - 2.5} ${y + 1} C${x - 1.5} ${y - 2.5} ${x + 2.5} ${y - 2.5} ${x + 2} ${y + 1.2}"/>`).join(''),
       };
     }
     case 'pony':
@@ -416,7 +428,88 @@ function hair(style: string, paint: string, strands: string, shine: string, fill
   }
 }
 
-function hat(id: string): string {
+/**
+ * How far each hairstyle reaches, so hats fit it. `top`: its highest point. `perch`:
+ * where a hat set on it rests (lower than `top` for a bun or a crest, which a hat
+ * hides or squashes). `side`: its outer edge at the ears, where headphones go.
+ * `volume`: how much wider a hat pulled over it gets.
+ */
+type HairFit = { top: number; perch: number; side: number; volume: number };
+const HAIR_FIT: Record<string, HairFit> = {
+  short: { top: 26, perch: 27, side: 35, volume: 1 },
+  quiff: { top: 17.5, perch: 20, side: 35, volume: 1 },
+  curly: { top: 21, perch: 23, side: 29.5, volume: 1.07 },
+  buzz: { top: 31.5, perch: 31, side: 36.5, volume: 1 },
+  bald: { top: 31, perch: 31, side: 36, volume: 1 },
+  long: { top: 27, perch: 28, side: 31, volume: 1 },
+  bob: { top: 28, perch: 28, side: 30, volume: 1 },
+  bun: { top: 17, perch: 30, side: 35, volume: 1 },
+  afro: { top: 10, perch: 14, side: 21, volume: 1.2 },
+  pony: { top: 28.5, perch: 30, side: 35, volume: 1 },
+  mohawk: { top: 12, perch: 31, side: 36.5, volume: 1 },
+};
+/** Where hats are drawn from: the short hair. */
+const REF_FIT = HAIR_FIT.short;
+
+/**
+ * A hat fitted to the hair under it. Covering hats (cap, beanie, top hat, wizard) hide
+ * the hair above `under`, where it is squashed, and widen for big hair; perched ones
+ * (crown, party hat) rest on the hair; the halo floats above it; headphones and horns
+ * follow its volume. `top`: the hat's highest point, for framing.
+ */
+function hat(id: string, fit: HairFit): { svg: string; under?: number; top: number } {
+  const grow = (under: number) => `translate(60 ${under}) scale(${fit.volume}) translate(-60 ${-under})`;
+  const covering = (svg: string, under: number, top: number) => ({
+    svg: fit.volume === 1 ? svg : `<g transform="${grow(under)}">${svg}</g>`,
+    under,
+    top: under - (under - top) * fit.volume,
+  });
+  // Perched hats are drawn on the short hair; never lower than that (on a bald head they'd
+  // slide down to the brows).
+  const perch = Math.min(0, fit.perch - REF_FIT.perch);
+  const raised = (svg: string, dy: number) => (dy ? `<g transform="translate(0 ${dy})">${svg}</g>` : svg);
+  switch (id) {
+    case 'cap':
+    case 'beanie':
+    case 'tophat':
+    case 'wizard': {
+      const [under, top] = { cap: [47, 24], beanie: [45, 15], tophat: [41, 12], wizard: [40, 7] }[id] as [number, number];
+      return covering(hatDrawing(id), under, top);
+    }
+    case 'crown':
+    case 'party':
+      return { svg: raised(hatDrawing(id), perch), top: (id === 'crown' ? 20 : 5.8) + perch };
+    case 'halo': {
+      const dy = fit.top - REF_FIT.top;
+      return { svg: raised(hatDrawing(id), dy), top: 10 + dy };
+    }
+    case 'horns': {
+      const dy = Math.min(0, fit.perch - REF_FIT.perch);
+      return { svg: raised(hatDrawing(id), dy), top: 15 + dy };
+    }
+    case 'headphones': {
+      // The band goes over the hair, the cups on its sides.
+      const t = Math.min(26, fit.perch - 1);
+      const l = Math.min(32.5, fit.side - 2.5);
+      const r = 120 - l;
+      const band = `M${l + 0.5} 60 C${l - 1.5} ${t + 12} ${l + 10.5} ${t} 60 ${t} C${120 - l - 10.5} ${t} ${r + 1.5} ${t + 12} ${r - 0.5} 60`;
+      return {
+        svg: `<path fill="none" stroke="#2D3047" stroke-width="5" stroke-linecap="round" d="${band}"/>
+<path fill="none" stroke="#4A4E6B" stroke-width="1.6" stroke-linecap="round" d="M${l + 3.5} 46 C${l + 6.5} ${t + 10} ${l + 14.5} ${t + 4} ${l + 23.5} ${t + 3}"/>
+<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="${l - 5.5}" y="54" width="11" height="18" rx="5"/>
+<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="${r - 5.5}" y="54" width="11" height="18" rx="5"/>
+<rect fill="#FFFFFF" opacity=".3" x="${l - 3.5}" y="56.5" width="3" height="10" rx="1.5"/>
+<rect fill="#FFFFFF" opacity=".3" x="${r - 3.5}" y="56.5" width="3" height="10" rx="1.5"/>`,
+        top: t - 2.5,
+      };
+    }
+    default:
+      return { svg: '', top: Infinity };
+  }
+}
+
+/** A hat as drawn on the short hair. */
+function hatDrawing(id: string): string {
   switch (id) {
     case 'cap':
       return `<path fill="#E84D5B" stroke="#9E2433" stroke-width="1" d="M34 50 C34 35 45 26 60 26 C75 26 86 35 86 50 C70 47 50 47 34 50 Z"/>
@@ -437,13 +530,6 @@ function hat(id: string): string {
 <rect fill="#E0A21B" stroke="#C98A10" stroke-width="1.2" x="39.5" y="40" width="41" height="6" rx="2"/>
 <circle fill="#FF5F6D" cx="60" cy="43" r="2.2"/><circle fill="#4A8FE2" cx="49" cy="43" r="1.8"/><circle fill="#27B48F" cx="71" cy="43" r="1.8"/>
 <circle fill="#FFFFFF" cx="59.3" cy="42.3" r=".7"/>`;
-    case 'headphones':
-      return `<path fill="none" stroke="#2D3047" stroke-width="5" stroke-linecap="round" d="M33 60 C31 38 43 26 60 26 C77 26 89 38 87 60"/>
-<path fill="none" stroke="#4A4E6B" stroke-width="1.6" stroke-linecap="round" d="M36 46 C39 36 47 30 56 29"/>
-<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="27" y="54" width="11" height="18" rx="5"/>
-<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="82" y="54" width="11" height="18" rx="5"/>
-<rect fill="#FFFFFF" opacity=".3" x="29" y="56.5" width="3" height="10" rx="1.5"/>
-<rect fill="#FFFFFF" opacity=".3" x="84" y="56.5" width="3" height="10" rx="1.5"/>`;
     case 'wizard':
       return `<g transform="translate(0 -4)"><path fill="#5B3FE0" stroke="#3B24A8" stroke-width="1.2" stroke-linejoin="round" d="M35 47 C43 44 51 43 60 43 C69 43 77 44 85 47 C79 36 72 24 66 14 C64 11 60 11 59 14 C55 25 45 35 35 47 Z"/>
 <path fill="#FFFFFF" opacity=".15" d="M60 15 C57 25 51 34 44 43 C50 42 54 42 57 42 C58 32 59 23 60 15 Z"/>
@@ -681,6 +767,9 @@ function beard(id: string, paint: string, strands: string, fill: string, face: {
 /** Part of the drawing to show, for close-ups (e.g. on the eyes): square from (x, y). */
 export type AvatarZoom = { x: number; y: number; size: number };
 
+/** The usual framing: head and shoulders. */
+const FRAME: AvatarZoom = { x: 8, y: 12, size: 104 };
+
 /** The generic character rewards are shown on: plain, so the item is all one sees. */
 export const MANNEQUIN: AvatarConfig = { ...DEFAULT_AVATAR, hair: 'short', brows: 'thin', mouth: 'closed' };
 
@@ -722,9 +811,16 @@ function inClay(markup: string): string {
 /**
  * SVG markup of an avatar (round). `uid` keeps its gradient ids apart from other avatars'.
  * `focus`: everything is grey but that part, to show an item off on the mannequin.
+ * `background: false`: the character alone, for an animated background drawn under it.
  */
-export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8, y: 12, size: 104 }, focus?: keyof AvatarConfig): string {
+export function avatarSvg(c: AvatarConfig, uid = 'a', close?: AvatarZoom, focus?: keyof AvatarConfig, background = true): string {
   const layer = (name: Layer, markup: string) => (focus && LAYER_OF[focus] !== name ? inClay(markup) : markup);
+  const fit = HAIR_FIT[c.hair] ?? REF_FIT;
+  const worn = hat(c.hat, fit);
+  // Framing: head and shoulders, pulled back when the hair or the hat reaches past the top.
+  const top = Math.min(worn.under === undefined ? fit.top : Infinity, worn.top);
+  const extra = Math.max(0, FRAME.y + 3 - top);
+  const zoom = close ?? { x: FRAME.x - extra / 2, y: FRAME.y - extra, size: FRAME.size + extra };
   const skin = pick(SKINS, c.skin, DEFAULT_AVATAR.skin);
   const hairFill = pick(HAIR_COLORS, c.hairColor, DEFAULT_AVATAR.hairColor).fill;
   const eyeFill = pick(EYE_COLORS, c.eyes, DEFAULT_AVATAR.eyes).fill;
@@ -732,6 +828,8 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8,
   const face = FACE_SHAPES[c.face] ?? FACE_SHAPES.oval;
   const id = (name: string) => `${name}-${uid}`;
   const url = (name: string) => `url(#${id(name)})`;
+  // Under a covering hat, the hair only shows below it.
+  const squashed = (markup: string) => (worn.under === undefined || !markup ? markup : `<g mask="${url('under')}">${markup}</g>`);
 
   const skinLine = outline(skin.shade);
   const hairLine = outline(hairFill);
@@ -767,11 +865,12 @@ ${coloured.join('\n')}
 ${focus ? inClay(gradients.join('\n')) : ''}
 <clipPath id="${id('clip')}"><circle cx="${zoom.x + half}" cy="${zoom.y + half}" r="${half}"/></clipPath>
 <clipPath id="${id('face')}"><path d="${faceD}"/></clipPath>
+${worn.under === undefined ? '' : `<mask id="${id('under')}"><rect x="-20" y="${worn.under}" width="160" height="160" fill="white"/></mask>`}
 </defs>
 <g clip-path="${url('clip')}">
-${layer('bg', `<rect width="120" height="130" fill="${url('bg')}"/>
-<circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}`)}
-${layer('hair', h.back)}
+${background ? layer('bg', `<rect x="-20" y="-20" width="160" height="150" fill="${url('bg')}"/>
+<circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}`) : ''}
+${layer('hair', squashed(h.back))}
 ${layer('skin', `<path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88 48.5 92 C47.5 93.6 46 95 44 96.5 L44 106 L76 106 L76 96.5 C74 95 72.5 93.6 71.5 92 C69 88 68.5 83 69 76 Z"/>
 <path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>`)}
 ${layer('bg', `<path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
@@ -791,11 +890,16 @@ ${layer('skin', `<path fill="${skin.shade}" opacity=".55" d="M57.6 66.6 C58.4 69
 <path fill="#FFFFFF" opacity=".35" d="M59.2 63 C59.6 64.4 60.4 64.4 60.8 63 Z"/>`)}
 ${layer('mouth', mouth(c.mouth, skin.shade))}
 ${layer('beard', b.mustache)}
-${layer('hair', h.front)}
+${layer('hair', squashed(h.front))}
 ${layer('glasses', glasses(c.glasses))}
-${layer('hat', hat(c.hat))}
+${layer('hat', worn.svg)}
 </g>
 </svg>`;
+}
+
+/** The background an avatar wears, with its animation if it has one. */
+export function avatarBackground(c: AvatarConfig): Background {
+  return pick(BACKGROUNDS, c.bg, DEFAULT_AVATAR.bg);
 }
 
 /**

@@ -48,6 +48,31 @@ describe('avatar codes', () => {
     }
   });
 
+  it('hides the hair above a covering hat, not under the others', () => {
+    for (const hat of ['cap', 'beanie', 'tophat', 'wizard']) expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat }, 'u')).toContain('mask="url(#under-u)"');
+    for (const hat of ['none', 'crown', 'halo', 'headphones']) expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat }, 'u')).not.toContain('mask=');
+  });
+
+  it('sets a crown on the hair, and pulls the framing back when it reaches past the top', () => {
+    const viewBox = (svg: string) => svg.match(/viewBox="([^"]+)"/)![1];
+    expect(viewBox(avatarSvg({ ...DEFAULT_AVATAR, hat: 'crown' }))).toBe('8 12 104 104');
+    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' })).toContain('<g transform="translate(0 -13)">');
+    expect(viewBox(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' }))).not.toBe('8 12 104 104');
+    // Never lower than on short hair: on a bald head it would slide down to the brows.
+    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'bald', hat: 'crown' })).not.toContain('translate(0 4)');
+  });
+
+  it('leaves the background out for an animated one, drawn under the character', () => {
+    const look = { ...DEFAULT_AVATAR, bg: 'storm' };
+    expect(avatarSvg(look, 'u')).toContain('fill="url(#bg-u)"');
+    expect(avatarSvg(look, 'u', undefined, undefined, false)).not.toContain('fill="url(#bg-u)"');
+    expect(decodeAvatar(encodeAvatar(look)).bg).toBe('storm');
+  });
+
+  it('keeps close-ups where they are asked', () => {
+    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' }, 'u', { x: 36, y: 40, size: 48 })).toContain('viewBox="36 40 48 48"');
+  });
+
   it('draws every look with ids unique to it', () => {
     const svg = avatarSvg(DEFAULT_AVATAR, 'abc');
     expect(svg).toContain('id="bg-abc"');
