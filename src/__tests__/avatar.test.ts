@@ -4,6 +4,7 @@ import {
   decodeAvatar,
   DEFAULT_AVATAR,
   encodeAvatar,
+  HAIR_STYLES,
   HATS,
   isAvatarCode,
   isUnlocked,
@@ -53,13 +54,18 @@ describe('avatar codes', () => {
     for (const hat of ['none', 'crown', 'halo', 'headphones']) expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat }, 'u')).not.toContain('mask=');
   });
 
-  it('sets a crown on the hair, and pulls the framing back when it reaches past the top', () => {
+  it('fits every hat inside the frame, which never moves', () => {
     const viewBox = (svg: string) => svg.match(/viewBox="([^"]+)"/)![1];
-    expect(viewBox(avatarSvg({ ...DEFAULT_AVATAR, hat: 'crown' }))).toBe('8 12 104 104');
-    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' })).toContain('<g transform="translate(0 -13)">');
-    expect(viewBox(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' }))).not.toBe('8 12 104 104');
+    for (const hair of HAIR_STYLES) for (const h of HATS) expect(viewBox(avatarSvg({ ...DEFAULT_AVATAR, hair: hair.id, hat: h.id }))).toBe('8 12 104 104');
+    // A crown sinks into hair too tall for it, rather than leaving the frame.
+    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' })).toContain('<g transform="translate(0 -4.5)">');
     // Never lower than on short hair: on a bald head it would slide down to the brows.
-    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'bald', hat: 'crown' })).not.toContain('translate(0 4)');
+    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'bald', hat: 'crown' })).not.toContain('<g transform="translate(0');
+  });
+
+  it('puts headphones on the ears, whatever the hair', () => {
+    const cups = (hair: string) => avatarSvg({ ...DEFAULT_AVATAR, hair, hat: 'headphones' }).match(/<rect fill="#7C5CFF"[^>]*x="([\d.]+)"/)![1];
+    expect(cups('afro')).toBe(cups('short'));
   });
 
   it('leaves the background out for an animated one, drawn under the character', () => {
