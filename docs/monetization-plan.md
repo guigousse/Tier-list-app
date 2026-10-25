@@ -121,7 +121,8 @@ Interactive simulation: https://claude.ai/artifact/HK6QyGXXvr4SrnESHx1iQh
   crédits encaissés et le succès ou l'échec (un échec payé à l'IA et pas facturé y est
   aussi). `select * from ai_margin(7)` donne, par type (cartes, rangs, images), le coût
   moyen, ce qu'une génération rapporte au pire (crédit au prix du pack 1 750, 0,81 c€)
-  et la part mangée par l'IA. Chaque soir à 21 h 07 (heure de Paris en été),
+  et la part mangée par l'IA, sans les générations faites pour le propriétaire (réussies à
+  0 crédit : images des listes du jour, essais de l'éditeur ; depuis le 2026-10-25). Chaque soir à 21 h 07 (heure de Paris en été),
   `private.ai_cost_watch()` envoie une notification à l'iPhone du propriétaire
   (`private.config`, clé `owner_profile`) si un type dépasse 60 % sur 7 jours (au moins
   10 générations), ou si l'IA a coûté plus de 10 $ en 24 h. Testé sur des générations
