@@ -20,9 +20,7 @@ type Item = { id: string; label: string; unlock?: Unlock };
 export type Skin = Item & { fill: string; shade: string };
 export type HairColor = Item & { fill: string };
 export type EyeColor = Item & { fill: string };
-/** How a premium background moves (see AvatarBackdrop). */
-export type BackgroundFx = 'flames' | 'storm' | 'psyche' | 'aurora' | 'stars' | 'sparkle';
-export type Background = Item & { stops: string[]; shirt: string; stars?: boolean; fx?: BackgroundFx };
+export type Background = Item & { stops: string[]; shirt: string; stars?: boolean };
 
 export const FACES: Item[] = [
   { id: 'oval', label: 'Ovale' },
@@ -153,13 +151,10 @@ export const BACKGROUNDS: Background[] = [
   { id: 'night', label: 'Nuit', stops: ['#3E4566', '#191D2B'], shirt: '#7C5CFF' },
   { id: 'rainbow', label: 'Arc-en-ciel', stops: ['#FF7F7F', '#FFD36E', '#7FE3A0', '#7FB8FF', '#B98BFF'], shirt: '#FFFFFF', unlock: { streak: 7 } },
   { id: 'gold', label: 'Or', stops: ['#FFE9A6', '#E2A72E'], shirt: '#2D3047', unlock: { completed: 140 } },
-  { id: 'galaxy', label: 'Galaxie', stops: ['#4B2C8F', '#0F0B26'], shirt: '#FF86B6', stars: true, fx: 'stars', unlock: { streak: 30 } },
+  { id: 'galaxy', label: 'Galaxie', stops: ['#4B2C8F', '#0F0B26'], shirt: '#FF86B6', stars: true, unlock: { streak: 30 } },
   { id: 'ember', label: 'Braise', stops: ['#FFB36B', '#E2462B'], shirt: '#2D3047', unlock: { streak: 1 } },
-  { id: 'inferno', label: 'Volcan', stops: ['#FFD36E', '#FF5A1F', '#4A0D0D'], shirt: '#FFD36E', stars: true, fx: 'flames', unlock: { streak: 100 } },
-  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, fx: 'sparkle', unlock: { completed: 290 } },
-  { id: 'storm', label: 'Orage', stops: ['#3D4C8F', '#0D1130'], shirt: '#FFD166', fx: 'storm', unlock: { streak: 50 } },
-  { id: 'aurora', label: 'Aurore', stops: ['#1C3B5E', '#070D1C'], shirt: '#7FE3C8', stars: true, fx: 'aurora', unlock: { completed: 150 } },
-  { id: 'psyche', label: 'Psyché', stops: ['#FF5FD2', '#7C5CFF', '#2EE6C5'], shirt: '#FFFFFF', fx: 'psyche', unlock: { completed: 200 } },
+  { id: 'inferno', label: 'Volcan', stops: ['#FFD36E', '#FF5A1F', '#4A0D0D'], shirt: '#FFD36E', stars: true, unlock: { streak: 100 } },
+  { id: 'diamond', label: 'Diamant', stops: ['#E6FDFF', '#6FD3F0', '#3A7BD5'], shirt: '#2D3047', stars: true, unlock: { completed: 290 } },
 ];
 
 export type AvatarConfig = {
@@ -394,18 +389,11 @@ function hair(style: string, paint: string, strands: string, shine: string, fill
         const a = (Math.PI * 2 * k) / 14;
         return [+(60 + Math.cos(a) * 29).toFixed(1), +(50 + Math.sin(a) * 29).toFixed(1), 10];
       });
-      const hairline: [number, number, number][] = [
-        [37.5, 54, 5.2], [40.5, 47, 5.8], [46, 42, 6.2], [53, 39.5, 6.4], [60, 39, 6.4], [67, 39.5, 6.4], [74, 42, 6.2], [79.5, 47, 5.8], [82.5, 54, 5.2],
-      ];
       return {
         back:
           curls([...ring, [60, 50, 31]]) +
           ring.map(([x, y]) => `<path ${strands} d="M${x - 3} ${y + 1} C${x - 2} ${y - 3} ${x + 3} ${y - 3} ${x + 2.5} ${y + 1.5}"/>`).join('') + gloss('M40 32 C44 26 51 22.5 58 21.5 C52 24 46 28 42 34 Z'),
-        // A row of curls along the hairline, over the hair covering the top of the head.
-        front:
-          `<path fill="${fill}" d="M37 54 C36 40 46 30.5 60 30.5 C74 30.5 84 40 83 54 C78 46 70 42 60 42 C50 42 42 46 37 54 Z"/>` +
-          curls(hairline) +
-          hairline.map(([x, y]) => `<path ${strands} d="M${x - 2.5} ${y + 1} C${x - 1.5} ${y - 2.5} ${x + 2.5} ${y - 2.5} ${x + 2} ${y + 1.2}"/>`).join(''),
+        front: p('M35.5 58 C35.5 44 45.5 36 60 36 C74.5 36 84.5 44 84.5 58 C80.5 51 75.5 48 71.5 47 C63.5 49 56.5 49 48.5 47 C44.5 48 39.5 51 35.5 58 Z'),
       };
     }
     case 'pony':
@@ -428,99 +416,7 @@ function hair(style: string, paint: string, strands: string, shine: string, fill
   }
 }
 
-/**
- * How far each hairstyle reaches, so hats fit it. `top`: its highest point. `perch`:
- * where a hat set on it rests (lower than `top` for a bun or a crest, which a hat
- * hides or squashes). `side`: its outer edge at the ears, where headphones go.
- * `volume`: how much wider a hat pulled over it gets.
- */
-type HairFit = { top: number; perch: number; side: number; volume: number };
-const HAIR_FIT: Record<string, HairFit> = {
-  short: { top: 26, perch: 27, side: 35, volume: 1 },
-  quiff: { top: 17.5, perch: 20, side: 35, volume: 1 },
-  curly: { top: 21, perch: 23, side: 29.5, volume: 1.07 },
-  buzz: { top: 31.5, perch: 31, side: 36.5, volume: 1 },
-  bald: { top: 31, perch: 31, side: 36, volume: 1 },
-  long: { top: 27, perch: 28, side: 31, volume: 1 },
-  bob: { top: 28, perch: 28, side: 30, volume: 1 },
-  bun: { top: 17, perch: 30, side: 35, volume: 1 },
-  afro: { top: 10, perch: 14, side: 21, volume: 1.2 },
-  pony: { top: 28.5, perch: 30, side: 35, volume: 1 },
-  mohawk: { top: 12, perch: 31, side: 36.5, volume: 1 },
-};
-/** Where hats are drawn from: the short hair. */
-const REF_FIT = HAIR_FIT.short;
-
-/**
- * Highest point a hat may reach: the round frame's top edge, with a little room. The
- * frame never moves; hats fit in it.
- */
-const HAT_CEILING = 15.5;
-
-/**
- * A hat fitted to the hair under it, inside the frame. Covering hats (cap, beanie, top
- * hat, wizard) hide the hair above `under`, where it is squashed, and widen for big hair
- * as far as the frame allows; perched ones (crown, party hat) rest on the hair, or sink
- * into hair too tall for them; the halo rings the top of the hair (`behind`: its far
- * half, under the hair); headphones sit on the ears, their band over the hair.
- */
-function hat(id: string, fit: HairFit): { svg: string; behind?: string; under?: number } {
-  const raised = (svg: string, dy: number) => (dy ? `<g transform="translate(0 ${+dy.toFixed(2)})">${svg}</g>` : svg);
-  switch (id) {
-    case 'cap':
-    case 'beanie':
-    case 'tophat':
-    case 'wizard': {
-      const [under, top] = { cap: [47, 24.3], beanie: [45, 17], tophat: [41, 16], wizard: [40, 15.5] }[id] as [number, number];
-      const scale = Math.max(1, Math.min(fit.volume, (under - HAT_CEILING) / (under - top)));
-      const svg = scale === 1 ? hatDrawing(id) : `<g transform="translate(60 ${under}) scale(${+scale.toFixed(3)}) translate(-60 ${-under})">${hatDrawing(id)}</g>`;
-      return { svg, under };
-    }
-    case 'crown':
-    case 'party': {
-      // Drawn on the short hair; never lower than that (on a bald head they'd slide down
-      // to the brows), never above the frame (in big hair, they sink into it).
-      const top = id === 'crown' ? 20 : 16;
-      const dy = Math.max(Math.min(0, fit.perch - REF_FIT.perch), HAT_CEILING - top);
-      return { svg: raised(hatDrawing(id), dy) };
-    }
-    case 'halo': {
-      // Above the hair when there's room, round its top when there isn't.
-      const y = Math.max(fit.top - 8, 18.5);
-      const rx = 20 * fit.volume;
-      const ring = (sweep: 0 | 1) => {
-        const arc = (r: number, k: number) => `M${60 - r} ${y} A${r} ${r * k} 0 0 ${sweep} ${60 + r} ${y}`;
-        return `<path fill="none" stroke="#FFE08A" stroke-width="7" stroke-linecap="round" opacity=".35" d="${arc(rx + 1.5, 0.27)}"/>
-<path fill="none" stroke="#FFC93C" stroke-width="3.2" stroke-linecap="round" d="${arc(rx, 0.25)}"/>
-<path fill="none" stroke="#FFF4C2" stroke-width="1" stroke-linecap="round" d="${arc(rx - 1.8, 0.22)}" transform="translate(0 -0.7)"/>`;
-      };
-      return { behind: ring(1), svg: ring(0) };
-    }
-    case 'headphones': {
-      // Cups on the ears, whatever the hair; the band over the hair's top.
-      const [l, r] = [EARS[0] - 1, EARS[1] + 1];
-      const t = Math.max(fit.perch - 1, HAT_CEILING + 2.5);
-      const band = `M${l} 56 C${l - 3} ${t + 14} ${l + 9} ${t} 60 ${t} C${r - 9} ${t} ${r + 3} ${t + 14} ${r} 56`;
-      return {
-        svg: `<path fill="none" stroke="#2D3047" stroke-width="4.6" stroke-linecap="round" d="${band}"/>
-<path fill="none" stroke="#4A4E6B" stroke-width="1.5" stroke-linecap="round" d="M${l + 1.5} 44 C${l + 3} ${t + 9} ${l + 11} ${t + 3} ${l + 20} ${t + 2.2}"/>
-<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="${l - 5}" y="53.5" width="10" height="17" rx="4.6"/>
-<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="${r - 5}" y="53.5" width="10" height="17" rx="4.6"/>
-<rect fill="#4E35C2" x="${l + 3}" y="56" width="2.6" height="12" rx="1.3"/>
-<rect fill="#4E35C2" x="${r - 5.6}" y="56" width="2.6" height="12" rx="1.3"/>
-<rect fill="#FFFFFF" opacity=".3" x="${l - 3}" y="56" width="2.6" height="9.5" rx="1.3"/>
-<rect fill="#FFFFFF" opacity=".3" x="${r - 3}" y="56" width="2.6" height="9.5" rx="1.3"/>`,
-      };
-    }
-    case 'horns':
-      return { svg: hatDrawing(id) };
-    default:
-      return { svg: '' };
-  }
-}
-
-/** A hat as drawn on the short hair. */
-function hatDrawing(id: string): string {
+function hat(id: string): string {
   switch (id) {
     case 'cap':
       return `<path fill="#E84D5B" stroke="#9E2433" stroke-width="1" d="M34 50 C34 35 45 26 60 26 C75 26 86 35 86 50 C70 47 50 47 34 50 Z"/>
@@ -529,46 +425,49 @@ function hatDrawing(id: string): string {
 <path fill="#FFFFFF" opacity=".28" d="M43 34 C48 29 56 27.5 62 28 C55 29.5 48 32 43 36 Z"/>
 <circle fill="#C93847" cx="60" cy="26.5" r="2.2"/>`;
     case 'beanie':
-      return `<path fill="#4FB3A9" stroke="#2E7F77" stroke-width="1" d="M33 50 C33 33 45 24 60 24 C75 24 87 33 87 50 Z"/>
+      return `<path fill="#4FB3A9" stroke="#2E7F77" stroke-width="1" d="M33 50 C33 33 45 23 60 23 C75 23 87 33 87 50 Z"/>
 <rect fill="#3D968D" stroke="#2E7F77" stroke-width="1" x="31" y="45" width="58" height="10.5" rx="5.2"/>
 <path stroke="#2E7F77" stroke-width="1.6" stroke-linecap="round" opacity=".5" fill="none" d="M37 47.5 v5.5 M43 47.5 v5.5 M49 47.5 v5.5 M55 47.5 v5.5 M61 47.5 v5.5 M67 47.5 v5.5 M73 47.5 v5.5 M79 47.5 v5.5 M85 47.5 v5.5"/>
-<path fill="#FFFFFF" opacity=".22" d="M42 33 C47 28 55 26.5 61 27 C54 29 47 31.5 42 36 Z"/>
-<circle fill="#F7F3EE" stroke="#D9D2C7" stroke-width="1" cx="60" cy="22.5" r="5.5"/>
-<circle fill="#FFFFFF" cx="58.2" cy="20.7" r="1.8"/>`;
+<path fill="#FFFFFF" opacity=".22" d="M42 33 C47 27.5 55 25.5 61 26 C54 28 47 31 42 36 Z"/>
+<circle fill="#F7F3EE" stroke="#D9D2C7" stroke-width="1" cx="60" cy="21" r="6"/>
+<circle fill="#FFFFFF" cx="58" cy="19" r="2"/>`;
     case 'crown':
       return `<path fill="#FFC93C" stroke="#C98A10" stroke-width="1.3" stroke-linejoin="round" d="M40 42 L43 25 L52 34 L60 20 L68 34 L77 25 L80 42 Z"/>
 <path fill="#FFE08A" d="M44 39 L45.5 30 L51 35.5 L53 36 L60 24.5 L56 36 Z" opacity=".7"/>
 <rect fill="#E0A21B" stroke="#C98A10" stroke-width="1.2" x="39.5" y="40" width="41" height="6" rx="2"/>
 <circle fill="#FF5F6D" cx="60" cy="43" r="2.2"/><circle fill="#4A8FE2" cx="49" cy="43" r="1.8"/><circle fill="#27B48F" cx="71" cy="43" r="1.8"/>
 <circle fill="#FFFFFF" cx="59.3" cy="42.3" r=".7"/>`;
+    case 'headphones':
+      return `<path fill="none" stroke="#2D3047" stroke-width="5" stroke-linecap="round" d="M33 60 C31 38 43 26 60 26 C77 26 89 38 87 60"/>
+<path fill="none" stroke="#4A4E6B" stroke-width="1.6" stroke-linecap="round" d="M36 46 C39 36 47 30 56 29"/>
+<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="27" y="54" width="11" height="18" rx="5"/>
+<rect fill="#7C5CFF" stroke="#4E35C2" stroke-width="1" x="82" y="54" width="11" height="18" rx="5"/>
+<rect fill="#FFFFFF" opacity=".3" x="29" y="56.5" width="3" height="10" rx="1.5"/>
+<rect fill="#FFFFFF" opacity=".3" x="84" y="56.5" width="3" height="10" rx="1.5"/>`;
     case 'wizard':
-      // A soft cone whose tip flops over, a thin gold band, stars; the brim's front lip
-      // passes in front of the cone.
-      return `<ellipse fill="#3B24A8" cx="60" cy="43" rx="31" ry="5.6"/>
-<path fill="#5B3FE0" stroke="#3B24A8" stroke-width="1.2" stroke-linejoin="round" d="M38 43 C43.5 33.5 51 24.5 60 18.5 C66 14.5 74 14.5 80 20.5 C82.5 23 81.6 26.4 78.6 25.4 C74.6 22.4 70.2 22.9 67.6 26.4 C71 31.4 76.5 37 82 43 Z"/>
-<path fill="#FFFFFF" opacity=".16" d="M58 21 C51 27 45.5 33.5 41.5 40.5 C44.5 41 47 41.3 49 41.5 C51 34 54 27 58 21 Z"/>
-<path fill="#FFC93C" stroke="#C98A10" stroke-width=".7" d="M40.2 39.4 C52 41.4 68 41.4 79.8 39.4 L81.8 42.4 C68 44.8 52 44.8 38.2 42.4 Z"/>
-<path fill="#FFD166" d="${starPath(64, 30.5, 3.6, 1.6)}"/><path fill="#FFD166" d="${starPath(79.6, 23.4, 2.4, 1)}"/>
-<circle fill="#FFD166" cx="53" cy="34" r="1.2"/><circle fill="#FFD166" cx="72" cy="35" r="1"/><circle fill="#FFD166" cx="57.5" cy="26" r=".8"/>
-<path fill="#4A30C4" stroke="#3B24A8" stroke-width="1" stroke-linejoin="round" d="M29 43 A31 5.6 0 0 0 91 43 C78 46 42 46 29 43 Z"/>
-<path fill="none" stroke="#7A63F2" stroke-width="1" stroke-linecap="round" opacity=".8" d="M34 46.2 C48 49.4 72 49.4 86 46.2"/>`;
+      return `<g transform="translate(0 -4)"><path fill="#5B3FE0" stroke="#3B24A8" stroke-width="1.2" stroke-linejoin="round" d="M35 47 C43 44 51 43 60 43 C69 43 77 44 85 47 C79 36 72 24 66 14 C64 11 60 11 59 14 C55 25 45 35 35 47 Z"/>
+<path fill="#FFFFFF" opacity=".15" d="M60 15 C57 25 51 34 44 43 C50 42 54 42 57 42 C58 32 59 23 60 15 Z"/>
+<path fill="#FFD166" d="M66 25 l1.5 3 3.3 .4 -2.4 2.3 .6 3.3 -3 -1.6 -3 1.6 .6 -3.3 -2.4 -2.3 3.3 -.4 z"/>
+<circle fill="#FFD166" cx="56" cy="34" r="1.5"/><circle fill="#FFD166" cx="71" cy="39" r="1.2"/>
+<ellipse fill="#4529B8" stroke="#3B24A8" stroke-width="1" cx="60" cy="47" rx="31" ry="5"/></g>`;
     case 'party':
-      return `<path fill="#FF5F8F" stroke="#C92F60" stroke-width="1.2" stroke-linejoin="round" d="M48 42 L60 20 L72 42 C65 44.6 55 44.6 48 42 Z"/>
-<path fill="#FFFFFF" opacity=".2" d="M58.5 24 L52 39.5 C53.5 40.3 55 40.7 56 40.8 Z"/>
-<path fill="none" stroke="#FFD166" stroke-width="2.2" stroke-linecap="round" d="M53.6 32 L66.4 32 M50.6 38 L69.4 38"/>
-<circle fill="#7FE3A0" cx="62.5" cy="27" r="1.4"/><circle fill="#7FB8FF" cx="57" cy="35" r="1.5"/><circle fill="#7FB8FF" cx="64" cy="41" r="1.2"/>
-<circle fill="#FFD166" stroke="#E0A21B" stroke-width="1" cx="60" cy="19.5" r="3.5"/><circle fill="#FFFFFF" opacity=".6" cx="58.9" cy="18.4" r="1.1"/>`;
+      return `<path fill="#FF5F8F" stroke="#C92F60" stroke-width="1.2" stroke-linejoin="round" d="M45 41 L60 10 L75 41 C66 44 54 44 45 41 Z"/>
+<path fill="#FFFFFF" opacity=".2" d="M58 15 L50 37 C52 38 54 38.5 55 38.6 Z"/>
+<circle fill="#FFD166" cx="56" cy="30" r="2.2"/><circle fill="#7FE3A0" cx="63.5" cy="23" r="1.8"/><circle fill="#7FB8FF" cx="64" cy="35.5" r="2.1"/><circle fill="#FFD166" cx="52" cy="38.5" r="1.5"/><circle fill="#7FB8FF" cx="59.5" cy="19" r="1.3"/>
+<circle fill="#FFD166" stroke="#E0A21B" stroke-width="1" cx="60" cy="10" r="4.2"/><circle fill="#FFFFFF" opacity=".6" cx="58.6" cy="8.6" r="1.3"/>`;
     case 'tophat':
-      return `<path fill="#2D3047" stroke="#14161F" stroke-width="1.2" d="M46.5 18.5 L73.5 18.5 L72.5 41.5 L47.5 41.5 Z"/>
-<ellipse fill="#3A3E5C" stroke="#14161F" stroke-width="1" cx="60" cy="18.5" rx="13.5" ry="2.4"/>
-<path fill="#E84D5B" d="M47.15 33 L72.85 33 L72.65 38 L47.35 38 Z"/>
-<path fill="#FFFFFF" opacity=".16" d="M50 21 L53.5 21 L53 32 L49.6 32 Z"/>
+      return `<rect fill="#2D3047" stroke="#14161F" stroke-width="1.2" x="45" y="12" width="30" height="30" rx="2.5"/>
+<rect fill="#E84D5B" x="45.6" y="32" width="28.8" height="5.5"/>
+<path fill="#FFFFFF" opacity=".16" d="M48.5 15 L52.5 15 L52.5 31 L48.5 31 Z"/>
 <ellipse fill="#2D3047" stroke="#14161F" stroke-width="1.2" cx="60" cy="42.5" rx="25" ry="5"/>
 <path fill="none" stroke="#FFFFFF" stroke-width="1" opacity=".18" d="M38 41.5 C48 39.5 72 39.5 82 41.5"/>`;
+    case 'halo':
+      return `<ellipse fill="none" stroke="#FFE08A" stroke-width="8" opacity=".35" cx="60" cy="18" rx="22" ry="6"/>
+<ellipse fill="none" stroke="#FFC93C" stroke-width="3.4" cx="60" cy="18" rx="20" ry="5"/>
+<ellipse fill="none" stroke="#FFF4C2" stroke-width="1" cx="60" cy="17.2" rx="18" ry="4"/>`;
     case 'horns': {
-      // Short horns rising from the head, through any hair, their tips inside the frame.
-      const horn = 'M44 42.5 C40 36 38.6 28 40.6 19.5 C44 26 48.6 31 53 35 C49.6 37.2 46.6 39.6 44 42.5 Z';
-      const shine = 'M42 23.5 C42.6 28.5 44.2 32.4 46.8 35.8 C44.2 33.2 42.2 29.4 42 23.5 Z';
+      const horn = 'M43 42 C38 35 35.5 26 37.5 15 C42 23 47.5 29 52.5 34.5 C49 36 45.5 38.5 43 42 Z';
+      const shine = 'M40 20 C40.5 26 42.5 31 45.5 35 C42.5 32 40 27 40 20 Z';
       return `<g fill="#E8394D" stroke="#9E1F2E" stroke-width="1.2" stroke-linejoin="round"><path d="${horn}"/><path d="${mirror(horn)}"/></g>
 <g fill="#FFFFFF" opacity=".35"><path d="${shine}"/><path d="${mirror(shine)}"/></g>`;
     }
@@ -782,9 +681,6 @@ function beard(id: string, paint: string, strands: string, fill: string, face: {
 /** Part of the drawing to show, for close-ups (e.g. on the eyes): square from (x, y). */
 export type AvatarZoom = { x: number; y: number; size: number };
 
-/** The usual framing: head and shoulders. */
-const FRAME: AvatarZoom = { x: 8, y: 12, size: 104 };
-
 /** The generic character rewards are shown on: plain, so the item is all one sees. */
 export const MANNEQUIN: AvatarConfig = { ...DEFAULT_AVATAR, hair: 'short', brows: 'thin', mouth: 'closed' };
 
@@ -826,12 +722,9 @@ function inClay(markup: string): string {
 /**
  * SVG markup of an avatar (round). `uid` keeps its gradient ids apart from other avatars'.
  * `focus`: everything is grey but that part, to show an item off on the mannequin.
- * `background: false`: the character alone, for an animated background drawn under it.
  */
-export function avatarSvg(c: AvatarConfig, uid = 'a', close?: AvatarZoom, focus?: keyof AvatarConfig, background = true): string {
+export function avatarSvg(c: AvatarConfig, uid = 'a', zoom: AvatarZoom = { x: 8, y: 12, size: 104 }, focus?: keyof AvatarConfig): string {
   const layer = (name: Layer, markup: string) => (focus && LAYER_OF[focus] !== name ? inClay(markup) : markup);
-  const worn = hat(c.hat, HAIR_FIT[c.hair] ?? REF_FIT);
-  const zoom = close ?? FRAME;
   const skin = pick(SKINS, c.skin, DEFAULT_AVATAR.skin);
   const hairFill = pick(HAIR_COLORS, c.hairColor, DEFAULT_AVATAR.hairColor).fill;
   const eyeFill = pick(EYE_COLORS, c.eyes, DEFAULT_AVATAR.eyes).fill;
@@ -839,8 +732,6 @@ export function avatarSvg(c: AvatarConfig, uid = 'a', close?: AvatarZoom, focus?
   const face = FACE_SHAPES[c.face] ?? FACE_SHAPES.oval;
   const id = (name: string) => `${name}-${uid}`;
   const url = (name: string) => `url(#${id(name)})`;
-  // Under a covering hat, the hair only shows below it.
-  const squashed = (markup: string) => (worn.under === undefined || !markup ? markup : `<g mask="${url('under')}">${markup}</g>`);
 
   const skinLine = outline(skin.shade);
   const hairLine = outline(hairFill);
@@ -876,13 +767,11 @@ ${coloured.join('\n')}
 ${focus ? inClay(gradients.join('\n')) : ''}
 <clipPath id="${id('clip')}"><circle cx="${zoom.x + half}" cy="${zoom.y + half}" r="${half}"/></clipPath>
 <clipPath id="${id('face')}"><path d="${faceD}"/></clipPath>
-${worn.under === undefined ? '' : `<mask id="${id('under')}"><rect x="-20" y="${worn.under}" width="160" height="160" fill="white"/></mask>`}
 </defs>
 <g clip-path="${url('clip')}">
-${background ? layer('bg', `<rect x="-20" y="-20" width="160" height="150" fill="${url('bg')}"/>
-<circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}`) : ''}
-${layer('hat', worn.behind ?? '')}
-${layer('hair', squashed(h.back))}
+${layer('bg', `<rect width="120" height="130" fill="${url('bg')}"/>
+<circle cx="60" cy="56" r="48" fill="${url('glow')}"/>${stars}`)}
+${layer('hair', h.back)}
 ${layer('skin', `<path fill="${skin.shade}" stroke="${skinLine}" stroke-width=".8" stroke-opacity=".5" d="M51 76 C51.5 83 51 88 48.5 92 C47.5 93.6 46 95 44 96.5 L44 106 L76 106 L76 96.5 C74 95 72.5 93.6 71.5 92 C69 88 68.5 83 69 76 Z"/>
 <path fill="${darker(skin.shade, 0.12)}" opacity=".5" d="M51 82 C55 86 65 86 69 82 L69 86 C64 89 56 89 51 86 Z"/>`)}
 ${layer('bg', `<path fill="${url('shirt')}" stroke="${outline(bg.shirt)}" stroke-width="1" stroke-opacity=".5" d="M13 128 C13 107 29 96 47.5 93.5 C51.5 97.5 55.5 99.5 60 99.5 C64.5 99.5 68.5 97.5 72.5 93.5 C91 96 107 107 107 128 Z"/>
@@ -902,16 +791,11 @@ ${layer('skin', `<path fill="${skin.shade}" opacity=".55" d="M57.6 66.6 C58.4 69
 <path fill="#FFFFFF" opacity=".35" d="M59.2 63 C59.6 64.4 60.4 64.4 60.8 63 Z"/>`)}
 ${layer('mouth', mouth(c.mouth, skin.shade))}
 ${layer('beard', b.mustache)}
-${layer('hair', squashed(h.front))}
+${layer('hair', h.front)}
 ${layer('glasses', glasses(c.glasses))}
-${layer('hat', worn.svg)}
+${layer('hat', hat(c.hat))}
 </g>
 </svg>`;
-}
-
-/** The background an avatar wears, with its animation if it has one. */
-export function avatarBackground(c: AvatarConfig): Background {
-  return pick(BACKGROUNDS, c.bg, DEFAULT_AVATAR.bg);
 }
 
 /**

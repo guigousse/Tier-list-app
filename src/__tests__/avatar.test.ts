@@ -4,7 +4,6 @@ import {
   decodeAvatar,
   DEFAULT_AVATAR,
   encodeAvatar,
-  HAIR_STYLES,
   HATS,
   isAvatarCode,
   isUnlocked,
@@ -47,36 +46,6 @@ describe('avatar codes', () => {
       const look = randomAvatar();
       expect(HATS.find((h) => h.id === look.hat)?.unlock).toBeUndefined();
     }
-  });
-
-  it('hides the hair above a covering hat, not under the others', () => {
-    for (const hat of ['cap', 'beanie', 'tophat', 'wizard']) expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat }, 'u')).toContain('mask="url(#under-u)"');
-    for (const hat of ['none', 'crown', 'halo', 'headphones']) expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat }, 'u')).not.toContain('mask=');
-  });
-
-  it('fits every hat inside the frame, which never moves', () => {
-    const viewBox = (svg: string) => svg.match(/viewBox="([^"]+)"/)![1];
-    for (const hair of HAIR_STYLES) for (const h of HATS) expect(viewBox(avatarSvg({ ...DEFAULT_AVATAR, hair: hair.id, hat: h.id }))).toBe('8 12 104 104');
-    // A crown sinks into hair too tall for it, rather than leaving the frame.
-    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' })).toContain('<g transform="translate(0 -4.5)">');
-    // Never lower than on short hair: on a bald head it would slide down to the brows.
-    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'bald', hat: 'crown' })).not.toContain('<g transform="translate(0');
-  });
-
-  it('puts headphones on the ears, whatever the hair', () => {
-    const cups = (hair: string) => avatarSvg({ ...DEFAULT_AVATAR, hair, hat: 'headphones' }).match(/<rect fill="#7C5CFF"[^>]*x="([\d.]+)"/)![1];
-    expect(cups('afro')).toBe(cups('short'));
-  });
-
-  it('leaves the background out for an animated one, drawn under the character', () => {
-    const look = { ...DEFAULT_AVATAR, bg: 'storm' };
-    expect(avatarSvg(look, 'u')).toContain('fill="url(#bg-u)"');
-    expect(avatarSvg(look, 'u', undefined, undefined, false)).not.toContain('fill="url(#bg-u)"');
-    expect(decodeAvatar(encodeAvatar(look)).bg).toBe('storm');
-  });
-
-  it('keeps close-ups where they are asked', () => {
-    expect(avatarSvg({ ...DEFAULT_AVATAR, hair: 'afro', hat: 'crown' }, 'u', { x: 36, y: 40, size: 48 })).toContain('viewBox="36 40 48 48"');
   });
 
   it('draws every look with ids unique to it', () => {
