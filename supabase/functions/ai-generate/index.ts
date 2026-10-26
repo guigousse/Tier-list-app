@@ -10,7 +10,7 @@
 // was delivered is kept. 402 { error: "credits" } when the balance is too low.
 // Icons go to a shared library (table card_icons): a concept drawn once is reused
 // by every player; a redrawn concept keeps its first image and adds the new one to
-// card_icon_images, the history of every picture drawn. Per-device and global daily
+// card_icon_images, the history of every picture drawn. Per-wallet and global daily
 // quotas (ai_allow) bound the bill.
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
@@ -24,7 +24,7 @@ import { verifyAttestation } from "./appAttest.ts";
 import { WELCOME_BONUS } from "./pricing.ts";
 import { verifyTransaction } from "./purchase.ts";
 import { addClaude, type CostKind, costRow, type Meter, newMeter } from "./costs.ts";
-import { MAX_BODY, texts, trustForLibrary } from "./limits.ts";
+import { MAX_BODY, quotaKey, texts, trustForLibrary } from "./limits.ts";
 import { paid, WalletError } from "./wallet.ts";
 
 // Models: change here to trade quality for cost (see docs/monetization-plan.md).
@@ -205,11 +205,12 @@ async function redrawLibrary(skip: string[]) {
   return { drawn, failed, left: count ?? 0 };
 }
 
-/** A daily limit of the device (ai_allow) reached: nothing is charged. */
+/** A daily limit of the wallet (ai_allow) reached: nothing is charged. */
 class QuotaError extends Error {}
 
-async function allow(deviceId: string, kind: "words" | "icon") {
-  const { data } = await db.rpc("ai_allow", { device_id: deviceId, kind });
+/** Counted per wallet: the device id is the app's to choose, a new one at each request would have no limit. */
+async function allow(wallet: string, kind: "words" | "icon") {
+  const { data } = await db.rpc("ai_allow", { device_id: await quotaKey(wallet), kind });
   if (!data) throw new QuotaError("quota");
 }
 
@@ -309,7 +310,7 @@ Deno.serve(async (req) => {
       if (!theme) return json({ error: "theme" }, 400);
       const out = await tracked("words", (meter) => paid(db.rpc.bind(db), wallet, "words", count, async () => {
         // The daily quota counts paid requests only: no wallet, no credits, no quota spent.
-        await allow(deviceId, "words");
+        await allow(wallet, "words");
         const drawn = await libraryHint();
         const result = await ask(
           CARDS_MODEL,
@@ -351,7 +352,7 @@ Deno.serve(async (req) => {
       const cards = (Array.isArray(body.cards) ? body.cards : []).map((l) => String(l).slice(0, 40)).slice(0, 12);
       if (!theme || !(tone in TONES) || current.length === 0) return json({ error: "bad request" }, 400);
       const out = await tracked("tiers", (meter) => paid(db.rpc.bind(db), wallet, "tiers", current.length, async () => {
-        await allow(deviceId, "words");
+        await allow(wallet, "words");
         const result = await ask(
           TIERS_MODEL,
           "low",
@@ -389,7 +390,7 @@ Deno.serve(async (req) => {
         let proposed: string[] = [];
         if (bare.length && theme) {
           // A Claude call: bounded like the words.
-          await allow(deviceId, "words");
+          await allow(wallet, "words");
           try {
             const result = await ask(
               CARDS_MODEL,
@@ -415,7 +416,7 @@ Deno.serve(async (req) => {
         const alreadyDrawn = new Set(urls.keys());
         const missing = cardsToDraw(asked, alreadyDrawn);
         if (missing.length) {
-          await allow(deviceId, "icon");
+          await allow(wallet, "icon");
           const { data: wish } = await db.from("icon_wishlist").select("concept, label").order("created_at").limit(40);
           const pending = (wish ?? []).filter((w: { concept: string }) => !urls.has(w.concept));
           // The AI's own words for the concepts it proposed: those alone go to the library.

@@ -40,3 +40,13 @@ export function trustForLibrary<T extends { concept: string; label: string; them
   });
   return { cards: out, shared };
 }
+
+/**
+ * The key a wallet's daily AI quota is counted under (ai_usage.device_id, a uuid): the
+ * first 16 bytes of the SHA-256 of its secret, so the secret itself is never stored.
+ */
+export async function quotaKey(wallet: string): Promise<string> {
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(wallet)));
+  const hex = [...hash.slice(0, 16)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}

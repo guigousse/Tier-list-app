@@ -1,5 +1,5 @@
 // deno test supabase/functions/ai-generate/limits.test.ts
-import { MAX_BODY, promptSafe, texts, trustForLibrary } from "./limits.ts";
+import { MAX_BODY, promptSafe, quotaKey, texts, trustForLibrary } from "./limits.ts";
 import { sheetPrompt } from "./sheet.ts";
 
 function same(actual: unknown, expected: unknown) {
@@ -46,4 +46,12 @@ Deno.test("only drawings described by the AI enter the shared library", () => {
   // A concept named by the app alone is drawn for this player only.
   same(cards[1], { concept: "bloody-knife", label: "Couteau", theme: "cuisine" });
   same(shared.has("bloody-knife"), false);
+});
+
+Deno.test("the AI quota is counted per wallet, under a uuid that doesn't reveal its secret", async () => {
+  const wallet = "a".repeat(64);
+  const key = await quotaKey(wallet);
+  same(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(key), true);
+  same(key, await quotaKey(wallet));
+  same(key === (await quotaKey("b".repeat(64))), false);
 });
