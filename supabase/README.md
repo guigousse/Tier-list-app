@@ -76,14 +76,12 @@ puis les deux classements sont comparés. Le classement de l'expéditeur
 
 ## Crédits du parcours des listes
 
-Le parcours des récompenses offre 5 crédits tous les 25 listes validées (listes
-populaires et tier lists du jour). L'app appelle `claim_list_credits(wallet,
-device_id)` juste après l'ouverture du portefeuille ; la fonction délègue à
-`wallet_milestones`, réservée au serveur, qui compte elle-même les votes de
-l'appareil et ne paie chaque palier qu'une fois par portefeuille et par appareil
-(table `credit_milestones`), aux seuls portefeuilles attestés par Apple. Le pas et
-le montant sont écrits en dur dans `wallet_milestones` et dans `src/lib/rewards.ts`
-(`CREDIT_EVERY`, `CREDIT_AMOUNT`) : les changer aux deux endroits.
+Supprimés : le parcours des listes ne donne plus que des objets d'avatar. Les
+versions de l'app d'avant appellent encore `claim_list_credits(wallet, device_id)`,
+qui délègue à `wallet_milestones` : celle-ci ne fait plus que renvoyer le solde
+(`20261019030000_no_list_credits.sql`, appliquée en production par
+`20261026010000_security_fixes.sql`). Les paliers déjà payés le restent
+(`credit_milestones`, `credit_ledger`).
 
 ## Pub récompensée (« Énergie gratuite »)
 
@@ -103,3 +101,29 @@ ticket à usage unique (`ad_ticket(wallet)`, valable 1 h), le passe à la pub co
 - Tables `ad_rewards` (une ligne par pub payée) et `ad_tickets`.
 - Test : `supabase/tests/ad_rewards.sql` (doit finir sur l'erreur `OK`) ;
   `deno test supabase/functions/ad-reward/ssv.test.ts`.
+
+## Déployer
+
+Migrations et fonctions Edge ne partent pas toutes seules : depuis la racine du dépôt,
+avec la CLI Supabase connectée au projet (`npx supabase login`, puis
+`npx supabase link --project-ref mefhdtpyhtvplpfleyhi`).
+
+```bash
+npx supabase functions deploy ai-generate --no-verify-jwt
+```
+
+Toujours avec `--no-verify-jwt` (`ai-generate`, `referral-claim`, `appstore-notify`,
+`ad-reward`) : l'app n'envoie que la clé publique, Apple et Google n'envoient rien, et
+chaque fonction fait ses propres vérifications. Sans l'option, la CLI exige un JWT et
+l'app ne peut plus les appeler.
+
+L'historique des migrations de la production (`supabase_migrations.schema_migrations`)
+ne correspond pas aux fichiers de `migrations/` : des migrations y ont été appliquées
+sous d'autres numéros, d'autres à la main sans y être notées. `npx supabase db push`
+rejouerait donc tout. Tant que l'historique n'est pas réparé, une nouvelle migration
+s'applique seule (SQL Editor, ou `apply_migration`). Pour le réparer : marquer
+appliqués tous les fichiers de `migrations/` jusqu'à `20261026000000_sync_production.sql`
+compris (`npx supabase migration repair --status applied <version>…`), et retirer les
+numéros qui n'ont pas de fichier (`--status reverted`). `20261026000000_sync_production.sql`
+contient les fonctions telles que la production les exécutait le 2026-10-26 : n'importe
+quel fichier plus ancien qui les définit autrement a été remplacé en production.
