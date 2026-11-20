@@ -89,33 +89,50 @@ const shake = (t, a, d = 0.45, amp = 18) => { const p = prog(t, a, d); return p 
 // ---- Formats ---------------------------------------------------------------------
 
 /**
- * A provocative ranking: cards drop in one per `step`, captions comment on some of them,
- * the last card (optionally after a suspense pause) gets a stamp, then a comment prompt.
+ * The question that closes a video: the most divisive card, alone and big, with a "?" and
+ * the five tiers to pick from. The viewer answers in the comments.
  */
+function question(q, t0) {
+  const parts = [], sfx = [['thunder', t0], ['pop', t0 + 0.3]];
+  const dim = el('', ''); dim.style.width = '1080px'; dim.style.height = '1920px'; dim.style.background = 'rgba(10,11,15,.8)';
+  const big = card(q.card, 480);
+  const mark = el('', '?');
+  mark.style.cssText += 'width:190px;height:190px;border-radius:95px;background:#FFE14D;color:#111;font-weight:900;font-size:150px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.5)';
+  const name = el('cap', q.name); name.style.fontSize = '96px';
+  const ask = el('cap', '<span class="hl">Tu le classes où ?</span> 👇'); ask.style.fontSize = '72px';
+  const chips = TIER.map(([l, c]) => { const d = el('', l);
+    d.style.cssText += `width:130px;height:130px;border-radius:26px;background:${c};color:#1a1a1a;font-weight:900;font-size:72px;display:flex;align-items:center;justify-content:center`; return d; });
+  parts.push((t) => {
+    const o = prog(t, t0, 0.2), p = easeBack(prog(t, t0, 0.35)), m = easeBack(prog(t, t0 + 0.3, 0.3));
+    set(dim, 0, 0, 1, o);
+    set(big, 300, 400, 0.3 + 0.7 * p, o, Math.sin((t - t0) * 3) * 4 * o);
+    set(mark, 690, 310, (0.2 + 0.8 * m) * (1 + 0.07 * Math.sin((t - t0) * 7)), prog(t, t0 + 0.3, 0.1), 12);
+    set(name, 0, 930, 1, prog(t, t0 + 0.2, 0.2));
+    set(ask, 0, 1075, 1, prog(t, t0 + 0.6, 0.2));
+    chips.forEach((d, i) => { const a = t0 + 0.9 + i * 0.08; set(d, 150 + i * 160, 1210 + (1 - easeBack(prog(t, a, 0.25))) * 60, 1, prog(t, a, 0.1)); });
+  });
+  for (let i = 0; i < 5; i++) sfx.push(['tick', t0 + 0.9 + i * 0.08]);
+  return { parts, sfx };
+}
+
+/** A ranking at full speed while the hook stays on screen, ending on the question card. */
 function provoc(cfg) {
   const parts = [], sfx = [];
   const b = board(60, 500, 960, 172, 142);
-  const t0 = 1.0, step = cfg.step || 1.0, last = cfg.order.length - 1;
-  const at = (i) => t0 + i * step + (i === last && cfg.suspense ? 2.0 : 0);
+  const t0 = 0.8, step = 0.26;
   cfg.order.forEach(([n, tier], i) => {
-    parts.push(flight(card(n, 142), [469, 1700], b.slot(tier), at(i)));
-    sfx.push(['whoosh', at(i)], ['pop', at(i) + 0.45]);
+    const at = t0 + i * step;
+    parts.push(flight(card(n, 142), [469, 1700], b.slot(tier), at, 0.22));
+    sfx.push(['pop', at + 0.22]);
   });
-  parts.push(caption(cfg.hook, 0, t0 + 1.6, 190, 84));
-  (cfg.quips || []).forEach(([html, i, len = 1.5]) => parts.push(caption(html, at(i) + 0.7, at(i) + 0.7 + len, 250, 76)));
-  if (cfg.suspense) {
-    const s = at(last) - 2.0;
-    parts.push(caption(cfg.suspense, s + 0.2, at(last) + 0.2, 280, 84));
-    for (let k = 0; k < 8; k++) sfx.push(['tick', s + 0.3 + k * 0.2]);
-  }
-  const tStamp = at(last) + 0.5;
-  parts.push(stamp(cfg.stamp, tStamp));
-  sfx.push(['thunder', tStamp]);
-  const end = tStamp + 4.6;
-  parts.push(caption(cfg.outro, tStamp + 1.9, end + 0.4, 220, 74));
+  const tq = t0 + (cfg.order.length - 1) * step + 0.22 + 0.6;
+  parts.push(caption(cfg.hook, 0, tq, 190, 84));
+  const q = question(cfg.question, tq);
+  parts.push(...q.parts); sfx.push(...q.sfx);
+  const end = tq + 3.6;
   parts.push(endCard(end, cfg.cta));
   sfx.push(['sparkle', end]);
-  return { duration: end + 3.0, parts, sfx, shake: (t) => shake(t, tStamp, 0.5, 22) };
+  return { duration: end + 2.6, parts, sfx, shake: (t) => shake(t, tq, 0.4, 18) };
 }
 
 /** Me vs someone: two boards fill one after the other, then the app's agreement score. */
@@ -127,18 +144,18 @@ function versus(cfg) {
   const L = board(30, 640, 495, 120, 86, 10), R = board(555, 640, 495, 120, 86, 10);
   const lt = el('who', cfg.left), rt = el('who', cfg.right);
   lt.style.width = rt.style.width = '495px';
-  const t1 = 1.9, t2 = 6.6, step = 0.42;
+  const step = 0.2, t1 = 1.4, t2 = t1 + items.length * step + 0.8;
   items.forEach((n, i) => {
     const a = t1 + i * step, b = t2 + i * step;
-    parts.push(flight(card(n, 86), [235, 1720], L.slot(me[i]), a, 0.36)); sfx.push(['pop', a + 0.36]);
-    parts.push(flight(card(n, 86), [760, 1720], R.slot(them[i]), b, 0.36)); sfx.push(['pop', b + 0.36]);
+    parts.push(flight(card(n, 86), [235, 1720], L.slot(me[i]), a, 0.2)); sfx.push(['pop', a + 0.2]);
+    parts.push(flight(card(n, 86), [760, 1720], R.slot(them[i]), b, 0.2)); sfx.push(['pop', b + 0.2]);
   });
   parts.push((t) => { set(lt, 30, 560, 1, prog(t, 1.5, 0.3)); set(rt, 555, 560, 1, prog(t, t2 - 0.4, 0.3)); });
-  parts.push(caption(cfg.hook, 0, 2.6, 190, 74));
-  parts.push(caption('À son tour 👀', t2 - 0.5, t2 + 1.2, 250, 76));
-  const tq = t2 + cfg.quipAt * step + 0.6;
-  parts.push(caption(cfg.quip, tq, tq + 1.7, 250, 80));
-  const tr = t2 + items.length * step + 0.9;
+  parts.push(caption(cfg.hook, 0, t1 + 1.6, 190, 74));
+  parts.push(caption('À son tour 👀', t2 - 0.5, t2 + 0.9, 250, 76));
+  const tq = Math.max(t2 + cfg.quipAt * step + 0.4, t2 + 1.0);
+  parts.push(caption(cfg.quip, tq, tq + 1.6, 250, 80));
+  const tr = Math.max(t2 + items.length * step + 0.6, tq + 1.7);
   const dim = el('', ''); dim.style.width = '1080px'; dim.style.height = '1920px'; dim.style.background = 'rgba(10,11,15,.82)';
   const big = el('pct', ''), sub = el('cap', 'd\'accord'); sub.style.fontSize = '84px';
   parts.push((t) => {
@@ -156,33 +173,28 @@ function versus(cfg) {
   return { duration: end + 3.0, parts, sfx, shake: (t) => shake(t, tr + 1.4, 0.45, 16), pct };
 }
 
-/** One second per card: each card shows big with its name and a timer, then drops into its tier. */
+/** Flash ranking: each card flashes big with its name and drops into its tier, then the question card. */
 function rapid(cfg) {
   const parts = [], sfx = [];
   const b = board(60, 960, 960, 160, 132);
-  const t0 = 1.2, step = 1.25;
+  const t0 = 1.0, step = 0.42, show = 0.26;
   const big = cfg.order.map(([n]) => card(n, 340));
   const names = cfg.order.map(([, , label]) => { const d = el('cap', label); d.style.fontSize = '66px'; return d; });
-  const timer = el('bar', '');
   cfg.order.forEach(([n, tier], i) => {
-    const at = t0 + i * step, fly = at + 0.8;
-    parts.push(flight(card(n, 132), [474, 520], b.slot(tier), fly, 0.38));
-    parts.push((t) => { const shown = t >= at && t < fly, p = easeBack(prog(t, at, 0.22));
+    const at = t0 + i * step, fly = at + show;
+    parts.push(flight(card(n, 132), [474, 520], b.slot(tier), fly, 0.2));
+    parts.push((t) => { const shown = t >= at && t < fly, p = easeBack(prog(t, at, 0.15));
       set(big[i], 370, 380, shown ? 0.6 + 0.4 * p : 0.6, shown ? 1 : 0); set(names[i], 0, 740, 1, shown ? 1 : 0); });
-    sfx.push(['tick', at], ['whoosh', fly], ['pop', fly + 0.38]);
+    sfx.push(['pop', fly + 0.2]);
   });
-  parts.push((t) => { const i = Math.floor((t - t0) / step), into = (t - t0) - i * step;
-    if (t < t0 || i >= cfg.order.length || into > 0.8) return set(timer, 240, 860, 1, 0);
-    timer.style.width = 600 * (1 - into / 0.8) + 'px'; set(timer, 240 + 300 * into / 0.8, 860, 1, 1); });
-  parts.push(caption(cfg.hook, 0, t0 + 1.0, 150, 76));
-  const n = cfg.order.length;
-  parts.push(caption(cfg.quip, t0 + (n - 1) * step + 1.1, t0 + (n - 1) * step + 2.9, 230, 76));
-  const tq = t0 + n * step + 1.8, end = tq + 2.6;
-  parts.push(caption(cfg.outro, tq, end + 0.4, 200, 84));
-  sfx.push(['thunder', tq]);
+  const tq = t0 + (cfg.order.length - 1) * step + show + 0.2 + 0.6;
+  parts.push(caption(cfg.hook, 0, tq, 150, 76));
+  const q = question(cfg.question, tq);
+  parts.push(...q.parts); sfx.push(...q.sfx);
+  const end = tq + 3.6;
   parts.push(endCard(end, cfg.cta));
   sfx.push(['sparkle', end]);
-  return { duration: end + 2.9, parts, sfx, shake: (t) => shake(t, tq, 0.4, 14) };
+  return { duration: end + 2.6, parts, sfx, shake: (t) => shake(t, tq, 0.4, 14) };
 }
 
 // ---- Videos ----------------------------------------------------------------------
@@ -190,20 +202,14 @@ const hl = (s) => `<span class="hl">${s}</span>`;
 const VIDEOS = {
   fastfood: () => provoc({
     hook: `Ce classement va ${hl('énerver')} tout le monde 😤`,
-    order: [['french-tacos', 0], ['kebab', 0], ['french-fries', 1], ['fried-chicken', 1], ['pizza', 2], ['ramen', 2], ['burger', 3], ['hot-dog', 3], ['sushi', 4]],
-    quips: [['Tacos en S.<br>Oui, j\'assume.', 1], ['Burger en C… 👀', 6]],
-    stamp: 'SUSHI EN D ?!',
-    outro: `Je retire rien.<br>Ton classement ${hl('en commentaire')} 👇`,
+    order: [['french-tacos', 0], ['kebab', 0], ['french-fries', 1], ['fried-chicken', 1], ['pizza', 2], ['ramen', 2], ['burger', 3], ['hot-dog', 3]],
+    question: { card: 'sushi', name: 'Et les sushis ?' },
     cta: 'Classe tout, de S à D',
   }),
   pizza: () => provoc({
-    step: 0.9,
-    hook: `Garnitures de pizza.<br>${hl('L\'ananas')} passe en dernier 😈`,
-    order: [['mushroom', 0], ['bacon', 0], ['bell-pepper', 1], ['onion', 1], ['green-olives', 2], ['chili-pepper', 2], ['fried-egg', 3], ['corn', 3], ['anchovy', 4], ['pineapple', 0]],
-    quips: [['Champignon en S.<br>Évidemment.', 1]],
-    suspense: 'Et maintenant…<br>l\'ananas 🍍🥁',
-    stamp: 'ANANAS EN S ?!',
-    outro: `${hl('Team ananas')} ou ${hl('team jamais')} ?<br>Dis-le en commentaire 👇`,
+    hook: `Garnitures de pizza :<br>je classe ${hl('sans&nbsp;réfléchir')} ⚡`,
+    order: [['mushroom', 0], ['bacon', 0], ['bell-pepper', 1], ['onion', 1], ['green-olives', 2], ['chili-pepper', 2], ['fried-egg', 3], ['corn', 3], ['anchovy', 4]],
+    question: { card: 'pineapple', name: 'Et l\'ananas ? 🍍' },
     cta: 'Classe tout, de S à D',
   }),
   amis: () => versus({
@@ -227,23 +233,20 @@ const VIDEOS = {
     cta: 'Défie tes proches',
   }),
   france: () => rapid({
-    hook: `La France en tier list.<br>${hl('1 seconde')} par carte ⏱️`,
+    hook: `La France en tier list,<br>${hl('sans&nbsp;réfléchir')} ⚡`,
     order: [['pain-au-chocolat', 0, 'Pain au chocolat'], ['croissant', 1, 'Croissant'], ['baguette', 0, 'Baguette'], ['crepe', 1, 'Crêpe'],
-      ['reblochon', 2, 'Reblochon'], ['camembert-box', 3, 'Camembert'], ['macaron', 4, 'Macaron']],
-    quip: 'Macaron en D.<br>Désolé Paris.',
-    outro: `Et au fait…<br>${hl('pain au chocolat')}<br>ou ${hl('chocolatine')} ? 👇`,
+      ['reblochon', 2, 'Reblochon'], ['camembert-box', 3, 'Camembert']],
+    question: { card: 'macaron', name: 'Et le macaron ?' },
     cta: 'Ta tier list du jour',
   }),
   hiver: () => rapid({
-    hook: `Les plats d'hiver.<br>${hl('1 seconde')} par plat ⏱️`,
+    hook: `Les plats d'hiver,<br>${hl('sans&nbsp;réfléchir')} ⚡`,
     order: [['tartiflette-dish', 0, 'Tartiflette'], ['fondue-pot', 0, 'Fondue'], ['aligot-pot', 1, 'Aligot'], ['cassoulet-casserole', 1, 'Cassoulet'],
-      ['sauerkraut-plate', 2, 'Choucroute'], ['veal-blanquette-dish', 2, 'Blanquette'], ['pot-au-feu-pot', 3, 'Pot-au-feu'], ['bean-soup', 4, 'Potage']],
-    quip: 'Potage en D.<br>C\'est de l\'eau chaude.',
-    outro: `Attends…<br>où est ${hl('la raclette')} ? 😳<br>Classe-la en commentaire 👇`,
+      ['veal-blanquette-dish', 2, 'Blanquette'], ['pot-au-feu-pot', 3, 'Pot-au-feu'], ['bean-soup', 4, 'Potage']],
+    question: { card: 'sauerkraut-plate', name: 'Et la choucroute ?' },
     cta: 'Ta tier list du jour',
   }),
 };
-
 const v = VIDEOS[new URLSearchParams(location.search).get('v')]();
 window.meta = { duration: v.duration, sfx: v.sfx, pct: v.pct };
 window.render = (t) => { v.parts.forEach((f) => f(t)); const s = v.shake ? v.shake(t) : 0; stage.style.transform = `translate(${s}px,${s * 0.4}px)`; };
