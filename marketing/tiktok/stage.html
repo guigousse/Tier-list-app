@@ -1,0 +1,251 @@
+<!doctype html>
+<!-- TikTok videos for Tiercraft, drawn frame by frame: render.js calls window.render(t) and screenshots each frame. -->
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0F1115; }
+  body { font-family: 'Inter', 'Noto Color Emoji', sans-serif; color: #F2F4F8; }
+  #stage { position: absolute; inset: 0; overflow: hidden;
+    background: radial-gradient(1200px 900px at 50% 0%, #241d4d 0%, #0F1115 60%); }
+  .abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+  .row { position: absolute; border-radius: 22px; background: #181B22; border: 2px solid #2C313C; overflow: hidden; }
+  .lab { position: absolute; left: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #1a1a1a; }
+  .card { background: #20242D; border: 3px solid #3a4050; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .cap { font-weight: 900; text-align: center; line-height: 1.12; letter-spacing: -1px;
+    text-shadow: 0 6px 24px rgba(0,0,0,.6); padding: 0 70px; box-sizing: border-box; width: 1080px; }
+  .hl { background: #FFE14D; color: #111; padding: 0 14px; border-radius: 14px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .pill { display: inline-block; background: #7C5CFF; color: #fff; padding: 14px 34px; border-radius: 999px; font-weight: 800; }
+  .stamp { font-weight: 900; font-size: 110px; color: #FF5C6C; border: 12px solid #FF5C6C; border-radius: 28px; padding: 10px 40px;
+    background: rgba(15,17,21,.85); white-space: nowrap; }
+  .who { font-weight: 900; font-size: 54px; text-align: center; }
+  .pct { font-weight: 900; font-size: 260px; text-align: center; width: 1080px; letter-spacing: -8px; }
+  .bar { height: 18px; border-radius: 9px; background: #FFE14D; }
+</style></head>
+<body><div id="stage"></div>
+<script>
+const W = 1080;
+const TIER = [['S','#FF7F7F'],['A','#FFBF7F'],['B','#FFDF7F'],['C','#FFFF7F'],['D','#BFFF7F']];
+const stage = document.getElementById('stage');
+const el = (cls, html) => { const d = document.createElement('div'); d.className = 'abs ' + cls; d.innerHTML = html; stage.appendChild(d); return d; };
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const easeBack = (x) => { x = clamp(x); const c = 1.8; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const prog = (t, a, d) => clamp((t - a) / d);
+const set = (e, x, y, s = 1, o = 1, r = 0) => { e.style.transform = `translate(${x}px,${y}px) scale(${s}) rotate(${r}deg)`; e.style.opacity = o; };
+
+/** Tier board at (x, y): rows of height rh, cards of size cs. */
+function board(x, y, w, rh, cs, gap = 12) {
+  const lw = rh * 0.85;
+  TIER.forEach(([l, c], i) => {
+    const r = el('row', `<div class="lab" style="background:${c};width:${lw}px;font-size:${rh * 0.46}px">${l}</div>`);
+    r.style.width = w + 'px'; r.style.height = rh + 'px'; set(r, x, y + i * (rh + gap));
+  });
+  const fill = [0, 0, 0, 0, 0];
+  return { slot: (tier) => [x + lw + 12 + fill[tier]++ * (cs + 10), y + tier * (rh + gap) + (rh - cs) / 2] };
+}
+function card(name, size) {
+  const c = el('card', `<img src="img/${name}.png" style="width:${size * 0.85}px;height:${size * 0.85}px">`);
+  c.style.width = c.style.height = size + 'px'; c.style.borderRadius = size * 0.17 + 'px';
+  set(c, -999, -999, 1, 0); return c;
+}
+/** A card flying from `from` to `to` between t0 and t0+d, landing with a bounce. */
+function flight(c, from, to, t0, d = 0.45) {
+  return (t) => {
+    if (t < t0) return set(c, from[0], from[1], 0.4, 0);
+    const p = prog(t, t0, d), e = easeOut(p);
+    const x = from[0] + (to[0] - from[0]) * e, y = from[1] + (to[1] - from[1]) * e - Math.sin(Math.PI * p) * 120;
+    const s = p < 1 ? 1.25 - 0.25 * e : 1 + 0.12 * Math.sin(Math.PI * prog(t, t0 + d, 0.18));
+    set(c, x, y, s, 1, (1 - e) * -12);
+  };
+}
+/** Caption shown between a and b, popping in; y is its top. */
+function caption(html, a, b, y, size = 76) {
+  const c = el('cap', html); c.style.fontSize = size + 'px';
+  return (t) => {
+    if (t < a || t > b) return set(c, 0, y, 1, 0);
+    const p = easeBack(prog(t, a, 0.28));
+    set(c, 0, y + (1 - p) * 40, 0.85 + 0.15 * p, Math.min(prog(t, a, 0.12), 1 - prog(t, b - 0.18, 0.18)));
+  };
+}
+/** A red stamp slammed onto the board at t, for 2.4 s. */
+function stamp(text, t0, y = 860) {
+  const st = el('stamp', text);
+  return (t) => { if (t < t0 || t > t0 + 2.4) return set(st, 120, y, 1, 0);
+    set(st, 120, y, 2.2 - 1.2 * easeBack(prog(t, t0, 0.3)), clamp((t - t0) * 6), -8); };
+}
+/** End card: app icon, name, store line, a prompt. */
+function endCard(a, prompt) {
+  const wrap = el('', `<div style="position:absolute;inset:0;background:rgba(10,11,15,.92)"></div>
+    <div style="position:absolute;top:470px;width:1080px;text-align:center">
+      <img src="img/appicon.png" style="width:260px;height:260px;border-radius:58px;box-shadow:0 20px 60px rgba(124,92,255,.55)">
+      <div style="font-weight:900;font-size:120px;margin-top:40px;letter-spacing:-3px">Tiercraft</div>
+      <div style="font-weight:700;font-size:50px;color:#9AA3B2;margin-top:10px">Gratuit sur l'App Store</div>
+      <div style="margin-top:70px"><span class="pill" style="font-size:52px">${prompt}</span></div>
+    </div>`);
+  wrap.style.width = W + 'px'; wrap.style.height = '1920px';
+  return (t) => { const p = prog(t, a, 0.35); set(wrap, 0, 0, 1.06 - 0.06 * easeOut(p), p); };
+}
+const shake = (t, a, d = 0.45, amp = 18) => { const p = prog(t, a, d); return p <= 0 || p >= 1 ? 0 : Math.sin(p * 40) * amp * (1 - p); };
+
+// ---- Formats ---------------------------------------------------------------------
+
+/**
+ * A provocative ranking: cards drop in one per `step`, captions comment on some of them,
+ * the last card (optionally after a suspense pause) gets a stamp, then a comment prompt.
+ */
+function provoc(cfg) {
+  const parts = [], sfx = [];
+  const b = board(60, 500, 960, 172, 142);
+  const t0 = 1.0, step = cfg.step || 1.0, last = cfg.order.length - 1;
+  const at = (i) => t0 + i * step + (i === last && cfg.suspense ? 2.0 : 0);
+  cfg.order.forEach(([n, tier], i) => {
+    parts.push(flight(card(n, 142), [469, 1700], b.slot(tier), at(i)));
+    sfx.push(['whoosh', at(i)], ['pop', at(i) + 0.45]);
+  });
+  parts.push(caption(cfg.hook, 0, t0 + 1.6, 190, 84));
+  (cfg.quips || []).forEach(([html, i, len = 1.5]) => parts.push(caption(html, at(i) + 0.7, at(i) + 0.7 + len, 250, 76)));
+  if (cfg.suspense) {
+    const s = at(last) - 2.0;
+    parts.push(caption(cfg.suspense, s + 0.2, at(last) + 0.2, 280, 84));
+    for (let k = 0; k < 8; k++) sfx.push(['tick', s + 0.3 + k * 0.2]);
+  }
+  const tStamp = at(last) + 0.5;
+  parts.push(stamp(cfg.stamp, tStamp));
+  sfx.push(['thunder', tStamp]);
+  const end = tStamp + 4.6;
+  parts.push(caption(cfg.outro, tStamp + 1.9, end + 0.4, 220, 74));
+  parts.push(endCard(end, cfg.cta));
+  sfx.push(['sparkle', end]);
+  return { duration: end + 3.0, parts, sfx, shake: (t) => shake(t, tStamp, 0.5, 22) };
+}
+
+/** Me vs someone: two boards fill one after the other, then the app's agreement score. */
+function versus(cfg) {
+  const parts = [], sfx = [];
+  const { items, me, them } = cfg;
+  // The app's own formula (private.agreement): 1 - |a-b| / (tiers - 1), averaged, rounded.
+  const pct = Math.round(items.reduce((s, _, i) => s + 1 - Math.abs(me[i] - them[i]) / 4, 0) / items.length * 100);
+  const L = board(30, 640, 495, 120, 86, 10), R = board(555, 640, 495, 120, 86, 10);
+  const lt = el('who', cfg.left), rt = el('who', cfg.right);
+  lt.style.width = rt.style.width = '495px';
+  const t1 = 1.9, t2 = 6.6, step = 0.42;
+  items.forEach((n, i) => {
+    const a = t1 + i * step, b = t2 + i * step;
+    parts.push(flight(card(n, 86), [235, 1720], L.slot(me[i]), a, 0.36)); sfx.push(['pop', a + 0.36]);
+    parts.push(flight(card(n, 86), [760, 1720], R.slot(them[i]), b, 0.36)); sfx.push(['pop', b + 0.36]);
+  });
+  parts.push((t) => { set(lt, 30, 560, 1, prog(t, 1.5, 0.3)); set(rt, 555, 560, 1, prog(t, t2 - 0.4, 0.3)); });
+  parts.push(caption(cfg.hook, 0, 2.6, 190, 74));
+  parts.push(caption('À son tour 👀', t2 - 0.5, t2 + 1.2, 250, 76));
+  const tq = t2 + cfg.quipAt * step + 0.6;
+  parts.push(caption(cfg.quip, tq, tq + 1.7, 250, 80));
+  const tr = t2 + items.length * step + 0.9;
+  const dim = el('', ''); dim.style.width = '1080px'; dim.style.height = '1920px'; dim.style.background = 'rgba(10,11,15,.82)';
+  const big = el('pct', ''), sub = el('cap', 'd\'accord'); sub.style.fontSize = '84px';
+  parts.push((t) => {
+    const p = prog(t, tr, 1.4), o = prog(t, tr - 0.1, 0.25);
+    set(dim, 0, 0, 1, o); big.textContent = Math.round(easeOut(p) * pct) + ' %';
+    big.style.color = p < 1 ? '#F2F4F8' : '#FF5C6C';
+    set(big, 0, 640, 1 + (p >= 1 ? 0.08 * Math.sin(Math.PI * prog(t, tr + 1.4, 0.25)) : 0), o); set(sub, 0, 950, 1, o);
+  });
+  for (let k = 0; k < 7; k++) sfx.push(['tick', tr + k * 0.2]);
+  sfx.push(['thunder', tr + 1.4]);
+  const end = tr + 5.0;
+  parts.push(caption(cfg.outro, tr + 2.0, end + 0.4, 1150, 70));
+  parts.push(endCard(end, cfg.cta));
+  sfx.push(['sparkle', end]);
+  return { duration: end + 3.0, parts, sfx, shake: (t) => shake(t, tr + 1.4, 0.45, 16), pct };
+}
+
+/** One second per card: each card shows big with its name and a timer, then drops into its tier. */
+function rapid(cfg) {
+  const parts = [], sfx = [];
+  const b = board(60, 960, 960, 160, 132);
+  const t0 = 1.2, step = 1.25;
+  const big = cfg.order.map(([n]) => card(n, 340));
+  const names = cfg.order.map(([, , label]) => { const d = el('cap', label); d.style.fontSize = '66px'; return d; });
+  const timer = el('bar', '');
+  cfg.order.forEach(([n, tier], i) => {
+    const at = t0 + i * step, fly = at + 0.8;
+    parts.push(flight(card(n, 132), [474, 520], b.slot(tier), fly, 0.38));
+    parts.push((t) => { const shown = t >= at && t < fly, p = easeBack(prog(t, at, 0.22));
+      set(big[i], 370, 380, shown ? 0.6 + 0.4 * p : 0.6, shown ? 1 : 0); set(names[i], 0, 740, 1, shown ? 1 : 0); });
+    sfx.push(['tick', at], ['whoosh', fly], ['pop', fly + 0.38]);
+  });
+  parts.push((t) => { const i = Math.floor((t - t0) / step), into = (t - t0) - i * step;
+    if (t < t0 || i >= cfg.order.length || into > 0.8) return set(timer, 240, 860, 1, 0);
+    timer.style.width = 600 * (1 - into / 0.8) + 'px'; set(timer, 240 + 300 * into / 0.8, 860, 1, 1); });
+  parts.push(caption(cfg.hook, 0, t0 + 1.0, 150, 76));
+  const n = cfg.order.length;
+  parts.push(caption(cfg.quip, t0 + (n - 1) * step + 1.1, t0 + (n - 1) * step + 2.9, 230, 76));
+  const tq = t0 + n * step + 1.8, end = tq + 2.6;
+  parts.push(caption(cfg.outro, tq, end + 0.4, 200, 84));
+  sfx.push(['thunder', tq]);
+  parts.push(endCard(end, cfg.cta));
+  sfx.push(['sparkle', end]);
+  return { duration: end + 2.9, parts, sfx, shake: (t) => shake(t, tq, 0.4, 14) };
+}
+
+// ---- Videos ----------------------------------------------------------------------
+const hl = (s) => `<span class="hl">${s}</span>`;
+const VIDEOS = {
+  fastfood: () => provoc({
+    hook: `Ce classement va ${hl('énerver')} tout le monde 😤`,
+    order: [['french-tacos', 0], ['kebab', 0], ['french-fries', 1], ['fried-chicken', 1], ['pizza', 2], ['ramen', 2], ['burger', 3], ['hot-dog', 3], ['sushi', 4]],
+    quips: [['Tacos en S.<br>Oui, j\'assume.', 1], ['Burger en C… 👀', 6]],
+    stamp: 'SUSHI EN D ?!',
+    outro: `Je retire rien.<br>Ton classement ${hl('en commentaire')} 👇`,
+    cta: 'Classe tout, de S à D',
+  }),
+  pizza: () => provoc({
+    step: 0.9,
+    hook: `Garnitures de pizza.<br>${hl('L\'ananas')} passe en dernier 😈`,
+    order: [['mushroom', 0], ['bacon', 0], ['bell-pepper', 1], ['onion', 1], ['green-olives', 2], ['chili-pepper', 2], ['fried-egg', 3], ['corn', 3], ['anchovy', 4], ['pineapple', 0]],
+    quips: [['Champignon en S.<br>Évidemment.', 1]],
+    suspense: 'Et maintenant…<br>l\'ananas 🍍🥁',
+    stamp: 'ANANAS EN S ?!',
+    outro: `${hl('Team ananas')} ou ${hl('team jamais')} ?<br>Dis-le en commentaire 👇`,
+    cta: 'Classe tout, de S à D',
+  }),
+  amis: () => versus({
+    hook: `J'ai fait classer les fruits<br>à mon ${hl('meilleur pote')}… 💔`,
+    left: 'Moi 😎', right: 'Mon pote 🤨',
+    items: ['strawberry', 'mango', 'watermelon', 'cherry', 'peach', 'banana', 'kiwi', 'pear', 'pineapple', 'lemon'],
+    me: [0, 0, 1, 1, 1, 2, 2, 3, 4, 4],
+    them: [3, 2, 3, 4, 4, 4, 0, 0, 0, 1],
+    quip: 'Ananas en S ?! 🍍', quipAt: 8,
+    outro: `On est encore amis ?<br>Fais le test avec ${hl('le tien')} 👇`,
+    cta: 'Défie tes amis',
+  }),
+  petitdej: () => versus({
+    hook: `J'ai fait classer le petit‑déj<br>à mon ${hl('frère')}… 🥐`,
+    left: 'Moi ☕', right: 'Mon frère 😬',
+    items: ['croissant', 'pain-au-chocolat', 'crepe', 'pancake', 'brioche', 'waffle', 'cereal-bowl', 'jam-jar', 'yogurt', 'fried-egg'],
+    me: [0, 0, 1, 1, 1, 2, 2, 2, 3, 4],
+    them: [3, 4, 2, 0, 4, 0, 0, 4, 1, 0],
+    quip: 'Pain au chocolat en D ?! 😱', quipAt: 4,
+    outro: `Le petit‑déj divise les familles.<br>Teste ${hl('la tienne')} 👇`,
+    cta: 'Défie tes proches',
+  }),
+  france: () => rapid({
+    hook: `La France en tier list.<br>${hl('1 seconde')} par carte ⏱️`,
+    order: [['pain-au-chocolat', 0, 'Pain au chocolat'], ['croissant', 1, 'Croissant'], ['baguette', 0, 'Baguette'], ['crepe', 1, 'Crêpe'],
+      ['reblochon', 2, 'Reblochon'], ['camembert-box', 3, 'Camembert'], ['macaron', 4, 'Macaron']],
+    quip: 'Macaron en D.<br>Désolé Paris.',
+    outro: `Et au fait…<br>${hl('pain au chocolat')}<br>ou ${hl('chocolatine')} ? 👇`,
+    cta: 'Ta tier list du jour',
+  }),
+  hiver: () => rapid({
+    hook: `Les plats d'hiver.<br>${hl('1 seconde')} par plat ⏱️`,
+    order: [['tartiflette-dish', 0, 'Tartiflette'], ['fondue-pot', 0, 'Fondue'], ['aligot-pot', 1, 'Aligot'], ['cassoulet-casserole', 1, 'Cassoulet'],
+      ['sauerkraut-plate', 2, 'Choucroute'], ['veal-blanquette-dish', 2, 'Blanquette'], ['pot-au-feu-pot', 3, 'Pot-au-feu'], ['bean-soup', 4, 'Potage']],
+    quip: 'Potage en D.<br>C\'est de l\'eau chaude.',
+    outro: `Attends…<br>où est ${hl('la raclette')} ? 😳<br>Classe-la en commentaire 👇`,
+    cta: 'Ta tier list du jour',
+  }),
+};
+
+const v = VIDEOS[new URLSearchParams(location.search).get('v')]();
+window.meta = { duration: v.duration, sfx: v.sfx, pct: v.pct };
+window.render = (t) => { v.parts.forEach((f) => f(t)); const s = v.shake ? v.shake(t) : 0; stage.style.transform = `translate(${s}px,${s * 0.4}px)`; };
+window.render(0);
+</script></body></html>
